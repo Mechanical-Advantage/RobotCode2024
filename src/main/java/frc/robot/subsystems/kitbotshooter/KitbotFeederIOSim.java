@@ -12,7 +12,7 @@ public class KitbotFeederIOSim implements KitbotFeederIO {
   private double inputVolts = 0.0;
 
   @Override
-  public void updateInputs(FeederIOInputs inputs) {
+  public void updateInputs(KitbotFeederIOInputs inputs) {
     positionRads += sim.getAngularVelocityRadPerSec() * (Constants.loopPeriodMs / 1000.0);
     inputs.feederPositionRads = positionRads;
     inputs.feederVelocityRadPerSec = sim.getAngularVelocityRadPerSec();

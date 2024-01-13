@@ -13,7 +13,6 @@
 
 package frc.robot;
 
-import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -98,14 +97,7 @@ public class RobotContainer {
         break;
     }
 
-    // Set up auto routines
-    //    NamedCommands.registerCommand(
-    //        "Run Flywheel",
-    //        Commands.startEnd(
-    //                () -> flywheel.runVelocity(flywheelSpeedInput.get()), flywheel::stop,
-    // flywheel)
-    //            .withTimeout(5.0));
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices", AutoBuilder.buildAutoChooser());
+    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
 
     // Set up feedforward characterization
     autoChooser.addOption(
@@ -148,6 +140,11 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
                     drive)
                 .ignoringDisable(true));
+    controller
+        .a()
+        .whileTrue(
+            Commands.run(() -> shooter.runFlywheelVelocity(flywheelSpeedInput.get()), shooter))
+        .whileFalse(Commands.run(() -> shooter.runFlywheelVelocity(0.0), shooter));
   }
 
   /**

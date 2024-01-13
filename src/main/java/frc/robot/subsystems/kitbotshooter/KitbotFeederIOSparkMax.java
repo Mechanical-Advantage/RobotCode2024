@@ -30,7 +30,7 @@ public class KitbotFeederIOSparkMax implements KitbotFeederIO {
   }
 
   @Override
-  public void updateInputs(FeederIOInputs inputs) {
+  public void updateInputs(KitbotFeederIOInputs inputs) {
     inputs.feederPositionRads = Units.rotationsToRadians(encoder.getPosition()) / GEARING;
     inputs.feederVelocityRadPerSec = Units.rotationsToRadians(encoder.getVelocity()) / GEARING;
     inputs.feederAppliedVolts = motor.getAppliedOutput();

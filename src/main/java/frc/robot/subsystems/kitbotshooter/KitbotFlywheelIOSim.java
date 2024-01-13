@@ -19,7 +19,7 @@ public class KitbotFlywheelIOSim implements KitbotFlywheelIO {
   private double inputVolts = 0.0;
 
   @Override
-  public void updateInputs(FlywheelIOInputs inputs) {
+  public void updateInputs(KitbotFlywheelIOInputs inputs) {
     positionRads += sim.getAngularVelocityRadPerSec() * (Constants.loopPeriodMs / 1000.0);
     inputs.flywheelPositionRads = new double[] {positionRads, positionRads};
     inputs.flywheelVelocityRadPerSec = new double[2];

@@ -54,7 +54,7 @@ public class KitbotFlywheelIOSparkMax implements KitbotFlywheelIO {
   }
 
   @Override
-  public void updateInputs(FlywheelIOInputs inputs) {
+  public void updateInputs(KitbotFlywheelIOInputs inputs) {
     inputs.flywheelPositionRads = getPosition();
     inputs.flywheelVelocityRadPerSec = getVelocity();
     inputs.flywheelAppliedVolts =

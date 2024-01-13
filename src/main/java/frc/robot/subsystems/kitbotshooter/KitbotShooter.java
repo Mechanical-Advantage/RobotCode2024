@@ -16,8 +16,8 @@ public class KitbotShooter extends SubsystemBase {
   private KitbotFlywheelIO kitbotFlywheelIO;
   private KitbotFeederIO kitbotFeederIO;
 
-  private FlywheelIOInputsAutoLogged flywheelInputs = new FlywheelIOInputsAutoLogged();
-  private FeederIOInputsAutoLogged feederInputs = new FeederIOInputsAutoLogged();
+  private KitbotFlywheelIOInputsAutoLogged flywheelInputs = new KitbotFlywheelIOInputsAutoLogged();
+  private KitbotFeederIOInputsAutoLogged feederInputs = new KitbotFeederIOInputsAutoLogged();
 
   private Mode currentMode = null;
 

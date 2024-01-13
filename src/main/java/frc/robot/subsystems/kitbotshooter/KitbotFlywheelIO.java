@@ -2,7 +2,7 @@ package frc.robot.subsystems.kitbotshooter;
 
 import org.littletonrobotics.junction.AutoLog;
 
-public interface FlywheelIO {
+public interface KitbotFlywheelIO {
   @AutoLog
   class FlywheelIOInputs {
     public double[] flywheelPositionRads = new double[] {};

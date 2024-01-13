@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Constants;
 import java.util.Arrays;
 
-public class FlywheelIOSim implements FlywheelIO {
+public class KitbotFlywheelIOSim implements KitbotFlywheelIO {
   private static final SimpleMotorFeedforward ffModel = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
   private static final PIDController feedback = new PIDController(0.0, 0.0, 0.0);
 
@@ -22,7 +22,7 @@ public class FlywheelIOSim implements FlywheelIO {
   public void updateInputs(FlywheelIOInputs inputs) {
     positionRads += sim.getAngularVelocityRadPerSec() * (Constants.loopPeriodMs / 1000.0);
     inputs.flywheelPositionRads = new double[] {positionRads, positionRads};
-    inputs.flywheelPositionRads = new double[2];
+    inputs.flywheelVelocityRadPerSec = new double[2];
     Arrays.fill(inputs.flywheelPositionRads, sim.getAngularVelocityRadPerSec());
     inputs.flywheelAppliedVolts = new double[] {inputVolts, inputVolts};
   }

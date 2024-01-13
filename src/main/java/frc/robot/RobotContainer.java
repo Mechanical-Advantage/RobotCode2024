@@ -70,7 +70,7 @@ public class RobotContainer {
         // new ModuleIOTalonFX(1),
         // new ModuleIOTalonFX(2),
         // new ModuleIOTalonFX(3));
-        shooter = new KitbotShooter(new FlywheelIOSparkMax(), new FeederIOSparkMax());
+        shooter = new KitbotShooter(new KitbotFlywheelIOSparkMax(), new KitbotFeederIOSparkMax());
         break;
 
       case SIM:
@@ -82,7 +82,7 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim(),
                 new ModuleIOSim());
-        shooter = new KitbotShooter(new FlywheelIOSim(), new FeederIOSim());
+        shooter = new KitbotShooter(new KitbotFlywheelIOSim(), new KitbotFeederIOSim());
         break;
 
       default:
@@ -94,7 +94,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        shooter = new KitbotShooter(new FlywheelIO() {}, new FeederIO() {});
+        shooter = new KitbotShooter(new KitbotFlywheelIO() {}, new KitbotFeederIO() {});
         break;
     }
 
@@ -116,7 +116,7 @@ public class RobotContainer {
         "Flywheel FF Characterization",
         Commands.sequence(
             Commands.runOnce(
-                () -> shooter.setCurrentMode(KitbotShooter.MODE.CHARACTERIZING), shooter),
+                () -> shooter.setCurrentMode(KitbotShooter.Mode.CHARACTERIZING), shooter),
             new FeedForwardCharacterization(
                 shooter, shooter::runFlywheelVolts, shooter::getFlywheelVelocityRadPerSec),
             Commands.runOnce(() -> shooter.setCurrentMode(null))));

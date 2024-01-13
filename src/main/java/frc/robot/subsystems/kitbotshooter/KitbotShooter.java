@@ -13,69 +13,69 @@ public class KitbotShooter extends SubsystemBase {
   private static double flywheelIntakeVoltage = -5.0;
   private static double feederIntakeVoltage = -5.0;
 
-  private FlywheelIO flywheelIO;
-  private FeederIO feederIO;
+  private KitbotFlywheelIO kitbotFlywheelIO;
+  private KitbotFeederIO kitbotFeederIO;
 
   private FlywheelIOInputsAutoLogged flywheelInputs = new FlywheelIOInputsAutoLogged();
   private FeederIOInputsAutoLogged feederInputs = new FeederIOInputsAutoLogged();
 
-  private MODE currentMode = null;
+  private Mode currentMode = null;
 
-  public KitbotShooter(FlywheelIO flywheelIO, FeederIO feederIO) {
-    this.flywheelIO = flywheelIO;
-    this.feederIO = feederIO;
+  public KitbotShooter(KitbotFlywheelIO kitbotFlywheelIO, KitbotFeederIO kitbotFeederIO) {
+    this.kitbotFlywheelIO = kitbotFlywheelIO;
+    this.kitbotFeederIO = kitbotFeederIO;
   }
 
   @Override
   public void periodic() {
     // update inputs
-    flywheelIO.updateInputs(flywheelInputs);
-    feederIO.updateInputs(feederInputs);
+    kitbotFlywheelIO.updateInputs(flywheelInputs);
+    kitbotFeederIO.updateInputs(feederInputs);
     // process inputs
     Logger.processInputs("KitbotShooter/Flywheel", flywheelInputs);
     Logger.processInputs("KitbotShooter/Feeder", feederInputs);
 
     // check for current mode
     if (currentMode == null) {
-      currentMode = DriverStation.isEnabled() ? MODE.ENABLED : MODE.DISABLED;
-      flywheelIO.setBrakeMode(DriverStation.isEnabled());
-      feederIO.setBrakeMode(DriverStation.isEnabled());
+      currentMode = DriverStation.isEnabled() ? Mode.ENABLED : Mode.DISABLED;
+      kitbotFlywheelIO.setBrakeMode(DriverStation.isEnabled());
+      kitbotFeederIO.setBrakeMode(DriverStation.isEnabled());
     }
 
-    if (currentMode == MODE.DISABLED) {
-      flywheelIO.setBrakeMode(false);
-      feederIO.setBrakeMode(false);
-    } else if (currentMode == MODE.ENABLED) {
+    if (currentMode == Mode.DISABLED) {
+      kitbotFlywheelIO.setBrakeMode(false);
+      kitbotFeederIO.setBrakeMode(false);
+    } else if (currentMode == Mode.ENABLED) {
       // other stuff
-    } else if (currentMode == MODE.CHARACTERIZING) {
+    } else if (currentMode == Mode.CHARACTERIZING) {
 
     }
   }
 
   /** Set input voltage for flywheel */
   public void runFlywheelVolts(double volts) {
-    flywheelIO.runVolts(volts);
+    kitbotFlywheelIO.runVolts(volts);
   }
 
   /** Set input voltage for feeder */
   public void runFeederVolts(double volts) {
-    feederIO.runVolts(volts);
+    kitbotFeederIO.runVolts(volts);
   }
 
   /** Run flywheel at velocity */
   public void runFlywheelVelocity(double rpm) {
-    if (currentMode != MODE.ENABLED) return;
+    if (currentMode != Mode.ENABLED) return;
     double rps = Units.rotationsPerMinuteToRadiansPerSecond(rpm);
-    flywheelIO.runVelocity(Units.rotationsToRadians(rps));
+    kitbotFlywheelIO.runVelocity(Units.rotationsToRadians(rps));
   }
 
-  public void setCurrentMode(MODE mode) {
+  public void setCurrentMode(Mode mode) {
     currentMode = mode;
   }
 
   @AutoLogOutput(key = "KitbotShooter/FlywheelRPM")
   public double getFlywheelRPM() {
-    return flywheelIO.getVelocityRPM();
+    return kitbotFlywheelIO.getVelocityRPM();
   }
 
   @AutoLogOutput(key = "KitbotShooter/FlywheelVelocityRadPerSec")
@@ -95,17 +95,17 @@ public class KitbotShooter extends SubsystemBase {
 
   public Command intakeCommand() {
     return Commands.startEnd(
-            () -> {
-              flywheelIO.runVolts(flywheelIntakeVoltage);
-              feederIO.runVolts(feederIntakeVoltage);
-            },
-            () -> {
-              flywheelIO.runVolts(0.0);
-              feederIO.runVolts(0.0);
-            });
+        () -> {
+          kitbotFlywheelIO.runVolts(flywheelIntakeVoltage);
+          kitbotFeederIO.runVolts(feederIntakeVoltage);
+        },
+        () -> {
+          kitbotFlywheelIO.runVolts(0.0);
+          kitbotFeederIO.runVolts(0.0);
+        });
   }
 
-  public enum MODE {
+  public enum Mode {
     ENABLED,
     DISABLED,
     CHARACTERIZING;

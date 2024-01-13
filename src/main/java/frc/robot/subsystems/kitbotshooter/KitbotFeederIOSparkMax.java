@@ -7,13 +7,13 @@ import com.revrobotics.RelativeEncoder;
 import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
-public class FeederIOSparkMax implements FeederIO {
+public class KitbotFeederIOSparkMax implements KitbotFeederIO {
   private static final double GEARING = (1.0 / 1.0);
 
   private final CANSparkMax motor;
   private final RelativeEncoder encoder;
 
-  public FeederIOSparkMax() {
+  public KitbotFeederIOSparkMax() {
     motor = new CANSparkMax(3, CANSparkLowLevel.MotorType.kBrushless);
 
     motor.restoreFactoryDefaults();

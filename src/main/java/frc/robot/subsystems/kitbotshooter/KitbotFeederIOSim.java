@@ -5,7 +5,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 import frc.robot.Constants;
 
-public class FeederIOSim implements FeederIO {
+public class KitbotFeederIOSim implements KitbotFeederIO {
   private FlywheelSim sim = new FlywheelSim(DCMotor.getNeoVortex(1), (1.0 / 1.0), 0.002);
 
   private double positionRads;

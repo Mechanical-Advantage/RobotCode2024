@@ -2,7 +2,7 @@ package frc.robot.subsystems.kitbotshooter;
 
 import org.littletonrobotics.junction.AutoLog;
 
-public interface FeederIO {
+public interface KitbotFeederIO {
   @AutoLog
   class FeederIOInputs {
     public double feederPositionRads = 0.0;

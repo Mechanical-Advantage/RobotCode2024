@@ -14,10 +14,10 @@
 package frc.robot.subsystems.drive;
 
 import edu.wpi.first.wpilibj.Notifier;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.DoubleSupplier;
 
 /**
@@ -47,7 +47,7 @@ public class SparkMaxOdometryThread {
   }
 
   public Queue<Double> registerSignal(DoubleSupplier signal) {
-    Queue<Double> queue = new ArrayBlockingQueue<>(100);
+    Queue<Double> queue = new ArrayDeque<>(100);
     Drive.odometryLock.lock();
     try {
       signals.add(signal);

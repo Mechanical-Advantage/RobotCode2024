@@ -10,7 +10,7 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 import java.util.Arrays;
 
-public class FlywheelIOSparkMax implements FlywheelIO {
+public class KitbotFlywheelIOSparkMax implements KitbotFlywheelIO {
   // FIND THESE CONSTANTS
   private static final boolean masterInverted = false;
   private static final boolean followerInverted = false;
@@ -21,7 +21,7 @@ public class FlywheelIOSparkMax implements FlywheelIO {
   private final CANSparkMax leader, follower;
   private final RelativeEncoder masterEncoder, followerEncoder;
 
-  public FlywheelIOSparkMax() {
+  public KitbotFlywheelIOSparkMax() {
     // FIND ID
     leader = new CANSparkMax(0, CANSparkLowLevel.MotorType.kBrushless);
     follower = new CANSparkMax(1, CANSparkLowLevel.MotorType.kBrushless);

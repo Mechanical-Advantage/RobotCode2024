@@ -13,7 +13,6 @@
 
 package frc.robot;
 
-import com.pathplanner.lib.path.*;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -25,7 +24,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.DriveTrajectory;
 import frc.robot.commands.FeedForwardCharacterization;
-import frc.robot.commands.autos.TestAutos;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
@@ -63,26 +61,24 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-    switch (Constants.currentMode) {
-      case REAL:
-        // Real robot, instantiate hardware IO implementations
-        drive =
-            new Drive(
-                new GyroIOPigeon2(false),
-                new ModuleIOSparkMax(0),
-                new ModuleIOSparkMax(1),
-                new ModuleIOSparkMax(2),
-                new ModuleIOSparkMax(3));
-        // drive = new Drive(
-        // new GyroIOPigeon2(true),
-        // new ModuleIOTalonFX(0),
-        // new ModuleIOTalonFX(1),
-        // new ModuleIOTalonFX(2),
-        // new ModuleIOTalonFX(3));
-        shooter = new KitbotShooter(new KitbotFlywheelIOSparkMax(), new KitbotFeederIOSparkMax());
-        break;
-
-      case SIM:
+    switch (Constants.getMode()) {
+      case REAL -> {
+        // Real robot, instantiate hardware IO implementations\
+        switch (Constants.getRobot()) {
+          default -> {
+            drive =
+                new Drive(
+                    new GyroIOPigeon2(false),
+                    new ModuleIOSparkMax(0),
+                    new ModuleIOSparkMax(1),
+                    new ModuleIOSparkMax(2),
+                    new ModuleIOSparkMax(3));
+            shooter =
+                new KitbotShooter(new KitbotFlywheelIOSparkMax(), new KitbotFeederIOSparkMax());
+          }
+        }
+      }
+      case SIM -> {
         // Sim robot, instantiate physics sim IO implementations
         drive =
             new Drive(
@@ -92,9 +88,8 @@ public class RobotContainer {
                 new ModuleIOSim(),
                 new ModuleIOSim());
         shooter = new KitbotShooter(new KitbotFlywheelIOSim(), new KitbotFeederIOSim());
-        break;
-
-      default:
+      }
+      default -> {
         // Replayed robot, disable IO implementations
         drive =
             new Drive(
@@ -104,7 +99,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         shooter = new KitbotShooter(new KitbotFlywheelIO() {}, new KitbotFeederIO() {});
-        break;
+      }
     }
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");

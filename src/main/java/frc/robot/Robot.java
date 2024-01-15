@@ -62,7 +62,7 @@ public class Robot extends LoggedRobot {
     }
 
     // Set up data receivers & replay source
-    switch (Constants.currentMode) {
+    switch (Constants.getMode()) {
       case REAL:
         // Running on a real robot, log to a USB stick ("/U/logs")
         Logger.addDataReceiver(new WPILOGWriter());
@@ -117,7 +117,7 @@ public class Robot extends LoggedRobot {
             });
 
     // Default to blue alliance in sim
-    if (Constants.currentMode == Constants.Mode.SIM) {
+    if (Constants.getMode() == Constants.Mode.SIM) {
       DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
     }
 

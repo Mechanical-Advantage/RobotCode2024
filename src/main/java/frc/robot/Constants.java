@@ -13,6 +13,9 @@
 
 package frc.robot;
 
+import edu.wpi.first.wpilibj.RobotBase;
+import frc.robot.util.Alert;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -23,11 +26,30 @@ package frc.robot;
  */
 public final class Constants {
   public static final int loopPeriodMs = 20;
-  public static final Mode currentMode = Mode.SIM;
+  private static RobotType robotType = RobotType.KITBOT;
   public static final boolean tuningMode = true;
   public static final boolean characterizationMode = false;
 
-  public static enum Mode {
+  private static boolean invalidRobotAlertSent = false;
+
+  public static RobotType getRobot() {
+    if (RobotBase.isReal() && robotType == RobotType.SIMBOT) {
+      new Alert("Invalid Robot Selected, using COMPBOT as default", Alert.AlertType.ERROR)
+          .set(true);
+      invalidRobotAlertSent = true;
+      robotType = RobotType.COMPBOT;
+    }
+    return robotType;
+  }
+
+  public static Mode getMode() {
+    return switch (robotType) {
+      case KITBOT, COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+      case SIMBOT -> Mode.SIM;
+    };
+  }
+
+  public enum Mode {
     /** Running on a real robot. */
     REAL,
 
@@ -36,5 +58,19 @@ public final class Constants {
 
     /** Replaying from a log file. */
     REPLAY
+  }
+
+  public enum RobotType {
+    SIMBOT,
+    KITBOT,
+    COMPBOT
+  }
+
+  /** Checks whether the robot the correct robot is selected when deploying. */
+  public static void main(String... args) {
+    if (robotType == RobotType.SIMBOT) {
+      System.err.println("Cannot deploy, invalid robot selected: " + robotType.toString());
+      System.exit(1);
+    }
   }
 }

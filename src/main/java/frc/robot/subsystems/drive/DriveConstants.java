@@ -20,9 +20,9 @@ public final class DriveConstants {
 
   // Replace with robots
   public static TrajectoryConstants trajectoryConstants() {
-    return switch (Constants.currentMode) {
-      case REPLAY, REAL -> new TrajectoryConstants(6.0, 0.0, 8.0, 0.0);
-      case SIM -> new TrajectoryConstants(2.5, 0.0, 7.5, 0.0);
+    return switch (Constants.getRobot()) {
+      case COMPBOT, KITBOT -> new TrajectoryConstants(6.0, 0.0, 8.0, 0.0);
+      case SIMBOT -> new TrajectoryConstants(2.5, 0.0, 7.5, 0.0);
     };
   }
 

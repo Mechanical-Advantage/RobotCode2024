@@ -3,6 +3,7 @@ package frc.robot.util.trajectory;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public class HolonomicDriveController {
@@ -25,8 +26,13 @@ public class HolonomicDriveController {
     m_rotationError = poseRef.getRotation().minus(currentPose.getRotation());
 
     // Calculate feedback velocities (based on position error).
-    double xFeedback = linearController.calculate(currentPose.getX(), poseRef.getX());
-    double yFeedback = linearController.calculate(currentPose.getY(), poseRef.getY());
+    Translation2d currToStateTranslation =
+        poseRef.getTranslation().minus(currentPose.getTranslation());
+    double linearFeedback =
+        linearController.calculate(
+            0, currentPose.getTranslation().getDistance(poseRef.getTranslation()));
+    double xFeedback = linearFeedback * (currToStateTranslation.getAngle().getCos());
+    double yFeedback = linearFeedback * (currToStateTranslation.getAngle().getSin());
     double thetaFeedback =
         thetaController.calculate(
             currentPose.getRotation().getRadians(), poseRef.getRotation().getRadians());

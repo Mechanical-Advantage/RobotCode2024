@@ -17,14 +17,12 @@ public final class ChoreoTrajectoryReader {
   private static ObjectMapper objectMapper = new ObjectMapper();
 
   /** Load Trajectory file (.traj) */
-  public Optional<Trajectory> generate(File file) {
-    String type = file.getName().substring(file.getName().lastIndexOf('.'));
-    // Not generated from code or choreo
-    if (!type.equals(".traj") || !type.equals(".json")) return Optional.empty();
-
+  public static Optional<Trajectory> generate(File file) {
     List<ChoreoTrajectoryState> choreoStates = new ArrayList<>();
     try {
-      choreoStates = objectMapper.readValue(file, new TypeReference<>() {});
+      choreoStates =
+          objectMapper.convertValue(
+              objectMapper.readTree(file).get("samples"), new TypeReference<>() {});
     } catch (IOException e) {
       System.out.println("Failed to read states from file");
       return Optional.empty();
@@ -38,8 +36,14 @@ public final class ChoreoTrajectoryReader {
       final List<ChoreoTrajectoryState> states) {
     return new Trajectory() {
       @Override
-      public double getTotatTimeSeconds() {
+      public double getDuration() {
         return states.get(states.size() - 1).timestamp;
+      }
+
+      @Override
+      public Pose2d startPose() {
+        ChoreoTrajectoryState start = states.get(0);
+        return new Pose2d(start.x, start.y, new Rotation2d(start.angularVelocity));
       }
 
       @Override
@@ -105,20 +109,12 @@ public final class ChoreoTrajectoryReader {
         state.angularVelocity());
   }
 
-  interface Trajectory {
-    double getTotatTimeSeconds();
-
-    Pose2d[] getTrajectoryPoses();
-
-    HolonomicDriveState sample(double timeSeconds);
-  }
-
   record ChoreoTrajectoryState(
-      double timestamp,
       double x,
       double y,
       double heading,
+      double angularVelocity,
       double velocityX,
       double velocityY,
-      double angularVelocity) {}
+      double timestamp) {}
 }

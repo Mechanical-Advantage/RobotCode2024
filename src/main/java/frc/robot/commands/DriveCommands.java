@@ -22,6 +22,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.drive.DriveConstants;
 import java.util.function.DoubleSupplier;
 
 public class DriveCommands {
@@ -60,9 +61,9 @@ public class DriveCommands {
           // Convert to field relative speeds & send command
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
-                  linearVelocity.getX() * drive.getMaxLinearSpeedMetersPerSec(),
-                  linearVelocity.getY() * drive.getMaxLinearSpeedMetersPerSec(),
-                  omega * drive.getMaxAngularSpeedRadPerSec(),
+                  linearVelocity.getX() * DriveConstants.maxLinearSpeed,
+                  linearVelocity.getY() * DriveConstants.maxLinearSpeed,
+                  omega * DriveConstants.maxAngularSpeed,
                   drive.getRotation()));
         },
         drive);

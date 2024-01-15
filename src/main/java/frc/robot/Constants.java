@@ -24,6 +24,7 @@ package frc.robot;
 public final class Constants {
   public static final int loopPeriodMs = 20;
   public static final Mode currentMode = Mode.SIM;
+  public static final boolean tuningMode = true;
   public static final boolean characterizationMode = false;
 
   public static enum Mode {

@@ -13,15 +13,19 @@
 
 package frc.robot;
 
+import com.pathplanner.lib.path.*;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
+import frc.robot.commands.DriveTrajectory;
 import frc.robot.commands.FeedForwardCharacterization;
+import frc.robot.commands.autos.TestAutos;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.GyroIO;
 import frc.robot.subsystems.drive.GyroIOPigeon2;
@@ -29,6 +33,12 @@ import frc.robot.subsystems.drive.ModuleIO;
 import frc.robot.subsystems.drive.ModuleIOSim;
 import frc.robot.subsystems.drive.ModuleIOSparkMax;
 import frc.robot.subsystems.kitbotshooter.*;
+import frc.robot.util.trajectory.ChoreoTrajectoryReader;
+import frc.robot.util.trajectory.Trajectory;
+import java.io.File;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -112,6 +122,26 @@ public class RobotContainer {
             new FeedForwardCharacterization(
                 shooter, shooter::runFlywheelVolts, shooter::getFlywheelVelocityRadPerSec),
             Commands.runOnce(() -> shooter.setCurrentMode(null))));
+
+    // Testing autos paths
+    Function<File, Optional<Command>> trajectoryCommandFactory =
+        trajectoryFile -> {
+          Optional<Trajectory> trajectory = ChoreoTrajectoryReader.generate(trajectoryFile);
+          return trajectory.map(
+              traj ->
+                  Commands.sequence(
+                      Commands.runOnce(() -> drive.setPose(traj.startPose()), drive),
+                      new DriveTrajectory(drive, traj)));
+        };
+    final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
+    for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
+      trajectoryCommandFactory
+          .apply(trajectoryFile)
+          .ifPresent(
+              command -> {
+                autoChooser.addOption(trajectoryFile.getName(), command);
+              });
+    }
 
     // Configure the button bindings
     configureButtonBindings();

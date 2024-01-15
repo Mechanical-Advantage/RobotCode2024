@@ -21,30 +21,25 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
-  private static final double MAX_LINEAR_SPEED = Units.inchesToMeters(140.0);
-  private static final double TRACK_WIDTH_X = Units.inchesToMeters(26.0);
-  private static final double TRACK_WIDTH_Y = Units.inchesToMeters(26.0);
-  private static final double DRIVE_BASE_RADIUS =
-      Math.hypot(TRACK_WIDTH_X / 2.0, TRACK_WIDTH_Y / 2.0);
-  private static final double MAX_ANGULAR_SPEED = MAX_LINEAR_SPEED / DRIVE_BASE_RADIUS;
-
   public static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4]; // FL, FR, BL, BR
-
-  private SwerveDriveKinematics kinematics = new SwerveDriveKinematics(getModuleTranslations());
+  private final SwerveDriveKinematics kinematics =
+      new SwerveDriveKinematics(DriveConstants.moduleTranslations);
   private Pose2d pose = new Pose2d();
   private Rotation2d lastGyroRotation = new Rotation2d();
+  private ChassisSpeeds robotVelocity = new ChassisSpeeds();
+  private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
 
   public Drive(
       GyroIO gyroIO,
@@ -110,6 +105,21 @@ public class Drive extends SubsystemBase {
       // Apply the twist (change since last sample) to the current pose
       pose = pose.exp(twist);
     }
+
+    // update current velocities
+    ChassisSpeeds robotRelativeVelocity = kinematics.toChassisSpeeds(getModuleStates());
+    robotVelocity = robotRelativeVelocity;
+    Translation2d linearFieldVel =
+        new Translation2d(
+                robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond)
+            .rotateBy(getRotation());
+    fieldVelocity =
+        new ChassisSpeeds(
+            linearFieldVel.getX(),
+            linearFieldVel.getY(),
+            gyroInputs.connected
+                ? gyroInputs.yawVelocityRadPerSec
+                : robotRelativeVelocity.omegaRadiansPerSecond);
   }
 
   /**
@@ -121,7 +131,7 @@ public class Drive extends SubsystemBase {
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
-    SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, MAX_LINEAR_SPEED);
+    SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, DriveConstants.maxLinearSpeed);
 
     // Send setpoints to modules
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
@@ -147,7 +157,7 @@ public class Drive extends SubsystemBase {
   public void stopWithX() {
     Rotation2d[] headings = new Rotation2d[4];
     for (int i = 0; i < 4; i++) {
-      headings[i] = getModuleTranslations()[i].getAngle();
+      headings[i] = DriveConstants.moduleTranslations[i].getAngle();
     }
     kinematics.resetHeadings(headings);
     stop();
@@ -172,11 +182,7 @@ public class Drive extends SubsystemBase {
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
-    SwerveModuleState[] states = new SwerveModuleState[4];
-    for (int i = 0; i < 4; i++) {
-      states[i] = modules[i].getState();
-    }
-    return states;
+    return Arrays.stream(modules).map(Module::getState).toArray(SwerveModuleState[]::new);
   }
 
   /** Returns the current odometry pose. */
@@ -195,23 +201,15 @@ public class Drive extends SubsystemBase {
     this.pose = pose;
   }
 
-  /** Returns the maximum linear speed in meters per sec. */
-  public double getMaxLinearSpeedMetersPerSec() {
-    return MAX_LINEAR_SPEED;
+  /** Get current robot relative velocity of robot */
+  @AutoLogOutput(key = "Odometry/RobotVelocity")
+  public ChassisSpeeds getRobotVelocity() {
+    return robotVelocity;
   }
 
-  /** Returns the maximum angular speed in radians per sec. */
-  public double getMaxAngularSpeedRadPerSec() {
-    return MAX_ANGULAR_SPEED;
-  }
-
-  /** Returns an array of module translations. */
-  public static Translation2d[] getModuleTranslations() {
-    return new Translation2d[] {
-      new Translation2d(TRACK_WIDTH_X / 2.0, TRACK_WIDTH_Y / 2.0),
-      new Translation2d(TRACK_WIDTH_X / 2.0, -TRACK_WIDTH_Y / 2.0),
-      new Translation2d(-TRACK_WIDTH_X / 2.0, TRACK_WIDTH_Y / 2.0),
-      new Translation2d(-TRACK_WIDTH_X / 2.0, -TRACK_WIDTH_Y / 2.0)
-    };
+  /** Get current field velocity of robot */
+  @AutoLogOutput(key = "Odometry/FieldVelocity")
+  public ChassisSpeeds getFieldVelocity() {
+    return fieldVelocity;
   }
 }

@@ -15,6 +15,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.util.Alert;
+import java.util.Map;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
@@ -27,7 +28,7 @@ import frc.robot.util.Alert;
 public final class Constants {
   public static final int loopPeriodMs = 20;
   private static RobotType robotType = RobotType.KITBOT;
-  public static final boolean tuningMode = true;
+  public static final boolean tuningMode = false;
   public static final boolean characterizationMode = false;
 
   private static boolean invalidRobotAlertSent = false;
@@ -48,6 +49,8 @@ public final class Constants {
       case SIMBOT -> Mode.SIM;
     };
   }
+
+  public static final Map<RobotType, String> logFolders = Map.of(RobotType.KITBOT, "/media/sda1/");
 
   public enum Mode {
     /** Running on a real robot. */

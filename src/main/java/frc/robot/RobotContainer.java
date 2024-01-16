@@ -24,12 +24,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.DriveTrajectory;
 import frc.robot.commands.FeedForwardCharacterization;
-import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.drive.GyroIO;
-import frc.robot.subsystems.drive.GyroIOPigeon2;
-import frc.robot.subsystems.drive.ModuleIO;
-import frc.robot.subsystems.drive.ModuleIOSim;
-import frc.robot.subsystems.drive.ModuleIOSparkMax;
+import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.kitbotshooter.*;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
@@ -73,8 +68,7 @@ public class RobotContainer {
                     new ModuleIOSparkMax(1),
                     new ModuleIOSparkMax(2),
                     new ModuleIOSparkMax(3));
-            shooter =
-                new KitbotShooter(new KitbotFlywheelIOSparkMax(), new KitbotFeederIOSparkMax());
+            shooter = new KitbotShooter(new KitbotFlywheelIO() {}, new KitbotFeederIO() {});
           }
         }
       }
@@ -165,6 +159,7 @@ public class RobotContainer {
                             new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
                     drive)
                 .ignoringDisable(true));
+    controller.button(8).onTrue(Commands.runOnce(() -> drive.setPose(new Pose2d())));
     controller
         .a()
         .whileTrue(

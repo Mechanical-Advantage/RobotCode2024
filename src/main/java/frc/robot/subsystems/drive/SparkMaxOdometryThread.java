@@ -14,6 +14,7 @@
 package frc.robot.subsystems.drive;
 
 import edu.wpi.first.wpilibj.Notifier;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.function.DoubleSupplier;
 public class SparkMaxOdometryThread {
   private List<DoubleSupplier> signals = new ArrayList<>();
   private List<Queue<Double>> queues = new ArrayList<>();
+  private Queue<Double> timestampQueue;
 
   private final Notifier notifier;
   private static SparkMaxOdometryThread instance = null;
@@ -43,7 +45,8 @@ public class SparkMaxOdometryThread {
   private SparkMaxOdometryThread() {
     notifier = new Notifier(this::periodic);
     notifier.setName("SparkMaxOdometryThread");
-    notifier.startPeriodic(1.0 / Module.ODOMETRY_FREQUENCY);
+    timestampQueue = new ArrayDeque<>(100);
+    notifier.startPeriodic(1.0 / DriveConstants.odometryFrequency);
   }
 
   public Queue<Double> registerSignal(DoubleSupplier signal) {
@@ -64,8 +67,13 @@ public class SparkMaxOdometryThread {
       for (int i = 0; i < signals.size(); i++) {
         queues.get(i).offer(signals.get(i).getAsDouble());
       }
+      timestampQueue.offer(Timer.getFPGATimestamp());
     } finally {
       Drive.odometryLock.unlock();
     }
+  }
+
+  public Queue<Double> getTimestampQueue() {
+    return timestampQueue;
   }
 }

@@ -33,10 +33,12 @@ public class Drive extends SubsystemBase {
   public static final Lock odometryLock = new ReentrantLock();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
-  private final Module[] modules = new Module[4]; // FL, FR, BL, BR
+  private final ModuleIO[] modules = new ModuleIO[4]; // FL, FR, BL, BR
+  private final ModuleIOInputsAutoLogged[] moduleInputs = new ModuleIOInputsAutoLogged[4];
   private final SwerveDriveKinematics kinematics =
       new SwerveDriveKinematics(DriveConstants.moduleTranslations);
   private Pose2d pose = new Pose2d();
+  private final double[] lastPositionMeters = new double[4];
   private Rotation2d lastGyroRotation = new Rotation2d();
   private ChassisSpeeds robotVelocity = new ChassisSpeeds();
   private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
@@ -48,22 +50,25 @@ public class Drive extends SubsystemBase {
       ModuleIO blModuleIO,
       ModuleIO brModuleIO) {
     this.gyroIO = gyroIO;
-    modules[0] = new Module(flModuleIO, 0);
-    modules[1] = new Module(frModuleIO, 1);
-    modules[2] = new Module(blModuleIO, 2);
-    modules[3] = new Module(brModuleIO, 3);
+    modules[0] = flModuleIO;
+    modules[1] = frModuleIO;
+    modules[2] = blModuleIO;
+    modules[3] = brModuleIO;
+    Arrays.fill(moduleInputs, new ModuleIOInputsAutoLogged());
+    Arrays.fill(lastPositionMeters, 0.0);
   }
 
   public void periodic() {
     odometryLock.lock(); // Prevents odometry updates while reading data
     gyroIO.updateInputs(gyroInputs);
-    for (var module : modules) {
-      module.updateInputs();
+    for (int i = 0; i < modules.length; i++) {
+      modules[i].updateInputs(moduleInputs[i]);
     }
     odometryLock.unlock();
     Logger.processInputs("Drive/Gyro", gyroInputs);
-    for (var module : modules) {
-      module.periodic();
+    for (int i = 0; i < modules.length; i++) {
+      Logger.processInputs("Drive/Module" + i, moduleInputs[i]);
+      modules[i].periodic();
     }
 
     // Stop moving when disabled
@@ -79,25 +84,31 @@ public class Drive extends SubsystemBase {
     }
 
     // Update odometry
+    // FIXME: turning not working?
     int deltaCount =
         gyroInputs.connected ? gyroInputs.odometryYawPositions.length : Integer.MAX_VALUE;
-    for (int i = 0; i < 4; i++) {
-      deltaCount = Math.min(deltaCount, modules[i].getPositionDeltas().length);
+    for (int i = 0; i < modules.length; i++) {
+      int minOdometryDeltaCount =
+          Math.min(
+              moduleInputs[i].odometryDrivePositionsMeters.length,
+              moduleInputs[i].odometryTurnPositions.length);
+      deltaCount = Math.min(deltaCount, minOdometryDeltaCount);
     }
     for (int deltaIndex = 0; deltaIndex < deltaCount; deltaIndex++) {
       // Read wheel deltas from each module
       SwerveModulePosition[] wheelDeltas = new SwerveModulePosition[4];
-      for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
-        wheelDeltas[moduleIndex] = modules[moduleIndex].getPositionDeltas()[deltaIndex];
+      for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
+        double measure = moduleInputs[moduleIndex].odometryDrivePositionsMeters[deltaIndex];
+        wheelDeltas[moduleIndex] =
+            new SwerveModulePosition(
+                measure - lastPositionMeters[moduleIndex],
+                moduleInputs[moduleIndex].odometryTurnPositions[deltaIndex]);
+        lastPositionMeters[moduleIndex] = measure;
       }
-
-      // The twist represents the motion of the robot since the last
-      // sample in x, y, and theta based only on the modules, without
-      // the gyro. The gyro is always disconnected in simulation.
-      var twist = kinematics.toTwist2d(wheelDeltas);
+      Logger.recordOutput("Odometry/WheelDeltas", wheelDeltas);
+      Twist2d twist = kinematics.toTwist2d(wheelDeltas);
       if (gyroInputs.connected) {
         // If the gyro is connected, replace the theta component of the twist
-        // with the change in angle since the last sample.
         Rotation2d gyroRotation = gyroInputs.odometryYawPositions[deltaIndex];
         twist = new Twist2d(twist.dx, twist.dy, gyroRotation.minus(lastGyroRotation).getRadians());
         lastGyroRotation = gyroRotation;
@@ -131,18 +142,18 @@ public class Drive extends SubsystemBase {
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setpointStates = kinematics.toSwerveModuleStates(discreteSpeeds);
-    SwerveDriveKinematics.desaturateWheelSpeeds(setpointStates, DriveConstants.maxLinearSpeed);
-
+    SwerveDriveKinematics.desaturateWheelSpeeds(
+        setpointStates, DriveConstants.drivetrainConfig.maxLinearVelocity());
     // Send setpoints to modules
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < modules.length; i++) {
       // The module returns the optimized state, useful for logging
-      optimizedSetpointStates[i] = modules[i].runSetpoint(setpointStates[i]);
+      optimizedSetpointStates[i] =
+          SwerveModuleState.optimize(setpointStates[i], modules[i].getAngle());
+      modules[i].runSetpoint(optimizedSetpointStates[i]);
     }
-
     // Log setpoint states
-    Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
-    Logger.recordOutput("SwerveStates/SetpointsOptimized", optimizedSetpointStates);
+    Logger.recordOutput("SwerveStates/Setpoints", optimizedSetpointStates);
   }
 
   /** Stops the drive. */
@@ -182,7 +193,7 @@ public class Drive extends SubsystemBase {
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
-    return Arrays.stream(modules).map(Module::getState).toArray(SwerveModuleState[]::new);
+    return Arrays.stream(modules).map(ModuleIO::getState).toArray(SwerveModuleState[]::new);
   }
 
   /** Returns the current odometry pose. */

@@ -64,10 +64,10 @@ public class RobotContainer {
             drive =
                 new Drive(
                     new GyroIOPigeon2(false),
-                    new ModuleIOSparkMax(0),
-                    new ModuleIOSparkMax(1),
-                    new ModuleIOSparkMax(2),
-                    new ModuleIOSparkMax(3));
+                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
+                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
+                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
+                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
             shooter = new KitbotShooter(new KitbotFlywheelIO() {}, new KitbotFeederIO() {});
           }
         }
@@ -77,10 +77,10 @@ public class RobotContainer {
         drive =
             new Drive(
                 new GyroIO() {},
-                new ModuleIOSim(),
-                new ModuleIOSim(),
-                new ModuleIOSim(),
-                new ModuleIOSim());
+                new ModuleIOSim(DriveConstants.moduleConfigs[0]),
+                new ModuleIOSim(DriveConstants.moduleConfigs[1]),
+                new ModuleIOSim(DriveConstants.moduleConfigs[2]),
+                new ModuleIOSim(DriveConstants.moduleConfigs[3]));
         shooter = new KitbotShooter(new KitbotFlywheelIOSim(), new KitbotFeederIOSim());
       }
       default -> {

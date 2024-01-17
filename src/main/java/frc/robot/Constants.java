@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public final class Constants {
   public static final int loopPeriodMs = 20;
-  private static RobotType robotType = RobotType.KITBOT;
+  private static RobotType robotType = RobotType.SIMBOT;
   public static final boolean tuningMode = false;
   public static final boolean characterizationMode = false;
 
@@ -45,12 +45,13 @@ public final class Constants {
 
   public static Mode getMode() {
     return switch (robotType) {
-      case KITBOT, COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
+      case RAINBOWT, COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
       case SIMBOT -> Mode.SIM;
     };
   }
 
-  public static final Map<RobotType, String> logFolders = Map.of(RobotType.KITBOT, "/media/sda1/");
+  public static final Map<RobotType, String> logFolders =
+      Map.of(RobotType.RAINBOWT, "/media/sda1/");
 
   public enum Mode {
     /** Running on a real robot. */
@@ -65,7 +66,7 @@ public final class Constants {
 
   public enum RobotType {
     SIMBOT,
-    KITBOT,
+    RAINBOWT,
     COMPBOT
   }
 

@@ -28,10 +28,10 @@ public class DriveTrajectory extends Command {
 
   // initialize tunable numbers to constants
   static {
-    driveKp.initDefault(DriveConstants.trajectoryConstants().drivekp());
-    driveKd.initDefault(DriveConstants.trajectoryConstants().drivekd());
-    turnKp.initDefault(DriveConstants.trajectoryConstants().turnkp());
-    turnKd.initDefault(DriveConstants.trajectoryConstants().turnkd());
+    driveKp.initDefault(DriveConstants.trajectoryConstants.drivekp());
+    driveKd.initDefault(DriveConstants.trajectoryConstants.drivekd());
+    turnKp.initDefault(DriveConstants.trajectoryConstants.turnkp());
+    turnKd.initDefault(DriveConstants.trajectoryConstants.turnkd());
   }
 
   public static final PIDController linearController = new PIDController(0.0, 0.0, 0.0);

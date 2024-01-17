@@ -32,7 +32,7 @@ public class GyroIOPigeon2 implements GyroIO {
   public GyroIOPigeon2(boolean phoenixDrive) {
     pigeon.getConfigurator().apply(new Pigeon2Configuration());
     pigeon.getConfigurator().setYaw(0.0);
-    yaw.setUpdateFrequency(Module.ODOMETRY_FREQUENCY);
+    yaw.setUpdateFrequency(DriveConstants.odometryFrequency);
     yawVelocity.setUpdateFrequency(100.0);
     pigeon.optimizeBusUtilization();
     if (phoenixDrive) {

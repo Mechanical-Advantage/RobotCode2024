@@ -61,9 +61,9 @@ public class DriveCommands {
           // Convert to field relative speeds & send command
           drive.runVelocity(
               ChassisSpeeds.fromFieldRelativeSpeeds(
-                  linearVelocity.getX() * DriveConstants.maxLinearSpeed,
-                  linearVelocity.getY() * DriveConstants.maxLinearSpeed,
-                  omega * DriveConstants.maxAngularSpeed,
+                  linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
+                  linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
+                  omega * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                   drive.getRotation()));
         },
         drive);

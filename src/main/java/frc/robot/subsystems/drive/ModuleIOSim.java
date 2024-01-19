@@ -20,6 +20,7 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
 /**
@@ -76,6 +77,7 @@ public class ModuleIOSim implements ModuleIO {
     inputs.odometryDrivePositionsMeters =
         new double[] {driveSim.getAngularPositionRad() * wheelRadius};
     inputs.odometryTurnPositions = new Rotation2d[] {inputs.turnPosition};
+    inputs.odometryTimestamps = new double[] {Timer.getFPGATimestamp()};
   }
 
   @Override

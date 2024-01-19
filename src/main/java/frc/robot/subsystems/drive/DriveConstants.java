@@ -1,7 +1,12 @@
 package frc.robot.subsystems.drive;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
@@ -19,11 +24,18 @@ public final class DriveConstants {
         new Translation2d(
             -getDrivetrainConfig().trackwidthX / 2.0, -getDrivetrainConfig().trackwidthY / 2.0)
       };
+  public static final SwerveDriveKinematics kinematics =
+      new SwerveDriveKinematics(moduleTranslations);
   public static final double odometryFrequency =
       switch (Constants.getRobot()) {
         case SIMBOT -> 50.0;
         case RAINBOWT -> 100.0;
         case COMPBOT -> 250.0;
+      };
+
+  public static final Matrix<N3, N1> odometryStateStDevs =
+      switch (Constants.getRobot()) {
+        default -> new Matrix<>(VecBuilder.fill(0.1, 0.1, 0.1));
       };
 
   public static DrivetrainConfig drivetrainConfig = getDrivetrainConfig();

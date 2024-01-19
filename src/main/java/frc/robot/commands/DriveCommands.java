@@ -64,7 +64,7 @@ public class DriveCommands {
                   linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                   linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                   omega * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  drive.getRotation()));
+                  drive.getGyroYaw()));
         },
         drive);
   }

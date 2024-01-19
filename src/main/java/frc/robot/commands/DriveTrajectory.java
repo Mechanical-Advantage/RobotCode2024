@@ -7,6 +7,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.util.AllianceFlipUtil;
@@ -93,7 +94,8 @@ public class DriveTrajectory extends Command {
     Pose2d referencePose = referenceState.pose();
     Logger.recordOutput("Odometry/TrajectorySetpoint", referencePose);
 
-    ChassisSpeeds outputSpeeds = controller.calculate(drive.getPose(), referenceState);
+    ChassisSpeeds outputSpeeds =
+        controller.calculate(RobotState.getInstance().getEstimatedPose(), referenceState);
     drive.runVelocity(outputSpeeds);
 
     Logger.recordOutput(

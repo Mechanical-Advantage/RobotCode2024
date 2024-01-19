@@ -83,11 +83,12 @@ public class FieldConstants {
   public static Translation3d bottomLeftSpeaker =
       new Translation3d(0.0, Units.inchesToMeters(197.765), Units.inchesToMeters(78.324));
 
-  public static AprilTagFieldLayout fieldLayout;
+  public static double aprilTagWidth = Units.inchesToMeters(6.50);
+  public static AprilTagFieldLayout aprilTags;
 
   static {
     try {
-      fieldLayout = AprilTagFieldLayout.loadFromResource(k2024Crescendo.m_resourceFile);
+      aprilTags = AprilTagFieldLayout.loadFromResource(k2024Crescendo.m_resourceFile);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

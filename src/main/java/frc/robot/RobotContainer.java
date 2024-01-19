@@ -42,6 +42,9 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
+  // Load robot state as field
+  private final RobotState robotState = RobotState.getInstance();
+
   // Subsystems
   private final Drive drive;
   private final KitbotShooter shooter;
@@ -119,7 +122,11 @@ public class RobotContainer {
           return trajectory.map(
               traj ->
                   Commands.sequence(
-                      Commands.runOnce(() -> drive.setPose(traj.startPose()), drive),
+                      Commands.runOnce(
+                          () ->
+                              robotState.resetPose(
+                                  traj.startPose(), drive.getWheelPositions(), drive.getGyroYaw()),
+                          drive),
                       new DriveTrajectory(drive, traj)));
         };
     final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
@@ -155,11 +162,22 @@ public class RobotContainer {
         .onTrue(
             Commands.runOnce(
                     () ->
-                        drive.setPose(
-                            new Pose2d(drive.getPose().getTranslation(), new Rotation2d())),
+                        RobotState.getInstance()
+                            .resetPose(
+                                new Pose2d(
+                                    robotState.getEstimatedPose().getTranslation(),
+                                    new Rotation2d()),
+                                drive.getWheelPositions(),
+                                drive.getGyroYaw()),
                     drive)
                 .ignoringDisable(true));
-    controller.button(8).onTrue(Commands.runOnce(() -> drive.setPose(new Pose2d())));
+    controller
+        .button(8)
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    RobotState.getInstance()
+                        .resetPose(new Pose2d(), drive.getWheelPositions(), drive.getGyroYaw())));
     controller
         .a()
         .whileTrue(

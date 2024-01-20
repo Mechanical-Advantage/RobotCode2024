@@ -13,24 +13,36 @@
 
 package frc.robot.subsystems.drive;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.IntStream;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
   public static final Lock odometryLock = new ReentrantLock();
+  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
+
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final ModuleIO[] modules = new ModuleIO[4]; // FL, FR, BL, BR
-  private final ModuleIOInputsAutoLogged[] moduleInputs = new ModuleIOInputsAutoLogged[4];
+  private final ModuleIOInputsAutoLogged[] moduleInputs =
+      new ModuleIOInputsAutoLogged[] {
+        new ModuleIOInputsAutoLogged(),
+        new ModuleIOInputsAutoLogged(),
+        new ModuleIOInputsAutoLogged(),
+        new ModuleIOInputsAutoLogged()
+      };
   private ChassisSpeeds robotVelocity = new ChassisSpeeds();
   private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
 
@@ -45,62 +57,63 @@ public class Drive extends SubsystemBase {
     modules[1] = frModuleIO;
     modules[2] = blModuleIO;
     modules[3] = brModuleIO;
-    Arrays.fill(moduleInputs, new ModuleIOInputsAutoLogged());
   }
 
   public void periodic() {
     odometryLock.lock();
+    double[] timestamps = timestampQueue.stream().mapToDouble(Double::valueOf).toArray();
+    // Sim will not have any timstamps
+    if (timestamps.length == 0) {
+      timestamps = new double[] {Timer.getFPGATimestamp()};
+    }
+    timestampQueue.clear();
     gyroIO.updateInputs(gyroInputs);
     for (int i = 0; i < modules.length; i++) {
       modules[i].updateInputs(moduleInputs[i]);
     }
     odometryLock.unlock();
+
     Logger.processInputs("Drive/Gyro", gyroInputs);
     for (int i = 0; i < modules.length; i++) {
       Logger.processInputs("Drive/Module" + i, moduleInputs[i]);
       modules[i].periodic();
     }
 
+    // Calculate the min odometry position updates across all modules
+    int minOdometryUpdates =
+        IntStream.of(
+                timestamps.length,
+                Arrays.stream(moduleInputs)
+                    .mapToInt(
+                        moduleInput ->
+                            Math.min(
+                                moduleInput.odometryDrivePositionsMeters.length,
+                                moduleInput.odometryTurnPositions.length))
+                    .min()
+                    .orElse(0))
+            .min()
+            .orElse(0);
+    if (gyroInputs.connected) {
+      minOdometryUpdates = Math.min(gyroInputs.odometryYawPositions.length, minOdometryUpdates);
+    }
     // Pass odometry data to robot state
-    // Calculate the min odometry position count across all modules
-    OptionalInt minOdometryPositionsCount =
-        Arrays.stream(moduleInputs)
-            .mapToInt(
-                moduleInput ->
-                    Math.min(
-                        moduleInput.odometryDrivePositionsMeters.length,
-                        moduleInput.odometryTurnPositions.length))
-            .min();
-    // Add observation to robot state if a minimum odometry positions count is found
-    minOdometryPositionsCount.ifPresent(
-        minCount -> {
-          SwerveDriveWheelPositions[] wheelPositions = new SwerveDriveWheelPositions[minCount];
-          for (int i = 0; i < minCount; i++) {
-            int odometryPositionsIndex = i;
-            // Get all four swerve module positions at that odometry positions count
-            wheelPositions[i] =
-                new SwerveDriveWheelPositions(
-                    Arrays.stream(moduleInputs)
-                        .map(
-                            moduleInput ->
-                                new SwerveModulePosition(
-                                    moduleInput
-                                        .odometryDrivePositionsMeters[odometryPositionsIndex],
-                                    moduleInput.odometryTurnPositions[odometryPositionsIndex]))
-                        .toArray(SwerveModulePosition[]::new));
-          }
-          double[] timestamps = new double[minCount];
-          // Since timestamps are all synced we can use the timestamps from any module
-          System.arraycopy(moduleInputs[0].odometryTimestamps, 0, timestamps, 0, minCount);
-          // Add observation to robot state
-          RobotState.getInstance()
-              .addOdometryData(
-                  new RobotState.OdometryObservation(
-                      wheelPositions,
-                      gyroInputs.odometryYawPositions,
-                      timestamps,
-                      gyroInputs.connected));
-        });
+    for (int i = 0; i < minOdometryUpdates; i++) {
+      int odometryIndex = i;
+      Rotation2d yaw = gyroInputs.connected ? gyroInputs.odometryYawPositions[i] : null;
+      // Get all four swerve module positions at that odometry update
+      // and store in SwerveDriveWheelPositions object
+      SwerveDriveWheelPositions wheelPositions =
+          new SwerveDriveWheelPositions(
+              Arrays.stream(moduleInputs)
+                  .map(
+                      moduleInput ->
+                          new SwerveModulePosition(
+                              moduleInput.odometryDrivePositionsMeters[odometryIndex],
+                              moduleInput.odometryTurnPositions[odometryIndex]))
+                  .toArray(SwerveModulePosition[]::new));
+      RobotState.getInstance()
+          .addOdometryData(new RobotState.OdometryObservation(wheelPositions, yaw, timestamps[i]));
+    }
 
     // Stop moving when disabled
     if (DriverStation.isDisabled()) {

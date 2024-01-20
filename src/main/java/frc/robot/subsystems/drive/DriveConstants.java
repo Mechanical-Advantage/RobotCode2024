@@ -33,7 +33,7 @@ public final class DriveConstants {
         case COMPBOT -> 250.0;
       };
 
-  public static final Matrix<N3, N1> odometryStateStDevs =
+  public static final Matrix<N3, N1> odometryStateStdDevs =
       switch (Constants.getRobot()) {
         default -> new Matrix<>(VecBuilder.fill(0.1, 0.1, 0.1));
       };

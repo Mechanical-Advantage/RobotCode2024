@@ -17,10 +17,7 @@ import org.littletonrobotics.junction.AutoLogOutput;
 public class RobotState {
   /** Odometry data from one main robot loop cycle */
   public record OdometryObservation(
-      SwerveDriveWheelPositions[] wheelPositions,
-      Rotation2d[] gyroAngles,
-      double[] timestamps,
-      boolean gyroConnected) {}
+      SwerveDriveWheelPositions wheelPositions, Rotation2d gyroAngle, double timestamp) {}
 
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
 
@@ -52,56 +49,29 @@ public class RobotState {
   private Rotation2d lastGyroAngle = new Rotation2d();
 
   private RobotState() {
-    odometryStdDevs.setColumn(0, DriveConstants.odometryStateStDevs.extractColumnVector(0));
+    odometryStdDevs.setColumn(0, DriveConstants.odometryStateStdDevs.extractColumnVector(0));
     kinematics = DriveConstants.kinematics;
   }
 
   public void addOdometryData(OdometryObservation observation) {
     Pose2d lastOdometryPose = odometryPose;
-    int minDelta = observation.wheelPositions().length;
-    if (observation.gyroConnected) minDelta = Math.min(minDelta, observation.gyroAngles().length);
-    for (int deltaIndex = 0; deltaIndex < minDelta; deltaIndex++) {
-      //      double[] turnPositions = new double[4];
-      //      double[] lastTurnPositions = new double[4];
-      //      double[] turnPositionDeltas = new double[4];
-      //      for (int i = 0; i < 4; i++) {
-      //        turnPositions[i] =
-      // observation.wheelPositions()[deltaIndex].positions[i].angle.getRadians();
-      //        lastTurnPositions[i] = lastWheelPositions.positions[i].angle.getRadians();
-      //        turnPositionDeltas[i] =
-      //            observation
-      //                .wheelPositions()[deltaIndex]
-      //                .positions[i]
-      //                .angle
-      //                .minus(lastWheelPositions.positions[i].angle)
-      //                .getRadians();
-      //      }
-      //      Logger.recordOutput("Odometry/TurnPositions", turnPositions);
-      //      Logger.recordOutput("Odometry/LastTurnPositions", lastTurnPositions);
-      //      Logger.recordOutput("Odometry/TurnPositionDeltas", turnPositionDeltas);
-      Twist2d twist =
-          kinematics.toTwist2d(lastWheelPositions, observation.wheelPositions()[deltaIndex]);
-      lastWheelPositions = observation.wheelPositions()[deltaIndex];
-      // Set gyro angle to null if gyro not connected (sim)
-      if (observation.gyroConnected()) {
-        // Update dtheta for twist if gyro connected
-        twist =
-            new Twist2d(
-                twist.dx,
-                twist.dy,
-                observation.gyroAngles()[deltaIndex].minus(lastGyroAngle).getRadians());
-        lastGyroAngle = observation.gyroAngles()[deltaIndex];
-      }
-      // Add twist to odometry pose
-      odometryPose = odometryPose.exp(twist);
-      // Add pose to buffer at timestamp
-      poseBuffer.addSample(observation.timestamps()[deltaIndex], odometryPose);
-
-      // Calculate diff from last odom pose and add onto pose estimate
-      estimatedPose = estimatedPose.exp(lastOdometryPose.log(odometryPose));
-      // Set last odometry pose to current
-      lastOdometryPose = odometryPose;
+    // take minimum
+    Twist2d twist = kinematics.toTwist2d(lastWheelPositions, observation.wheelPositions());
+    lastWheelPositions = observation.wheelPositions();
+    // Check gyro connected
+    if (observation.gyroAngle != null) {
+      // Update dtheta for twist if gyro connected
+      twist =
+          new Twist2d(
+              twist.dx, twist.dy, observation.gyroAngle().minus(lastGyroAngle).getRadians());
+      lastGyroAngle = observation.gyroAngle();
     }
+    // Add twist to odometry pose
+    odometryPose = odometryPose.exp(twist);
+    // Add pose to buffer at timestamp
+    poseBuffer.addSample(observation.timestamp(), odometryPose);
+    // Calculate diff from last odometry pose and add onto pose estimate
+    estimatedPose = estimatedPose.exp(lastOdometryPose.log(odometryPose));
   }
 
   public void addVisionObservation(VisionObservation observation) {

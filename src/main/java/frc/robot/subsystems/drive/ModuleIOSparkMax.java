@@ -43,7 +43,6 @@ public class ModuleIOSparkMax implements ModuleIO {
   // Queues
   private final Queue<Double> drivePositionQueue;
   private final Queue<Double> turnPositionQueue;
-  private final Queue<Double> timestampQueue;
 
   private final Rotation2d absoluteEncoderOffset;
   private int currentIteration = reSeedIterations;
@@ -117,7 +116,6 @@ public class ModuleIOSparkMax implements ModuleIO {
     turnPositionQueue =
         SparkMaxOdometryThread.getInstance()
             .registerSignal(() -> absoluteEncoderValue.get().getRadians());
-    timestampQueue = SparkMaxOdometryThread.getInstance().getTimestampQueue();
 
     driveFeedforward = new SimpleMotorFeedforward(moduleConstants.ffKs(), moduleConstants.ffKv());
     driveFeedback = new PIDController(moduleConstants.driveKp(), 0.0, moduleConstants.drivekD());
@@ -142,7 +140,6 @@ public class ModuleIOSparkMax implements ModuleIO {
         drivePositionQueue.stream().mapToDouble(rads -> rads * wheelRadius).toArray();
     inputs.odometryTurnPositions =
         turnPositionQueue.stream().map(Rotation2d::fromRadians).toArray(Rotation2d[]::new);
-    inputs.odometryTimestamps = timestampQueue.stream().mapToDouble(d -> d).toArray();
     drivePositionQueue.clear();
     turnPositionQueue.clear();
   }

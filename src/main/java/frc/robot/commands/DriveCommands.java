@@ -21,6 +21,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
 import java.util.function.DoubleSupplier;
@@ -64,7 +65,7 @@ public class DriveCommands {
                   linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                   linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                   omega * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  drive.getGyroYaw()));
+                  RobotState.getInstance().getEstimatedPose().getRotation()));
         },
         drive);
   }

@@ -53,7 +53,6 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   private final boolean isTurnMotorInverted = true;
 
   // queues
-  private final Queue<Double> timestampsQueue;
   private final Queue<Double> drivePositionQueue;
   private final Queue<Double> turnPositionQueue;
 
@@ -139,7 +138,6 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     turnCurrent = turnTalon.getStatorCurrent();
 
     // 250hz signals
-    timestampsQueue = PhoenixOdometryThread.getInstance().getTimestampQueue();
     drivePositionQueue =
         PhoenixOdometryThread.getInstance().registerSignal(driveTalon, driveTalon.getPosition());
     turnPositionQueue =
@@ -199,10 +197,8 @@ public class ModuleIOKrakenFOC implements ModuleIO {
         turnPositionQueue.stream()
             .map((signal) -> Rotation2d.fromRotations(signal / moduleConstants.turnReduction()))
             .toArray(Rotation2d[]::new);
-    inputs.odometryTimestamps = timestampsQueue.stream().mapToDouble(d -> d).toArray();
     drivePositionQueue.clear();
     turnPositionQueue.clear();
-    timestampsQueue.clear();
   }
 
   @Override

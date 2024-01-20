@@ -35,7 +35,6 @@ public class PhoenixOdometryThread extends Thread {
       new ReentrantLock(); // Prevents conflicts when registering signals
   private BaseStatusSignal[] signals = new BaseStatusSignal[0];
   private final List<Queue<Double>> queues = new ArrayList<>();
-  private final Queue<Double> timestampQueue;
   private boolean isCANFD = false;
 
   private static PhoenixOdometryThread instance = null;
@@ -50,7 +49,6 @@ public class PhoenixOdometryThread extends Thread {
   private PhoenixOdometryThread() {
     setName("PhoenixOdometryThread");
     setDaemon(true);
-    timestampQueue = new ArrayDeque<>(100);
     start();
   }
 
@@ -97,14 +95,10 @@ public class PhoenixOdometryThread extends Thread {
         for (int i = 0; i < signals.length; i++) {
           queues.get(i).offer(signals[i].getValueAsDouble());
         }
-        timestampQueue.offer(fpgaTimestamp);
+        Drive.timestampQueue.offer(fpgaTimestamp);
       } finally {
         Drive.odometryLock.unlock();
       }
     }
-  }
-
-  public Queue<Double> getTimestampQueue() {
-    return timestampQueue;
   }
 }

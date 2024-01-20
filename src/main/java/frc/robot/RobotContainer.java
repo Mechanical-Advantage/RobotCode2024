@@ -26,6 +26,7 @@ import frc.robot.commands.DriveTrajectory;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.kitbotshooter.*;
+import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
 import java.io.File;
@@ -125,7 +126,9 @@ public class RobotContainer {
                       Commands.runOnce(
                           () ->
                               robotState.resetPose(
-                                  traj.startPose(), drive.getWheelPositions(), drive.getGyroYaw()),
+                                  AllianceFlipUtil.apply(traj.startPose()),
+                                  drive.getWheelPositions(),
+                                  drive.getGyroYaw()),
                           drive),
                       new DriveTrajectory(drive, traj)));
         };
@@ -166,7 +169,7 @@ public class RobotContainer {
                             .resetPose(
                                 new Pose2d(
                                     robotState.getEstimatedPose().getTranslation(),
-                                    new Rotation2d()),
+                                    AllianceFlipUtil.apply(new Rotation2d())),
                                 drive.getWheelPositions(),
                                 drive.getGyroYaw()),
                     drive)

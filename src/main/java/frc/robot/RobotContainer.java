@@ -26,6 +26,10 @@ import frc.robot.commands.DriveTrajectory;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.kitbotshooter.*;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShooterIOSparkMax;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
@@ -34,7 +38,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -48,15 +51,13 @@ public class RobotContainer {
 
   // Subsystems
   private final Drive drive;
-  private final KitbotShooter shooter;
+  private final Shooter shooter;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
-  private final LoggedDashboardNumber flywheelSpeedInput =
-      new LoggedDashboardNumber("Flywheel Speed", 1500.0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -72,7 +73,7 @@ public class RobotContainer {
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
-            shooter = new KitbotShooter(new KitbotFlywheelIO() {}, new KitbotFeederIO() {});
+            shooter = new Shooter(new ShooterIOSparkMax());
           }
         }
       }
@@ -85,7 +86,7 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.moduleConfigs[1]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[3]));
-        shooter = new KitbotShooter(new KitbotFlywheelIOSim(), new KitbotFeederIOSim());
+        shooter = new Shooter(new ShooterIOSim());
       }
       default -> {
         // Replayed robot, disable IO implementations
@@ -96,7 +97,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {});
-        shooter = new KitbotShooter(new KitbotFlywheelIO() {}, new KitbotFeederIO() {});
+        shooter = new Shooter(new ShooterIO() {});
       }
     }
 
@@ -108,13 +109,21 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             drive, drive::runCharacterizationVolts, drive::getCharacterizationVelocity));
     autoChooser.addOption(
-        "Flywheel FF Characterization",
-        Commands.sequence(
-            Commands.runOnce(
-                () -> shooter.setCurrentMode(KitbotShooter.Mode.CHARACTERIZING), shooter),
-            new FeedForwardCharacterization(
-                shooter, shooter::runFlywheelVolts, shooter::getFlywheelVelocityRadPerSec),
-            Commands.runOnce(() -> shooter.setCurrentMode(null))));
+        "Left Flywheels FF Characterization",
+        new FeedForwardCharacterization(
+                shooter,
+                shooter::runLeftCharacterizationVolts,
+                shooter::getLeftCharacterizationVelocity)
+            .beforeStarting(() -> shooter.setCharacterizing(true))
+            .finallyDo(() -> shooter.setCharacterizing(false)));
+    autoChooser.addOption(
+        "Right Flywheels FF Characterization",
+        new FeedForwardCharacterization(
+                shooter,
+                shooter::runRightCharacterizationVolts,
+                shooter::getRightCharacterizationVelocity)
+            .beforeStarting(() -> shooter.setCharacterizing(true))
+            .finallyDo(() -> shooter.setCharacterizing(false)));
 
     // Testing autos paths
     Function<File, Optional<Command>> trajectoryCommandFactory =
@@ -143,7 +152,8 @@ public class RobotContainer {
     }
 
     // Configure the button bindings
-    configureButtonBindings();
+    // TODO: uncomment (done to disable drive movement)
+    // configureButtonBindings();
   }
 
   /**
@@ -175,17 +185,12 @@ public class RobotContainer {
                     drive)
                 .ignoringDisable(true));
     controller
-        .button(8)
+        .y()
         .onTrue(
             Commands.runOnce(
                 () ->
                     RobotState.getInstance()
                         .resetPose(new Pose2d(), drive.getWheelPositions(), drive.getGyroYaw())));
-    controller
-        .a()
-        .whileTrue(
-            Commands.run(() -> shooter.runFlywheelVelocity(flywheelSpeedInput.get()), shooter))
-        .whileFalse(Commands.run(() -> shooter.runFlywheelVelocity(0.0), shooter));
   }
 
   /**

@@ -16,7 +16,6 @@ package frc.robot.subsystems.drive;
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
 import com.revrobotics.CANSparkBase.IdleMode;
-import com.revrobotics.CANSparkLowLevel;
 import com.revrobotics.CANSparkLowLevel.PeriodicFrame;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.REVLibError;
@@ -34,8 +33,8 @@ public class ModuleIOSparkMax implements ModuleIO {
   // Every 100 times through periodic (2 secs) we reset relative encoder to absolute encoder
   private static final int reSeedIterations = 100;
 
-  private final CANSparkMax driveSparkMax;
-  private final CANSparkMax turnSparkMax;
+  private final CANSparkMax driveMotor;
+  private final CANSparkMax turnMotor;
   private final RelativeEncoder driveEncoder;
   private final RelativeEncoder turnRelativeEncoder;
   private final AnalogInput turnAbsoluteEncoder;
@@ -56,24 +55,24 @@ public class ModuleIOSparkMax implements ModuleIO {
 
   public ModuleIOSparkMax(ModuleConfig config) {
     // Init motor & encoder objects
-    driveSparkMax = new CANSparkMax(config.driveID(), CANSparkLowLevel.MotorType.kBrushless);
-    turnSparkMax = new CANSparkMax(config.turnID(), CANSparkLowLevel.MotorType.kBrushless);
+    driveMotor = new CANSparkMax(config.driveID(), CANSparkMax.MotorType.kBrushless);
+    turnMotor = new CANSparkMax(config.turnID(), CANSparkMax.MotorType.kBrushless);
     turnAbsoluteEncoder = new AnalogInput(config.absoluteEncoderChannel());
     absoluteEncoderOffset = config.absoluteEncoderOffset();
-    driveEncoder = driveSparkMax.getEncoder();
-    turnRelativeEncoder = turnSparkMax.getEncoder();
+    driveEncoder = driveMotor.getEncoder();
+    turnRelativeEncoder = turnMotor.getEncoder();
 
-    driveSparkMax.restoreFactoryDefaults();
-    turnSparkMax.restoreFactoryDefaults();
-    driveSparkMax.setCANTimeout(250);
-    turnSparkMax.setCANTimeout(250);
+    driveMotor.restoreFactoryDefaults();
+    turnMotor.restoreFactoryDefaults();
+    driveMotor.setCANTimeout(250);
+    turnMotor.setCANTimeout(250);
 
     for (int i = 0; i < 4; i++) {
-      turnSparkMax.setInverted(config.turnMotorInverted());
-      driveSparkMax.setSmartCurrentLimit(40);
-      turnSparkMax.setSmartCurrentLimit(30);
-      driveSparkMax.enableVoltageCompensation(12.0);
-      turnSparkMax.enableVoltageCompensation(12.0);
+      turnMotor.setInverted(config.turnMotorInverted());
+      driveMotor.setSmartCurrentLimit(40);
+      turnMotor.setSmartCurrentLimit(30);
+      driveMotor.enableVoltageCompensation(12.0);
+      turnMotor.enableVoltageCompensation(12.0);
 
       driveEncoder.setPosition(0.0);
       driveEncoder.setMeasurementPeriod(10);
@@ -90,16 +89,14 @@ public class ModuleIOSparkMax implements ModuleIO {
       turnRelativeEncoder.setVelocityConversionFactor(
           2 * Math.PI / (60.0 * moduleConstants.turnReduction()));
 
-      driveSparkMax.setCANTimeout(0);
-      turnSparkMax.setCANTimeout(0);
+      driveMotor.setCANTimeout(0);
+      turnMotor.setCANTimeout(0);
 
-      driveSparkMax.setPeriodicFramePeriod(
-          PeriodicFrame.kStatus2, (int) (1000.0 / odometryFrequency));
-      turnSparkMax.setPeriodicFramePeriod(
-          PeriodicFrame.kStatus2, (int) (1000.0 / odometryFrequency));
+      driveMotor.setPeriodicFramePeriod(PeriodicFrame.kStatus2, (int) (1000.0 / odometryFrequency));
+      turnMotor.setPeriodicFramePeriod(PeriodicFrame.kStatus2, (int) (1000.0 / odometryFrequency));
 
-      if (driveSparkMax.burnFlash().equals(REVLibError.kOk)
-          && turnSparkMax.burnFlash().equals(REVLibError.kOk)) break;
+      if (driveMotor.burnFlash().equals(REVLibError.kOk)
+          && turnMotor.burnFlash().equals(REVLibError.kOk)) break;
     }
 
     absoluteEncoderValue =
@@ -127,14 +124,14 @@ public class ModuleIOSparkMax implements ModuleIO {
   public void updateInputs(ModuleIOInputs inputs) {
     inputs.drivePositionRad = driveEncoder.getPosition();
     inputs.driveVelocityRadPerSec = driveEncoder.getVelocity();
-    inputs.driveAppliedVolts = driveSparkMax.getAppliedOutput() * driveSparkMax.getBusVoltage();
-    inputs.driveCurrentAmps = new double[] {driveSparkMax.getOutputCurrent()};
+    inputs.driveAppliedVolts = driveMotor.getAppliedOutput() * driveMotor.getBusVoltage();
+    inputs.driveCurrentAmps = new double[] {driveMotor.getOutputCurrent()};
 
     inputs.turnAbsolutePosition = absoluteEncoderValue.get();
     inputs.turnPosition = Rotation2d.fromRadians(turnRelativeEncoder.getPosition());
     inputs.turnVelocityRadPerSec = turnRelativeEncoder.getVelocity();
-    inputs.turnAppliedVolts = turnSparkMax.getAppliedOutput() * turnSparkMax.getBusVoltage();
-    inputs.turnCurrentAmps = new double[] {turnSparkMax.getOutputCurrent()};
+    inputs.turnAppliedVolts = turnMotor.getAppliedOutput() * turnMotor.getBusVoltage();
+    inputs.turnCurrentAmps = new double[] {turnMotor.getOutputCurrent()};
 
     inputs.odometryDrivePositionsMeters =
         drivePositionQueue.stream().mapToDouble(rads -> rads * wheelRadius).toArray();
@@ -158,7 +155,7 @@ public class ModuleIOSparkMax implements ModuleIO {
 
     // Run closed loop turn control
     if (angleSetpoint != null) {
-      turnSparkMax.setVoltage(
+      turnMotor.setVoltage(
           turnFeedback.calculate(
               absoluteEncoderValue.get().getRadians(), angleSetpoint.getRadians()));
       // Run closed loop drive control
@@ -166,7 +163,7 @@ public class ModuleIOSparkMax implements ModuleIO {
         // Scale velocity based on turn error
         double adjustSpeedSetpoint = speedSetpoint * Math.cos(turnFeedback.getPositionError());
         double velocityRadPerSec = adjustSpeedSetpoint / wheelRadius;
-        driveSparkMax.setVoltage(
+        driveMotor.setVoltage(
             driveFeedforward.calculate(velocityRadPerSec)
                 + driveFeedback.calculate(driveEncoder.getVelocity(), velocityRadPerSec));
       }
@@ -184,23 +181,23 @@ public class ModuleIOSparkMax implements ModuleIO {
     angleSetpoint = new Rotation2d();
     speedSetpoint = null;
 
-    driveSparkMax.setVoltage(volts);
+    driveMotor.setVoltage(volts);
   }
 
   @Override
   public void setDriveBrakeMode(boolean enable) {
-    driveSparkMax.setIdleMode(enable ? IdleMode.kBrake : IdleMode.kCoast);
+    driveMotor.setIdleMode(enable ? IdleMode.kBrake : IdleMode.kCoast);
   }
 
   @Override
   public void setTurnBrakeMode(boolean enable) {
-    turnSparkMax.setIdleMode(enable ? IdleMode.kBrake : IdleMode.kCoast);
+    turnMotor.setIdleMode(enable ? IdleMode.kBrake : IdleMode.kCoast);
   }
 
   @Override
   public void stop() {
-    driveSparkMax.setVoltage(0.0);
-    turnSparkMax.setVoltage(0.0);
+    driveMotor.setVoltage(0.0);
+    turnMotor.setVoltage(0.0);
 
     speedSetpoint = null;
     angleSetpoint = null;

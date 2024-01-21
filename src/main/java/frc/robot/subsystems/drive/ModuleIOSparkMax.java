@@ -202,24 +202,4 @@ public class ModuleIOSparkMax implements ModuleIO {
     speedSetpoint = null;
     angleSetpoint = null;
   }
-
-  @Override
-  public Rotation2d getAngle() {
-    return absoluteEncoderValue.get();
-  }
-
-  @Override
-  public double getPositionMeters() {
-    return driveEncoder.getPosition() * wheelRadius;
-  }
-
-  @Override
-  public double getVelocityMetersPerSec() {
-    return driveEncoder.getVelocity() * wheelRadius;
-  }
-
-  @Override
-  public double getCharacterizationVelocity() {
-    return driveEncoder.getVelocity();
-  }
 }

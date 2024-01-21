@@ -44,11 +44,13 @@ public class ModuleIOSim implements ModuleIO {
   private final SimpleMotorFeedforward driveFeedforward;
   private final PIDController driveFeedback;
   private final PIDController turnFeedback;
+  private Rotation2d turnAbsolutePosition;
   private Rotation2d angleSetpoint = null; // Setpoint for closed loop control, null for open loop
   private Double speedSetpoint = null; // Setpoint for closed loop control, null for open loop
 
   public ModuleIOSim(ModuleConfig config) {
     turnAbsoluteInitPosition = config.absoluteEncoderOffset();
+    turnAbsolutePosition = turnAbsoluteInitPosition;
 
     driveFeedforward = new SimpleMotorFeedforward(moduleConstants.ffKs(), moduleConstants.ffKv());
     driveFeedback = new PIDController(moduleConstants.driveKp(), 0.0, moduleConstants.drivekD());
@@ -68,6 +70,7 @@ public class ModuleIOSim implements ModuleIO {
 
     inputs.turnAbsolutePosition =
         new Rotation2d(turnSim.getAngularPositionRad()).plus(turnAbsoluteInitPosition);
+    turnAbsolutePosition = inputs.turnAbsolutePosition;
     inputs.turnPosition = Rotation2d.fromRadians(turnSim.getAngularPositionRad());
     inputs.turnVelocityRadPerSec = turnSim.getAngularVelocityRadPerSec();
     inputs.turnAppliedVolts = turnAppliedVolts;
@@ -84,7 +87,7 @@ public class ModuleIOSim implements ModuleIO {
     // Run closed loop turn control
     if (angleSetpoint != null) {
       turnAppliedVolts =
-          turnFeedback.calculate(getAngle().getRadians(), angleSetpoint.getRadians());
+          turnFeedback.calculate(turnAbsolutePosition.getRadians(), angleSetpoint.getRadians());
       turnSim.setInputVoltage(turnAppliedVolts);
       // Run closed loop drive control
       if (speedSetpoint != null) {
@@ -123,25 +126,5 @@ public class ModuleIOSim implements ModuleIO {
 
     speedSetpoint = null;
     angleSetpoint = null;
-  }
-
-  @Override
-  public Rotation2d getAngle() {
-    return Rotation2d.fromRadians(turnSim.getAngularPositionRad());
-  }
-
-  @Override
-  public double getPositionMeters() {
-    return driveSim.getAngularPositionRad() * wheelRadius;
-  }
-
-  @Override
-  public double getVelocityMetersPerSec() {
-    return driveSim.getAngularVelocityRadPerSec() * wheelRadius;
-  }
-
-  @Override
-  public double getCharacterizationVelocity() {
-    return driveSim.getAngularVelocityRadPerSec();
   }
 }

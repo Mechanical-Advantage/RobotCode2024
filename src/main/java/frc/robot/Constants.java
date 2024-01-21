@@ -27,9 +27,9 @@ import java.util.Map;
  */
 public final class Constants {
   public static final int loopPeriodMs = 20;
-  private static RobotType robotType = RobotType.RAINBOWT;
+  private static RobotType robotType = RobotType.SIMBOT;
   public static final boolean tuningMode = true;
-  public static final boolean characterizationMode = true;
+  public static final boolean characterizationMode = false;
 
   private static boolean invalidRobotAlertSent = false;
 

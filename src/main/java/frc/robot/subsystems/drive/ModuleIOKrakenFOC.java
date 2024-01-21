@@ -269,33 +269,6 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     currentMode = Mode.NEUTRAL;
   }
 
-  @Override
-  public Rotation2d getAngle() {
-    return Rotation2d.fromRadians(
-        Units.rotationsToRadians(turnPosition.getValueAsDouble())
-            / moduleConstants.turnReduction());
-  }
-
-  @Override
-  public double getPositionMeters() {
-    return Units.rotationsToRadians(drivePosition.getValueAsDouble())
-        / moduleConstants.driveReduction()
-        * wheelRadius;
-  }
-
-  @Override
-  public double getVelocityMetersPerSec() {
-    return Units.rotationsToRadians(driveVelocity.getValueAsDouble())
-        / moduleConstants.driveReduction()
-        * wheelRadius;
-  }
-
-  @Override
-  public double getCharacterizationVelocity() {
-    return Units.rotationsToRadians(driveVelocity.getValueAsDouble())
-        / moduleConstants.driveReduction();
-  }
-
   private enum Mode {
     SETPOINT,
     CHARACTERIZATION,

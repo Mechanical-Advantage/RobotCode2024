@@ -34,6 +34,7 @@ import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
 import java.io.File;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -69,10 +70,9 @@ public class RobotContainer {
             drive =
                 new Drive(
                     new GyroIOPigeon2(false),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
+                    Arrays.stream(DriveConstants.moduleConfigs)
+                        .map(ModuleIOSparkMax::new)
+                        .toArray(ModuleIO[]::new));
             shooter = new Shooter(new ShooterIOSparkMax());
           }
         }
@@ -82,10 +82,9 @@ public class RobotContainer {
         drive =
             new Drive(
                 new GyroIO() {},
-                new ModuleIOSim(DriveConstants.moduleConfigs[0]),
-                new ModuleIOSim(DriveConstants.moduleConfigs[1]),
-                new ModuleIOSim(DriveConstants.moduleConfigs[2]),
-                new ModuleIOSim(DriveConstants.moduleConfigs[3]));
+                Arrays.stream(DriveConstants.moduleConfigs)
+                    .map(ModuleIOSim::new)
+                    .toArray(ModuleIO[]::new));
         shooter = new Shooter(new ShooterIOSim());
       }
       default -> {
@@ -93,10 +92,9 @@ public class RobotContainer {
         drive =
             new Drive(
                 new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {});
+                new ModuleIO[] {
+                  new ModuleIO() {}, new ModuleIO() {}, new ModuleIO() {}, new ModuleIO() {}
+                });
         shooter = new Shooter(new ShooterIO() {});
       }
     }
@@ -152,8 +150,7 @@ public class RobotContainer {
     }
 
     // Configure the button bindings
-    // TODO: uncomment (done to disable drive movement)
-    // configureButtonBindings();
+    configureButtonBindings();
   }
 
   /**

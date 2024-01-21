@@ -72,8 +72,7 @@ public final class DriveConstants {
       case SIMBOT -> {
         ModuleConfig[] configs = new ModuleConfig[4];
         for (int i = 0; i < configs.length; i++)
-          configs[i] =
-              new ModuleConfig(0, 0, 0, new Rotation2d(2 * Math.PI * Math.random()), false);
+          configs[i] = new ModuleConfig(0, 0, 0, new Rotation2d(0), false);
         yield configs;
       }
     };

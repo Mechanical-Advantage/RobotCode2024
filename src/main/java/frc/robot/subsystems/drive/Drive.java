@@ -34,60 +34,40 @@ public class Drive extends SubsystemBase {
 
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
-  private final ModuleIO[] modules = new ModuleIO[4]; // FL, FR, BL, BR
-  private final ModuleIOInputsAutoLogged[] moduleInputs =
-      new ModuleIOInputsAutoLogged[] {
-        new ModuleIOInputsAutoLogged(),
-        new ModuleIOInputsAutoLogged(),
-        new ModuleIOInputsAutoLogged(),
-        new ModuleIOInputsAutoLogged()
-      };
+  private final Module[] modules = new Module[4];
   private ChassisSpeeds robotVelocity = new ChassisSpeeds();
   private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
 
-  public Drive(
-      GyroIO gyroIO,
-      ModuleIO flModuleIO,
-      ModuleIO frModuleIO,
-      ModuleIO blModuleIO,
-      ModuleIO brModuleIO) {
+  public Drive(GyroIO gyroIO, ModuleIO[] moduleIOS) {
     this.gyroIO = gyroIO;
-    modules[0] = flModuleIO;
-    modules[1] = frModuleIO;
-    modules[2] = blModuleIO;
-    modules[3] = brModuleIO;
+    IntStream.range(0, moduleIOS.length).forEach(i -> modules[i] = new Module(moduleIOS[i], i));
   }
 
   public void periodic() {
+    // Update & process inputs
     odometryLock.lock();
+    // Read timestamps from odometry thread
     double[] timestamps = timestampQueue.stream().mapToDouble(Double::valueOf).toArray();
-    // Sim will not have any timstamps
+    // fake sim timestamps
     if (timestamps.length == 0) {
       timestamps = new double[] {Timer.getFPGATimestamp()};
     }
     timestampQueue.clear();
+    // Read inputs from gyro and modules
     gyroIO.updateInputs(gyroInputs);
-    for (int i = 0; i < modules.length; i++) {
-      modules[i].updateInputs(moduleInputs[i]);
-    }
+    Logger.processInputs("Drive/Gyro", gyroInputs);
+    Arrays.stream(modules).forEach(Module::updateInputs);
     odometryLock.unlock();
 
-    Logger.processInputs("Drive/Gyro", gyroInputs);
-    for (int i = 0; i < modules.length; i++) {
-      Logger.processInputs("Drive/Module" + i, moduleInputs[i]);
-      modules[i].periodic();
-    }
+    // Call periodic on module
+    Arrays.stream(modules).forEach(Module::periodic);
 
     // Calculate the min odometry position updates across all modules
     int minOdometryUpdates =
         IntStream.of(
                 timestamps.length,
-                Arrays.stream(moduleInputs)
-                    .mapToInt(
-                        moduleInput ->
-                            Math.min(
-                                moduleInput.odometryDrivePositionsMeters.length,
-                                moduleInput.odometryTurnPositions.length))
+                Arrays.stream(modules)
+                    .mapToInt(module -> module.getModulePositions().length)
                     .min()
                     .orElse(0))
             .min()
@@ -103,25 +83,19 @@ public class Drive extends SubsystemBase {
       // and store in SwerveDriveWheelPositions object
       SwerveDriveWheelPositions wheelPositions =
           new SwerveDriveWheelPositions(
-              Arrays.stream(moduleInputs)
-                  .map(
-                      moduleInput ->
-                          new SwerveModulePosition(
-                              moduleInput.odometryDrivePositionsMeters[odometryIndex],
-                              moduleInput.odometryTurnPositions[odometryIndex]))
+              Arrays.stream(modules)
+                  .map(module -> module.getModulePositions()[odometryIndex])
                   .toArray(SwerveModulePosition[]::new));
       RobotState.getInstance()
           .addOdometryData(new RobotState.OdometryObservation(wheelPositions, yaw, timestamps[i]));
     }
 
-    // Stop moving when disabled
     if (DriverStation.isDisabled()) {
+      // Stop moving
       for (var module : modules) {
         module.stop();
       }
-    }
-    // Log empty setpoint states when disabled
-    if (DriverStation.isDisabled()) {
+      // Log empty setpoint
       Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
       Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
     }
@@ -203,7 +177,7 @@ public class Drive extends SubsystemBase {
 
   public SwerveDriveWheelPositions getWheelPositions() {
     return new SwerveDriveWheelPositions(
-        Arrays.stream(modules).map(ModuleIO::getPosition).toArray(SwerveModulePosition[]::new));
+        Arrays.stream(modules).map(Module::getPosition).toArray(SwerveModulePosition[]::new));
   }
 
   @AutoLogOutput(key = "Odometry/GyroYaw")
@@ -214,7 +188,7 @@ public class Drive extends SubsystemBase {
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
-    return Arrays.stream(modules).map(ModuleIO::getState).toArray(SwerveModuleState[]::new);
+    return Arrays.stream(modules).map(Module::getState).toArray(SwerveModuleState[]::new);
   }
 
   /** Get current robot relative velocity of robot */

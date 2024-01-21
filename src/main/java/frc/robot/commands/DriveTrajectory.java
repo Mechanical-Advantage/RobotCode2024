@@ -14,6 +14,7 @@ import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.trajectory.HolonomicDriveController;
 import frc.robot.util.trajectory.Trajectory;
+import java.util.Arrays;
 import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
@@ -60,7 +61,11 @@ public class DriveTrajectory extends Command {
   public void initialize() {
     // Log trajectory
     trajectory = trajectorySupplier.get();
-    Logger.recordOutput("Odometry/Trajectory", trajectory.getTrajectoryPoses());
+    Logger.recordOutput(
+        "Trajectory/TrajectoryPoses",
+        Arrays.stream(trajectory.getTrajectoryPoses())
+            .map(AllianceFlipUtil::apply)
+            .toArray(Pose2d[]::new));
 
     // Reset all controllers
     timer.reset();
@@ -92,17 +97,16 @@ public class DriveTrajectory extends Command {
     referenceState = AllianceFlipUtil.apply(referenceState);
 
     Pose2d referencePose = referenceState.pose();
-    Logger.recordOutput("Odometry/TrajectorySetpoint", referencePose);
+    Logger.recordOutput("Trajectory/Setpoint", referencePose);
 
     ChassisSpeeds outputSpeeds =
         controller.calculate(RobotState.getInstance().getEstimatedPose(), referenceState);
     drive.runVelocity(outputSpeeds);
 
     Logger.recordOutput(
-        "Odometry/TrajectoryTranslationErrorMeters",
-        controller.getPoseError().getTranslation().getNorm());
+        "Trajectory/TranslationErrorMeters", controller.getPoseError().getTranslation().getNorm());
     Logger.recordOutput(
-        "Odometry/TrajectoryRotationErrorRadians", controller.getRotationError().getRadians());
+        "Trajectory/RotationErrorRadians", controller.getRotationError().getRadians());
     Logger.recordOutput(
         "Drive/autoSpeeds",
         new double[] {
@@ -120,7 +124,7 @@ public class DriveTrajectory extends Command {
   @Override
   public void end(boolean interrupted) {
     drive.stop();
-    Logger.recordOutput("Odometry/Trajectory", new Pose2d[] {});
-    Logger.recordOutput("Odometry/TrajectorySetpoint", new double[] {});
+    Logger.recordOutput("Trajectory/TrajectoryPoses", new Pose2d[] {});
+    Logger.recordOutput("Trajectory/Setpoint", new double[] {});
   }
 }

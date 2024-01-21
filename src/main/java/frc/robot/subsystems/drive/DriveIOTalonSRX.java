@@ -15,10 +15,13 @@ package frc.robot.subsystems.drive;
 
 import static com.ctre.phoenix.motorcontrol.FeedbackDevice.QuadEncoder;
 import static com.ctre.phoenix.motorcontrol.NeutralMode.Brake;
+
 import com.ctre.phoenix.motorcontrol.TalonSRXControlMode;
 import com.ctre.phoenix.motorcontrol.can.SlotConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
 
 public class DriveIOTalonSRX implements DriveIO {
@@ -27,7 +30,7 @@ public class DriveIOTalonSRX implements DriveIO {
   private static final double MAX_VOLTAGE = 12.0;
   private static final double KP = 1.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
   private static final double KD = 0.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
-
+  private PIDController pid = new PIDController(0.0, 0.0, 0.0);
   private final TalonSRX leftLeader = new TalonSRX(2);
   private final TalonSRX leftFollower = new TalonSRX(0);
   private final TalonSRX rightLeader = new TalonSRX(3);
@@ -75,22 +78,6 @@ public class DriveIOTalonSRX implements DriveIO {
     leftLeader.configSelectedFeedbackSensor(QuadEncoder);
     rightLeader.configSelectedFeedbackSensor(QuadEncoder);
 
-    /*BaseStatusSignal.setUpdateFrequencyForAll(
-        100.0, leftPosition, rightPosition, yaw); // Required for odometry, use faster rate
-    BaseStatusSignal.setUpdateFrequencyForAll(
-        50.0,
-        leftVelocity,
-        leftAppliedVolts,
-        leftLeaderCurrent,
-        leftFollowerCurrent,
-        rightVelocity,
-        rightAppliedVolts,
-        rightLeaderCurrent,
-        rightFollowerCurrent);*/
-    /*leftLeader.optimizeBusUtilization();
-    leftFollower.optimizeBusUtilization();
-    rightLeader.optimizeBusUtilization();
-    rightFollower.optimizeBusUtilization();*/
     // pigeon.optimizeBusUtilization();
   }
 
@@ -128,27 +115,7 @@ public class DriveIOTalonSRX implements DriveIO {
   @Override
   public void setVelocity(
       double leftRadPerSec, double rightRadPerSec, double leftFFVolts, double rightFFVolts) {
-    return;
-
-    /*leftLeader.setControl(
-        new VelocityVoltage(
-            Units.radiansToRotations(leftRadPerSec * GEAR_RATIO),
-            0.0,
-            true,
-            leftFFVolts,
-            0,
-            false,
-            false,
-            false));
-    rightLeader.setControl(
-        new VelocityVoltage(
-            Units.radiansToRotations(rightRadPerSec * GEAR_RATIO),
-            0.0,
-            true,
-            rightFFVolts,
-            0,
-            false,
-            false,
-            false));*/
+      setVoltage(MathUtil.clamp((pid.calculate(leftRadPerSec)+leftFFVolts), -12.0, 12.0),
+              MathUtil.clamp(pid.calculate(rightRadPerSec)+rightFFVolts, -12.0, 12.0));
   }
 }

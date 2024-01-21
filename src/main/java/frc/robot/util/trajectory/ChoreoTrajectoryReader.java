@@ -43,7 +43,7 @@ public final class ChoreoTrajectoryReader {
       @Override
       public Pose2d startPose() {
         ChoreoTrajectoryState start = states.get(0);
-        return new Pose2d(start.x, start.y, new Rotation2d(start.angularVelocity));
+        return new Pose2d(start.x(), start.y(), new Rotation2d(start.heading()));
       }
 
       @Override

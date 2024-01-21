@@ -84,9 +84,9 @@ public final class DriveConstants {
           new ModuleConstants(
               0.1,
               0.13,
-              0.05,
+              0.1,
               0.0,
-              7.0,
+              10.0,
               0.0,
               Mk4iReductions.L2.reduction,
               Mk4iReductions.TURN.reduction);

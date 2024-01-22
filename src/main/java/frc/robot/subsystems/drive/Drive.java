@@ -30,11 +30,13 @@ import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
   public static final Lock odometryLock = new ReentrantLock();
+  // TODO: DO THIS BETTER!
   public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
 
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
+  private final DriveMotionPlanner motionPlanner = new DriveMotionPlanner();
   private ChassisSpeeds robotVelocity = new ChassisSpeeds();
   private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
 
@@ -100,9 +102,13 @@ public class Drive extends SubsystemBase {
       Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
     }
 
-    // update current velocities
+    // update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity =
         DriveConstants.kinematics.toChassisSpeeds(getModuleStates());
+    robotRelativeVelocity.omegaRadiansPerSecond =
+        gyroInputs.connected
+            ? gyroInputs.yawVelocityRadPerSec
+            : robotRelativeVelocity.omegaRadiansPerSecond;
     robotVelocity = robotRelativeVelocity;
     Translation2d linearFieldVel =
         new Translation2d(
@@ -112,9 +118,14 @@ public class Drive extends SubsystemBase {
         new ChassisSpeeds(
             linearFieldVel.getX(),
             linearFieldVel.getY(),
-            gyroInputs.connected
-                ? gyroInputs.yawVelocityRadPerSec
-                : robotRelativeVelocity.omegaRadiansPerSecond);
+            robotRelativeVelocity.omegaRadiansPerSecond);
+
+    // Get motion planner velocity and run
+    ChassisSpeeds speeds =
+        motionPlanner.update(
+            Timer.getFPGATimestamp(), RobotState.getInstance().getEstimatedPose(), fieldVelocity);
+    if (motionPlanner.xModeEnabled()) stopWithX();
+    else runVelocity(speeds);
   }
 
   /**
@@ -122,7 +133,7 @@ public class Drive extends SubsystemBase {
    *
    * @param speeds Speeds in meters/sec
    */
-  public void runVelocity(ChassisSpeeds speeds) {
+  private void runVelocity(ChassisSpeeds speeds) {
     // Calculate module setpoints
     ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
     SwerveModuleState[] setpointStates =
@@ -142,7 +153,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Stops the drive. */
-  public void stop() {
+  private void stop() {
     runVelocity(new ChassisSpeeds());
   }
 
@@ -150,7 +161,7 @@ public class Drive extends SubsystemBase {
    * Stops the drive and turns the modules to an X arrangement to resist movement. The modules will
    * return to their normal orientations the next time a nonzero velocity is requested.
    */
-  public void stopWithX() {
+  private void stopWithX() {
     Rotation2d[] headings = new Rotation2d[4];
     for (int i = 0; i < 4; i++) {
       headings[i] = DriveConstants.moduleTranslations[i].getAngle();
@@ -164,6 +175,10 @@ public class Drive extends SubsystemBase {
     for (int i = 0; i < 4; i++) {
       modules[i].runCharacterization(volts);
     }
+  }
+
+  public DriveMotionPlanner getMotionPlanner() {
+    return motionPlanner;
   }
 
   /** Returns the average drive velocity in radians/sec. */

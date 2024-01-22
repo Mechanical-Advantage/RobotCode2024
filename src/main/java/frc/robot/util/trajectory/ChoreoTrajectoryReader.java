@@ -41,7 +41,7 @@ public final class ChoreoTrajectoryReader {
       }
 
       @Override
-      public Pose2d startPose() {
+      public Pose2d getStartPose() {
         ChoreoTrajectoryState start = states.get(0);
         return new Pose2d(start.x(), start.y(), new Rotation2d(start.heading()));
       }
@@ -51,6 +51,16 @@ public final class ChoreoTrajectoryReader {
         return states.stream()
             .map(state -> new Pose2d(state.x(), state.y(), new Rotation2d(state.heading())))
             .toArray(Pose2d[]::new);
+      }
+
+      @Override
+      public HolonomicDriveState getStartState() {
+        return fromChoreoState(states.get(0));
+      }
+
+      @Override
+      public HolonomicDriveState getEndState() {
+        return fromChoreoState(states.get(states.size() - 1));
       }
 
       @Override

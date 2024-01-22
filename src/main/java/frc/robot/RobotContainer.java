@@ -22,10 +22,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
-import frc.robot.commands.DriveTrajectory;
 import frc.robot.commands.FeedForwardCharacterization;
+import frc.robot.commands.TestAutos;
 import frc.robot.subsystems.drive.*;
-import frc.robot.subsystems.kitbotshooter.*;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterIO;
 import frc.robot.subsystems.shooter.ShooterIOSim;
@@ -123,21 +122,23 @@ public class RobotContainer {
             .beforeStarting(() -> shooter.setCharacterizing(true))
             .finallyDo(() -> shooter.setCharacterizing(false)));
 
+    autoChooser.addOption("Three Spike Smooth", TestAutos.threeSpikeSmooth(drive));
+
     // Testing autos paths
     Function<File, Optional<Command>> trajectoryCommandFactory =
         trajectoryFile -> {
           Optional<Trajectory> trajectory = ChoreoTrajectoryReader.generate(trajectoryFile);
           return trajectory.map(
               traj ->
-                  Commands.sequence(
-                      Commands.runOnce(
-                          () ->
-                              robotState.resetPose(
-                                  AllianceFlipUtil.apply(traj.startPose()),
-                                  drive.getWheelPositions(),
-                                  drive.getGyroYaw()),
-                          drive),
-                      new DriveTrajectory(drive, traj)));
+                  Commands.runOnce(
+                      () -> {
+                        robotState.resetPose(
+                            AllianceFlipUtil.apply(traj.getStartPose()),
+                            drive.getWheelPositions(),
+                            drive.getGyroYaw());
+                        drive.getMotionPlanner().setTrajectory(traj);
+                      },
+                      drive));
         };
     final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
     for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
@@ -166,7 +167,7 @@ public class RobotContainer {
             () -> -controller.getLeftY(),
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
-    controller.x().onTrue(Commands.runOnce(drive::stopWithX, drive));
+    controller.x().onTrue(Commands.runOnce(drive.getMotionPlanner()::requestEnableXMode, drive));
     controller
         .b()
         .onTrue(

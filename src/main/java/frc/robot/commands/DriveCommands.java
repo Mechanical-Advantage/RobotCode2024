@@ -60,12 +60,14 @@ public class DriveCommands {
                   .getTranslation();
 
           // Convert to field relative speeds & send command
-          drive.runVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(
-                  linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  omega * DriveConstants.drivetrainConfig.maxAngularVelocity(),
-                  RobotState.getInstance().getEstimatedPose().getRotation()));
+          drive
+              .getMotionPlanner()
+              .acceptDriveInput(
+                  ChassisSpeeds.fromFieldRelativeSpeeds(
+                      linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
+                      linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
+                      omega * DriveConstants.drivetrainConfig.maxAngularVelocity(),
+                      RobotState.getInstance().getEstimatedPose().getRotation()));
         },
         drive);
   }

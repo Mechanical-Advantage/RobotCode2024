@@ -22,7 +22,13 @@ package frc.robot;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
-  public static final Mode currentMode = Mode.SIM;
+  public static final double LAUNCH_SHOOTER_VOLTS = 12.0;
+  public static final double LAUNCH_HOPPER_VOLTS = 12.0;
+  public static final double SHOOTER_DELAY = 1;
+  public static final double INTAKE_SHOOTER_VOLTS = -8.0;
+  public static final double INTAKE_HOPPER_VOLTS = -4.0;
+
+  public static final Mode currentMode = Mode.REAL;
 
   public static enum Mode {
     /** Running on a real robot. */

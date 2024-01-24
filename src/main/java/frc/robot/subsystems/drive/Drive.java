@@ -17,6 +17,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
 import com.pathplanner.lib.util.ReplanningConfig;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -38,10 +39,14 @@ public class Drive extends SubsystemBase {
   public static final double WHEEL_RADIUS = Units.inchesToMeters(3.0);
   public static final double TRACK_WIDTH = Units.inchesToMeters(26.0);
 
+  public static final double MAX_SPEED_M_PER_S = Units.feetToMeters(10); // TODO find right value
+
   // TODO: NON-SIM FEEDFORWARD GAINS MUST BE TUNED
   // Consider using SysId routines defined in RobotContainer
   private static final double KS = Constants.currentMode == Mode.SIM ? 0.0 : 0.0;
   private static final double KV = Constants.currentMode == Mode.SIM ? 0.227 : 0.0;
+
+  private final PIDController pid = new PIDController(0, 0, 0);
 
   private final DriveIO io;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
@@ -113,7 +118,10 @@ public class Drive extends SubsystemBase {
   /** Run open loop based on stick positions. */
   public void driveArcade(double xSpeed, double zRotation) {
     var speeds = DifferentialDrive.arcadeDriveIK(xSpeed, zRotation, true);
-    io.setVoltage(speeds.left * 12.0, speeds.right * 12.0);
+    io.setVoltage(
+        pid.calculate(inputs.leftVelocityRadPerSec * WHEEL_RADIUS, speeds.left * MAX_SPEED_M_PER_S),
+        pid.calculate(
+            inputs.rightVelocityRadPerSec * WHEEL_RADIUS, speeds.right * MAX_SPEED_M_PER_S));
   }
 
   /** Stops the drive. */

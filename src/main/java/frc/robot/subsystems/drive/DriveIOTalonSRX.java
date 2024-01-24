@@ -20,7 +20,6 @@ import com.ctre.phoenix.motorcontrol.TalonSRXControlMode;
 import com.ctre.phoenix.motorcontrol.can.SlotConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
 
@@ -115,7 +114,8 @@ public class DriveIOTalonSRX implements DriveIO {
   @Override
   public void setVelocity(
       double leftRadPerSec, double rightRadPerSec, double leftFFVolts, double rightFFVolts) {
-      setVoltage(MathUtil.clamp((pid.calculate(leftRadPerSec)+leftFFVolts), -12.0, 12.0),
-              MathUtil.clamp(pid.calculate(rightRadPerSec)+rightFFVolts, -12.0, 12.0));
+    setVoltage(
+        pid.calculate(leftLeader.getSelectedSensorVelocity(), leftRadPerSec) + leftFFVolts,
+        pid.calculate(rightLeader.getSelectedSensorVelocity(), rightRadPerSec) + rightFFVolts);
   }
 }

@@ -19,23 +19,26 @@ import com.ctre.phoenix.motorcontrol.TalonSRXControlMode;
 import com.ctre.phoenix.motorcontrol.can.SlotConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
 
 public class FlywheelIOTalonSRX implements FlywheelIO {
-  private static final double GEAR_RATIO = 1.5;
-  private static final double MAX_VOLTAGE = 24;
-  // TODO: Set proper MAX_VOLTAGE
+  private static final double GEAR_RATIO = 1;
+  private static final double MAX_VOLTAGE = 12;
 
-  private PIDController pid = new PIDController(0.0, 0.0, 0.0);
-  private final TalonSRX leader = new TalonSRX(0);
-  private double leaderPosition = leader.getSelectedSensorPosition();
-  private double leaderVelocity = leader.getSelectedSensorVelocity();
-  private double leaderAppliedVolts = leader.getMotorOutputVoltage();
-  private double leaderCurrent = leader.getStatorCurrent();
+  private TalonSRX leader;
+  private double leaderPosition;
+  private double leaderVelocity;
+  private double leaderAppliedVolts;
+  private double leaderCurrent;
+  private double shooterPercent;
 
-  public FlywheelIOTalonSRX() {
+  public FlywheelIOTalonSRX(int controllerNum) {
+    leader = new TalonSRX(controllerNum);
+    leaderPosition = leader.getSelectedSensorPosition();
+    leaderVelocity = leader.getSelectedSensorVelocity();
+    leaderAppliedVolts = leader.getMotorOutputVoltage();
+    leaderCurrent = leader.getStatorCurrent();
+    shooterPercent = 0.0;
     var config = new TalonSRXConfiguration();
 
     config.peakCurrentLimit = 80;
@@ -58,18 +61,13 @@ public class FlywheelIOTalonSRX implements FlywheelIO {
     inputs.velocityRadPerSec = Units.rotationsToRadians(leaderVelocity) / GEAR_RATIO;
     inputs.appliedVolts = leaderAppliedVolts;
     inputs.currentAmps = new double[] {leaderCurrent, 0};
+    inputs.shooterPercent = shooterPercent;
   }
 
   @Override
   public void setVoltage(double volts) {
     leader.set(TalonSRXControlMode.PercentOutput, volts / MAX_VOLTAGE);
-  }
-
-  @Override
-  public void setVelocity(double velocityRadPerSec, double ffVolts) {
-    leaderAppliedVolts =
-            MathUtil.clamp(pid.calculate(velocityRadPerSec) + ffVolts, -12.0, 12.0);
-    setVoltage(leaderAppliedVolts);
+    shooterPercent = volts / MAX_VOLTAGE;
   }
 
   @Override

@@ -30,7 +30,7 @@ public class FieldConstants {
 
   /** Staging locations for each note */
   public static final class StagingLocations {
-    public static double centerlineX = Units.inchesToMeters(fieldLength / 2);
+    public static double centerlineX = fieldLength / 2.0;
 
     // need to update
     public static double centerlineFirstY = Units.inchesToMeters(29.638);

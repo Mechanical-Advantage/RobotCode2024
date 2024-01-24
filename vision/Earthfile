@@ -38,7 +38,9 @@ py-deps:
     ENV VIRTUAL_ENV=/RobotCode2024/vision/cross_venv/cross
     ENV PATH="/RobotCode2024/vision/cross_venv/bin:$VIRTUAL_ENV/bin:$PATH"
     ENV MAKEFLAGS="-j$(nproc)"
-    RUN apt-get update -y && apt-get install -y dh-autoreconf gfortran-aarch64-linux-gnu
+    RUN apt-get update -y && apt-get install -y dh-autoreconf
+    # If gfortran-aarch64-linux-gnu does not exist, we are on arm64, so just install gfortran
+    RUN apt-get update -y && (apt-get install -y gfortran-aarch64-linux-gnu || apt-get install -y gfortran)
     RUN TARGETPLATFORM=linux/arm64 xx-apt-get update -y && TARGETPLATFORM=linux/arm64 xx-apt-get install -y libopenblas-dev libjpeg-dev
     RUN wget https://files.pythonhosted.org/packages/a4/9b/027bec52c633f6556dba6b722d9a0befb40498b9ceddd29cbe67a45a127c/numpy-1.24.4.tar.gz
     RUN tar -zvxf numpy-1.24.4.tar.gz

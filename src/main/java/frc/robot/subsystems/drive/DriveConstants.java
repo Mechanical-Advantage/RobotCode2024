@@ -106,10 +106,10 @@ public final class DriveConstants {
                 drivetrainConfig.maxAngularVelocity());
         case SIMBOT ->
             new TrajectoryConstants(
-                5.0,
-                0.0,
                 4.0,
-                0.0001,
+                0.0,
+                2.0,
+                0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),
                 Units.inchesToMeters(12.0),

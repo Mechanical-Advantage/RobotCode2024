@@ -15,11 +15,15 @@ import java.util.NoSuchElementException;
 import org.littletonrobotics.junction.AutoLogOutput;
 
 public class RobotState {
-  /** Odometry data from one main robot loop cycle */
+  // Pose Estimation
   public record OdometryObservation(
       SwerveDriveWheelPositions wheelPositions, Rotation2d gyroAngle, double timestamp) {}
 
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
+
+  // Subsystem data
+  public record DriveData(
+      SwerveDriveWheelPositions wheelPositions, Rotation2d robotHeading, Twist2d fieldVelocity) {}
 
   private static final double poseBufferSizeSeconds = 2.0;
 
@@ -48,14 +52,17 @@ public class RobotState {
           });
   private Rotation2d lastGyroAngle = new Rotation2d();
 
+  // Subsystem state members
+  private DriveData currentDriveData;
+
   private RobotState() {
     odometryStdDevs.setColumn(0, DriveConstants.odometryStateStdDevs.extractColumnVector(0));
     kinematics = DriveConstants.kinematics;
   }
 
-  public void addOdometryData(OdometryObservation observation) {
+  /** Add odometry observation */
+  public void addOdometryObservation(OdometryObservation observation) {
     Pose2d lastOdometryPose = odometryPose;
-    // take minimum
     Twist2d twist = kinematics.toTwist2d(lastWheelPositions, observation.wheelPositions());
     lastWheelPositions = observation.wheelPositions();
     // Check gyro connected
@@ -124,18 +131,26 @@ public class RobotState {
     estimatedPose = estimateAtTime.exp(scaledTwist).plus(sampleToOdometryTransform);
   }
 
+  public void addDriveData(
+      SwerveDriveWheelPositions wheelPositions, Rotation2d robotHeading, Twist2d fieldVelocity) {
+    currentDriveData = new DriveData(wheelPositions, robotHeading, fieldVelocity);
+  }
+
   /**
    * Reset estimated pose and odometry pose to pose <br>
    * Clear pose buffer
    */
-  public void resetPose(
-      Pose2d pose, SwerveDriveWheelPositions wheelPositions, Rotation2d gyroAngle) {
-    estimatedPose = pose;
+  public void resetPose(Pose2d initialPose) {
+    estimatedPose = initialPose;
     poseBuffer.clear();
 
-    odometryPose = pose;
-    lastWheelPositions = wheelPositions;
-    lastGyroAngle = gyroAngle;
+    odometryPose = initialPose;
+    lastWheelPositions = currentDriveData.wheelPositions();
+    lastGyroAngle = currentDriveData.robotHeading();
+  }
+
+  public Twist2d fieldVelocity() {
+    return currentDriveData.fieldVelocity();
   }
 
   @AutoLogOutput(key = "Odometry/Robot")

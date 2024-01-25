@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.superstructure.shooter;
 
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkFlex;

@@ -15,6 +15,7 @@ package frc.robot.subsystems.drive;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -40,9 +41,12 @@ public class Drive extends SubsystemBase {
   private ChassisSpeeds robotVelocity = new ChassisSpeeds();
   private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
 
-  public Drive(GyroIO gyroIO, ModuleIO[] moduleIOS) {
+  public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
     this.gyroIO = gyroIO;
-    IntStream.range(0, moduleIOS.length).forEach(i -> modules[i] = new Module(moduleIOS[i], i));
+    modules[0] = new Module(fl, 0);
+    modules[1] = new Module(fr, 1);
+    modules[2] = new Module(bl, 2);
+    modules[3] = new Module(br, 3);
   }
 
   public void periodic() {
@@ -89,7 +93,8 @@ public class Drive extends SubsystemBase {
                   .map(module -> module.getModulePositions()[odometryIndex])
                   .toArray(SwerveModulePosition[]::new));
       RobotState.getInstance()
-          .addOdometryData(new RobotState.OdometryObservation(wheelPositions, yaw, timestamps[i]));
+          .addOdometryObservation(
+              new RobotState.OdometryObservation(wheelPositions, yaw, timestamps[i]));
     }
 
     if (DriverStation.isDisabled()) {
@@ -119,6 +124,16 @@ public class Drive extends SubsystemBase {
             linearFieldVel.getX(),
             linearFieldVel.getY(),
             robotRelativeVelocity.omegaRadiansPerSecond);
+
+    // Add drive data
+    RobotState.getInstance()
+        .addDriveData(
+            getWheelPositions(),
+            getGyroYaw(),
+            new Twist2d(
+                fieldVelocity.vxMetersPerSecond,
+                fieldVelocity.vyMetersPerSecond,
+                fieldVelocity.omegaRadiansPerSecond));
 
     // Get motion planner velocity and run
     ChassisSpeeds speeds =
@@ -197,7 +212,9 @@ public class Drive extends SubsystemBase {
 
   @AutoLogOutput(key = "Odometry/GyroYaw")
   public Rotation2d getGyroYaw() {
-    return gyroInputs.yawPosition;
+    return gyroInputs.connected
+        ? gyroInputs.yawPosition
+        : RobotState.getInstance().getEstimatedPose().getRotation();
   }
 
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */

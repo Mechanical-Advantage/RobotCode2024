@@ -50,7 +50,7 @@ public class RobotContainer {
   private final RobotState robotState = RobotState.getInstance();
 
   // Subsystems
-  private final Drive drive;
+  private Drive drive;
   private final Shooter shooter;
 
   // Controller
@@ -66,12 +66,12 @@ public class RobotContainer {
         // Real robot, instantiate hardware IO implementations\
         switch (Constants.getRobot()) {
           default -> {
-            drive =
-                new Drive(
-                    new GyroIOPigeon2(false),
-                    Arrays.stream(DriveConstants.moduleConfigs)
-                        .map(ModuleIOSparkMax::new)
-                        .toArray(ModuleIO[]::new));
+            //            drive =
+            //                new Drive(
+            //                    new GyroIOPigeon2(false),
+            //                    Arrays.stream(DriveConstants.moduleConfigs)
+            //                        .map(ModuleIOSparkMax::new)
+            //                        .toArray(ModuleIO[]::new));
             shooter = new Shooter(new ShooterIOSparkMax());
           }
         }
@@ -96,6 +96,15 @@ public class RobotContainer {
                 });
         shooter = new Shooter(new ShooterIO() {});
       }
+    }
+
+    if (drive == null) {
+      drive =
+          new Drive(
+              new GyroIO() {},
+              new ModuleIO[] {
+                new ModuleIO() {}, new ModuleIO() {}, new ModuleIO() {}, new ModuleIO() {}
+              });
     }
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");

@@ -91,13 +91,13 @@ public class ShooterIOSim implements ShooterIO {
   }
 
   @Override
-  public void setPID(double p, double i, double d) {
+  public void setLeftPID(double p, double i, double d) {
     leftController.setPID(p, i, d);
     rightController.setPID(p, i, d);
   }
 
   @Override
-  public void setFF(double s, double v, double a) {
+  public void setLeftFF(double s, double v, double a) {
     ff = new SimpleMotorFeedforward(s, v, a);
   }
 

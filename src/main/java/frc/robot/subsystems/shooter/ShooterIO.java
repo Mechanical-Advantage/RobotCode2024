@@ -49,9 +49,13 @@ public interface ShooterIO {
 
   default void setRightCharacterizationVoltage(double volts) {}
 
-  default void setPID(double p, double i, double d) {}
+  default void setLeftPID(double p, double i, double d) {}
 
-  default void setFF(double s, double v, double a) {}
+  default void setLeftFF(double s, double v, double a) {}
+
+  default void setRightPID(double p, double i, double d) {}
+
+  default void setRightFF(double s, double v, double a) {}
 
   default void stop() {}
 }

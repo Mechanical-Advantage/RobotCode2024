@@ -11,13 +11,48 @@ import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveMotionPlanner;
+import frc.robot.util.trajectory.HolonomicDriveController;
 import frc.robot.util.trajectory.Trajectory;
 import java.io.File;
 
 public class TestAutos {
+
+  private static Trajectory nullTrajectory =
+      new Trajectory() {
+        @Override
+        public double getDuration() {
+          return 0;
+        }
+
+        @Override
+        public Pose2d getStartPose() {
+          return null;
+        }
+
+        @Override
+        public Pose2d[] getTrajectoryPoses() {
+          return new Pose2d[0];
+        }
+
+        @Override
+        public HolonomicDriveController.HolonomicDriveState getStartState() {
+          return null;
+        }
+
+        @Override
+        public HolonomicDriveController.HolonomicDriveState getEndState() {
+          return null;
+        }
+
+        @Override
+        public HolonomicDriveController.HolonomicDriveState sample(double timeSeconds) {
+          return null;
+        }
+      };
+
   public static Command threeSpikeSmooth(Drive drive) {
     File trajFile = new File(Filesystem.getDeployDirectory(), "/choreo/3SpikeSmooth.traj");
-    Trajectory trajectory = generate(trajFile).orElseThrow();
+    Trajectory trajectory = generate(trajFile).orElse(nullTrajectory);
     DriveMotionPlanner motionPlanner = drive.getMotionPlanner();
 
     // Waiting inbetween shots is to fake intaking

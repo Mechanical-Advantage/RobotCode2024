@@ -12,12 +12,19 @@ public class ShooterConstants {
   public static boolean rightMotorInverted = false;
   public static boolean feederMotorInverted = false;
 
-  public static double kP = 0.0;
-  public static double kI = 0.0;
-  public static double kD = 0.0;
-  public static double kS = 0.33329;
-  public static double kV = 0.00083;
-  public static double kA = 0.0;
+  public static double leftkP = 0.0;
+  public static double leftkI = 0.0;
+  public static double leftkD = 0.0;
+  public static double leftkS = 0.33329;
+  public static double leftkV = 0.00083;
+  public static double leftkA = 0.0;
+
+  public static double rightkP = 0.0;
+  public static double rightkI = 0.0;
+  public static double rightkD = 0.0;
+  public static double rightkS = 0.33329;
+  public static double rightkV = 0.00083;
+  public static double rightkA = 0.0;
 
   public static double shooterToleranceRPM = 50.0;
 }

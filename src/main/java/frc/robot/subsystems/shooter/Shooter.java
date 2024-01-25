@@ -9,29 +9,37 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 public class Shooter extends SubsystemBase {
   private static LoggedTunableNumber feedVolts = new LoggedTunableNumber("Shooter/FeedVolts", 6.0);
-  private static LoggedTunableNumber kP = new LoggedTunableNumber("Shooter/kP");
-  private static LoggedTunableNumber kI = new LoggedTunableNumber("Shooter/kI");
-  private static LoggedTunableNumber kD = new LoggedTunableNumber("Shooter/kD");
-  private static LoggedTunableNumber kS = new LoggedTunableNumber("Shooter/kS");
-  private static LoggedTunableNumber kV = new LoggedTunableNumber("Shooter/kV");
-  private static LoggedTunableNumber kA = new LoggedTunableNumber("Shooter/kA");
+  private static LoggedTunableNumber leftkP =
+      new LoggedTunableNumber("Shooter/leftkP", ShooterConstants.leftkP);
+  private static LoggedTunableNumber leftkI =
+      new LoggedTunableNumber("Shooter/leftkI", ShooterConstants.leftkI);
+  private static LoggedTunableNumber leftkD =
+      new LoggedTunableNumber("Shooter/leftkD", ShooterConstants.leftkD);
+  private static LoggedTunableNumber leftkS =
+      new LoggedTunableNumber("Shooter/leftkS", ShooterConstants.leftkS);
+  private static LoggedTunableNumber leftkV =
+      new LoggedTunableNumber("Shooter/leftkV", ShooterConstants.leftkV);
+  private static LoggedTunableNumber leftkA =
+      new LoggedTunableNumber("Shooter/leftkA", ShooterConstants.leftkA);
+  private static LoggedTunableNumber rightkP =
+      new LoggedTunableNumber("Shooter/rightkP", ShooterConstants.rightkP);
+  private static LoggedTunableNumber rightkI =
+      new LoggedTunableNumber("Shooter/rightkI", ShooterConstants.rightkI);
+  private static LoggedTunableNumber rightkD =
+      new LoggedTunableNumber("Shooter/rightkD", ShooterConstants.rightkD);
+  private static LoggedTunableNumber rightkS =
+      new LoggedTunableNumber("Shooter/rightkS", ShooterConstants.rightkS);
+  private static LoggedTunableNumber rightkV =
+      new LoggedTunableNumber("Shooter/rightkV", ShooterConstants.rightkV);
+  private static LoggedTunableNumber rightkA =
+      new LoggedTunableNumber("Shooter/rightkA", ShooterConstants.rightkA);
   private static LoggedTunableNumber shooterTolerance =
-      new LoggedTunableNumber("Shooter/ToleranceRPM");
+      new LoggedTunableNumber("Shooter/ToleranceRPM", ShooterConstants.shooterToleranceRPM);
 
   private final LoggedDashboardNumber leftSpeedRpm =
-      new LoggedDashboardNumber("Left Speed RPM", 1500.0);
+      new LoggedDashboardNumber("Left Speed RPM", 6000);
   private final LoggedDashboardNumber rightSpeedRpm =
-      new LoggedDashboardNumber("Right Speed RPM", 1500.0);
-
-  static {
-    kP.initDefault(ShooterConstants.kP);
-    kI.initDefault(ShooterConstants.kI);
-    kD.initDefault(ShooterConstants.kD);
-    kS.initDefault(ShooterConstants.kS);
-    kV.initDefault(ShooterConstants.kV);
-    kA.initDefault(ShooterConstants.kA);
-    shooterTolerance.initDefault(ShooterConstants.shooterToleranceRPM);
-  }
+      new LoggedDashboardNumber("Right Speed RPM", 4000);
 
   private ShooterIO shooterIO;
   private ShooterIOInputsAutoLogged shooterInputs = new ShooterIOInputsAutoLogged();
@@ -41,17 +49,39 @@ public class Shooter extends SubsystemBase {
 
   public Shooter(ShooterIO io) {
     shooterIO = io;
-    shooterIO.setPID(kP.get(), kI.get(), kD.get());
-    shooterIO.setFF(kS.get(), kV.get(), kA.get());
+    shooterIO.setLeftPID(leftkP.get(), leftkI.get(), leftkD.get());
+    shooterIO.setLeftFF(leftkS.get(), leftkV.get(), leftkA.get());
+    shooterIO.setRightFF(rightkS.get(), rightkV.get(), rightkA.get());
+    shooterIO.setRightPID(rightkP.get(), rightkI.get(), rightkD.get());
   }
 
   @Override
   public void periodic() {
     // check controllers
-    if (kP.hasChanged(hashCode()) || kI.hasChanged(hashCode()) || kD.hasChanged(hashCode()))
-      shooterIO.setPID(kP.get(), kI.get(), kD.get());
-    if (kS.hasChanged(hashCode()) || kV.hasChanged(hashCode()) || kA.hasChanged(hashCode()))
-      shooterIO.setFF(kS.get(), kV.get(), kA.get());
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> shooterIO.setLeftPID(leftkP.get(), leftkI.get(), leftkD.get()),
+        leftkP,
+        leftkI,
+        leftkD);
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> shooterIO.setLeftFF(leftkS.get(), leftkV.get(), leftkA.get()),
+        leftkS,
+        leftkV,
+        leftkA);
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> shooterIO.setRightPID(rightkP.get(), rightkI.get(), rightkD.get()),
+        rightkP,
+        rightkI,
+        rightkD);
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> shooterIO.setRightFF(rightkS.get(), rightkV.get(), rightkA.get()),
+        rightkS,
+        rightkV,
+        rightkA);
 
     shooterIO.updateInputs(shooterInputs);
     Logger.processInputs("Shooter", shooterInputs);

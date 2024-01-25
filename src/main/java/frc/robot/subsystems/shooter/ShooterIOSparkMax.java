@@ -16,7 +16,8 @@ public class ShooterIOSparkMax implements ShooterIO {
 
   private SparkPIDController leftController;
   private SparkPIDController rightController;
-  private SimpleMotorFeedforward flywheelFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+  private SimpleMotorFeedforward leftFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+  private SimpleMotorFeedforward rightFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
 
   public ShooterIOSparkMax() {
     leftMotor = new CANSparkFlex(ShooterConstants.leftMotorId, CANSparkFlex.MotorType.kBrushless);
@@ -91,7 +92,7 @@ public class ShooterIOSparkMax implements ShooterIO {
         rpm,
         CANSparkBase.ControlType.kVelocity,
         0,
-        flywheelFF.calculate(rpm),
+        leftFF.calculate(rpm),
         SparkPIDController.ArbFFUnits.kVoltage);
   }
 
@@ -101,7 +102,7 @@ public class ShooterIOSparkMax implements ShooterIO {
         rpm,
         CANSparkBase.ControlType.kVelocity,
         0,
-        flywheelFF.calculate(rpm),
+        rightFF.calculate(rpm),
         SparkPIDController.ArbFFUnits.kVoltage);
   }
 
@@ -136,18 +137,27 @@ public class ShooterIOSparkMax implements ShooterIO {
   }
 
   @Override
-  public void setPID(double p, double i, double d) {
+  public void setLeftPID(double p, double i, double d) {
     leftController.setP(p);
     leftController.setI(i);
     leftController.setD(d);
+  }
+
+  @Override
+  public void setLeftFF(double kS, double kV, double kA) {
+    leftFF = new SimpleMotorFeedforward(kS, kV, kA);
+  }
+
+  @Override
+  public void setRightPID(double p, double i, double d) {
     rightController.setP(p);
     rightController.setI(i);
     rightController.setD(d);
   }
 
   @Override
-  public void setFF(double kS, double kV, double kA) {
-    flywheelFF = new SimpleMotorFeedforward(kS, kV, kA);
+  public void setRightFF(double s, double v, double a) {
+    rightFF = new SimpleMotorFeedforward(s, v, a);
   }
 
   @Override

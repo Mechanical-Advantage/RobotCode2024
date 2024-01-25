@@ -14,17 +14,18 @@
 package frc.robot.commands;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.superstructure.ShotCalculator;
+import frc.robot.util.AllianceFlipUtil;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
@@ -67,8 +68,32 @@ public class DriveCommands {
                       linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                       linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                       omega * DriveConstants.drivetrainConfig.maxAngularVelocity(),
-                      RobotState.getInstance().getEstimatedPose().getRotation()));
+                      AllianceFlipUtil.apply(
+                          RobotState.getInstance().getEstimatedPose().getRotation())));
         },
         drive);
+  }
+
+  public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {
+    Supplier<Rotation2d> shotRotation =
+        () -> {
+          Twist2d fieldVel = RobotState.getInstance().fieldVelocity();
+          ShotCalculator.ShotData shotData =
+              ShotCalculator.calculate(
+                  AllianceFlipUtil.apply(
+                      FieldConstants.Speaker.centerSpeakerOpening.getTranslation()),
+                  RobotState.getInstance().getEstimatedPose().getTranslation(),
+                  new Translation2d(fieldVel.dx, fieldVel.dy));
+          return shotData.goalHeading();
+        };
+
+    return Commands.runOnce(
+        () -> {
+          if (drive.getMotionPlanner().isHeadingControlled()) {
+            drive.getMotionPlanner().disableHeadingSupplier();
+          } else {
+            drive.getMotionPlanner().setHeadingSupplier(shotRotation);
+          }
+        });
   }
 }

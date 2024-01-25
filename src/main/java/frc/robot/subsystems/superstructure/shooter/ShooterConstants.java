@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.superstructure.shooter;
 
 public class ShooterConstants {
   // encoder / flywheelReduction = flywheel

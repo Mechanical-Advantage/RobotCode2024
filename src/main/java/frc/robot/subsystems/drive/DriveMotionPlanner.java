@@ -92,10 +92,12 @@ public class DriveMotionPlanner {
 
   public void setHeadingSupplier(Supplier<Rotation2d> headingSupplier) {
     this.headingSupplier = Optional.ofNullable(headingSupplier);
+    headingController.reset();
   }
 
   public void disableHeadingSupplier() {
     headingSupplier = Optional.empty();
+    trajectoryController.resetThetaController();
   }
 
   public void acceptDriveInput(ChassisSpeeds driveInputSpeeds) {
@@ -194,7 +196,7 @@ public class DriveMotionPlanner {
                 })
             .orElse(driveInputSpeeds); // Otherwise use inputted speeds
 
-    // Use heading controller if there
+    // Use heading controller
     headingSupplier.ifPresent(
         headingSupplier -> {
           Rotation2d setpointHeading = headingSupplier.get();

@@ -44,6 +44,10 @@ public class HolonomicDriveController {
     thetaController.reset();
   }
 
+  public void resetThetaController() {
+    thetaController.reset();
+  }
+
   /** Set PID values */
   public void setPID(double linearKp, double linearKd, double thetaKp, double thetaKd) {
     linearController.setPID(linearKp, 0, linearKd);

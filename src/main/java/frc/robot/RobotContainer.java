@@ -22,7 +22,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
-import frc.robot.commands.TestAutos;
+import frc.robot.commands.auto.TestAutos;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
@@ -158,14 +158,15 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
-    drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+    drive
+        .getMotionPlanner()
+        .setDriveInputSpeeds(
+            () ->
+                DriveCommands.getDriveInputSpeeds(
+                    () -> -controller.getLeftY(),
+                    () -> -controller.getLeftX(),
+                    () -> -controller.getRightX()));
     controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
-    controller.x().onTrue(Commands.runOnce(drive.getMotionPlanner()::requestEnableXMode, drive));
     controller
         .b()
         .onTrue(

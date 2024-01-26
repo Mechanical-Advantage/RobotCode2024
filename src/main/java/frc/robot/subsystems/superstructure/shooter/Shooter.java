@@ -1,5 +1,7 @@
 package frc.robot.subsystems.superstructure.shooter;
 
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.ShooterConstants.*;
+
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.LoggedTunableNumber;
@@ -8,34 +10,34 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 public class Shooter extends SubsystemBase {
-  private static LoggedTunableNumber feedVolts = new LoggedTunableNumber("Shooter/FeedVolts", 6.0);
-  private static LoggedTunableNumber leftkP =
-      new LoggedTunableNumber("Shooter/leftkP", ShooterConstants.leftkP);
-  private static LoggedTunableNumber leftkI =
-      new LoggedTunableNumber("Shooter/leftkI", ShooterConstants.leftkI);
-  private static LoggedTunableNumber leftkD =
-      new LoggedTunableNumber("Shooter/leftkD", ShooterConstants.leftkD);
-  private static LoggedTunableNumber leftkS =
-      new LoggedTunableNumber("Shooter/leftkS", ShooterConstants.leftkS);
-  private static LoggedTunableNumber leftkV =
-      new LoggedTunableNumber("Shooter/leftkV", ShooterConstants.leftkV);
-  private static LoggedTunableNumber leftkA =
-      new LoggedTunableNumber("Shooter/leftkA", ShooterConstants.leftkA);
-  private static LoggedTunableNumber rightkP =
-      new LoggedTunableNumber("Shooter/rightkP", ShooterConstants.rightkP);
-  private static LoggedTunableNumber rightkI =
-      new LoggedTunableNumber("Shooter/rightkI", ShooterConstants.rightkI);
-  private static LoggedTunableNumber rightkD =
-      new LoggedTunableNumber("Shooter/rightkD", ShooterConstants.rightkD);
-  private static LoggedTunableNumber rightkS =
-      new LoggedTunableNumber("Shooter/rightkS", ShooterConstants.rightkS);
-  private static LoggedTunableNumber rightkV =
-      new LoggedTunableNumber("Shooter/rightkV", ShooterConstants.rightkV);
-  private static LoggedTunableNumber rightkA =
-      new LoggedTunableNumber("Shooter/rightkA", ShooterConstants.rightkA);
-  private static LoggedTunableNumber shooterTolerance =
-      new LoggedTunableNumber("Shooter/ToleranceRPM", ShooterConstants.shooterToleranceRPM);
-
+  private static final LoggedTunableNumber feedVolts =
+      new LoggedTunableNumber("Shooter/FeedVolts", 6.0);
+  private static final LoggedTunableNumber leftkP =
+      new LoggedTunableNumber("Shooter/leftkP", leftFlywheelConstants.kP());
+  private static final LoggedTunableNumber leftkI =
+      new LoggedTunableNumber("Shooter/leftkI", leftFlywheelConstants.kI());
+  private static final LoggedTunableNumber leftkD =
+      new LoggedTunableNumber("Shooter/leftkD", leftFlywheelConstants.kD());
+  private static final LoggedTunableNumber leftkS =
+      new LoggedTunableNumber("Shooter/leftkS", leftFlywheelConstants.kS());
+  private static final LoggedTunableNumber leftkV =
+      new LoggedTunableNumber("Shooter/leftkV", leftFlywheelConstants.kV());
+  private static final LoggedTunableNumber leftkA =
+      new LoggedTunableNumber("Shooter/leftkA", leftFlywheelConstants.kA());
+  private static final LoggedTunableNumber rightkP =
+      new LoggedTunableNumber("Shooter/rightkP", rightFlywheelConstants.kP());
+  private static final LoggedTunableNumber rightkI =
+      new LoggedTunableNumber("Shooter/rightkI", rightFlywheelConstants.kI());
+  private static final LoggedTunableNumber rightkD =
+      new LoggedTunableNumber("Shooter/rightkD", rightFlywheelConstants.kD());
+  private static final LoggedTunableNumber rightkS =
+      new LoggedTunableNumber("Shooter/rightkS", rightFlywheelConstants.kS());
+  private static final LoggedTunableNumber rightkV =
+      new LoggedTunableNumber("Shooter/rightkV", rightFlywheelConstants.kV());
+  private static final LoggedTunableNumber rightkA =
+      new LoggedTunableNumber("Shooter/rightkA", rightFlywheelConstants.kA());
+  private static final LoggedTunableNumber shooterTolerance =
+      new LoggedTunableNumber("Shooter/ToleranceRPM", shooterToleranceRPM);
   private final LoggedDashboardNumber leftSpeedRpm =
       new LoggedDashboardNumber("Left Speed RPM", 6000);
   private final LoggedDashboardNumber rightSpeedRpm =

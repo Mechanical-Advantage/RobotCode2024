@@ -1,4 +1,4 @@
-package frc.robot.commands;
+package frc.robot.commands.auto;
 
 import static frc.robot.util.trajectory.ChoreoTrajectoryReader.generate;
 

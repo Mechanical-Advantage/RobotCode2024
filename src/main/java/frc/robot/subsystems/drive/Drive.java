@@ -38,8 +38,11 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
   private final DriveMotionPlanner motionPlanner = new DriveMotionPlanner();
-  private ChassisSpeeds robotVelocity = new ChassisSpeeds();
-  private ChassisSpeeds fieldVelocity = new ChassisSpeeds();
+  private Twist2d robotVelocity = new Twist2d();
+  private Twist2d fieldVelocity = new Twist2d();
+
+  private boolean characterizing = false;
+  private double characterizationVolts = 0.0;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
     this.gyroIO = gyroIO;
@@ -97,16 +100,6 @@ public class Drive extends SubsystemBase {
               new RobotState.OdometryObservation(wheelPositions, yaw, timestamps[i]));
     }
 
-    if (DriverStation.isDisabled()) {
-      // Stop moving
-      for (var module : modules) {
-        module.stop();
-      }
-      // Log empty setpoint
-      Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
-      Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
-    }
-
     // update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity =
         DriveConstants.kinematics.toChassisSpeeds(getModuleStates());
@@ -114,82 +107,58 @@ public class Drive extends SubsystemBase {
         gyroInputs.connected
             ? gyroInputs.yawVelocityRadPerSec
             : robotRelativeVelocity.omegaRadiansPerSecond;
-    robotVelocity = robotRelativeVelocity;
+    robotVelocity =
+        new Twist2d(
+            robotRelativeVelocity.vxMetersPerSecond,
+            robotRelativeVelocity.vyMetersPerSecond,
+            robotRelativeVelocity.omegaRadiansPerSecond);
     Translation2d linearFieldVel =
         new Translation2d(
                 robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond)
             .rotateBy(getGyroYaw());
-    fieldVelocity =
-        new ChassisSpeeds(
-            linearFieldVel.getX(),
-            linearFieldVel.getY(),
-            robotRelativeVelocity.omegaRadiansPerSecond);
+    fieldVelocity = new Twist2d(linearFieldVel.getX(), linearFieldVel.getY(), robotVelocity.dtheta);
 
     // Add drive data
-    RobotState.getInstance()
-        .addDriveData(
-            getWheelPositions(),
-            getGyroYaw(),
-            new Twist2d(
-                fieldVelocity.vxMetersPerSecond,
-                fieldVelocity.vyMetersPerSecond,
-                fieldVelocity.omegaRadiansPerSecond));
+    RobotState.getInstance().addDriveData(getWheelPositions(), getGyroYaw(), fieldVelocity);
 
-    // Get motion planner velocity and run
-    ChassisSpeeds speeds =
+    // Get motion planner
+    SwerveModuleState[] setpointStates =
         motionPlanner.update(
             Timer.getFPGATimestamp(), RobotState.getInstance().getEstimatedPose(), fieldVelocity);
-    if (motionPlanner.xModeEnabled()) stopWithX();
-    else runVelocity(speeds);
-  }
-
-  /**
-   * Runs the drive at the desired velocity.
-   *
-   * @param speeds Speeds in meters/sec
-   */
-  private void runVelocity(ChassisSpeeds speeds) {
-    // Calculate module setpoints
-    ChassisSpeeds discreteSpeeds = ChassisSpeeds.discretize(speeds, 0.02);
-    SwerveModuleState[] setpointStates =
-        DriveConstants.kinematics.toSwerveModuleStates(discreteSpeeds);
-    SwerveDriveKinematics.desaturateWheelSpeeds(
-        setpointStates, DriveConstants.drivetrainConfig.maxLinearVelocity());
-    // Send setpoints to modules
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
-    for (int i = 0; i < modules.length; i++) {
-      // The module returns the optimized state, useful for logging
-      optimizedSetpointStates[i] =
-          SwerveModuleState.optimize(setpointStates[i], modules[i].getAngle());
-      modules[i].runSetpoint(optimizedSetpointStates[i]);
-    }
-    // Log setpoint states
-    Logger.recordOutput("SwerveStates/Setpoints", optimizedSetpointStates);
-  }
 
-  /** Stops the drive. */
-  private void stop() {
-    runVelocity(new ChassisSpeeds());
-  }
-
-  /**
-   * Stops the drive and turns the modules to an X arrangement to resist movement. The modules will
-   * return to their normal orientations the next time a nonzero velocity is requested.
-   */
-  private void stopWithX() {
-    Rotation2d[] headings = new Rotation2d[4];
-    for (int i = 0; i < 4; i++) {
-      headings[i] = DriveConstants.moduleTranslations[i].getAngle();
+    // Run robot
+    if (DriverStation.isDisabled()) {
+      // Log empty setpoint
+      Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
+      Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
+    } else if (DriverStation.isEnabled()) {
+      // Optimize setpoints
+      for (int i = 0; i < modules.length; i++) {
+        optimizedSetpointStates[i] =
+            SwerveModuleState.optimize(setpointStates[i], modules[i].getAngle());
+        // Run modules
+        modules[i].runSetpoint(optimizedSetpointStates[i]);
+        // Log setpoint states
+      }
+      Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
+      Logger.recordOutput("SwerveStates/SetpointsOptimized", optimizedSetpointStates);
+    } else if (characterizing) {
+      // Run characterization
+      for (Module module : modules) {
+        module.runCharacterization(characterizationVolts);
+      }
     }
-    DriveConstants.kinematics.resetHeadings(headings);
-    stop();
   }
 
   /** Runs forwards at the commanded voltage. */
   public void runCharacterizationVolts(double volts) {
-    for (int i = 0; i < 4; i++) {
-      modules[i].runCharacterization(volts);
-    }
+    characterizing = true;
+    characterizationVolts = volts;
+  }
+
+  public void endCharacterization() {
+    characterizing = false;
   }
 
   public DriveMotionPlanner getMotionPlanner() {
@@ -205,7 +174,7 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  public SwerveDriveWheelPositions getWheelPositions() {
+  private SwerveDriveWheelPositions getWheelPositions() {
     return new SwerveDriveWheelPositions(
         Arrays.stream(modules).map(Module::getPosition).toArray(SwerveModulePosition[]::new));
   }
@@ -225,13 +194,19 @@ public class Drive extends SubsystemBase {
 
   /** Get current robot relative velocity of robot */
   @AutoLogOutput(key = "Odometry/RobotVelocity")
-  public ChassisSpeeds getRobotVelocity() {
+  public Twist2d getRobotVelocity() {
     return robotVelocity;
   }
 
   /** Get current field velocity of robot */
   @AutoLogOutput(key = "Odometry/FieldVelocity")
-  public ChassisSpeeds getFieldVelocity() {
+  public Twist2d getFieldVelocity() {
     return fieldVelocity;
+  }
+
+  public static Rotation2d[] getXOrientations() {
+    return Arrays.stream(DriveConstants.moduleTranslations)
+        .map(Translation2d::getAngle)
+        .toArray(Rotation2d[]::new);
   }
 }

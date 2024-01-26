@@ -30,48 +30,30 @@ import java.util.function.Supplier;
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
 
-  private DriveCommands() {}
+  public static ChassisSpeeds getDriveInputSpeeds(
+      DoubleSupplier xSupplier, DoubleSupplier ySupplier, DoubleSupplier omegaSupplier) {
+    // Apply deadband
+    double linearMagnitude =
+        MathUtil.applyDeadband(
+            Math.hypot(xSupplier.getAsDouble(), ySupplier.getAsDouble()), DEADBAND);
+    Rotation2d linearDirection = new Rotation2d(xSupplier.getAsDouble(), ySupplier.getAsDouble());
+    double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
 
-  /**
-   * Field relative drive command using two joysticks (controlling linear and angular velocities).
-   */
-  public static Command joystickDrive(
-      Drive drive,
-      DoubleSupplier xSupplier,
-      DoubleSupplier ySupplier,
-      DoubleSupplier omegaSupplier) {
-    return Commands.run(
-        () -> {
-          // Apply deadband
-          double linearMagnitude =
-              MathUtil.applyDeadband(
-                  Math.hypot(xSupplier.getAsDouble(), ySupplier.getAsDouble()), DEADBAND);
-          Rotation2d linearDirection =
-              new Rotation2d(xSupplier.getAsDouble(), ySupplier.getAsDouble());
-          double omega = MathUtil.applyDeadband(omegaSupplier.getAsDouble(), DEADBAND);
+    // Square values
+    linearMagnitude = linearMagnitude * linearMagnitude;
+    omega = Math.copySign(omega * omega, omega);
 
-          // Square values
-          linearMagnitude = linearMagnitude * linearMagnitude;
-          omega = Math.copySign(omega * omega, omega);
+    // Calcaulate new linear velocity
+    Translation2d linearVelocity =
+        new Pose2d(new Translation2d(), linearDirection)
+            .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
+            .getTranslation();
 
-          // Calcaulate new linear velocity
-          Translation2d linearVelocity =
-              new Pose2d(new Translation2d(), linearDirection)
-                  .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
-                  .getTranslation();
-
-          // Convert to field relative speeds & send command
-          drive
-              .getMotionPlanner()
-              .acceptDriveInput(
-                  ChassisSpeeds.fromFieldRelativeSpeeds(
-                      linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                      linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                      omega * DriveConstants.drivetrainConfig.maxAngularVelocity(),
-                      AllianceFlipUtil.apply(
-                          RobotState.getInstance().getEstimatedPose().getRotation())));
-        },
-        drive);
+    return ChassisSpeeds.fromFieldRelativeSpeeds(
+        linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
+        linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
+        omega * DriveConstants.drivetrainConfig.maxAngularVelocity(),
+        AllianceFlipUtil.apply(RobotState.getInstance().getEstimatedPose().getRotation()));
   }
 
   public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {

@@ -144,6 +144,31 @@ gversion {
     indent       = "  "
 }
 
+tasks.register('eventDeploy') {
+    dependsOn('deploy')
+    doFirst {
+        def branchPrefix = "event"
+
+        def branch = 'git branch --show-current'.execute().text.trim()
+        if (!branch.startsWith(branchPrefix)) {
+            throw new GradleException("Current branch '$branch' is not a valid event branch.")
+        }
+
+        def commitMessage = "Update at '${new Date().toString()}'"
+
+        exec {
+            commandLine 'git', 'add', '-A'
+            commandLine 'git', 'commit', '-m', commitMessage
+        }
+
+        //'git add -A'.execute()
+        // commandLine 'git', 'add', '-A'
+
+        println "Deployed to branch: '$branch'"
+        println "Commit message: '$commitMessage'"
+    }
+}
+
 // Spotless formatting
 project.compileJava.dependsOn(spotlessApply)
 spotless {

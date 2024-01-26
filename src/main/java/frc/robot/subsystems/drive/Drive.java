@@ -17,7 +17,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
@@ -128,22 +127,18 @@ public class Drive extends SubsystemBase {
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
 
     // Run robot
-    if (DriverStation.isDisabled()) {
-      // Log empty setpoint
-      Logger.recordOutput("SwerveStates/Setpoints", new SwerveModuleState[] {});
-      Logger.recordOutput("SwerveStates/SetpointsOptimized", new SwerveModuleState[] {});
-    } else if (DriverStation.isEnabled()) {
-      // Optimize setpoints
+    if (!characterizing) {
       for (int i = 0; i < modules.length; i++) {
+        // Optimize setpoints
         optimizedSetpointStates[i] =
             SwerveModuleState.optimize(setpointStates[i], modules[i].getAngle());
         // Run modules
         modules[i].runSetpoint(optimizedSetpointStates[i]);
-        // Log setpoint states
       }
+      // Log setpoint states
       Logger.recordOutput("SwerveStates/Setpoints", setpointStates);
       Logger.recordOutput("SwerveStates/SetpointsOptimized", optimizedSetpointStates);
-    } else if (characterizing) {
+    } else {
       // Run characterization
       for (Module module : modules) {
         module.runCharacterization(characterizationVolts);
@@ -202,6 +197,10 @@ public class Drive extends SubsystemBase {
   @AutoLogOutput(key = "Odometry/FieldVelocity")
   public Twist2d getFieldVelocity() {
     return fieldVelocity;
+  }
+
+  public static Rotation2d[] getStraightOrientations() {
+    return IntStream.range(0, 4).mapToObj(Rotation2d::new).toArray(Rotation2d[]::new);
   }
 
   public static Rotation2d[] getXOrientations() {

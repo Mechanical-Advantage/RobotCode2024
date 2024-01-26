@@ -1,6 +1,8 @@
 package frc.robot.subsystems.superstructure.intake;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
@@ -34,12 +36,20 @@ public class Intake extends SubsystemBase {
     }
   }
 
-  public void run() {
+  private void run() {
     run = true;
   }
 
-  public void stop() {
+  private void stop() {
     run = false;
     io.stop();
+  }
+
+  public Command runCommand() {
+    return Commands.runOnce(this::run);
+  }
+
+  public Command stopCommand() {
+    return Commands.runOnce(this::stop);
   }
 }

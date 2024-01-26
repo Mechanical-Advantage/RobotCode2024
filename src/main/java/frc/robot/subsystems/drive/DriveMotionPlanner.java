@@ -61,7 +61,7 @@ public class DriveMotionPlanner {
   private Optional<Trajectory> currentTrajectory = Optional.empty();
   private Optional<Double> trajectoryStartTime = Optional.empty();
   private Optional<Supplier<Rotation2d>> headingSupplier = Optional.empty();
-  private Optional<Supplier<Rotation2d[]>> moduleOrientationSupplier = Optional.empty();
+  private Optional<Rotation2d[]> snapModuleOrientations = Optional.empty();
 
   private final HolonomicDriveController trajectoryController;
   private final PIDController headingController;
@@ -93,7 +93,7 @@ public class DriveMotionPlanner {
   }
 
   public void setHeadingSupplier(Supplier<Rotation2d> headingSupplier) {
-    this.headingSupplier = Optional.ofNullable(headingSupplier);
+    this.headingSupplier = Optional.of(headingSupplier);
     headingController.reset();
   }
 
@@ -109,12 +109,8 @@ public class DriveMotionPlanner {
     this.driveInputSpeeds = driveInputSpeeds;
   }
 
-  public void setModuleOrientationSupplier(Supplier<Rotation2d[]> moduleOrientationSupplier) {
-    this.moduleOrientationSupplier = Optional.of(moduleOrientationSupplier);
-  }
-
-  public void disableModuleOrientationSupplier() {
-    moduleOrientationSupplier = Optional.empty();
+  public void snapModuleOrientations(Rotation2d[] moduleOrientations) {
+    this.snapModuleOrientations = Optional.of(moduleOrientations);
   }
 
   /** Output setpoint states */
@@ -131,10 +127,10 @@ public class DriveMotionPlanner {
       Logger.recordOutput("Drive/headingControl", new Rotation2d());
       Logger.recordOutput("Drive/speeds", new double[] {});
       return new SwerveModuleState[] {
-        new SwerveModuleState(0.0, new Rotation2d()),
-        new SwerveModuleState(0.0, new Rotation2d()),
-        new SwerveModuleState(0.0, new Rotation2d()),
-        new SwerveModuleState(0.0, new Rotation2d())
+        new SwerveModuleState(),
+        new SwerveModuleState(),
+        new SwerveModuleState(),
+        new SwerveModuleState()
       };
     }
 
@@ -164,53 +160,45 @@ public class DriveMotionPlanner {
 
     // Follow trajectory
     ChassisSpeeds speeds =
-        (ChassisSpeeds)
-            currentTrajectory
-                .map(
-                    trajectory -> {
-                      // First update with trajectory
-                      if (trajectoryStartTime.isEmpty()) {
-                        trajectoryStartTime = Optional.of(timestamp);
-                        trajectoryController.resetControllers();
-                      }
+        currentTrajectory
+            .map(
+                trajectory -> {
+                  // First update with trajectory
+                  if (trajectoryStartTime.isEmpty()) {
+                    trajectoryStartTime = Optional.of(timestamp);
+                    trajectoryController.resetControllers();
+                  }
 
-                      double sampleTime = timestamp - trajectoryStartTime.get();
-                      // Reached end
-                      if (sampleTime > trajectory.getDuration() && trajectoryController.atGoal()) {
-                        currentTrajectory = Optional.empty();
-                        trajectoryStartTime = Optional.empty();
-                        // Use drive input speeds (none if in auto)
-                        return driveInputSpeeds;
-                      }
+                  double sampleTime = timestamp - trajectoryStartTime.get();
+                  // Reached end
+                  if (sampleTime > trajectory.getDuration() && trajectoryController.atGoal()) {
+                    currentTrajectory = Optional.empty();
+                    trajectoryStartTime = Optional.empty();
+                    // Use drive input speeds (none if in auto)
+                    return driveInputSpeeds.get();
+                  }
 
-                      HolonomicDriveState currentState =
-                          new HolonomicDriveState(
-                              robot, fieldVelocity.dx, fieldVelocity.dy, fieldVelocity.dtheta);
-                      // Sample and flip state
-                      HolonomicDriveState setpointState = trajectory.sample(sampleTime);
-                      setpointState = AllianceFlipUtil.apply(setpointState);
-                      // calculate trajectory speeds
-                      ChassisSpeeds trajectorySpeeds =
-                          trajectoryController.calculate(currentState, setpointState);
+                  HolonomicDriveState currentState =
+                      new HolonomicDriveState(
+                          robot, fieldVelocity.dx, fieldVelocity.dy, fieldVelocity.dtheta);
+                  // Sample and flip state
+                  HolonomicDriveState setpointState = trajectory.sample(sampleTime);
+                  setpointState = AllianceFlipUtil.apply(setpointState);
+                  // calculate trajectory speeds
+                  ChassisSpeeds trajectorySpeeds =
+                      trajectoryController.calculate(currentState, setpointState);
 
-                      // Log trajectory data
-                      Logger.recordOutput("Trajectory/setpointPose", setpointState.pose());
-                      Logger.recordOutput(
-                          "Trajectory/translationError",
-                          trajectoryController.getPoseError().getTranslation().getNorm());
-                      Logger.recordOutput(
-                          "Trajectory/rotationError",
-                          trajectoryController.getPoseError().getRotation().getRadians());
-                      return trajectorySpeeds;
-                    })
-                .orElseGet(
-                    () -> {
-                      if (driveInputSpeeds != null && driveInputSpeeds.get() != null) {
-                        return driveInputSpeeds.get();
-                      } else {
-                        return new ChassisSpeeds();
-                      }
-                    });
+                  // Log trajectory data
+                  Logger.recordOutput("Trajectory/setpointPose", setpointState.pose());
+                  Logger.recordOutput(
+                      "Trajectory/translationError",
+                      trajectoryController.getPoseError().getTranslation().getNorm());
+                  Logger.recordOutput(
+                      "Trajectory/rotationError",
+                      trajectoryController.getPoseError().getRotation().getRadians());
+                  return trajectorySpeeds;
+                })
+            .orElseGet(driveInputSpeeds);
     // Otherwise use inputted speeds
 
     // Use heading controller
@@ -235,18 +223,19 @@ public class DriveMotionPlanner {
 
     // Calculate output setpoint states
     SwerveModuleState[] outputStates = new SwerveModuleState[4];
-    if (moduleOrientationSupplier.isEmpty()) {
+    if (snapModuleOrientations.isEmpty()) {
       speeds = ChassisSpeeds.discretize(speeds, 0.02);
       outputStates = DriveConstants.kinematics.toSwerveModuleStates(speeds);
       SwerveDriveKinematics.desaturateWheelSpeeds(
           outputStates, DriveConstants.drivetrainConfig.maxLinearVelocity());
     } else {
       // If module orientations are present
-      Rotation2d[] orientations = moduleOrientationSupplier.get().get();
+      Rotation2d[] orientations = snapModuleOrientations.get();
       for (int i = 0; i < 4; i++) {
         outputStates[i] = new SwerveModuleState(0.0, orientations[i]);
       }
       DriveConstants.kinematics.resetHeadings(orientations);
+      snapModuleOrientations = Optional.empty();
     }
     return outputStates;
   }
@@ -265,9 +254,9 @@ public class DriveMotionPlanner {
     return headingSupplier.isPresent();
   }
 
-  @AutoLogOutput(key = "Drive/moduleOrientationControlled")
-  public boolean xModeEnabled() {
-    return moduleOrientationSupplier.isPresent();
+  @AutoLogOutput(key = "Drive/snapModuleOrientations")
+  public boolean snapModuleOrientations() {
+    return snapModuleOrientations.isPresent();
   }
 
   private void configTrajectoryTolerances() {

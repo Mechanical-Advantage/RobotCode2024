@@ -24,6 +24,10 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.commands.auto.TestAutos;
 import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.superstructure.intake.Intake;
+import frc.robot.subsystems.superstructure.intake.IntakeIO;
+import frc.robot.subsystems.superstructure.intake.IntakeIOSim;
+import frc.robot.subsystems.superstructure.intake.IntakeIOSparkMax;
 import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
@@ -44,6 +48,7 @@ public class RobotContainer {
   // Subsystems
   private final Drive drive;
   private final Shooter shooter;
+  private final Intake intake;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -66,6 +71,7 @@ public class RobotContainer {
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
             shooter = new Shooter(new ShooterIOSparkMax());
+            intake = new Intake(new IntakeIOSparkMax());
           }
         }
       }
@@ -79,6 +85,7 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[3]));
         shooter = new Shooter(new ShooterIOSim());
+        intake = new Intake(new IntakeIOSim());
       }
       default -> {
         // Replayed robot, disable IO implementations
@@ -90,6 +97,7 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {});
         shooter = new Shooter(new ShooterIO() {});
+        intake = new Intake(new IntakeIO() {});
       }
     }
 
@@ -118,8 +126,8 @@ public class RobotContainer {
             .finallyDo(() -> shooter.setCharacterizing(false)));
 
     autoChooser.addOption(
-        "Five Note Leave Podium Spike", TestAutos.fiveNoteLeavePodiumSpike(drive));
-    autoChooser.addOption("Davis Auto (4 note)", TestAutos.davisAuto(drive));
+        "Davis Auto Centerline first", TestAutos.davisAutoDefensive(drive, intake));
+    autoChooser.addOption("Davis Auto (4 note)", TestAutos.davisAuto(drive, intake));
 
     // Testing autos paths
     //    Function<File, Optional<Command>> trajectoryCommandFactory =

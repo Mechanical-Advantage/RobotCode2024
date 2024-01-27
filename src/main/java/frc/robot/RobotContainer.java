@@ -43,6 +43,7 @@ public class RobotContainer {
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private static final double CONTROLLER_DEADBAND = 0.09;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser;
@@ -106,7 +107,17 @@ public class RobotContainer {
   private void configureButtonBindings() {
     drive.setDefaultCommand(
         Commands.run(
-            () -> drive.driveArcade(-controller.getLeftY(), -1 * controller.getRightX()), drive));
+            () ->
+                drive.driveArcade(
+                    (controller.getLeftY() < CONTROLLER_DEADBAND
+                            && controller.getLeftY() > -CONTROLLER_DEADBAND)
+                        ? 0
+                        : -controller.getLeftY(),
+                    (controller.getRightX() < CONTROLLER_DEADBAND
+                            && controller.getRightX() > -CONTROLLER_DEADBAND)
+                        ? 0
+                        : -1 * controller.getRightX()),
+            drive));
     controller
         .a()
         .whileTrue(

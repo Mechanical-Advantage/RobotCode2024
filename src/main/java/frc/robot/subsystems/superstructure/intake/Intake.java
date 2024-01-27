@@ -16,6 +16,7 @@ public class Intake extends SubsystemBase {
   private boolean run = false;
 
   public Intake(IntakeIO io) {
+    System.out.println("[Init] Creating Intake");
     this.io = io;
     // TODO: test if this is needed
     io.setBrakeMode(false);

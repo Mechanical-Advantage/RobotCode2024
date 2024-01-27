@@ -46,7 +46,7 @@ public final class DriveConstants {
       };
   public static final Matrix<N3, N1> odometryStateStdDevs =
       switch (Constants.getRobot()) {
-        default -> new Matrix<>(VecBuilder.fill(0.1, 0.1, 0.1));
+        default -> new Matrix<>(VecBuilder.fill(0.003, 0.003, 0.0002));
       };
 
   public static ModuleConfig[] moduleConfigs =

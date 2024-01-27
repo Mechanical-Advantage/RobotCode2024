@@ -114,7 +114,7 @@ public class DriveMotionPlanner {
     this.driveInputSpeeds = driveInputSpeeds;
   }
 
-  protected void modulesOriented(Rotation2d[] moduleOrientations) {
+  protected void orientModules(Rotation2d[] moduleOrientations) {
     this.moduleOrientations = Optional.of(moduleOrientations);
   }
 

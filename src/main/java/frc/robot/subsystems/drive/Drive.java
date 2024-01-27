@@ -48,6 +48,7 @@ public class Drive extends SubsystemBase {
   private double characterizationVolts = 0.0;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
+    System.out.println("[Init] Creating Drive");
     this.gyroIO = gyroIO;
     modules[0] = new Module(fl, 0);
     modules[1] = new Module(fr, 1);
@@ -195,7 +196,15 @@ public class Drive extends SubsystemBase {
   }
 
   public Command orientModules(Rotation2d[] orientations) {
-    return Commands.runOnce(() -> motionPlanner.modulesOriented(orientations));
+    return Commands.runOnce(() -> motionPlanner.orientModules(orientations));
+  }
+
+  public Command orientModules(Rotation2d orientation) {
+    Rotation2d[] orientations = new Rotation2d[4];
+    for (int i = 0; i < 4; i++) {
+      orientations[i] = orientation;
+    }
+    return orientModules(orientations);
   }
 
   private SwerveDriveWheelPositions getWheelPositions() {

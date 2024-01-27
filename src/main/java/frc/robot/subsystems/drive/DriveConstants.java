@@ -100,10 +100,10 @@ public final class DriveConstants {
                 0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),
-                Units.inchesToMeters(12.0),
-                Units.degreesToRadians(30.0),
-                drivetrainConfig.maxLinearVelocity(),
-                drivetrainConfig.maxAngularVelocity());
+                Units.inchesToMeters(5.0),
+                Units.degreesToRadians(7.0),
+                drivetrainConfig.maxLinearVelocity() / 2.0,
+                drivetrainConfig.maxAngularVelocity() / 2.0);
         case SIMBOT ->
             new TrajectoryConstants(
                 4.0,
@@ -112,10 +112,10 @@ public final class DriveConstants {
                 0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),
-                Units.inchesToMeters(12.0),
-                Units.degreesToRadians(30.0),
-                drivetrainConfig.maxLinearVelocity(),
-                drivetrainConfig.maxAngularVelocity());
+                Units.inchesToMeters(5.0),
+                Units.degreesToRadians(7.0),
+                drivetrainConfig.maxLinearVelocity() / 2.0,
+                drivetrainConfig.maxAngularVelocity() / 2.0);
       };
 
   public static HeadingControllerConstants headingControllerConstants =

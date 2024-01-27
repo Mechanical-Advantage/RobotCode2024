@@ -43,8 +43,11 @@ public class Drive extends SubsystemBase {
 
   // TODO: NON-SIM FEEDFORWARD GAINS MUST BE TUNED
   // Consider using SysId routines defined in RobotContainer
-  private static final double KS = Constants.currentMode == Mode.SIM ? 0.0 : 0.0;
-  private static final double KV = Constants.currentMode == Mode.SIM ? 0.227 : 0.0;
+  private static final double lKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.90278;
+  private static final double lKV = Constants.currentMode == Mode.SIM ? 0.227 : 30.62084;
+
+  private static final double rKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.82739;
+  private static final double rKV = Constants.currentMode == Mode.SIM ? 0.227 : 34.45523;
 
   private final PIDController pid = new PIDController(0, 0, 0);
 
@@ -54,7 +57,8 @@ public class Drive extends SubsystemBase {
       new DifferentialDriveOdometry(new Rotation2d(), 0.0, 0.0);
   private final DifferentialDriveKinematics kinematics =
       new DifferentialDriveKinematics(TRACK_WIDTH);
-  private final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(KS, KV);
+  private final SimpleMotorFeedforward feedforwardLeft = new SimpleMotorFeedforward(lKS, lKV);
+  private final SimpleMotorFeedforward feedforwardRight = new SimpleMotorFeedforward(rKS, rKV);
 
   /** Creates a new Drive. */
   public Drive(DriveIO io) {
@@ -106,22 +110,18 @@ public class Drive extends SubsystemBase {
   public void driveVelocity(double leftMetersPerSec, double rightMetersPerSec) {
     Logger.recordOutput("Drive/LeftVelocitySetpointMetersPerSec", leftMetersPerSec);
     Logger.recordOutput("Drive/RightVelocitySetpointMetersPerSec", rightMetersPerSec);
-    double leftRadPerSec = leftMetersPerSec / WHEEL_RADIUS;
-    double rightRadPerSec = rightMetersPerSec / WHEEL_RADIUS;
-    io.setVelocity(
-        leftRadPerSec,
-        rightRadPerSec,
-        feedforward.calculate(leftRadPerSec),
-        feedforward.calculate(rightRadPerSec));
+
+    io.setVoltage(
+        pid.calculate(inputs.leftVelocityRadPerSec * WHEEL_RADIUS, leftMetersPerSec)
+            + (feedforwardLeft.calculate(leftMetersPerSec)),
+        pid.calculate(inputs.rightVelocityRadPerSec * WHEEL_RADIUS, rightMetersPerSec)
+            + (feedforwardRight.calculate(rightMetersPerSec)));
   }
 
   /** Run open loop based on stick positions. */
   public void driveArcade(double xSpeed, double zRotation) {
     var speeds = DifferentialDrive.arcadeDriveIK(xSpeed, zRotation, true);
-    io.setVoltage(
-        pid.calculate(inputs.leftVelocityRadPerSec * WHEEL_RADIUS, speeds.left * MAX_SPEED_M_PER_S),
-        pid.calculate(
-            inputs.rightVelocityRadPerSec * WHEEL_RADIUS, speeds.right * MAX_SPEED_M_PER_S));
+    driveVelocity(speeds.left * MAX_SPEED_M_PER_S, speeds.right * MAX_SPEED_M_PER_S);
   }
 
   /** Stops the drive. */
@@ -164,8 +164,8 @@ public class Drive extends SubsystemBase {
     return inputs.rightVelocityRadPerSec * WHEEL_RADIUS;
   }
 
-  /** Returns the average velocity in radians/second. */
+  /** Returns the average velocity in meters/second. */
   public double getCharacterizationVelocity() {
-    return (inputs.leftVelocityRadPerSec + inputs.rightVelocityRadPerSec) / 2.0;
+    return (inputs.leftVelocityRadPerSec + inputs.rightVelocityRadPerSec) / 2.0 * WHEEL_RADIUS;
   }
 }

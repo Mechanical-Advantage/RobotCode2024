@@ -17,19 +17,19 @@ import static com.ctre.phoenix.motorcontrol.FeedbackDevice.QuadEncoder;
 import static com.ctre.phoenix.motorcontrol.NeutralMode.Brake;
 
 import com.ctre.phoenix.motorcontrol.TalonSRXControlMode;
-import com.ctre.phoenix.motorcontrol.can.SlotConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
+import frc.robot.Constants;
 
 public class DriveIOTalonSRX implements DriveIO {
-  private static final double GEAR_RATIO = 10.0;
+  private static final double GEAR_RATIO = 10.0; //  was 10
 
   private static final double MAX_VOLTAGE = 12.0;
   private static final double KP = 1.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
   private static final double KD = 0.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
-  private PIDController pid = new PIDController(0.0, 0.0, 0.0);
+  private PIDController pid = new PIDController(0, 0.0, 0.0);
   private final TalonSRX leftLeader = new TalonSRX(2);
   private final TalonSRX leftFollower = new TalonSRX(0);
   private final TalonSRX rightLeader = new TalonSRX(3);
@@ -61,11 +61,6 @@ public class DriveIOTalonSRX implements DriveIO {
     rightLeader.setNeutralMode(Brake);
     rightFollower.setNeutralMode(Brake);
 
-    SlotConfiguration slot = new SlotConfiguration();
-    slot.kP = KP;
-    slot.kD = KD;
-    config.slot0 = slot;
-
     leftLeader.configAllSettings(config);
     leftFollower.configAllSettings(config);
     rightLeader.configAllSettings(config);
@@ -94,13 +89,17 @@ public class DriveIOTalonSRX implements DriveIO {
     rightLeaderCurrent = rightLeader.getStatorCurrent();
     rightFollowerCurrent = rightFollower.getStatorCurrent();
 
-    inputs.leftPositionRad = Units.rotationsToRadians(leftPosition) / GEAR_RATIO;
-    inputs.leftVelocityRadPerSec = Units.rotationsToRadians(leftVelocity) / GEAR_RATIO;
+    inputs.leftPositionRad =
+        Units.rotationsToRadians(leftPosition / Constants.TICKS_PER_REVOLUTION);
+    inputs.leftVelocityRadPerSec =
+        Units.rotationsToRadians(leftVelocity / Constants.TICKS_PER_REVOLUTION);
     inputs.leftAppliedVolts = leftAppliedVolts;
     inputs.leftCurrentAmps = new double[] {leftLeaderCurrent, leftFollowerCurrent};
 
-    inputs.rightPositionRad = Units.rotationsToRadians(rightPosition) / GEAR_RATIO;
-    inputs.rightVelocityRadPerSec = Units.rotationsToRadians(rightVelocity) / GEAR_RATIO;
+    inputs.rightPositionRad =
+        Units.rotationsToRadians(rightPosition / Constants.TICKS_PER_REVOLUTION);
+    inputs.rightVelocityRadPerSec =
+        Units.rotationsToRadians(rightVelocity / Constants.TICKS_PER_REVOLUTION);
     inputs.rightAppliedVolts = rightAppliedVolts;
     inputs.rightCurrentAmps = new double[] {rightLeaderCurrent, rightFollowerCurrent};
   }
@@ -109,13 +108,5 @@ public class DriveIOTalonSRX implements DriveIO {
   public void setVoltage(double leftVolts, double rightVolts) {
     leftLeader.set(TalonSRXControlMode.PercentOutput, leftVolts / MAX_VOLTAGE);
     rightLeader.set(TalonSRXControlMode.PercentOutput, -1 * rightVolts / MAX_VOLTAGE);
-  }
-
-  @Override
-  public void setVelocity(
-      double leftRadPerSec, double rightRadPerSec, double leftFFVolts, double rightFFVolts) {
-    setVoltage(
-        pid.calculate(leftLeader.getSelectedSensorVelocity(), leftRadPerSec) + leftFFVolts,
-        pid.calculate(rightLeader.getSelectedSensorVelocity(), rightRadPerSec) + rightFFVolts);
   }
 }

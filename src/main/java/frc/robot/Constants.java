@@ -28,6 +28,7 @@ public final class Constants {
   public static final double INTAKE_SHOOTER_VOLTS = -8.0;
   public static final double INTAKE_HOPPER_VOLTS = -4.0;
 
+  public static final double TICKS_PER_REVOLUTION = 1440;
   public static final Mode currentMode = Mode.REAL;
 
   public static enum Mode {

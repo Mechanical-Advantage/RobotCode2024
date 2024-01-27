@@ -29,7 +29,6 @@ public class DriveIOTalonSRX implements DriveIO {
   private static final double MAX_VOLTAGE = 12.0;
   private static final double KP = 1.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
   private static final double KD = 0.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
-  private PIDController pid = new PIDController(0, 0.0, 0.0);
   private final TalonSRX leftLeader = new TalonSRX(2);
   private final TalonSRX leftFollower = new TalonSRX(0);
   private final TalonSRX rightLeader = new TalonSRX(3);
@@ -83,8 +82,8 @@ public class DriveIOTalonSRX implements DriveIO {
     leftLeaderCurrent = leftLeader.getStatorCurrent();
     leftFollowerCurrent = leftFollower.getStatorCurrent();
 
-    rightPosition = rightLeader.getSelectedSensorPosition();
-    rightVelocity = rightLeader.getSelectedSensorVelocity();
+    rightPosition = -rightLeader.getSelectedSensorPosition();
+    rightVelocity = -rightLeader.getSelectedSensorVelocity();
     rightAppliedVolts = rightLeader.getMotorOutputVoltage();
     rightLeaderCurrent = rightLeader.getStatorCurrent();
     rightFollowerCurrent = rightFollower.getStatorCurrent();

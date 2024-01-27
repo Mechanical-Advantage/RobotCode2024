@@ -38,18 +38,16 @@ import org.littletonrobotics.junction.Logger;
 public class Drive extends SubsystemBase {
   public static final double WHEEL_RADIUS = Units.inchesToMeters(3.0);
   public static final double TRACK_WIDTH = Units.inchesToMeters(26.0);
-
   public static final double MAX_SPEED_M_PER_S = Units.feetToMeters(10); // TODO find right value
 
-  // TODO: NON-SIM FEEDFORWARD GAINS MUST BE TUNED
   // Consider using SysId routines defined in RobotContainer
-  private static final double lKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.90278;
-  private static final double lKV = Constants.currentMode == Mode.SIM ? 0.227 : 30.62084;
+  private static final double lKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.98355;
+  private static final double lKV = Constants.currentMode == Mode.SIM ? 0.227 : 30.42797;
 
-  private static final double rKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.82739;
-  private static final double rKV = Constants.currentMode == Mode.SIM ? 0.227 : 34.45523;
+  private static final double rKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.88676;
+  private static final double rKV = Constants.currentMode == Mode.SIM ? 0.227 : 32.08170;
 
-  private final PIDController pid = new PIDController(0, 0, 0);
+  private final PIDController pid = new PIDController(10, 0, 0);
 
   private final DriveIO io;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
@@ -113,9 +111,9 @@ public class Drive extends SubsystemBase {
 
     io.setVoltage(
         pid.calculate(inputs.leftVelocityRadPerSec * WHEEL_RADIUS, leftMetersPerSec)
-            + (feedforwardLeft.calculate(leftMetersPerSec)),
+            + feedforwardLeft.calculate(leftMetersPerSec),
         pid.calculate(inputs.rightVelocityRadPerSec * WHEEL_RADIUS, rightMetersPerSec)
-            + (feedforwardRight.calculate(rightMetersPerSec)));
+            + feedforwardRight.calculate(rightMetersPerSec));
   }
 
   /** Run open loop based on stick positions. */

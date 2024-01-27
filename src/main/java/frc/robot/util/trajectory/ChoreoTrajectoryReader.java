@@ -37,7 +37,7 @@ public final class ChoreoTrajectoryReader {
     return new Trajectory() {
       @Override
       public double getDuration() {
-        return states.get(states.size() - 1).timestamp;
+        return states.get(states.size() - 1).timestamp();
       }
 
       @Override

@@ -32,7 +32,6 @@ import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSparkMax;
-import frc.robot.util.AllianceFlipUtil;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -167,27 +166,24 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     drive
-        .getMotionPlanner()
-        .setDriveInputSpeeds(
+        .setDriveInput(
             () ->
                 DriveCommands.getDriveInputSpeeds(
                     () -> -controller.getLeftY(),
                     () -> -controller.getLeftX(),
-                    () -> -controller.getRightX()));
+                    () -> -controller.getRightX()))
+        .schedule();
     controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
     controller
         .b()
         .onTrue(
             Commands.runOnce(
                     () ->
-                        RobotState.getInstance()
-                            .resetPose(
-                                new Pose2d(
-                                    robotState.getEstimatedPose().getTranslation(),
-                                    AllianceFlipUtil.apply(new Rotation2d()))),
-                    drive)
+                        robotState.resetPose(
+                            new Pose2d(
+                                robotState.getEstimatedPose().getTranslation(), new Rotation2d())))
                 .ignoringDisable(true));
-    controller.y().onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(new Pose2d())));
+    controller.y().onTrue(Commands.runOnce(() -> robotState.resetPose(new Pose2d())));
   }
 
   /**

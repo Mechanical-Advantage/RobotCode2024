@@ -18,12 +18,16 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.util.trajectory.Trajectory;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -36,7 +40,7 @@ public class Drive extends SubsystemBase {
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
-  private final DriveMotionPlanner motionPlanner = new DriveMotionPlanner();
+  private final DriveMotionPlanner motionPlanner;
   private Twist2d robotVelocity = new Twist2d();
   private Twist2d fieldVelocity = new Twist2d();
 
@@ -49,6 +53,8 @@ public class Drive extends SubsystemBase {
     modules[1] = new Module(fr, 1);
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
+
+    motionPlanner = new DriveMotionPlanner(DriveConstants.kinematics);
   }
 
   public void periodic() {
@@ -128,6 +134,8 @@ public class Drive extends SubsystemBase {
 
     // Run robot
     if (!characterizing) {
+      SwerveDriveKinematics.desaturateWheelSpeeds(
+          setpointStates, DriveConstants.drivetrainConfig.maxLinearVelocity());
       for (int i = 0; i < modules.length; i++) {
         // Optimize setpoints
         optimizedSetpointStates[i] =
@@ -167,6 +175,27 @@ public class Drive extends SubsystemBase {
       driveVelocityAverage += module.getCharacterizationVelocity();
     }
     return driveVelocityAverage / 4.0;
+  }
+
+  // Command factories for motion planner commands
+  public Command setDriveInput(Supplier<ChassisSpeeds> driveInput) {
+    return Commands.runOnce(() -> motionPlanner.setDriveInputSpeeds(driveInput));
+  }
+
+  public Command followTrajectoryCommand(Trajectory trajectory) {
+    return Commands.runOnce(() -> motionPlanner.setTrajectory(trajectory));
+  }
+
+  public Command setHeadingCommand(Supplier<Rotation2d> heading) {
+    return Commands.runOnce(() -> motionPlanner.setHeadingSupplier(heading));
+  }
+
+  public Command disableHeadingCommand() {
+    return Commands.runOnce(motionPlanner::disableHeadingSupplier);
+  }
+
+  public Command orientModules(Rotation2d[] orientations) {
+    return Commands.runOnce(() -> motionPlanner.modulesOriented(orientations));
   }
 
   private SwerveDriveWheelPositions getWheelPositions() {

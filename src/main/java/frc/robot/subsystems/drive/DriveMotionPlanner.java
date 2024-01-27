@@ -57,16 +57,19 @@ public class DriveMotionPlanner {
   private static LoggedTunableNumber headingKd =
       new LoggedTunableNumber("Drive/headingKd", headingControllerConstants.Kd());
 
+  private final SwerveDriveKinematics swerveDriveKinematics;
+
   private Supplier<ChassisSpeeds> driveInputSpeeds = ChassisSpeeds::new;
   private Optional<Trajectory> currentTrajectory = Optional.empty();
   private Optional<Double> trajectoryStartTime = Optional.empty();
   private Optional<Supplier<Rotation2d>> headingSupplier = Optional.empty();
-  private Optional<Rotation2d[]> snapModuleOrientations = Optional.empty();
+  private Optional<Rotation2d[]> moduleOrientations = Optional.empty();
 
   private final HolonomicDriveController trajectoryController;
   private final PIDController headingController;
 
-  public DriveMotionPlanner() {
+  public DriveMotionPlanner(SwerveDriveKinematics kinematics) {
+    swerveDriveKinematics = kinematics;
     trajectoryController =
         new HolonomicDriveController(
             trajectoryLinearKp.get(),
@@ -78,11 +81,12 @@ public class DriveMotionPlanner {
     headingController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
-  public void setTrajectory(Trajectory trajectory) {
-    // trajectory already running
+  protected void setTrajectory(Trajectory trajectory) {
+    // Only set if there is no current trajectory
     if (currentTrajectory.isEmpty()) {
       currentTrajectory = Optional.of(trajectory);
       trajectoryController.setGoalState(trajectory.getEndState());
+      trajectoryController.resetControllers();
       // Log poses
       Logger.recordOutput(
           "Trajectory/trajectoryPoses",
@@ -92,29 +96,30 @@ public class DriveMotionPlanner {
     }
   }
 
-  public void setHeadingSupplier(Supplier<Rotation2d> headingSupplier) {
+  protected void setHeadingSupplier(Supplier<Rotation2d> headingSupplier) {
     this.headingSupplier = Optional.of(headingSupplier);
     headingController.reset();
   }
 
-  public void disableHeadingSupplier() {
+  protected void disableHeadingSupplier() {
     headingSupplier = Optional.empty();
-    trajectoryController.resetThetaController();
+    // Reset theta controller if resuming trajectory
+    if (currentTrajectory.isPresent()) trajectoryController.resetThetaController();
   }
 
-  public void setDriveInputSpeeds(Supplier<ChassisSpeeds> driveInputSpeeds) {
+  protected void setDriveInputSpeeds(Supplier<ChassisSpeeds> driveInputSpeeds) {
     if (driveInputSpeeds == null || driveInputSpeeds.get() == null) {
       return;
     }
     this.driveInputSpeeds = driveInputSpeeds;
   }
 
-  public void snapModuleOrientations(Rotation2d[] moduleOrientations) {
-    this.snapModuleOrientations = Optional.of(moduleOrientations);
+  protected void modulesOriented(Rotation2d[] moduleOrientations) {
+    this.moduleOrientations = Optional.of(moduleOrientations);
   }
 
   /** Output setpoint states */
-  public SwerveModuleState[] update(double timestamp, Pose2d robot, Twist2d fieldVelocity) {
+  protected SwerveModuleState[] update(double timestamp, Pose2d robot, Twist2d fieldVelocity) {
     // If disabled reset everything and stop
     if (DriverStation.isDisabled()) {
       currentTrajectory = Optional.empty();
@@ -166,7 +171,6 @@ public class DriveMotionPlanner {
                   // First update with trajectory
                   if (trajectoryStartTime.isEmpty()) {
                     trajectoryStartTime = Optional.of(timestamp);
-                    trajectoryController.resetControllers();
                   }
 
                   double sampleTime = timestamp - trajectoryStartTime.get();
@@ -202,11 +206,11 @@ public class DriveMotionPlanner {
     // Otherwise use inputted speeds
 
     // Use heading controller
-    final ChassisSpeeds tempSpeeds = speeds;
+    ChassisSpeeds finalSpeeds = speeds;
     headingSupplier.ifPresent(
         headingSupplier -> {
           Rotation2d setpointHeading = headingSupplier.get();
-          tempSpeeds.omegaRadiansPerSecond =
+          finalSpeeds.omegaRadiansPerSecond =
               headingController.calculate(
                   robot.getRotation().getRadians(), setpointHeading.getRadians());
           Logger.recordOutput("Drive/headingControl", setpointHeading);
@@ -215,27 +219,24 @@ public class DriveMotionPlanner {
               setpointHeading.getRadians() - robot.getRotation().getRadians());
         });
 
-    Logger.recordOutput(
-        "Drive/speeds",
-        new double[] {
-          speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond
-        });
-
     // Calculate output setpoint states
     SwerveModuleState[] outputStates = new SwerveModuleState[4];
-    if (snapModuleOrientations.isEmpty()) {
+    if (moduleOrientations.isEmpty()) {
       speeds = ChassisSpeeds.discretize(speeds, 0.02);
-      outputStates = DriveConstants.kinematics.toSwerveModuleStates(speeds);
-      SwerveDriveKinematics.desaturateWheelSpeeds(
-          outputStates, DriveConstants.drivetrainConfig.maxLinearVelocity());
+      outputStates = swerveDriveKinematics.toSwerveModuleStates(speeds);
+      Logger.recordOutput(
+          "Drive/speeds",
+          new double[] {
+            speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond
+          });
     } else {
       // If module orientations are present
-      Rotation2d[] orientations = snapModuleOrientations.get();
+      Rotation2d[] orientations = moduleOrientations.get();
       for (int i = 0; i < 4; i++) {
         outputStates[i] = new SwerveModuleState(0.0, orientations[i]);
       }
-      DriveConstants.kinematics.resetHeadings(orientations);
-      snapModuleOrientations = Optional.empty();
+      swerveDriveKinematics.resetHeadings(orientations);
+      moduleOrientations = Optional.empty();
     }
     return outputStates;
   }
@@ -254,9 +255,9 @@ public class DriveMotionPlanner {
     return headingSupplier.isPresent();
   }
 
-  @AutoLogOutput(key = "Drive/snapModuleOrientations")
-  public boolean snapModuleOrientations() {
-    return snapModuleOrientations.isPresent();
+  @AutoLogOutput(key = "Drive/modulesOriented")
+  public boolean modulesOriented() {
+    return moduleOrientations.isPresent();
   }
 
   private void configTrajectoryTolerances() {

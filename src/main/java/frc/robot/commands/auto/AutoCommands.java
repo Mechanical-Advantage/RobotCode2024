@@ -9,17 +9,19 @@ import java.util.function.Supplier;
 
 public class AutoCommands {
 
-  public static Command waitForRegion(Supplier<Region> region) {
-    return Commands.waitUntil(
-        () -> region.get().contains(RobotState.getInstance().getEstimatedPose().getTranslation()));
+  public static boolean inRegion(Supplier<Region> region) {
+    return region.get().contains(RobotState.getInstance().getEstimatedPose().getTranslation());
   }
 
-  public static Command intakeWhileInRegion(Intake intake, Region region) {
+  public static Command waitForRegion(Supplier<Region> region) {
+    return Commands.waitUntil(() -> inRegion(region));
+  }
+
+  public static Command intakeWhileInRegion(Intake intake, Supplier<Region> region) {
     return Commands.sequence(
-        waitForRegion(() -> region),
+        Commands.waitUntil(() -> inRegion(region)),
         intake.runCommand(),
-        Commands.waitUntil(
-            () -> !region.contains(RobotState.getInstance().getEstimatedPose().getTranslation())),
+        Commands.waitUntil(() -> !inRegion(region)),
         intake.stopCommand());
   }
 
@@ -28,8 +30,8 @@ public class AutoCommands {
   }
 
   public static class RectangularRegion implements Region {
-    private final Translation2d topLeft;
-    private final Translation2d bottomRight;
+    public final Translation2d topLeft;
+    public final Translation2d bottomRight;
 
     public RectangularRegion(Translation2d topLeft, Translation2d bottomRight) {
       this.topLeft = topLeft;

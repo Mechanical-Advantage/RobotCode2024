@@ -13,7 +13,6 @@ import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
-import frc.robot.subsystems.drive.DriveMotionPlanner;
 import frc.robot.subsystems.superstructure.ShotCalculator;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.util.AllianceFlipUtil;
@@ -27,12 +26,12 @@ public class TestAutos {
           "Auto/intakeDistance", DriveConstants.drivetrainConfig.trackwidthX() + 0.1);
 
   // bottom to top
-  private static AutoCommands.Region spikeIntakeRegion(int i) {
+  private static AutoCommands.CircularRegion spikeIntakeRegion(int i) {
     return new AutoCommands.CircularRegion(
         FieldConstants.StagingLocations.spikeTranslations[i], intakeDistance.get());
   }
 
-  private static AutoCommands.Region centerlineIntakeRegion(int i) {
+  private static AutoCommands.CircularRegion centerlineIntakeRegion(int i) {
     return new AutoCommands.CircularRegion(
         FieldConstants.StagingLocations.centerlineTranslations[i], intakeDistance.get());
   }
@@ -41,13 +40,15 @@ public class TestAutos {
 
   public static Command davisAutoDefensive(Drive drive, Intake intake) {
     Trajectory trajectory = getTrajectory("DavisAutoDefensive.traj");
-    DriveMotionPlanner driveMotionPlanner = drive.getMotionPlanner();
 
     Command sequenceIntake =
         Commands.sequence(
-            AutoCommands.intakeWhileInRegion(intake, spikeIntakeRegion(2)),
-            AutoCommands.intakeWhileInRegion(intake, centerlineIntakeRegion(4)),
-            AutoCommands.intakeWhileInRegion(intake, spikeIntakeRegion(1)));
+            AutoCommands.intakeWhileInRegion(
+                intake, () -> AllianceFlipUtil.apply(spikeIntakeRegion(2))),
+            AutoCommands.intakeWhileInRegion(
+                intake, () -> AllianceFlipUtil.apply(centerlineIntakeRegion(4))),
+            AutoCommands.intakeWhileInRegion(
+                intake, () -> AllianceFlipUtil.apply(spikeIntakeRegion(1))));
 
     var secondShot =
         new AutoCommands.RectangularRegion(
@@ -58,30 +59,32 @@ public class TestAutos {
 
     Command sequenceShots =
         Commands.sequence(
-            moveWhileShooting(driveMotionPlanner),
-            AutoCommands.waitForRegion(() -> secondShot),
-            moveWhileShooting(driveMotionPlanner),
-            AutoCommands.waitForRegion(() -> thirdShot),
-            moveWhileShooting(driveMotionPlanner),
-            Commands.waitUntil(() -> !driveMotionPlanner.followingTrajectory()),
-            moveWhileShooting(driveMotionPlanner));
+            moveWhileShooting(drive),
+            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(secondShot)),
+            moveWhileShooting(drive),
+            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(thirdShot)),
+            moveWhileShooting(drive),
+            Commands.waitUntil(() -> !drive.getMotionPlanner().followingTrajectory()),
+            moveWhileShooting(drive));
 
     return Commands.sequence(
-        reset(trajectory.getStartPose()),
+        resetPoseCommand(trajectory.getStartPose()),
         Commands.waitSeconds(1.0), // Initial rev time for first shot
-        Commands.runOnce(() -> driveMotionPlanner.setTrajectory(trajectory)),
+        drive.followTrajectoryCommand(trajectory),
         Commands.parallel(sequenceIntake, sequenceShots));
   }
 
   public static Command davisAuto(Drive drive, Intake intake) {
     Trajectory trajectory = getTrajectory("DavisAutoOG.traj");
-    DriveMotionPlanner driveMotionPlanner = drive.getMotionPlanner();
 
     Command sequenceIntake =
         Commands.sequence(
-            AutoCommands.intakeWhileInRegion(intake, spikeIntakeRegion(2)),
-            AutoCommands.intakeWhileInRegion(intake, spikeIntakeRegion(1)),
-            AutoCommands.intakeWhileInRegion(intake, centerlineIntakeRegion(4)));
+            AutoCommands.intakeWhileInRegion(
+                intake, () -> AllianceFlipUtil.apply(spikeIntakeRegion(2))),
+            AutoCommands.intakeWhileInRegion(
+                intake, () -> AllianceFlipUtil.apply(spikeIntakeRegion(1))),
+            AutoCommands.intakeWhileInRegion(
+                intake, () -> AllianceFlipUtil.apply(centerlineIntakeRegion(4))));
 
     var secondShot =
         new AutoCommands.RectangularRegion(
@@ -95,25 +98,29 @@ public class TestAutos {
 
     Command sequenceShots =
         Commands.sequence(
-            AutoCommands.waitForRegion(() -> secondShot),
-            moveWhileShooting(drive.getMotionPlanner()),
-            AutoCommands.waitForRegion(() -> thirdShot),
-            moveWhileShooting(drive.getMotionPlanner()),
-            AutoCommands.waitForRegion(() -> fourthShot),
-            moveWhileShooting(drive.getMotionPlanner()));
+            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(secondShot)),
+            moveWhileShooting(drive),
+            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(thirdShot)),
+            moveWhileShooting(drive),
+            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(fourthShot)),
+            moveWhileShooting(drive));
 
     return Commands.sequence(
-        reset(trajectory.getStartPose()),
+        resetPoseCommand(trajectory.getStartPose()),
         Commands.waitSeconds(1.2), // Preload shot
-        Commands.runOnce(() -> driveMotionPlanner.setTrajectory(trajectory)), // start trajectory
+        drive.followTrajectoryCommand(trajectory), // start trajectory
         Commands.parallel(sequenceIntake, sequenceShots));
   }
 
-  private static Command moveWhileShooting(DriveMotionPlanner driveMotionPlanner) {
-    return Commands.runOnce(() -> driveMotionPlanner.setHeadingSupplier(TestAutos::getShootHeading))
-        .andThen(
-            Commands.waitSeconds(0.7) // Estimated shoot time
-                .andThen(Commands.runOnce(driveMotionPlanner::disableHeadingSupplier)));
+  private static Command resetPoseCommand(Pose2d pose) {
+    return Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(pose)));
+  }
+
+  private static Command moveWhileShooting(Drive drive) {
+    return drive
+        .setHeadingCommand(TestAutos::getShootHeading)
+        .andThen(Commands.waitSeconds(0.7))
+        .andThen(drive.disableHeadingCommand());
   }
 
   private static Rotation2d getShootHeading() {
@@ -123,10 +130,6 @@ public class TestAutos {
             RobotState.getInstance().getEstimatedPose().getTranslation(),
             new Translation2d(fieldVel.dx, fieldVel.dy))
         .goalHeading();
-  }
-
-  private static Command reset(Pose2d pose) {
-    return Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(pose)));
   }
 
   private static Trajectory getTrajectory(String fileName) {

@@ -56,26 +56,22 @@ public class DriveCommands {
         AllianceFlipUtil.apply(RobotState.getInstance().getEstimatedPose().getRotation()));
   }
 
-  public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {
-    Supplier<Rotation2d> shotRotation =
-        () -> {
-          Twist2d fieldVel = RobotState.getInstance().fieldVelocity();
-          ShotCalculator.ShotData shotData =
-              ShotCalculator.calculate(
-                  AllianceFlipUtil.apply(
-                      FieldConstants.Speaker.centerSpeakerOpening.getTranslation()),
-                  RobotState.getInstance().getEstimatedPose().getTranslation(),
-                  new Translation2d(fieldVel.dx, fieldVel.dy));
-          return shotData.goalHeading();
-        };
+  private static final Supplier<Rotation2d> shotRotation =
+      () -> {
+        Twist2d fieldVel = RobotState.getInstance().fieldVelocity();
+        ShotCalculator.ShotData shotData =
+            ShotCalculator.calculate(
+                AllianceFlipUtil.apply(
+                    FieldConstants.Speaker.centerSpeakerOpening.getTranslation()),
+                RobotState.getInstance().getEstimatedPose().getTranslation(),
+                new Translation2d(fieldVel.dx, fieldVel.dy));
+        return shotData.goalHeading();
+      };
 
-    return Commands.runOnce(
-        () -> {
-          if (drive.getMotionPlanner().isHeadingControlled()) {
-            drive.getMotionPlanner().disableHeadingSupplier();
-          } else {
-            drive.getMotionPlanner().setHeadingSupplier(shotRotation);
-          }
-        });
+  public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {
+    return Commands.either(
+        drive.disableHeadingCommand(), // turn off
+        drive.setHeadingCommand(shotRotation), // turn on
+        drive.getMotionPlanner()::isHeadingControlled);
   }
 }

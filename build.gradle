@@ -161,9 +161,6 @@ tasks.register('eventDeploy') {
             commandLine 'git', 'commit', '-m', commitMessage
         }
 
-        //'git add -A'.execute()
-        // commandLine 'git', 'add', '-A'
-
         println "Deployed to branch: '$branch'"
         println "Commit message: '$commitMessage'"
     }

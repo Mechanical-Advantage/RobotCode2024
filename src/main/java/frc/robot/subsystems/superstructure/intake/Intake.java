@@ -13,7 +13,8 @@ public class Intake extends SubsystemBase {
   private final IntakeIO io;
   private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
-  private boolean run = false;
+  private boolean intake = false;
+  private boolean eject = false;
 
   public Intake(IntakeIO io) {
     System.out.println("[Init] Creating Intake");
@@ -29,25 +30,49 @@ public class Intake extends SubsystemBase {
 
     if (DriverStation.isDisabled()) {
       stop();
-      run = false;
     } else {
-      if (run) {
+      if (intake) {
         io.setVoltage(intakeVoltage.get());
+      } else if (eject) {
+          io.setVoltage(-intakeVoltage.get());
       }
     }
   }
 
-  private void run() {
-    run = true;
+  public boolean intaking() {
+      return intake;
+  }
+
+  public boolean ejecting() {
+      return eject;
+  }
+
+  public boolean running() {
+    return eject || intake;
+  }
+
+  private void intake() {
+      intake = true;
+    eject = false;
+  }
+
+  private void eject() {
+    eject = true;
+    intake = false;
   }
 
   private void stop() {
-    run = false;
+      intake = false;
+      eject = false;
     io.stop();
   }
 
-  public Command runCommand() {
-    return Commands.runOnce(this::run);
+  public Command intakeCommand() {
+    return Commands.runOnce(this::intake);
+  }
+
+  public Command ejectCommand() {
+    return Commands.runOnce(this::eject);
   }
 
   public Command stopCommand() {

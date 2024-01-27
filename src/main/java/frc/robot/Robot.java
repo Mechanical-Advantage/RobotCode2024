@@ -20,11 +20,10 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.util.VirtualSubsystem;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
-import frc.robot.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -147,10 +146,10 @@ public class Robot extends LoggedRobot {
       if (!autoCommand.isScheduled() && !autoMessagePrinted) {
         if (DriverStation.isAutonomousEnabled()) {
           System.out.printf(
-                  "*** Auto finished in %.2f secs ***%n", Timer.getFPGATimestamp() - autoStart);
+              "*** Auto finished in %.2f secs ***%n", Timer.getFPGATimestamp() - autoStart);
         } else {
           System.out.printf(
-                  "*** Auto cancelled in %.2f secs ***%n", Timer.getFPGATimestamp() - autoStart);
+              "*** Auto cancelled in %.2f secs ***%n", Timer.getFPGATimestamp() - autoStart);
         }
         autoMessagePrinted = true;
       }

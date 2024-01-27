@@ -74,9 +74,6 @@ public class Drive extends SubsystemBase {
     Arrays.stream(modules).forEach(Module::updateInputs);
     odometryLock.unlock();
 
-    // Call periodic on module
-    Arrays.stream(modules).forEach(Module::periodic);
-
     // Calculate the min odometry position updates across all modules
     int minOdometryUpdates =
         IntStream.of(
@@ -131,8 +128,8 @@ public class Drive extends SubsystemBase {
     SwerveModuleState[] setpointStates =
         motionPlanner.update(
             Timer.getFPGATimestamp(), RobotState.getInstance().getEstimatedPose(), fieldVelocity);
-    SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
 
+    SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
     // Run robot
     if (!characterizing) {
       SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -178,9 +175,8 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  // Command factories for motion planner commands
-  public Command setDriveInput(Supplier<ChassisSpeeds> driveInput) {
-    return Commands.runOnce(() -> motionPlanner.setDriveInputSpeeds(driveInput));
+  public void setDriveInputSpeeds(ChassisSpeeds speeds) {
+    motionPlanner.setDriveInputSpeeds(speeds);
   }
 
   public Command followTrajectoryCommand(Trajectory trajectory) {
@@ -201,9 +197,7 @@ public class Drive extends SubsystemBase {
 
   public Command orientModules(Rotation2d orientation) {
     Rotation2d[] orientations = new Rotation2d[4];
-    for (int i = 0; i < 4; i++) {
-      orientations[i] = orientation;
-    }
+    Arrays.fill(orientations, orientation);
     return orientModules(orientations);
   }
 

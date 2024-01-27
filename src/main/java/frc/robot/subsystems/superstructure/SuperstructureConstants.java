@@ -41,11 +41,11 @@ public class SuperstructureConstants {
     public static double reduction = (1.0 / 1.0);
     public static int id =
         switch (Constants.getRobot()) {
-          default -> 4;
+          default -> 45;
         };
     public static boolean inverted =
         switch (Constants.getRobot()) {
-          default -> false;
+          default -> true;
         };
   }
 }

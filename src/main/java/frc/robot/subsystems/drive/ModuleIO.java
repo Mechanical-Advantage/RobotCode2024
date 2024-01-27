@@ -14,7 +14,6 @@
 package frc.robot.subsystems.drive;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ModuleIO {
@@ -23,13 +22,13 @@ public interface ModuleIO {
     public double drivePositionRad = 0.0;
     public double driveVelocityRadPerSec = 0.0;
     public double driveAppliedVolts = 0.0;
-    public double[] driveCurrentAmps = new double[] {};
+    public double driveCurrentAmps = 0.0;
 
     public Rotation2d turnAbsolutePosition = new Rotation2d();
     public Rotation2d turnPosition = new Rotation2d();
     public double turnVelocityRadPerSec = 0.0;
     public double turnAppliedVolts = 0.0;
-    public double[] turnCurrentAmps = new double[] {};
+    public double turnCurrentAmps = 0.0;
 
     public double[] odometryDrivePositionsMeters = new double[] {};
     public Rotation2d[] odometryTurnPositions = new Rotation2d[] {};
@@ -38,13 +37,13 @@ public interface ModuleIO {
   /** Updates the set of loggable inputs. */
   default void updateInputs(ModuleIOInputs inputs) {}
 
-  default void periodic() {}
+  default void setDriveVoltage(double volts) {}
 
-  /** Set setpoint for module */
-  default void runSetpoint(SwerveModuleState state) {}
+  default void setTurnVoltage(double volts) {}
 
-  /** Runs the module with the specified voltage while controlling to zero degrees. */
-  default void runCharacterization(double volts) {}
+  default void setDriveVelocitySetpoint(double velocityRadPerSec, double ffVolts) {}
+
+  default void setTurnPositionSetpoint(double angleRadians, double ffVolts) {}
 
   /** Enable or disable brake mode on the drive motor. */
   default void setDriveBrakeMode(boolean enable) {}

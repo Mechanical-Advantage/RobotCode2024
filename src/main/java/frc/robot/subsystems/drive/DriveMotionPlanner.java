@@ -59,7 +59,7 @@ public class DriveMotionPlanner {
 
   private final SwerveDriveKinematics swerveDriveKinematics;
 
-  private Supplier<ChassisSpeeds> driveInputSpeeds = ChassisSpeeds::new;
+  private ChassisSpeeds driveInputSpeeds = new ChassisSpeeds();
   private Optional<Trajectory> currentTrajectory = Optional.empty();
   private Optional<Double> trajectoryStartTime = Optional.empty();
   private Optional<Supplier<Rotation2d>> headingSupplier = Optional.empty();
@@ -107,10 +107,7 @@ public class DriveMotionPlanner {
     if (currentTrajectory.isPresent()) trajectoryController.resetThetaController();
   }
 
-  protected void setDriveInputSpeeds(Supplier<ChassisSpeeds> driveInputSpeeds) {
-    if (driveInputSpeeds == null || driveInputSpeeds.get() == null) {
-      return;
-    }
+  protected void setDriveInputSpeeds(ChassisSpeeds driveInputSpeeds) {
     this.driveInputSpeeds = driveInputSpeeds;
   }
 
@@ -179,7 +176,7 @@ public class DriveMotionPlanner {
                     currentTrajectory = Optional.empty();
                     trajectoryStartTime = Optional.empty();
                     // Use drive input speeds (none if in auto)
-                    return driveInputSpeeds.get();
+                    return new ChassisSpeeds();
                   }
 
                   HolonomicDriveState currentState =
@@ -202,15 +199,17 @@ public class DriveMotionPlanner {
                       trajectoryController.getPoseError().getRotation().getRadians());
                   return trajectorySpeeds;
                 })
-            .orElseGet(driveInputSpeeds);
+            .orElse(driveInputSpeeds);
     // Otherwise use inputted speeds
 
     // Use heading controller
-    ChassisSpeeds finalSpeeds = speeds;
+    // Change to robot relative speeds
+    final ChassisSpeeds robotRelativeSpeeds =
+        ChassisSpeeds.fromFieldRelativeSpeeds(speeds, robot.getRotation());
     headingSupplier.ifPresent(
         headingSupplier -> {
           Rotation2d setpointHeading = headingSupplier.get();
-          finalSpeeds.omegaRadiansPerSecond =
+          robotRelativeSpeeds.omegaRadiansPerSecond =
               headingController.calculate(
                   robot.getRotation().getRadians(), setpointHeading.getRadians());
           Logger.recordOutput("Drive/headingControl", setpointHeading);
@@ -222,12 +221,14 @@ public class DriveMotionPlanner {
     // Calculate output setpoint states
     SwerveModuleState[] outputStates = new SwerveModuleState[4];
     if (moduleOrientations.isEmpty()) {
-      speeds = ChassisSpeeds.discretize(speeds, 0.02);
-      outputStates = swerveDriveKinematics.toSwerveModuleStates(speeds);
+      ChassisSpeeds discretizedSpeeds = ChassisSpeeds.discretize(robotRelativeSpeeds, 0.02);
+      outputStates = swerveDriveKinematics.toSwerveModuleStates(discretizedSpeeds);
       Logger.recordOutput(
           "Drive/speeds",
           new double[] {
-            speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond
+            discretizedSpeeds.vxMetersPerSecond,
+            discretizedSpeeds.vyMetersPerSecond,
+            discretizedSpeeds.omegaRadiansPerSecond
           });
     } else {
       // If module orientations are present

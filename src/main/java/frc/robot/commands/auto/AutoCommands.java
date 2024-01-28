@@ -20,7 +20,7 @@ public class AutoCommands {
   public static Command intakeWhileInRegion(Intake intake, Supplier<Region> region) {
     return Commands.sequence(
         Commands.waitUntil(() -> inRegion(region)),
-        intake.runCommand(),
+        intake.intakeCommand(),
         Commands.waitUntil(() -> !inRegion(region)),
         intake.stopCommand());
   }

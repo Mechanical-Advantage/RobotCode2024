@@ -1,7 +1,7 @@
 package frc.robot.subsystems.drive;
 
-import static frc.robot.subsystems.drive.DriveConstants.headingControllerConstants;
-import static frc.robot.subsystems.drive.DriveConstants.trajectoryConstants;
+import static frc.robot.subsystems.drive.DriveConstants.*;
+import static frc.robot.subsystems.drive.DriveConstants.kinematics;
 import static frc.robot.util.trajectory.HolonomicDriveController.HolonomicDriveState;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -12,10 +12,13 @@ import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.Constants;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
+import frc.robot.util.swerve.SwerveKinematicLimits;
+import frc.robot.util.swerve.SwerveSetpointGenerator;
 import frc.robot.util.trajectory.HolonomicDriveController;
 import frc.robot.util.trajectory.Trajectory;
 import java.util.Arrays;
@@ -57,6 +60,12 @@ public class DriveMotionPlanner {
   private static LoggedTunableNumber headingKd =
       new LoggedTunableNumber("Drive/headingKd", headingControllerConstants.Kd());
 
+  private static final SwerveKinematicLimits kinematicLimits =
+      new SwerveKinematicLimits(
+          DriveConstants.drivetrainConfig.maxLinearVelocity(),
+          DriveConstants.drivetrainConfig.maxLinearVelocity() * 10,
+          Units.rotationsToDegrees(1500.0));
+
   private final SwerveDriveKinematics swerveDriveKinematics;
 
   private ChassisSpeeds driveInputSpeeds = new ChassisSpeeds();
@@ -68,7 +77,19 @@ public class DriveMotionPlanner {
   private final HolonomicDriveController trajectoryController;
   private final PIDController headingController;
 
-  public DriveMotionPlanner(SwerveDriveKinematics kinematics) {
+  private final SwerveSetpointGenerator setpointGenerator;
+
+  private SwerveSetpointGenerator.SwerveSetpoint previousSetpoint =
+      new SwerveSetpointGenerator.SwerveSetpoint(
+          new ChassisSpeeds(),
+          new SwerveModuleState[] {
+            new SwerveModuleState(),
+            new SwerveModuleState(),
+            new SwerveModuleState(),
+            new SwerveModuleState()
+          });
+
+  public DriveMotionPlanner() {
     swerveDriveKinematics = kinematics;
     trajectoryController =
         new HolonomicDriveController(
@@ -79,6 +100,11 @@ public class DriveMotionPlanner {
     configTrajectoryTolerances();
     headingController = new PIDController(headingKp.get(), 0, headingKd.get());
     headingController.enableContinuousInput(-Math.PI, Math.PI);
+    setpointGenerator =
+        SwerveSetpointGenerator.builder()
+            .kinematics(kinematics)
+            .moduleLocations(moduleTranslations)
+            .build();
   }
 
   protected void setTrajectory(Trajectory trajectory) {
@@ -222,13 +248,19 @@ public class DriveMotionPlanner {
     SwerveModuleState[] outputStates = new SwerveModuleState[4];
     if (moduleOrientations.isEmpty()) {
       ChassisSpeeds discretizedSpeeds = ChassisSpeeds.discretize(robotRelativeSpeeds, 0.02);
-      outputStates = swerveDriveKinematics.toSwerveModuleStates(discretizedSpeeds);
+      Logger.recordOutput(
+          "SwerveStates/BeforePoofs", kinematics.toSwerveModuleStates(discretizedSpeeds));
+      SwerveSetpointGenerator.SwerveSetpoint output =
+          setpointGenerator.generateSetpoint(
+              kinematicLimits, previousSetpoint, discretizedSpeeds, 0.02);
+      outputStates = output.moduleStates();
+      previousSetpoint = output;
       Logger.recordOutput(
           "Drive/speeds",
           new double[] {
-            discretizedSpeeds.vxMetersPerSecond,
-            discretizedSpeeds.vyMetersPerSecond,
-            discretizedSpeeds.omegaRadiansPerSecond
+            output.chassisSpeeds().vxMetersPerSecond,
+            output.chassisSpeeds().vyMetersPerSecond,
+            output.chassisSpeeds().omegaRadiansPerSecond
           });
     } else {
       // If module orientations are present

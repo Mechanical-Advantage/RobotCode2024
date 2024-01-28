@@ -29,10 +29,16 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import lombok.Getter;
+import lombok.experimental.Delegate;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Drive extends SubsystemBase {
+  private interface MotionPlannerDelegate {
+    void setDriveInputSpeeds(ChassisSpeeds speeds);
+  }
+
   public static final Lock odometryLock = new ReentrantLock();
   // TODO: DO THIS BETTER!
   public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
@@ -40,8 +46,13 @@ public class Drive extends SubsystemBase {
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
+
+  @Delegate(types = MotionPlannerDelegate.class)
   private final DriveMotionPlanner motionPlanner;
+
   private Twist2d robotVelocity = new Twist2d();
+
+  @Getter(onMethod_ = @AutoLogOutput(key = "Odometry/FieldVelocity"))
   private Twist2d fieldVelocity = new Twist2d();
 
   private boolean characterizing = false;
@@ -55,7 +66,7 @@ public class Drive extends SubsystemBase {
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
 
-    motionPlanner = new DriveMotionPlanner(DriveConstants.kinematics);
+    motionPlanner = new DriveMotionPlanner();
   }
 
   public void periodic() {
@@ -175,10 +186,6 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  public void setDriveInputSpeeds(ChassisSpeeds speeds) {
-    motionPlanner.setDriveInputSpeeds(speeds);
-  }
-
   public Command followTrajectoryCommand(Trajectory trajectory) {
     return Commands.runOnce(() -> motionPlanner.setTrajectory(trajectory));
   }
@@ -217,18 +224,6 @@ public class Drive extends SubsystemBase {
   @AutoLogOutput(key = "SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
     return Arrays.stream(modules).map(Module::getState).toArray(SwerveModuleState[]::new);
-  }
-
-  /** Get current robot relative velocity of robot */
-  @AutoLogOutput(key = "Odometry/RobotVelocity")
-  public Twist2d getRobotVelocity() {
-    return robotVelocity;
-  }
-
-  /** Get current field velocity of robot */
-  @AutoLogOutput(key = "Odometry/FieldVelocity")
-  public Twist2d getFieldVelocity() {
-    return fieldVelocity;
   }
 
   public static Rotation2d[] getStraightOrientations() {

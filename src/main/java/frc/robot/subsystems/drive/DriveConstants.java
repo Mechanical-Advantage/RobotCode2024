@@ -36,14 +36,17 @@ public final class DriveConstants {
         new Translation2d(
             -drivetrainConfig.trackwidthX() / 2.0, -drivetrainConfig.trackwidthY() / 2.0)
       };
+
   public static final SwerveDriveKinematics kinematics =
       new SwerveDriveKinematics(moduleTranslations);
+
   public static final double odometryFrequency =
       switch (Constants.getRobot()) {
         case SIMBOT -> 50.0;
         case RAINBOWT -> 100.0;
         case COMPBOT -> 250.0;
       };
+
   public static final Matrix<N3, N1> odometryStateStdDevs =
       switch (Constants.getRobot()) {
         default -> new Matrix<>(VecBuilder.fill(0.003, 0.003, 0.0002));

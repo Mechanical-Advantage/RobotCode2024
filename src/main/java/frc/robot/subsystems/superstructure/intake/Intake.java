@@ -34,17 +34,17 @@ public class Intake extends SubsystemBase {
       if (intake) {
         io.setVoltage(intakeVoltage.get());
       } else if (eject) {
-          io.setVoltage(-intakeVoltage.get());
+        io.setVoltage(-intakeVoltage.get());
       }
     }
   }
 
   public boolean intaking() {
-      return intake;
+    return intake;
   }
 
   public boolean ejecting() {
-      return eject;
+    return eject;
   }
 
   public boolean running() {
@@ -52,7 +52,7 @@ public class Intake extends SubsystemBase {
   }
 
   private void intake() {
-      intake = true;
+    intake = true;
     eject = false;
   }
 
@@ -62,8 +62,8 @@ public class Intake extends SubsystemBase {
   }
 
   private void stop() {
-      intake = false;
-      eject = false;
+    intake = false;
+    eject = false;
     io.stop();
   }
 

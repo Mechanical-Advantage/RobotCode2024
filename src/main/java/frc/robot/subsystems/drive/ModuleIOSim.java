@@ -15,10 +15,8 @@ package frc.robot.subsystems.drive;
 
 import static frc.robot.subsystems.drive.DriveConstants.*;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
@@ -40,22 +38,11 @@ public class ModuleIOSim implements ModuleIO {
   private double driveAppliedVolts = 0.0;
   private double turnAppliedVolts = 0.0;
   private final Rotation2d turnAbsoluteInitPosition;
-
-  private final SimpleMotorFeedforward driveFeedforward;
-  private final PIDController driveFeedback;
-  private final PIDController turnFeedback;
   private Rotation2d turnAbsolutePosition;
-  private Rotation2d angleSetpoint = null; // Setpoint for closed loop control, null for open loop
-  private Double speedSetpoint = null; // Setpoint for closed loop control, null for open loop
 
   public ModuleIOSim(ModuleConfig config) {
     turnAbsoluteInitPosition = config.absoluteEncoderOffset();
     turnAbsolutePosition = turnAbsoluteInitPosition;
-
-    driveFeedforward = new SimpleMotorFeedforward(moduleConstants.ffKs(), moduleConstants.ffKv());
-    driveFeedback = new PIDController(moduleConstants.driveKp(), 0.0, moduleConstants.drivekD());
-    turnFeedback = new PIDController(moduleConstants.turnKp(), 0.0, moduleConstants.turnkD());
-    turnFeedback.enableContinuousInput(-Math.PI, Math.PI);
   }
 
   @Override
@@ -66,7 +53,7 @@ public class ModuleIOSim implements ModuleIO {
     inputs.drivePositionRad = driveSim.getAngularPositionRad();
     inputs.driveVelocityRadPerSec = driveSim.getAngularVelocityRadPerSec();
     inputs.driveAppliedVolts = driveAppliedVolts;
-    inputs.driveCurrentAmps = new double[] {Math.abs(driveSim.getCurrentDrawAmps())};
+    inputs.driveCurrentAmps = Math.abs(driveSim.getCurrentDrawAmps());
 
     inputs.turnAbsolutePosition =
         new Rotation2d(turnSim.getAngularPositionRad()).plus(turnAbsoluteInitPosition);
@@ -74,7 +61,7 @@ public class ModuleIOSim implements ModuleIO {
     inputs.turnPosition = Rotation2d.fromRadians(turnSim.getAngularPositionRad());
     inputs.turnVelocityRadPerSec = turnSim.getAngularVelocityRadPerSec();
     inputs.turnAppliedVolts = turnAppliedVolts;
-    inputs.turnCurrentAmps = new double[] {Math.abs(turnSim.getCurrentDrawAmps())};
+    inputs.turnCurrentAmps = Math.abs(turnSim.getCurrentDrawAmps());
 
     inputs.odometryDrivePositionsMeters =
         new double[] {driveSim.getAngularPositionRad() * wheelRadius};
@@ -82,49 +69,23 @@ public class ModuleIOSim implements ModuleIO {
         new Rotation2d[] {Rotation2d.fromRadians(turnSim.getAngularPositionRad())};
   }
 
-  @Override
-  public void periodic() {
-    // Run closed loop turn control
-    if (angleSetpoint != null) {
-      turnAppliedVolts =
-          turnFeedback.calculate(turnAbsolutePosition.getRadians(), angleSetpoint.getRadians());
-      turnSim.setInputVoltage(turnAppliedVolts);
-      // Run closed loop drive control
-      if (speedSetpoint != null) {
-        // Scale velocity based on turn error
-        double adjustSpeedSetpoint = speedSetpoint * Math.cos(turnFeedback.getPositionError());
-        double velocityRadPerSec = adjustSpeedSetpoint / wheelRadius;
-        driveAppliedVolts =
-            driveFeedforward.calculate(velocityRadPerSec)
-                + driveFeedback.calculate(
-                    driveSim.getAngularVelocityRadPerSec(), velocityRadPerSec);
-        driveSim.setInputVoltage(driveAppliedVolts);
-      }
-    }
+  public void setDriveVoltage(double volts) {
+    driveAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
+    driveSim.setInputVoltage(driveAppliedVolts);
   }
 
-  @Override
-  public void runSetpoint(SwerveModuleState state) {
-    angleSetpoint = state.angle;
-    speedSetpoint = state.speedMetersPerSecond;
+  public void setTurnVoltage(double volts) {
+    turnAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
+    driveSim.setInputVoltage(turnAppliedVolts);
   }
 
-  @Override
-  public void runCharacterization(double volts) {
-    // Lock wheels to forward and no speed setpoint
-    angleSetpoint = new Rotation2d();
-    speedSetpoint = null;
+  public void setDriveVelocitySetpoint(double velocityRadPerSec, double ffVolts) {}
 
-    driveAppliedVolts = volts;
-    driveSim.setInputVoltage(volts);
-  }
+  public void setTurnPositionSetpoint(double angleRadians, double ffVolts) {}
 
   @Override
   public void stop() {
     driveSim.setInputVoltage(0.0);
     turnSim.setInputVoltage(0.0);
-
-    speedSetpoint = null;
-    angleSetpoint = null;
   }
 }

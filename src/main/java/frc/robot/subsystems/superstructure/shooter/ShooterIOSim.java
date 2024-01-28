@@ -1,4 +1,6 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.superstructure.shooter;
+
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.ShooterConstants.*;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -8,15 +10,24 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 
 public class ShooterIOSim implements ShooterIO {
-  private FlywheelSim leftSim =
-      new FlywheelSim(DCMotor.getNeoVortex(1), ShooterConstants.flywheelReduction, 0.1);
-  private FlywheelSim rightSim =
-      new FlywheelSim(DCMotor.getNeoVortex(1), ShooterConstants.flywheelReduction, 0.1);
-  private FlywheelSim feederSim = new FlywheelSim(DCMotor.getAndymarkRs775_125(1), 1.0, 0.01);
+  private final FlywheelSim leftSim =
+      new FlywheelSim(DCMotor.getNeoVortex(1), flywheelReduction, 0.1);
+  private final FlywheelSim rightSim =
+      new FlywheelSim(DCMotor.getNeoVortex(1), flywheelReduction, 0.1);
+  private final FlywheelSim feederSim = new FlywheelSim(DCMotor.getAndymarkRs775_125(1), 1.0, 0.01);
 
-  private PIDController leftController = new PIDController(0.0, 0.0, 0.0);
-  private PIDController rightController = new PIDController(0.0, 0.0, 0.0);
-  private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+  private final PIDController leftController =
+      new PIDController(
+          leftFlywheelConstants.kP(), leftFlywheelConstants.kI(), leftFlywheelConstants.kD());
+  private final PIDController rightController =
+      new PIDController(
+          rightFlywheelConstants.kP(), rightFlywheelConstants.kI(), rightFlywheelConstants.kD());
+  private SimpleMotorFeedforward leftFF =
+      new SimpleMotorFeedforward(
+          leftFlywheelConstants.kS(), leftFlywheelConstants.kV(), leftFlywheelConstants.kA());
+  private SimpleMotorFeedforward rightFF =
+      new SimpleMotorFeedforward(
+          rightFlywheelConstants.kS(), rightFlywheelConstants.kV(), rightFlywheelConstants.kA());
 
   private double leftAppliedVolts = 0.0;
   private double rightAppliedVolts = 0.0;
@@ -34,13 +45,13 @@ public class ShooterIOSim implements ShooterIO {
     if (leftSetpointRPM != null) {
       leftAppliedVolts =
           leftController.calculate(leftSim.getAngularVelocityRPM(), leftSetpointRPM)
-              + ff.calculate(leftSetpointRPM);
+              + leftFF.calculate(leftSetpointRPM);
       leftSim.setInputVoltage(MathUtil.clamp(leftAppliedVolts, -12.0, 12.0));
     }
     if (rightSetpointRPM != null) {
       rightAppliedVolts =
           rightController.calculate(rightSim.getAngularVelocityRPM(), rightSetpointRPM)
-              + ff.calculate(rightSetpointRPM);
+              + rightFF.calculate(rightSetpointRPM);
       rightSim.setInputVoltage(MathUtil.clamp(rightAppliedVolts, -12.0, 12.0));
     }
 
@@ -91,14 +102,23 @@ public class ShooterIOSim implements ShooterIO {
   }
 
   @Override
-  public void setPID(double p, double i, double d) {
+  public void setLeftPID(double p, double i, double d) {
     leftController.setPID(p, i, d);
+  }
+
+  @Override
+  public void setLeftFF(double s, double v, double a) {
+    leftFF = new SimpleMotorFeedforward(s, v, a);
+  }
+
+  @Override
+  public void setRightPID(double p, double i, double d) {
     rightController.setPID(p, i, d);
   }
 
   @Override
-  public void setFF(double s, double v, double a) {
-    ff = new SimpleMotorFeedforward(s, v, a);
+  public void setRightFF(double s, double v, double a) {
+    rightFF = new SimpleMotorFeedforward(s, v, a);
   }
 
   @Override

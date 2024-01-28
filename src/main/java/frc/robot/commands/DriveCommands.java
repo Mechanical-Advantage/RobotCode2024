@@ -14,32 +14,28 @@
 package frc.robot.commands;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.superstructure.ShotCalculator;
+import frc.robot.util.AllianceFlipUtil;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 public class DriveCommands {
   private static final double DEADBAND = 0.1;
 
-  private DriveCommands() {}
-
-  /**
-   * Field relative drive command using two joysticks (controlling linear and angular velocities).
-   */
   public static Command joystickDrive(
       Drive drive,
       DoubleSupplier xSupplier,
       DoubleSupplier ySupplier,
       DoubleSupplier omegaSupplier) {
-    return Commands.run(
+    return drive.run(
         () -> {
           // Apply deadband
           double linearMagnitude =
@@ -59,14 +55,31 @@ public class DriveCommands {
                   .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
                   .getTranslation();
 
-          // Convert to field relative speeds & send command
-          drive.runVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(
+          ChassisSpeeds speeds =
+              new ChassisSpeeds(
                   linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
                   linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  omega * DriveConstants.drivetrainConfig.maxAngularVelocity(),
-                  RobotState.getInstance().getEstimatedPose().getRotation()));
-        },
-        drive);
+                  omega * DriveConstants.drivetrainConfig.maxAngularVelocity());
+          drive.setDriveInputSpeeds(speeds);
+        });
+  }
+
+  private static final Supplier<Rotation2d> shotRotation =
+      () -> {
+        Twist2d fieldVel = RobotState.getInstance().fieldVelocity();
+        ShotCalculator.ShotData shotData =
+            ShotCalculator.calculate(
+                AllianceFlipUtil.apply(
+                    FieldConstants.Speaker.centerSpeakerOpening.getTranslation()),
+                RobotState.getInstance().getEstimatedPose().getTranslation(),
+                new Translation2d(fieldVel.dx, fieldVel.dy));
+        return shotData.goalHeading();
+      };
+
+  public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {
+    return Commands.either(
+        drive.disableHeadingCommand(), // turn off
+        drive.setHeadingCommand(shotRotation), // turn on
+        drive.getMotionPlanner()::isHeadingControlled);
   }
 }

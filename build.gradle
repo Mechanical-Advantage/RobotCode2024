@@ -1,8 +1,9 @@
 plugins {
     id "java"
-    id "edu.wpi.first.GradleRIO" version "2024.1.1"
+    id "edu.wpi.first.GradleRIO" version "2024.2.1"
     id "com.peterabeles.gversion" version "1.10"
     id "com.diffplug.spotless" version "6.24.0"
+    id "io.freefair.lombok" version "8.4"
 }
 
 java {
@@ -142,6 +143,28 @@ gversion {
     dateFormat   = "yyyy-MM-dd HH:mm:ss z"
     timeZone     = "America/New_York"
     indent       = "  "
+}
+
+tasks.register('eventDeploy') {
+    dependsOn('deploy')
+    doFirst {
+        def branchPrefix = "event"
+
+        def branch = 'git branch --show-current'.execute().text.trim()
+        if (!branch.startsWith(branchPrefix)) {
+            throw new GradleException("Current branch '$branch' is not a valid event branch.")
+        }
+
+        def commitMessage = "Update at '${new Date().toString()}'"
+
+        exec {
+            commandLine 'git', 'add', '-A'
+            commandLine 'git', 'commit', '-m', commitMessage
+        }
+
+        println "Deployed to branch: '$branch'"
+        println "Commit message: '$commitMessage'"
+    }
 }
 
 // Spotless formatting

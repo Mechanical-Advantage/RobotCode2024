@@ -1,4 +1,6 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.superstructure.shooter;
+
+import static frc.robot.subsystems.superstructure.SuperstructureConstants.ShooterConstants.*;
 
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkFlex;
@@ -16,13 +18,13 @@ public class ShooterIOSparkMax implements ShooterIO {
 
   private SparkPIDController leftController;
   private SparkPIDController rightController;
-  private SimpleMotorFeedforward flywheelFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+  private SimpleMotorFeedforward leftFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+  private SimpleMotorFeedforward rightFF = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
 
   public ShooterIOSparkMax() {
-    leftMotor = new CANSparkFlex(ShooterConstants.leftMotorId, CANSparkFlex.MotorType.kBrushless);
-    rightMotor = new CANSparkFlex(ShooterConstants.rightMotorId, CANSparkFlex.MotorType.kBrushless);
-    feederMotor =
-        new CANSparkFlex(ShooterConstants.feederMotorId, CANSparkFlex.MotorType.kBrushless);
+    leftMotor = new CANSparkFlex(leftFlywheelConstants.id(), CANSparkFlex.MotorType.kBrushless);
+    rightMotor = new CANSparkFlex(rightFlywheelConstants.id(), CANSparkFlex.MotorType.kBrushless);
+    feederMotor = new CANSparkFlex(feederConstants.id(), CANSparkFlex.MotorType.kBrushless);
 
     leftEncoder = leftMotor.getEncoder();
     rightEncoder = rightMotor.getEncoder();
@@ -31,14 +33,14 @@ public class ShooterIOSparkMax implements ShooterIO {
     rightMotor.restoreFactoryDefaults();
     feederMotor.restoreFactoryDefaults();
 
-    leftMotor.setInverted(ShooterConstants.leftMotorInverted);
-    rightMotor.setInverted(ShooterConstants.rightMotorInverted);
+    leftMotor.setInverted(leftFlywheelConstants.inverted());
+    rightMotor.setInverted(rightFlywheelConstants.inverted());
     leftMotor.setSmartCurrentLimit(60);
     rightMotor.setSmartCurrentLimit(60);
     leftMotor.enableVoltageCompensation(12.0);
     rightMotor.enableVoltageCompensation(12.0);
 
-    feederMotor.setInverted(ShooterConstants.feederMotorInverted);
+    feederMotor.setInverted(feederConstants.inverted());
     feederMotor.setSmartCurrentLimit(100);
     feederMotor.enableVoltageCompensation(12.0);
 
@@ -53,10 +55,10 @@ public class ShooterIOSparkMax implements ShooterIO {
     //    rightEncoder.setAverageDepth(2);
 
     // rotations, rps
-    leftEncoder.setPositionConversionFactor(1.0 / ShooterConstants.flywheelReduction);
-    rightEncoder.setPositionConversionFactor(1.0 / ShooterConstants.flywheelReduction);
-    leftEncoder.setVelocityConversionFactor(1.0 / ShooterConstants.flywheelReduction);
-    rightEncoder.setVelocityConversionFactor(1.0 / ShooterConstants.flywheelReduction);
+    leftEncoder.setPositionConversionFactor(1.0 / flywheelReduction);
+    rightEncoder.setPositionConversionFactor(1.0 / flywheelReduction);
+    leftEncoder.setVelocityConversionFactor(1.0 / flywheelReduction);
+    rightEncoder.setVelocityConversionFactor(1.0 / flywheelReduction);
 
     leftController = leftMotor.getPIDController();
     rightController = rightMotor.getPIDController();
@@ -91,7 +93,7 @@ public class ShooterIOSparkMax implements ShooterIO {
         rpm,
         CANSparkBase.ControlType.kVelocity,
         0,
-        flywheelFF.calculate(rpm),
+        leftFF.calculate(rpm),
         SparkPIDController.ArbFFUnits.kVoltage);
   }
 
@@ -101,7 +103,7 @@ public class ShooterIOSparkMax implements ShooterIO {
         rpm,
         CANSparkBase.ControlType.kVelocity,
         0,
-        flywheelFF.calculate(rpm),
+        rightFF.calculate(rpm),
         SparkPIDController.ArbFFUnits.kVoltage);
   }
 
@@ -136,18 +138,27 @@ public class ShooterIOSparkMax implements ShooterIO {
   }
 
   @Override
-  public void setPID(double p, double i, double d) {
+  public void setLeftPID(double p, double i, double d) {
     leftController.setP(p);
     leftController.setI(i);
     leftController.setD(d);
+  }
+
+  @Override
+  public void setLeftFF(double kS, double kV, double kA) {
+    leftFF = new SimpleMotorFeedforward(kS, kV, kA);
+  }
+
+  @Override
+  public void setRightPID(double p, double i, double d) {
     rightController.setP(p);
     rightController.setI(i);
     rightController.setD(d);
   }
 
   @Override
-  public void setFF(double kS, double kV, double kA) {
-    flywheelFF = new SimpleMotorFeedforward(kS, kV, kA);
+  public void setRightFF(double s, double v, double a) {
+    rightFF = new SimpleMotorFeedforward(s, v, a);
   }
 
   @Override

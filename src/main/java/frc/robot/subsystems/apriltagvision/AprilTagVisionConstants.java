@@ -1,6 +1,8 @@
 package frc.robot.subsystems.apriltagvision;
 
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
 public class AprilTagVisionConstants {
@@ -13,13 +15,21 @@ public class AprilTagVisionConstants {
 
   public static final Pose3d[] cameraPoses =
       switch (Constants.getRobot()) {
-        case RAINBOWT -> new Pose3d[] {};
+        case RAINBOWT ->
+            new Pose3d[] {
+              new Pose3d(
+                      Units.inchesToMeters(9.735),
+                      Units.inchesToMeters(9.974),
+                      Units.inchesToMeters(6.839),
+                      new Rotation3d(0.0, Units.degreesToRadians(-28.125), 0.0))
+                  .rotateBy(new Rotation3d(0.0, 0.0, Units.degreesToRadians(45.695)))
+            };
         default -> new Pose3d[] {};
       };
 
   public static final String[] cameraNames =
       switch (Constants.getRobot()) {
-        case RAINBOWT -> new String[] {"northstar_0", "northstar_1"};
+        case RAINBOWT -> new String[] {"northstar_0"};
         default -> new String[] {};
       };
 }

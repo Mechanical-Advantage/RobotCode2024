@@ -24,6 +24,8 @@ import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.commands.auto.TestAutos;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
+import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
+import frc.robot.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.subsystems.superstructure.intake.IntakeIO;
@@ -71,7 +73,9 @@ public class RobotContainer {
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
-            aprilTagVision = new AprilTagVision();
+            aprilTagVision =
+                new AprilTagVision(
+                    new AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
             shooter = new Shooter(new ShooterIOSparkMax());
             intake = new Intake(new IntakeIOSparkMax());
           }

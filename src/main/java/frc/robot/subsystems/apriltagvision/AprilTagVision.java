@@ -37,10 +37,6 @@ public class AprilTagVision extends VirtualSubsystem {
 
   public AprilTagVision(AprilTagVisionIO... io) {
     System.out.println("[Init] Creating AprilTagVision");
-    if (io.length != cameraPoses.length) {
-      throw new IllegalArgumentException(
-          "Number of camera positions must match number of AprilTagVisionIO instances.");
-    }
     this.io = io;
     inputs = new AprilTagVisionIOInputs[io.length];
     for (int i = 0; i < io.length; i++) {

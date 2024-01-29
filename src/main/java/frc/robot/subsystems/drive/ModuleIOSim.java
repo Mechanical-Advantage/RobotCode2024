@@ -31,9 +31,9 @@ public class ModuleIOSim implements ModuleIO {
   private static final double LOOP_PERIOD_SECS = 0.02;
 
   private final DCMotorSim driveSim =
-      new DCMotorSim(DCMotor.getNEO(1), moduleConstants.driveReduction(), 0.025);
+      new DCMotorSim(DCMotor.getKrakenX60(1), moduleConstants.driveReduction(), 0.025);
   private final DCMotorSim turnSim =
-      new DCMotorSim(DCMotor.getNEO(1), moduleConstants.turnReduction(), 0.004);
+      new DCMotorSim(DCMotor.getKrakenX60(1), moduleConstants.turnReduction(), 0.004);
 
   private double driveAppliedVolts = 0.0;
   private double turnAppliedVolts = 0.0;
@@ -76,12 +76,8 @@ public class ModuleIOSim implements ModuleIO {
 
   public void setTurnVoltage(double volts) {
     turnAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
-    driveSim.setInputVoltage(turnAppliedVolts);
+    turnSim.setInputVoltage(turnAppliedVolts);
   }
-
-  public void setDriveVelocitySetpoint(double velocityRadPerSec, double ffVolts) {}
-
-  public void setTurnPositionSetpoint(double angleRadians, double ffVolts) {}
 
   @Override
   public void stop() {

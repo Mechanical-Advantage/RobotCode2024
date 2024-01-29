@@ -2,6 +2,8 @@ package frc.robot.subsystems.superstructure;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import frc.robot.util.GeomUtil;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -12,6 +14,7 @@ import org.littletonrobotics.junction.Logger;
  * <br>
  * Units in meters, radians, and m/s
  */
+@ExtensionMethod({GeomUtil.class})
 public class ShotCalculator {
   public record ShotData(
       double effectiveRobotToSpeakerDist,
@@ -39,12 +42,11 @@ public class ShotCalculator {
     double rawDistToGoal = robot.getDistance(speaker);
     double shotSpeed = rawDistToGoal / shotTime + radialComponent;
     if (shotSpeed <= 0.0) shotSpeed = 0.0;
-    // Aim opposite of tangentialComponent (negative lead when tangentialComponent is positive)
-    // rotate back into field frame then add take opposite since shooter is on back
+    // Rotate back into field frame then add take opposite
     Rotation2d goalHeading =
-        new Rotation2d(shotSpeed, tangentialComponent)
-            .rotateBy(speaker.minus(robot).getAngle())
-            .plus(Rotation2d.fromRadians(Math.PI));
+        robot.toPose2d().inverse().transformBy(speaker.toTransform2d()).getTranslation().getAngle();
+    // Aim opposite of tangentialComponent (negative lead when tangentialComponent is positive)
+    goalHeading = goalHeading.plus(new Rotation2d(shotSpeed, tangentialComponent));
     double effectiveDist = shotTime * Math.hypot(tangentialComponent, shotSpeed);
 
     Logger.recordOutput("ShootWhileMoving/heading", goalHeading);

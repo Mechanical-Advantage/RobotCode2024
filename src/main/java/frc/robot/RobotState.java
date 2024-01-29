@@ -12,6 +12,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import frc.robot.subsystems.drive.DriveConstants;
 import java.util.NoSuchElementException;
+
 import org.littletonrobotics.junction.AutoLogOutput;
 
 public class RobotState {
@@ -20,10 +21,6 @@ public class RobotState {
       SwerveDriveWheelPositions wheelPositions, Rotation2d gyroAngle, double timestamp) {}
 
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
-
-  // Subsystem data
-  public record DriveData(
-      SwerveDriveWheelPositions wheelPositions, Rotation2d robotHeading, Twist2d fieldVelocity) {}
 
   private static final double poseBufferSizeSeconds = 2.0;
 
@@ -51,9 +48,7 @@ public class RobotState {
             new SwerveModulePosition()
           });
   private Rotation2d lastGyroAngle = new Rotation2d();
-
-  // Subsystem state members
-  private DriveData currentDriveData;
+  private Twist2d robotVelocity = new Twist2d();
 
   private RobotState() {
     odometryStdDevs.setColumn(0, DriveConstants.odometryStateStdDevs.extractColumnVector(0));
@@ -131,9 +126,8 @@ public class RobotState {
     estimatedPose = estimateAtTime.exp(scaledTwist).plus(sampleToOdometryTransform);
   }
 
-  public void addDriveData(
-      SwerveDriveWheelPositions wheelPositions, Rotation2d robotHeading, Twist2d fieldVelocity) {
-    currentDriveData = new DriveData(wheelPositions, robotHeading, fieldVelocity);
+  public void addVelocityData(Twist2d robotVelocity) {
+    this.robotVelocity = robotVelocity;
   }
 
   /**
@@ -142,15 +136,14 @@ public class RobotState {
    */
   public void resetPose(Pose2d initialPose) {
     estimatedPose = initialPose;
-    poseBuffer.clear();
-
     odometryPose = initialPose;
-    lastWheelPositions = currentDriveData.wheelPositions();
-    lastGyroAngle = currentDriveData.robotHeading();
+    poseBuffer.clear();
   }
 
   public Twist2d fieldVelocity() {
-    return currentDriveData.fieldVelocity();
+    Translation2d linearFieldVelocity =
+            new Translation2d(robotVelocity.dx, robotVelocity.dy).rotateBy(estimatedPose.getRotation());
+    return new Twist2d(linearFieldVelocity.getX(), linearFieldVelocity.getY(), robotVelocity.dtheta);
   }
 
   @AutoLogOutput(key = "Odometry/Robot")

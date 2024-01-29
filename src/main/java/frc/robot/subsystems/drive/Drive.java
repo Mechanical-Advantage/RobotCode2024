@@ -123,15 +123,9 @@ public class Drive extends SubsystemBase {
         gyroInputs.connected
             ? gyroInputs.yawVelocityRadPerSec
             : robotRelativeVelocity.omegaRadiansPerSecond;
-    Twist2d robotVelocity = robotRelativeVelocity.toTwist2d();
-    Translation2d linearFieldVel =
-        new Translation2d(robotVelocity.dx, robotVelocity.dy).rotateBy(getGyroYaw());
-    fieldVelocity = new Twist2d(linearFieldVel.getX(), linearFieldVel.getY(), robotVelocity.dtheta);
+    RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
 
-    // Add drive data
-    RobotState.getInstance().addDriveData(getWheelPositions(), getGyroYaw(), fieldVelocity);
-
-    // Get motion planner
+    // Get motion planner output
     SwerveModuleState[] setpointStates =
         motionPlanner.update(
             Timer.getFPGATimestamp(), RobotState.getInstance().getEstimatedPose(), fieldVelocity);

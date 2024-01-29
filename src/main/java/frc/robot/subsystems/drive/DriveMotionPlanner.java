@@ -18,12 +18,14 @@ import frc.robot.Constants;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.swerve.SwerveKinematicLimits;
+import frc.robot.util.swerve.SwerveSetpoint;
 import frc.robot.util.swerve.SwerveSetpointGenerator;
 import frc.robot.util.trajectory.HolonomicDriveController;
 import frc.robot.util.trajectory.Trajectory;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Supplier;
+import lombok.Getter;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -69,7 +71,7 @@ public class DriveMotionPlanner {
   private final SwerveDriveKinematics swerveDriveKinematics;
 
   private ChassisSpeeds driveInputSpeeds = new ChassisSpeeds();
-  private Optional<Trajectory> currentTrajectory = Optional.empty();
+  @Getter private Optional<Trajectory> currentTrajectory = Optional.empty();
   private Optional<Double> trajectoryStartTime = Optional.empty();
   private Optional<Supplier<Rotation2d>> headingSupplier = Optional.empty();
   private Optional<Rotation2d[]> moduleOrientations = Optional.empty();
@@ -79,8 +81,8 @@ public class DriveMotionPlanner {
 
   private final SwerveSetpointGenerator setpointGenerator;
 
-  private SwerveSetpointGenerator.SwerveSetpoint previousSetpoint =
-      new SwerveSetpointGenerator.SwerveSetpoint(
+  private SwerveSetpoint previousSetpoint =
+      new SwerveSetpoint(
           new ChassisSpeeds(),
           new SwerveModuleState[] {
             new SwerveModuleState(),
@@ -153,6 +155,7 @@ public class DriveMotionPlanner {
       Logger.recordOutput("Trajectory/trajectoryPoses", new Pose2d[] {});
       Logger.recordOutput("Trajectory/setpointPose", new Pose2d());
       Logger.recordOutput("Drive/headingControl", new Rotation2d());
+      Logger.recordOutput("Drive/headingSetpoint", new Pose2d());
       Logger.recordOutput("Drive/speeds", new double[] {});
       return new SwerveModuleState[] {
         new SwerveModuleState(),
@@ -225,8 +228,7 @@ public class DriveMotionPlanner {
                       trajectoryController.getPoseError().getRotation().getRadians());
                   return trajectorySpeeds;
                 })
-            .orElse(driveInputSpeeds);
-    // Otherwise use inputted speeds
+            .orElse(driveInputSpeeds); // Otherwise use inputted speeds
 
     // Use heading controller
     // Change to robot relative speeds
@@ -242,6 +244,8 @@ public class DriveMotionPlanner {
           Logger.recordOutput(
               "Drive/headingError",
               setpointHeading.getRadians() - robot.getRotation().getRadians());
+          Logger.recordOutput(
+              "Drive/headingSetpoint", new Pose2d(robot.getTranslation(), setpointHeading));
         });
 
     // Calculate output setpoint states
@@ -250,7 +254,7 @@ public class DriveMotionPlanner {
       ChassisSpeeds discretizedSpeeds = ChassisSpeeds.discretize(robotRelativeSpeeds, 0.02);
       Logger.recordOutput(
           "SwerveStates/BeforePoofs", kinematics.toSwerveModuleStates(discretizedSpeeds));
-      SwerveSetpointGenerator.SwerveSetpoint output =
+      SwerveSetpoint output =
           setpointGenerator.generateSetpoint(
               kinematicLimits, previousSetpoint, discretizedSpeeds, 0.02);
       outputStates = output.moduleStates();
@@ -272,10 +276,6 @@ public class DriveMotionPlanner {
       moduleOrientations = Optional.empty();
     }
     return outputStates;
-  }
-
-  public Optional<Trajectory> getCurrentTrajectory() {
-    return currentTrajectory;
   }
 
   @AutoLogOutput(key = "Drive/followingTrajectory")

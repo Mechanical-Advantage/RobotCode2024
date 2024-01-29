@@ -1,11 +1,15 @@
 package frc.robot.util.swerve;
 
+import static frc.robot.util.EqualsUtil.*;
+
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import frc.robot.util.EqualsUtil;
+import frc.robot.util.GeomUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,31 +28,8 @@ import lombok.experimental.ExtensionMethod;
  */
 @Builder
 @RequiredArgsConstructor
-@ExtensionMethod({SwerveSetpointGenerator.Extensions.class})
+@ExtensionMethod({GeomUtil.class, EqualsUtil.GeomExtensions.class})
 public class SwerveSetpointGenerator {
-  private static boolean epsilonEquals(double a, double b, double epsilon) {
-    return (a - epsilon <= b) && (a + epsilon >= b);
-  }
-
-  private static boolean epsilonEquals(double a, double b) {
-    return epsilonEquals(a, b, 1e-12);
-  }
-
-  static class Extensions {
-    public static Twist2d toTwist2d(ChassisSpeeds speeds) {
-      return new Twist2d(
-          speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond);
-    }
-
-    public static boolean epsilonEquals(Twist2d twist, Twist2d other) {
-      return SwerveSetpointGenerator.epsilonEquals(twist.dx, other.dx)
-          && SwerveSetpointGenerator.epsilonEquals(twist.dy, other.dy)
-          && SwerveSetpointGenerator.epsilonEquals(twist.dtheta, other.dtheta);
-    }
-  }
-
-  public record SwerveSetpoint(ChassisSpeeds chassisSpeeds, SwerveModuleState[] moduleStates) {}
-
   private final SwerveDriveKinematics kinematics;
   private final Translation2d[] moduleLocations;
 
@@ -78,7 +59,7 @@ public class SwerveSetpointGenerator {
 
   @FunctionalInterface
   private interface Function2d {
-    public double f(double x, double y);
+    double f(double x, double y);
   }
 
   /**
@@ -226,7 +207,7 @@ public class SwerveSetpointGenerator {
     if (desiredState.toTwist2d().epsilonEquals(new Twist2d())) {
       need_to_steer = false;
       for (int i = 0; i < modules.length; ++i) {
-        desiredModuleState[i].angle = prevSetpoint.moduleStates[i].angle;
+        desiredModuleState[i].angle = prevSetpoint.moduleStates()[i].angle;
         desiredModuleState[i].speedMetersPerSecond = 0.0;
       }
     }
@@ -241,13 +222,13 @@ public class SwerveSetpointGenerator {
     boolean all_modules_should_flip = true;
     for (int i = 0; i < modules.length; ++i) {
       prev_vx[i] =
-          prevSetpoint.moduleStates[i].angle.getCos()
-              * prevSetpoint.moduleStates[i].speedMetersPerSecond;
+          prevSetpoint.moduleStates()[i].angle.getCos()
+              * prevSetpoint.moduleStates()[i].speedMetersPerSecond;
       prev_vy[i] =
-          prevSetpoint.moduleStates[i].angle.getSin()
-              * prevSetpoint.moduleStates[i].speedMetersPerSecond;
-      prev_heading[i] = prevSetpoint.moduleStates[i].angle;
-      if (prevSetpoint.moduleStates[i].speedMetersPerSecond < 0.0) {
+          prevSetpoint.moduleStates()[i].angle.getSin()
+              * prevSetpoint.moduleStates()[i].speedMetersPerSecond;
+      prev_heading[i] = prevSetpoint.moduleStates()[i].angle;
+      if (prevSetpoint.moduleStates()[i].speedMetersPerSecond < 0.0) {
         prev_heading[i] = prev_heading[i].rotateBy(Rotation2d.fromRadians(Math.PI));
       }
       desired_vx[i] =
@@ -267,7 +248,7 @@ public class SwerveSetpointGenerator {
       }
     }
     if (all_modules_should_flip
-        && !prevSetpoint.chassisSpeeds.toTwist2d().epsilonEquals(new Twist2d())
+        && !prevSetpoint.chassisSpeeds().toTwist2d().epsilonEquals(new Twist2d())
         && !desiredState.toTwist2d().epsilonEquals(new Twist2d())) {
       // It will (likely) be faster to stop the robot, rotate the modules in place to the complement
       // of the desired
@@ -279,10 +260,10 @@ public class SwerveSetpointGenerator {
     // the goal state; then
     // find the amount we can move from start towards goal in this cycle such that no kinematic
     // limit is exceeded.
-    double dx = desiredState.vxMetersPerSecond - prevSetpoint.chassisSpeeds.vxMetersPerSecond;
-    double dy = desiredState.vyMetersPerSecond - prevSetpoint.chassisSpeeds.vyMetersPerSecond;
+    double dx = desiredState.vxMetersPerSecond - prevSetpoint.chassisSpeeds().vxMetersPerSecond;
+    double dy = desiredState.vyMetersPerSecond - prevSetpoint.chassisSpeeds().vyMetersPerSecond;
     double dtheta =
-        desiredState.omegaRadiansPerSecond - prevSetpoint.chassisSpeeds.omegaRadiansPerSecond;
+        desiredState.omegaRadiansPerSecond - prevSetpoint.chassisSpeeds().omegaRadiansPerSecond;
 
     // 's' interpolates between start and goal. At 0, we are at prevState and at 1, we are at
     // desiredState.
@@ -300,22 +281,22 @@ public class SwerveSetpointGenerator {
     final double max_theta_step = dt * limits.maxSteeringVelocity();
     for (int i = 0; i < modules.length; ++i) {
       if (!need_to_steer) {
-        overrideSteering.add(Optional.of(prevSetpoint.moduleStates[i].angle));
+        overrideSteering.add(Optional.of(prevSetpoint.moduleStates()[i].angle));
         continue;
       }
       overrideSteering.add(Optional.empty());
-      if (epsilonEquals(prevSetpoint.moduleStates[i].speedMetersPerSecond, 0.0)) {
+      if (epsilonEquals(prevSetpoint.moduleStates()[i].speedMetersPerSecond, 0.0)) {
         // If module is stopped, we know that we will need to move straight to the final steering
         // angle, so limit based
         // purely on rotation in place.
         if (epsilonEquals(desiredModuleState[i].speedMetersPerSecond, 0.0)) {
           // Goal angle doesn't matter. Just leave module at its current angle.
-          overrideSteering.set(i, Optional.of(prevSetpoint.moduleStates[i].angle));
+          overrideSteering.set(i, Optional.of(prevSetpoint.moduleStates()[i].angle));
           continue;
         }
 
         var necessaryRotation =
-            prevSetpoint.moduleStates[i].angle.unaryMinus().rotateBy(desiredModuleState[i].angle);
+            prevSetpoint.moduleStates()[i].angle.unaryMinus().rotateBy(desiredModuleState[i].angle);
         if (flipHeading(necessaryRotation)) {
           necessaryRotation = necessaryRotation.rotateBy(Rotation2d.fromRadians(Math.PI));
         }
@@ -332,7 +313,7 @@ public class SwerveSetpointGenerator {
           overrideSteering.set(
               i,
               Optional.of(
-                  prevSetpoint.moduleStates[i].angle.rotateBy(
+                  prevSetpoint.moduleStates()[i].angle.rotateBy(
                       Rotation2d.fromRadians(
                           Math.signum(necessaryRotation.getRadians()) * max_theta_step))));
           min_s = 0.0;
@@ -389,9 +370,9 @@ public class SwerveSetpointGenerator {
 
     ChassisSpeeds retSpeeds =
         new ChassisSpeeds(
-            prevSetpoint.chassisSpeeds.vxMetersPerSecond + min_s * dx,
-            prevSetpoint.chassisSpeeds.vyMetersPerSecond + min_s * dy,
-            prevSetpoint.chassisSpeeds.omegaRadiansPerSecond + min_s * dtheta);
+            prevSetpoint.chassisSpeeds().vxMetersPerSecond + min_s * dx,
+            prevSetpoint.chassisSpeeds().vyMetersPerSecond + min_s * dy,
+            prevSetpoint.chassisSpeeds().omegaRadiansPerSecond + min_s * dtheta);
     var retStates = kinematics.toSwerveModuleStates(retSpeeds);
     for (int i = 0; i < modules.length; ++i) {
       final var maybeOverride = overrideSteering.get(i);
@@ -403,7 +384,7 @@ public class SwerveSetpointGenerator {
         retStates[i].angle = override;
       }
       final var deltaRotation =
-          prevSetpoint.moduleStates[i].angle.unaryMinus().rotateBy(retStates[i].angle);
+          prevSetpoint.moduleStates()[i].angle.unaryMinus().rotateBy(retStates[i].angle);
       if (flipHeading(deltaRotation)) {
         retStates[i].angle = retStates[i].angle.rotateBy(Rotation2d.fromRadians(Math.PI));
         retStates[i].speedMetersPerSecond *= -1.0;

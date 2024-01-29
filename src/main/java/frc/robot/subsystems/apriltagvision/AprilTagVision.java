@@ -21,8 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.junction.Logger;
 
+/** Vision subsystem for AprilTag vision. */
+@ExtensionMethod({GeomUtil.class})
 public class AprilTagVision extends VirtualSubsystem {
 
   private final AprilTagVisionIO[] io;
@@ -98,10 +101,8 @@ public class AprilTagVision extends VirtualSubsystem {
                     values[4],
                     new Rotation3d(new Quaternion(values[5], values[6], values[7], values[8])));
             robotPose3d =
-                cameraPose.transformBy(
-                    GeomUtil.pose3dToTransform3d(cameraPoses[instanceIndex]).inverse());
+                cameraPose.transformBy(cameraPoses[instanceIndex].toTransform3d().inverse());
             break;
-
           case 2:
             // Two poses (one tag), disambiguate
             double error0 = values[1];
@@ -119,11 +120,9 @@ public class AprilTagVision extends VirtualSubsystem {
                     values[12],
                     new Rotation3d(new Quaternion(values[13], values[14], values[15], values[16])));
             Pose3d robotPose3d0 =
-                cameraPose0.transformBy(
-                    GeomUtil.pose3dToTransform3d(cameraPoses[instanceIndex]).inverse());
+                cameraPose0.transformBy(cameraPoses[instanceIndex].toTransform3d().inverse());
             Pose3d robotPose3d1 =
-                cameraPose1.transformBy(
-                    GeomUtil.pose3dToTransform3d(cameraPoses[instanceIndex]).inverse());
+                cameraPose1.transformBy(cameraPoses[instanceIndex].toTransform3d().inverse());
 
             // Select pose using projection errors
             if (error0 < error1 * ambiguityThreshold) {

@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.util.GeomUtil;
 import frc.robot.util.trajectory.Trajectory;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -31,9 +32,11 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.experimental.Delegate;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
+@ExtensionMethod({GeomUtil.class})
 public class Drive extends SubsystemBase {
   private interface MotionPlannerDelegate {
     void setDriveInputSpeeds(ChassisSpeeds speeds);
@@ -47,10 +50,9 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
+  @Getter
   @Delegate(types = MotionPlannerDelegate.class)
   private final DriveMotionPlanner motionPlanner;
-
-  private Twist2d robotVelocity = new Twist2d();
 
   @Getter(onMethod_ = @AutoLogOutput(key = "Odometry/FieldVelocity"))
   private Twist2d fieldVelocity = new Twist2d();
@@ -121,15 +123,9 @@ public class Drive extends SubsystemBase {
         gyroInputs.connected
             ? gyroInputs.yawVelocityRadPerSec
             : robotRelativeVelocity.omegaRadiansPerSecond;
-    robotVelocity =
-        new Twist2d(
-            robotRelativeVelocity.vxMetersPerSecond,
-            robotRelativeVelocity.vyMetersPerSecond,
-            robotRelativeVelocity.omegaRadiansPerSecond);
+    Twist2d robotVelocity = robotRelativeVelocity.toTwist2d();
     Translation2d linearFieldVel =
-        new Translation2d(
-                robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond)
-            .rotateBy(getGyroYaw());
+        new Translation2d(robotVelocity.dx, robotVelocity.dy).rotateBy(getGyroYaw());
     fieldVelocity = new Twist2d(linearFieldVel.getX(), linearFieldVel.getY(), robotVelocity.dtheta);
 
     // Add drive data
@@ -171,10 +167,6 @@ public class Drive extends SubsystemBase {
 
   public void endCharacterization() {
     characterizing = false;
-  }
-
-  public DriveMotionPlanner getMotionPlanner() {
-    return motionPlanner;
   }
 
   /** Returns the average drive velocity in radians/sec. */

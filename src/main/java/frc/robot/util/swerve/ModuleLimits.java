@@ -1,4 +1,4 @@
 package frc.robot.util.swerve;
 
-public record SwerveKinematicLimits(
+public record ModuleLimits(
     double maxDriveVelocity, double maxDriveAcceleration, double maxSteeringVelocity) {}

@@ -15,7 +15,6 @@ package frc.robot.subsystems.drive;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -53,9 +52,6 @@ public class Drive extends SubsystemBase {
   @Getter
   @Delegate(types = MotionPlannerDelegate.class)
   private final DriveMotionPlanner motionPlanner;
-
-  @Getter(onMethod_ = @AutoLogOutput(key = "Odometry/FieldVelocity"))
-  private Twist2d fieldVelocity = new Twist2d();
 
   private boolean characterizing = false;
   private double characterizationVolts = 0.0;
@@ -128,7 +124,9 @@ public class Drive extends SubsystemBase {
     // Get motion planner output
     SwerveModuleState[] setpointStates =
         motionPlanner.update(
-            Timer.getFPGATimestamp(), RobotState.getInstance().getEstimatedPose(), fieldVelocity);
+            Timer.getFPGATimestamp(),
+            RobotState.getInstance().getEstimatedPose(),
+            RobotState.getInstance().fieldVelocity());
 
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
     // Run robot
@@ -172,7 +170,7 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  public Command followTrajectoryCommand(Trajectory trajectory) {
+  public Command setTrajectoryCommand(Trajectory trajectory) {
     return Commands.runOnce(() -> motionPlanner.setTrajectory(trajectory));
   }
 

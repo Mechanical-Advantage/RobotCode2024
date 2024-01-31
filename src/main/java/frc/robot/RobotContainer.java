@@ -15,6 +15,7 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -35,6 +36,13 @@ import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSparkMax;
+import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.trajectory.ChoreoTrajectoryReader;
+import frc.robot.util.trajectory.Trajectory;
+import java.io.File;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -153,35 +161,25 @@ public class RobotContainer {
             .beforeStarting(() -> shooter.setCharacterizing(true))
             .finallyDo(() -> shooter.setCharacterizing(false)));
 
-    autoChooser.addOption(
-        "Davis Auto Centerline first", TestAutos.davisAutoDefensive(drive, intake));
-    autoChooser.addOption("Davis Auto (4 note)", TestAutos.davisAuto(drive, intake));
+    autoChooser.addOption("4 Note Davis", TestAutos.fourNoteDavis(drive, intake));
 
     // Testing autos paths
-    //    Function<File, Optional<Command>> trajectoryCommandFactory =
-    //        trajectoryFile -> {
-    //          Optional<Trajectory> trajectory = ChoreoTrajectoryReader.generate(trajectoryFile);
-    //          return trajectory.map(
-    //              traj ->
-    //                  Commands.runOnce(
-    //                      () -> {
-    //                        robotState.resetPose(
-    //                            AllianceFlipUtil.apply(traj.getStartPose()),
-    //                            drive.getWheelPositions(),
-    //                            drive.getGyroYaw());
-    //                        drive.getMotionPlanner().setTrajectory(traj);
-    //                      },
-    //                      drive));
-    //        };
-    //    final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
-    //    for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
-    //      trajectoryCommandFactory
-    //          .apply(trajectoryFile)
-    //          .ifPresent(
-    //              command -> {
-    //                autoChooser.addOption(trajectoryFile.getName(), command);
-    //              });
-    //    }
+    Function<File, Optional<Command>> trajectoryCommandFactory =
+        trajectoryFile -> {
+          Optional<Trajectory> trajectory = ChoreoTrajectoryReader.generate(trajectoryFile);
+          return trajectory.map(
+              traj ->
+                  Commands.runOnce(
+                          () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())),
+                          drive)
+                      .andThen(drive.setTrajectoryCommand(traj)));
+        };
+    final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
+    for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
+      trajectoryCommandFactory
+          .apply(trajectoryFile)
+          .ifPresent(command -> autoChooser.addOption(trajectoryFile.getName(), command));
+    }
 
     // Configure the button bindings
     configureButtonBindings();
@@ -200,15 +198,13 @@ public class RobotContainer {
             () -> -controller.getLeftY(),
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
-    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
-    //    controller
-    //        .a()
-    //        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(),
-    // intake::running));
-    //    controller
-    //        .x()
-    //        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(),
-    // intake::running));
+    //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
+    controller
+        .a()
+        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(), intake::running));
+    controller
+        .x()
+        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(), intake::running));
     controller
         .b()
         .onTrue(

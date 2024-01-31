@@ -12,7 +12,6 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import frc.robot.subsystems.drive.DriveConstants;
 import java.util.NoSuchElementException;
-
 import org.littletonrobotics.junction.AutoLogOutput;
 
 public class RobotState {
@@ -142,8 +141,9 @@ public class RobotState {
 
   public Twist2d fieldVelocity() {
     Translation2d linearFieldVelocity =
-            new Translation2d(robotVelocity.dx, robotVelocity.dy).rotateBy(estimatedPose.getRotation());
-    return new Twist2d(linearFieldVelocity.getX(), linearFieldVelocity.getY(), robotVelocity.dtheta);
+        new Translation2d(robotVelocity.dx, robotVelocity.dy).rotateBy(estimatedPose.getRotation());
+    return new Twist2d(
+        linearFieldVelocity.getX(), linearFieldVelocity.getY(), robotVelocity.dtheta);
   }
 
   @AutoLogOutput(key = "Odometry/Robot")

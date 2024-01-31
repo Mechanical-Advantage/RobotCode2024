@@ -12,12 +12,11 @@ import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.Constants;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
-import frc.robot.util.swerve.SwerveKinematicLimits;
+import frc.robot.util.swerve.ModuleLimits;
 import frc.robot.util.swerve.SwerveSetpoint;
 import frc.robot.util.swerve.SwerveSetpointGenerator;
 import frc.robot.util.trajectory.HolonomicDriveController;
@@ -62,11 +61,7 @@ public class DriveMotionPlanner {
   private static LoggedTunableNumber headingKd =
       new LoggedTunableNumber("Drive/headingKd", headingControllerConstants.Kd());
 
-  private static final SwerveKinematicLimits kinematicLimits =
-      new SwerveKinematicLimits(
-          DriveConstants.drivetrainConfig.maxLinearVelocity(),
-          DriveConstants.drivetrainConfig.maxLinearVelocity() * 10,
-          Units.rotationsToDegrees(1500.0));
+  private static final ModuleLimits kinematicLimits = moduleLimits;
 
   private final SwerveDriveKinematics swerveDriveKinematics;
 

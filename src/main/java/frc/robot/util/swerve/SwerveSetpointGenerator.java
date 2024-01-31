@@ -188,7 +188,7 @@ public class SwerveSetpointGenerator {
    *     desiredState quickly.
    */
   public SwerveSetpoint generateSetpoint(
-      final SwerveKinematicLimits limits,
+      final ModuleLimits limits,
       final SwerveSetpoint prevSetpoint,
       ChassisSpeeds desiredState,
       double dt) {

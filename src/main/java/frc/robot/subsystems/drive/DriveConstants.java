@@ -9,6 +9,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
+import frc.robot.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
@@ -16,7 +17,6 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             new DrivetrainConfig(
-                Units.inchesToMeters(2.0),
                 Units.inchesToMeters(25.0),
                 Units.inchesToMeters(25.0),
                 Units.feetToMeters(13.05),
@@ -25,7 +25,6 @@ public final class DriveConstants {
                 43.97);
         default ->
             new DrivetrainConfig(
-                Units.inchesToMeters(2.0),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
                 Units.feetToMeters(12.16),
@@ -102,6 +101,12 @@ public final class DriveConstants {
                 Mk4iReductions.TURN.reduction);
       };
 
+  public static ModuleLimits moduleLimits =
+      new ModuleLimits(
+          drivetrainConfig.maxLinearVelocity(),
+          drivetrainConfig.maxLinearVelocity() * 5,
+          Units.degreesToRadians(1080.0));
+
   public static TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
         case COMPBOT, RAINBOWT ->
@@ -132,12 +137,10 @@ public final class DriveConstants {
 
   public static HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT, RAINBOWT -> new HeadingControllerConstants(8.0, 0.0);
-        case SIMBOT -> new HeadingControllerConstants(4.0, 0.0);
+        default -> new HeadingControllerConstants(3.0, 0.0);
       };
 
   public record DrivetrainConfig(
-      double wheelRadius,
       double trackwidthX,
       double trackwidthY,
       double maxLinearVelocity,

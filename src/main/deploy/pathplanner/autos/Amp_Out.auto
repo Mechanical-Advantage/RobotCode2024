@@ -2,30 +2,30 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 2.0,
-      "y": 7.0
+      "x": 0.72,
+      "y": 4.403737629236593
     },
-    "rotation": -25.0
+    "rotation": -60.0
   },
   "command": {
     "type": "sequential",
     "data": {
       "commands": [
         {
-          "type": "named",
+          "type": "path",
           "data": {
-            "name": "Run Flywheel"
+            "pathName": "AO_Path"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "Example Path"
+            "pathName": "AO_EndAngle"
           }
         }
       ]
     }
   },
-  "folder": null,
+  "folder": "Kitbot_2024",
   "choreoAuto": false
 }

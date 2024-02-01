@@ -94,6 +94,19 @@ public class RobotContainer {
         "Flywheel FF Characterization",
         new FeedForwardCharacterization(
             shooter, shooter::runVolts, shooter::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Static Shoot",
+        new PrepareLaunch(shooter, hopper)
+            .withTimeout(Constants.SHOOTER_DELAY)
+            .andThen(new LaunchNote(shooter, hopper).withTimeout(3)));
+    autoChooser.addOption(
+        "Amp Out",
+        Commands.sequence(
+            new PrepareLaunch(shooter, hopper)
+                .withTimeout(Constants.SHOOTER_DELAY)
+                .andThen(new LaunchNote(shooter, hopper))
+                .withTimeout(3),
+            AutoBuilder.buildAuto("Amp_Out")));
 
     // Configure the button bindings
     configureButtonBindings();

@@ -65,6 +65,7 @@ public class RobotContainer {
         // Sim robot, instantiate physics sim IO implementations
         drive = new Drive(new DriveIOSim());
         shooter = new Flywheel(new FlywheelIOSim());
+        hopper = new Flywheel(new FlywheelIOSim());
         break;
 
       default:

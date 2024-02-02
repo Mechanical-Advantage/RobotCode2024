@@ -17,10 +17,10 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.ParentDevice;
-import edu.wpi.first.wpilibj.Timer;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Provides an interface for asynchronously reading high-frequency measurements to a set of queues.
@@ -87,7 +87,7 @@ public class PhoenixOdometryThread extends Thread {
       } finally {
         signalsLock.unlock();
       }
-      double fpgaTimestamp = Timer.getFPGATimestamp();
+      double fpgaTimestamp = Logger.getRealTimestamp() / 1e6;
 
       // Save new data to queues
       Drive.odometryLock.lock();

@@ -64,9 +64,8 @@ public class DriveCommands {
                   linearVelocity.getX() * DriveConstants.driveConfig.maxLinearVelocity(),
                   linearVelocity.getY() * DriveConstants.driveConfig.maxLinearVelocity(),
                   omega * DriveConstants.driveConfig.maxAngularVelocity());
-          drive.setDriveVelocity(
-              ChassisSpeeds.fromFieldRelativeSpeeds(
-                  speeds, RobotState.getInstance().getEstimatedPose().getRotation()));
+          speeds = ChassisSpeeds.fromFieldRelativeSpeeds(speeds, RobotState.getInstance().getEstimatedPose().getRotation());
+          drive.setVelocity(speeds);
         });
   }
 

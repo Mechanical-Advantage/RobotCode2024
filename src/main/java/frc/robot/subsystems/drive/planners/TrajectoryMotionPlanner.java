@@ -1,4 +1,4 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.planners;
 
 import static frc.robot.subsystems.drive.DriveConstants.*;
 import static frc.robot.util.trajectory.HolonomicDriveController.HolonomicDriveState;
@@ -9,7 +9,9 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import frc.robot.Constants;
+import frc.robot.RobotState;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.trajectory.HolonomicDriveController;
@@ -17,7 +19,7 @@ import frc.robot.util.trajectory.Trajectory;
 import java.util.Arrays;
 import org.littletonrobotics.junction.Logger;
 
-public class AutoMotionPlanner {
+public class TrajectoryMotionPlanner {
   private static LoggedTunableNumber trajectoryLinearKp =
       new LoggedTunableNumber("Trajectory/linearKp", trajectoryConstants.linearKp());
   private static LoggedTunableNumber trajectoryLinearKd =
@@ -51,7 +53,7 @@ public class AutoMotionPlanner {
   private Double currentTime = null;
   private final HolonomicDriveController controller;
 
-  public AutoMotionPlanner() {
+  public TrajectoryMotionPlanner() {
     controller =
         new HolonomicDriveController(
             trajectoryLinearKp.get(),
@@ -61,7 +63,7 @@ public class AutoMotionPlanner {
     configTrajectoryTolerances();
   }
 
-  protected void setTrajectory(Trajectory trajectory) {
+  public void setTrajectory(Trajectory trajectory) {
     // Only set if not following trajectory or done with current one
     if (this.trajectory == null || isFinished()) {
       this.trajectory = trajectory;
@@ -79,8 +81,10 @@ public class AutoMotionPlanner {
   }
 
   /** Output setpoint chassis speeds in */
-  protected ChassisSpeeds update(double timestamp, Pose2d robot, Twist2d fieldVelocity) {
-    System.out.println(timestamp + " " + robot.toString() + " " + fieldVelocity.toString());
+  public ChassisSpeeds update() {
+    double time = Timer.getFPGATimestamp();
+    Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
+    Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
     // If disabled reset everything and stop
     if (DriverStation.isDisabled()) {
       trajectory = null;
@@ -123,12 +127,13 @@ public class AutoMotionPlanner {
     }
 
     if (startTime == null) {
-      startTime = timestamp;
+      startTime = time;
     }
-    currentTime = timestamp;
+    currentTime = time;
 
     HolonomicDriveState currentState =
-        new HolonomicDriveState(robot, fieldVelocity.dx, fieldVelocity.dy, fieldVelocity.dtheta);
+        new HolonomicDriveState(
+            currentPose, fieldVelocity.dx, fieldVelocity.dy, fieldVelocity.dtheta);
     // Sample and flip state
     HolonomicDriveState setpointState = trajectory.sample(currentTime - startTime);
     setpointState = AllianceFlipUtil.apply(setpointState);
@@ -144,7 +149,7 @@ public class AutoMotionPlanner {
     return speeds;
   }
 
-  protected boolean isFinished() {
+  public boolean isFinished() {
     return trajectory != null
         && currentTime != null
         && startTime != null

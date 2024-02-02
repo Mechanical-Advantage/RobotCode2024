@@ -48,4 +48,17 @@ public class SuperstructureConstants {
           default -> true;
         };
   }
+
+  public static class ArmConstants {
+    //reduction is 12:62 18:60 12:65
+      public static double reduction = (93.2870);
+    public static int id =
+        switch (Constants.getRobot()) {
+          default -> 45;
+        };
+    public static boolean inverted =
+        switch (Constants.getRobot()) {
+          default -> true;
+        };
+  }
 }

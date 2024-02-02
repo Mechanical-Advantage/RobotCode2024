@@ -16,6 +16,8 @@ import edu.wpi.first.networktables.PubSubOption;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.FieldConstants;
 import frc.robot.util.Alert;
+import java.util.Arrays;
+import org.littletonrobotics.junction.Logger;
 
 public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private static final int cameraId = 0;
@@ -32,8 +34,10 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private static final double disconnectedTimeout = 0.5;
   private final Alert disconnectedAlert;
   private final Timer disconnectedTimer = new Timer();
+  private final String identifier;
 
   public AprilTagVisionIONorthstar(String identifier) {
+    this.identifier = identifier;
     System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + identifier + ")");
     var northstarTable = NetworkTableInstance.getDefault().getTable(identifier);
 
@@ -71,6 +75,9 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
     disconnectedTimer.start();
   }
 
+  private int outOfOrderCounter = 0;
+  private double prevLatestTime = 0;
+
   public void updateInputs(AprilTagVisionIOInputs inputs) {
     var queue = observationSubscriber.readQueue();
     inputs.timestamps = new double[queue.length];
@@ -90,5 +97,26 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
       disconnectedTimer.reset();
     }
     disconnectedAlert.set(disconnectedTimer.hasElapsed(disconnectedTimeout));
+
+    // Log out of order
+    double[] orderedTimestamps = inputs.timestamps.clone();
+    Arrays.sort(orderedTimestamps);
+    for (int i = 0; i < inputs.timestamps.length; i++) {
+      if (orderedTimestamps[i] != inputs.timestamps[i]) {
+        outOfOrderCounter++;
+      }
+    }
+
+    if (orderedTimestamps.length > 0) {
+      for (double timestamp : inputs.timestamps) {
+        if (timestamp < prevLatestTime) {
+          outOfOrderCounter++;
+        }
+      }
+      if (orderedTimestamps[orderedTimestamps.length - 1] > prevLatestTime) {
+        prevLatestTime = orderedTimestamps[orderedTimestamps.length - 1];
+      }
+    }
+    Logger.recordOutput("AprilTagVision/OutOfOrderCounter_" + identifier, outOfOrderCounter);
   }
 }

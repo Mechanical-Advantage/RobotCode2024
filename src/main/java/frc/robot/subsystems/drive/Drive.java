@@ -19,9 +19,9 @@ import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.subsystems.drive.planners.TrajectoryMotionPlanner;
 import frc.robot.util.GeomUtil;
 import frc.robot.util.swerve.ModuleLimits;
 import frc.robot.util.swerve.SwerveSetpoint;
@@ -33,28 +33,29 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class Drive extends SubsystemBase {
-
-  private enum ControlMode {
-    TRAJECTORY_FOLLOWING,
-    DRIVER_INPUT
+  @AutoLog
+  public static class OdometryTimeestampInputs {
+    public double[] timestamps = new double[] {};
   }
 
   public static final Lock odometryLock = new ReentrantLock();
   // TODO: DO THIS BETTER!
   public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
 
+  private final OdometryTimeestampInputsAutoLogged odometryTimestampInputs =
+      new OdometryTimeestampInputsAutoLogged();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
-  private ControlMode currentControlMode = ControlMode.DRIVER_INPUT;
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private final AutoMotionPlanner autoMotionPlanner;
+  private final TrajectoryMotionPlanner trajectoryMotionPlanner;
 
   private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
   private SwerveSetpoint currentSetpoint =
@@ -84,31 +85,31 @@ public class Drive extends SubsystemBase {
             .kinematics(DriveConstants.kinematics)
             .moduleLocations(DriveConstants.moduleTranslations)
             .build();
-    autoMotionPlanner = new AutoMotionPlanner();
+    trajectoryMotionPlanner = new TrajectoryMotionPlanner();
   }
 
   public void periodic() {
     // Update & process inputs
     odometryLock.lock();
-
     // Read timestamps from odometry thread and fake sim timestamps
-    double[] timestamps = timestampQueue.stream().mapToDouble(Double::valueOf).toArray();
-    if (timestamps.length == 0) {
-      timestamps = new double[] {Timer.getFPGATimestamp()};
+    odometryTimestampInputs.timestamps =
+        timestampQueue.stream().mapToDouble(Double::valueOf).toArray();
+    if (odometryTimestampInputs.timestamps.length == 0) {
+      odometryTimestampInputs.timestamps = new double[] {Timer.getFPGATimestamp()};
     }
     timestampQueue.clear();
-
-    // Read inputs from gyro and modules
+    Logger.processInputs("Drive/OdometryTimestamps", odometryTimestampInputs);
+    // Read inputs from gyro
     gyroIO.updateInputs(gyroInputs);
     Logger.processInputs("Drive/Gyro", gyroInputs);
-
+    // Read inputs from modules
     Arrays.stream(modules).forEach(Module::updateInputs);
     odometryLock.unlock();
 
     // Calculate the min odometry position updates across all modules
     int minOdometryUpdates =
         IntStream.of(
-                timestamps.length,
+                odometryTimestampInputs.timestamps.length,
                 Arrays.stream(modules)
                     .mapToInt(module -> module.getModulePositions().length)
                     .min()
@@ -129,9 +130,11 @@ public class Drive extends SubsystemBase {
               Arrays.stream(modules)
                   .map(module -> module.getModulePositions()[odometryIndex])
                   .toArray(SwerveModulePosition[]::new));
+      // Add observation to robot state
       RobotState.getInstance()
           .addOdometryObservation(
-              new RobotState.OdometryObservation(wheelPositions, yaw, timestamps[i]));
+              new RobotState.OdometryObservation(
+                  wheelPositions, yaw, odometryTimestampInputs.timestamps[i]));
     }
 
     // update current velocities use gyro when possible
@@ -143,8 +146,12 @@ public class Drive extends SubsystemBase {
             : robotRelativeVelocity.omegaRadiansPerSecond;
     RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
 
+    if (DriverStation.isDisabled()) {
+      Arrays.stream(modules).forEach(Module::stop);
+    }
+
+    // Run characterization
     if (characterizing) {
-      // Run characterization
       for (Module module : modules) {
         module.runCharacterization(characterizationVolts);
       }
@@ -156,25 +163,8 @@ public class Drive extends SubsystemBase {
       return;
     }
 
-    if (currentControlMode != null) {
-      // Update setpoint
-      switch (currentControlMode) {
-        case TRAJECTORY_FOLLOWING ->
-            desiredSpeeds =
-                autoMotionPlanner.update(
-                    Timer.getFPGATimestamp(),
-                    RobotState.getInstance().getEstimatedPose(),
-                    RobotState.getInstance().fieldVelocity());
-        case DRIVER_INPUT -> {
-          // set in runVelocity method
-        }
-      }
-    }
-
     // Run robot at speeds
-    // account for skew
-    desiredSpeeds = ChassisSpeeds.discretize(desiredSpeeds, 0.02);
-    // generate feasible next setpoint
+    // Generate feasible next setpoint
     currentSetpoint =
         setpointGenerator.generateSetpoint(
             currentModuleLimits, currentSetpoint, desiredSpeeds, 0.02);
@@ -197,12 +187,9 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("Drive/SetpointSpeeds", currentSetpoint.chassisSpeeds());
   }
 
-  /** Runs drive at velocity from drive input */
-  public void setDriveVelocity(ChassisSpeeds velocity) {
-    if (DriverStation.isTeleopEnabled()) {
-      currentControlMode = ControlMode.DRIVER_INPUT;
-      desiredSpeeds = velocity;
-    }
+  /** Set drive velocity (robot relative) */
+  public void setVelocity(ChassisSpeeds velocity) {
+    desiredSpeeds = ChassisSpeeds.discretize(velocity, 0.02);
   }
 
   /** Runs forwards at the commanded voltage. */
@@ -228,26 +215,13 @@ public class Drive extends SubsystemBase {
     Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
   }
 
-  public void setTrajectory(Trajectory trajectory) {
-    if (currentControlMode != ControlMode.TRAJECTORY_FOLLOWING)
-      currentControlMode = ControlMode.TRAJECTORY_FOLLOWING;
-    autoMotionPlanner.setTrajectory(trajectory);
+  public Command followTrajectory(Trajectory trajectory) {
+    return run(() -> setVelocity(trajectoryMotionPlanner.update()))
+        .beforeStarting(() -> trajectoryMotionPlanner.setTrajectory(trajectory))
+        .until(trajectoryMotionPlanner::isFinished);
   }
 
-  public Command setTrajectoryCommand(Trajectory trajectory) {
-    return Commands.runOnce(() -> setTrajectory(trajectory));
-  }
-
-  public boolean finishedTrajectory() {
-    return autoMotionPlanner.isFinished();
-  }
-
-  private SwerveDriveWheelPositions getWheelPositions() {
-    return new SwerveDriveWheelPositions(
-        Arrays.stream(modules).map(Module::getPosition).toArray(SwerveModulePosition[]::new));
-  }
-
-  @AutoLogOutput(key = "Odometry/GyroYaw")
+  @AutoLogOutput(key = "Drive/GyroYaw")
   public Rotation2d getGyroYaw() {
     return gyroInputs.connected
         ? gyroInputs.yawPosition
@@ -255,7 +229,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
-  @AutoLogOutput(key = "SwerveStates/Measured")
+  @AutoLogOutput(key = "Drive/SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
     return Arrays.stream(modules).map(Module::getState).toArray(SwerveModuleState[]::new);
   }

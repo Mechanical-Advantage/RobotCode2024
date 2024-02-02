@@ -109,7 +109,7 @@ public final class DriveConstants {
             new TrajectoryConstants(
                 6.0,
                 0.0,
-                10.0,
+                5.0,
                 0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),
@@ -130,6 +130,19 @@ public final class DriveConstants {
                 driveConfig.maxLinearVelocity() / 2.0,
                 driveConfig.maxAngularVelocity() / 2.0);
       };
+
+  public static AutoAlignConstants autoAlignConstants =
+      new AutoAlignConstants(
+          6.0,
+          0.0,
+          5.0,
+          0.0,
+          Units.inchesToMeters(2.0),
+          Units.degreesToRadians(2.0),
+          driveConfig.maxLinearVelocity() * 0.3,
+          driveConfig.maxLinearAcceleration() * 0.5,
+          driveConfig.maxAngularVelocity() * 0.3,
+          driveConfig.maxAngularAcceleration() * 0.5);
 
   public static HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
@@ -176,6 +189,18 @@ public final class DriveConstants {
       double goalThetaTolerance,
       double linearVelocityTolerance,
       double angularVelocityTolerance) {}
+
+  public record AutoAlignConstants(
+      double linearKp,
+      double linearKd,
+      double thetaKp,
+      double thetaKd,
+      double linearTolerance,
+      double thetaTolerance,
+      double maxLinearVelocity,
+      double maxLinearAcceleration,
+      double maxAngularVelocity,
+      double maxAngularAcceleration) {}
 
   public record HeadingControllerConstants(double Kp, double Kd) {}
 

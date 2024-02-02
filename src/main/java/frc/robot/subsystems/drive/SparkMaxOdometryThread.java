@@ -14,12 +14,12 @@
 package frc.robot.subsystems.drive;
 
 import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.Timer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.function.DoubleSupplier;
+import org.littletonrobotics.junction.Logger;
 
 /**
  * Provides an interface for asynchronously reading high-frequency measurements to a set of queues.
@@ -60,7 +60,7 @@ public class SparkMaxOdometryThread {
 
   private void periodic() {
     Drive.odometryLock.lock();
-    Drive.timestampQueue.offer(Timer.getFPGATimestamp());
+    Drive.timestampQueue.offer(Logger.getRealTimestamp() / 1.0e6);
     try {
       for (int i = 0; i < signals.size(); i++) {
         queues.get(i).offer(signals.get(i).getAsDouble());

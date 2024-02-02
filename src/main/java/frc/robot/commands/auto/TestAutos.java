@@ -65,8 +65,7 @@ public class TestAutos {
 
     return Commands.sequence(
         resetPoseCommand(trajectory.getStartPose()),
-        drive.setTrajectoryCommand(trajectory),
-        Commands.parallel(sequenceIntake));
+        Commands.parallel(drive.followTrajectory(trajectory), sequenceIntake));
   }
 
   private static Command resetPoseCommand(Pose2d pose) {

@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
 import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
@@ -50,7 +51,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // Load robot state as field
+  // Load robot state
   private final RobotState robotState = RobotState.getInstance();
 
   // Subsystems
@@ -167,7 +168,7 @@ public class RobotContainer {
               traj ->
                   Commands.runOnce(
                           () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
-                      .andThen(drive.setTrajectoryCommand(traj)));
+                      .andThen(drive.followTrajectory(traj)));
         };
     final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
     for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
@@ -187,19 +188,21 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
-    //    drive.setDefaultCommand(
-    //        DriveCommands.joystickDrive(
-    //            drive,
-    //            () -> -controller.getLeftY(),
-    //            () -> -controller.getLeftX(),
-    //            () -> -controller.getRightX()));
+    drive.setDefaultCommand(
+        DriveCommands.joystickDrive(
+            drive,
+            () -> -controller.getLeftY(),
+            () -> -controller.getLeftX(),
+            () -> -controller.getRightX()));
     //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
-    controller
-        .a()
-        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(), intake::running));
-    controller
-        .x()
-        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(), intake::running));
+    //    controller
+    //        .a()
+    //        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(),
+    // intake::running));
+    //    controller
+    //        .x()
+    //        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(),
+    // intake::running));
     controller
         .b()
         .onTrue(

@@ -13,10 +13,10 @@ import frc.robot.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
-  public static DrivetrainConfig drivetrainConfig =
+  public static DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
-            new DrivetrainConfig(
+            new DriveConfig(
                 Units.inchesToMeters(25.0),
                 Units.inchesToMeters(25.0),
                 Units.feetToMeters(13.05),
@@ -24,7 +24,7 @@ public final class DriveConstants {
                 8.86,
                 43.97);
         default ->
-            new DrivetrainConfig(
+            new DriveConfig(
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
                 Units.feetToMeters(12.16),
@@ -35,14 +35,10 @@ public final class DriveConstants {
   public static final double wheelRadius = Units.inchesToMeters(2.0);
   public static final Translation2d[] moduleTranslations =
       new Translation2d[] {
-        new Translation2d(
-            drivetrainConfig.trackwidthX() / 2.0, drivetrainConfig.trackwidthY() / 2.0),
-        new Translation2d(
-            drivetrainConfig.trackwidthX() / 2.0, -drivetrainConfig.trackwidthY() / 2.0),
-        new Translation2d(
-            -drivetrainConfig.trackwidthX() / 2.0, drivetrainConfig.trackwidthY() / 2.0),
-        new Translation2d(
-            -drivetrainConfig.trackwidthX() / 2.0, -drivetrainConfig.trackwidthY() / 2.0)
+        new Translation2d(driveConfig.trackwidthX() / 2.0, driveConfig.trackwidthY() / 2.0),
+        new Translation2d(driveConfig.trackwidthX() / 2.0, -driveConfig.trackwidthY() / 2.0),
+        new Translation2d(-driveConfig.trackwidthX() / 2.0, driveConfig.trackwidthY() / 2.0),
+        new Translation2d(-driveConfig.trackwidthX() / 2.0, -driveConfig.trackwidthY() / 2.0)
       };
 
   public static final SwerveDriveKinematics kinematics =
@@ -103,8 +99,8 @@ public final class DriveConstants {
 
   public static ModuleLimits moduleLimits =
       new ModuleLimits(
-          drivetrainConfig.maxLinearVelocity(),
-          drivetrainConfig.maxLinearVelocity() * 5,
+          driveConfig.maxLinearVelocity(),
+          driveConfig.maxLinearVelocity() * 5,
           Units.degreesToRadians(1080.0));
 
   public static TrajectoryConstants trajectoryConstants =
@@ -119,8 +115,8 @@ public final class DriveConstants {
                 Units.degreesToRadians(5.0),
                 Units.inchesToMeters(5.0),
                 Units.degreesToRadians(7.0),
-                drivetrainConfig.maxLinearVelocity() / 2.0,
-                drivetrainConfig.maxAngularVelocity() / 2.0);
+                driveConfig.maxLinearVelocity() / 2.0,
+                driveConfig.maxAngularVelocity() / 2.0);
         case SIMBOT ->
             new TrajectoryConstants(
                 4.0,
@@ -131,8 +127,8 @@ public final class DriveConstants {
                 Units.degreesToRadians(5.0),
                 Units.inchesToMeters(5.0),
                 Units.degreesToRadians(7.0),
-                drivetrainConfig.maxLinearVelocity() / 2.0,
-                drivetrainConfig.maxAngularVelocity() / 2.0);
+                driveConfig.maxLinearVelocity() / 2.0,
+                driveConfig.maxAngularVelocity() / 2.0);
       };
 
   public static HeadingControllerConstants headingControllerConstants =
@@ -140,7 +136,7 @@ public final class DriveConstants {
         default -> new HeadingControllerConstants(3.0, 0.0);
       };
 
-  public record DrivetrainConfig(
+  public record DriveConfig(
       double trackwidthX,
       double trackwidthY,
       double maxLinearVelocity,

@@ -7,19 +7,18 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
 import frc.robot.RobotState;
-import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.superstructure.ShotCalculator;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.util.AllianceFlipUtil;
 import java.util.function.Supplier;
 
 public class AutoCommands {
-  public static Command moveWhileShooting(Drive drive) {
-    return drive
-        .setHeadingCommand(AutoCommands::calculateShootHeading)
-        .andThen(Commands.waitSeconds(0.7))
-        .andThen(drive.disableHeadingCommand());
-  }
+  //  public static Command moveWhileShooting(Drive drive) {
+  //    return drive
+  //        .setHeadingCommand(AutoCommands::calculateShootHeading)
+  //        .andThen(Commands.waitSeconds(0.7))
+  //        .andThen(drive.disableHeadingCommand());
+  //  }
 
   private static Rotation2d calculateShootHeading() {
     Twist2d fieldVel = RobotState.getInstance().fieldVelocity();

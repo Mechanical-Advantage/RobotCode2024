@@ -4,16 +4,25 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import lombok.Getter;
+import lombok.Setter;
 
 public class HolonomicDriveController {
   private final PIDController linearController;
   private final PIDController thetaController;
 
   private HolonomicDriveState currentState = null;
-  private HolonomicDriveState goalTolerance = null;
-  private HolonomicDriveState goalState = null;
-  private Pose2d poseError;
-  private Pose2d controllerTolerance = null;
+
+  /** -- SETTER -- Set tolerance for goal state */
+  @Setter private HolonomicDriveState goalTolerance = null;
+
+  /** -- SETTER -- Set goal state */
+  @Setter private HolonomicDriveState goalState = null;
+
+  @Getter private Pose2d poseError;
+
+  /** -- SETTER -- Set tolerance of controller with Pose2d */
+  @Setter private Pose2d controllerTolerance = null;
 
   public HolonomicDriveController(
       double linearKp, double linearKd, double thetaKp, double thetaKd) {
@@ -21,21 +30,6 @@ public class HolonomicDriveController {
     thetaController = new PIDController(thetaKp, 0, thetaKd);
 
     this.thetaController.enableContinuousInput(-Math.PI, Math.PI);
-  }
-
-  /** Set tolerance of controller with Pose2d */
-  public void setControllerTolerance(Pose2d tolerance) {
-    controllerTolerance = tolerance;
-  }
-
-  /** Set tolerance for goal state */
-  public void setGoalTolerance(HolonomicDriveState tolerance) {
-    goalTolerance = tolerance;
-  }
-
-  /** Set goal state */
-  public void setGoalState(HolonomicDriveState goalState) {
-    this.goalState = goalState;
   }
 
   /** Reset all controllers */
@@ -54,7 +48,7 @@ public class HolonomicDriveController {
     thetaController.setPID(thetaKp, 0, thetaKd);
   }
 
-  /** Calculate chassis speeds & update currentState */
+  /** Calculate robot relative chassis speeds */
   public ChassisSpeeds calculate(
       HolonomicDriveState currentState, HolonomicDriveState setpointState) {
     this.currentState = currentState;
@@ -81,16 +75,13 @@ public class HolonomicDriveController {
         currentState.pose().getRotation());
   }
 
-  public Pose2d getPoseError() {
-    return poseError;
-  }
-
   /** Within tolerance of current goal */
   public boolean atGoal() {
+    Pose2d goalPoseError = goalState.pose().relativeTo(currentState.pose());
     boolean withinPoseTolerance =
-        (poseError.getTranslation().getNorm() < goalTolerance.pose.getTranslation().getNorm())
-            && (poseError.getRotation().getRadians()
-                < goalTolerance.pose.getRotation().getRadians());
+        goalPoseError.getTranslation().getNorm() <= goalTolerance.pose().getTranslation().getNorm()
+            && Math.abs(goalPoseError.getRotation().getRadians())
+                <= goalTolerance.pose().getRotation().getRadians();
     boolean withinVelocityTolerance =
         Math.abs(currentState.velocityX() - goalState.velocityX()) < goalTolerance.velocityX()
             && Math.abs(currentState.velocityY() - goalState.velocityY())

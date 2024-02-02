@@ -21,9 +21,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
-import frc.robot.commands.auto.TestAutos;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
 import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
 import frc.robot.subsystems.apriltagvision.AprilTagVisionIONorthstar;
@@ -161,8 +159,6 @@ public class RobotContainer {
             .beforeStarting(() -> shooter.setCharacterizing(true))
             .finallyDo(() -> shooter.setCharacterizing(false)));
 
-    autoChooser.addOption("4 Note Davis", TestAutos.fourNoteDavis(drive, intake));
-
     // Testing autos paths
     Function<File, Optional<Command>> trajectoryCommandFactory =
         trajectoryFile -> {
@@ -170,8 +166,7 @@ public class RobotContainer {
           return trajectory.map(
               traj ->
                   Commands.runOnce(
-                          () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())),
-                          drive)
+                          () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
                       .andThen(drive.setTrajectoryCommand(traj)));
         };
     final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
@@ -192,12 +187,12 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
-    drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+    //    drive.setDefaultCommand(
+    //        DriveCommands.joystickDrive(
+    //            drive,
+    //            () -> -controller.getLeftY(),
+    //            () -> -controller.getLeftX(),
+    //            () -> -controller.getRightX()));
     //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
     controller
         .a()

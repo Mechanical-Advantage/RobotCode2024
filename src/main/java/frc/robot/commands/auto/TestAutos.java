@@ -20,7 +20,7 @@ import java.io.File;
 public class TestAutos {
   private static final LoggedTunableNumber intakeDistance =
       new LoggedTunableNumber(
-          "Auto/intakeDistance", DriveConstants.drivetrainConfig.trackwidthX() + 0.1);
+          "Auto/intakeDistance", DriveConstants.driveConfig.trackwidthX() + 0.1);
 
   // bottom to top
   private static AutoCommands.CircularRegion spikeIntakeRegion(int i) {
@@ -53,20 +53,20 @@ public class TestAutos {
         new AutoCommands.RectangularRegion(new Translation2d(3.83, 5.99), 0.1, 0.5);
     var fourthShotRegion =
         new AutoCommands.RectangularRegion(new Translation2d(4.08, 7.18), 0.1, 0.5);
-    Command sequenceShots =
-        Commands.sequence(
-            AutoCommands.moveWhileShooting(drive),
-            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(secondShotRegion)),
-            AutoCommands.moveWhileShooting(drive),
-            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(thirdShotRegion)),
-            AutoCommands.moveWhileShooting(drive),
-            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(fourthShotRegion)),
-            AutoCommands.moveWhileShooting(drive));
+    //    Command sequenceShots =
+    //        Commands.sequence(
+    //            AutoCommands.moveWhileShooting(drive),
+    //            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(secondShotRegion)),
+    //            AutoCommands.moveWhileShooting(drive),
+    //            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(thirdShotRegion)),
+    //            AutoCommands.moveWhileShooting(drive),
+    //            AutoCommands.waitForRegion(() -> AllianceFlipUtil.apply(fourthShotRegion)),
+    //            AutoCommands.moveWhileShooting(drive));
 
     return Commands.sequence(
         resetPoseCommand(trajectory.getStartPose()),
         drive.setTrajectoryCommand(trajectory),
-        Commands.parallel(sequenceIntake, sequenceShots));
+        Commands.parallel(sequenceIntake));
   }
 
   private static Command resetPoseCommand(Pose2d pose) {

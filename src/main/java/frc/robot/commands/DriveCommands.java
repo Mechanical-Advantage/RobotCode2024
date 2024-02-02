@@ -18,7 +18,6 @@ import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
@@ -62,10 +61,12 @@ public class DriveCommands {
 
           ChassisSpeeds speeds =
               new ChassisSpeeds(
-                  linearVelocity.getX() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  linearVelocity.getY() * DriveConstants.drivetrainConfig.maxLinearVelocity(),
-                  omega * DriveConstants.drivetrainConfig.maxAngularVelocity());
-          drive.setDriveInputSpeeds(speeds);
+                  linearVelocity.getX() * DriveConstants.driveConfig.maxLinearVelocity(),
+                  linearVelocity.getY() * DriveConstants.driveConfig.maxLinearVelocity(),
+                  omega * DriveConstants.driveConfig.maxAngularVelocity());
+          drive.setDriveVelocity(
+              ChassisSpeeds.fromFieldRelativeSpeeds(
+                  speeds, RobotState.getInstance().getEstimatedPose().getRotation()));
         });
   }
 
@@ -81,10 +82,10 @@ public class DriveCommands {
         return shotData.goalHeading();
       };
 
-  public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {
-    return Commands.either(
-        drive.disableHeadingCommand(), // turn off
-        drive.setHeadingCommand(shotRotation), // turn on
-        drive.getMotionPlanner()::isHeadingControlled);
-  }
+  //  public static Command toggleCalculateShotWhileMovingRotation(Drive drive) {
+  //    return Commands.either(
+  //        drive.disableHeadingCommand(), // turn off
+  //        drive.setHeadingCommand(shotRotation), // turn on
+  //        drive.getAutoMotionPlanner()::isHeadingControlled);
+  //  }
 }

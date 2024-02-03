@@ -26,6 +26,10 @@ import frc.robot.subsystems.apriltagvision.AprilTagVision;
 import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
 import frc.robot.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import frc.robot.subsystems.drive.*;
+import frc.robot.subsystems.superstructure.Arm.Arm;
+import frc.robot.subsystems.superstructure.Arm.ArmIO;
+import frc.robot.subsystems.superstructure.Arm.ArmIOKrakenFOC;
+import frc.robot.subsystems.superstructure.Arm.ArmIOSim;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.subsystems.superstructure.intake.IntakeIO;
 import frc.robot.subsystems.superstructure.intake.IntakeIOSim;
@@ -58,6 +62,7 @@ public class RobotContainer {
   private AprilTagVision aprilTagVision;
   private Shooter shooter;
   private Intake intake;
+  private Arm arm;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -84,6 +89,7 @@ public class RobotContainer {
                     new AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
             shooter = new Shooter(new ShooterIOSparkMax());
             intake = new Intake(new IntakeIOSparkMax());
+            arm = new Arm(new ArmIOKrakenFOC());
           }
         }
       }
@@ -98,6 +104,7 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.moduleConfigs[3]));
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
+        arm = new Arm(new ArmIOSim());
       }
       default -> {
         // Replayed robot, disable IO implementations
@@ -110,6 +117,7 @@ public class RobotContainer {
                 new ModuleIO() {});
         shooter = new Shooter(new ShooterIO() {});
         intake = new Intake(new IntakeIO() {});
+        arm = new Arm(new ArmIO() {});
       }
     }
 
@@ -133,6 +141,10 @@ public class RobotContainer {
 
     if (intake == null) {
       intake = new Intake(new IntakeIO() {});
+    }
+
+    if (arm == null) {
+      arm = new Arm(new ArmIO() {});
     }
 
     autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -194,12 +206,16 @@ public class RobotContainer {
     //            () -> -controller.getLeftX(),
     //            () -> -controller.getRightX()));
     //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
-    controller
-        .a()
-        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(), intake::running));
-    controller
-        .x()
-        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(), intake::running));
+    controller.a().onTrue(arm.home());
+    arm.setDefaultCommand(arm.runToSetpoint());
+    //    controller
+    //        .a()
+    //        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(),
+    // intake::running));
+    //    controller
+    //        .x()
+    //        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(),
+    // intake::running));
     controller
         .b()
         .onTrue(

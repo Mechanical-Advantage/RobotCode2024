@@ -5,22 +5,51 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface ArmIO {
 
-   @AutoLog
-   class ArmIOInputs {
+  @AutoLog
+  class ArmIOInputs {
+    public Rotation2d armAnglePosition = new Rotation2d();
+    public Rotation2d armReferencePosition = new Rotation2d();
+    public double armVelocityRadsPerSec = 0.0;
+    public boolean homed = false;
+    public boolean atSetpoint = false;
+    public double[] armAppliedVolts = new double[] {};
+    public double[] armCurrentAmps = new double[] {};
+    public double[] armTorqueCurrentAmps = new double[] {};
+    public double[] armTempCelcius = new double[] {};
+  }
 
-      public double armVelocityRadsPerSec = 0.0;
-      public double armAppliedVolts = 0.0;
-      public double[] armCurrentAmps = new double[] {};
-      public double [] armTempCelcius = new double[] {};
-      public Rotation2d armInternalPosition = new Rotation2d();
-      public Rotation2d armAnglePosition = new Rotation2d();
+  default void updateInputs(ArmIOInputs inputs) {}
 
-   }
-   default void updateInputs(ArmIOInputs inputs) {}
-   default void setSetpoint(Rotation2d setpoint) {}
-   default void setBrakeMode(boolean enabled) {}
-   default void stop() {}
+  /** Run to setpoint angle in radians */
+  default void setSetpoint(double setpointRads) {}
 
+  /** Run motors at voltage */
+  default void setVoltage(double volts) {}
 
+  /** Set brake mode enabled */
+  default void setBrakeMode(boolean enabled) {}
 
+  /** Set FF values */
+  default void setFF(double s, double v, double a, double g) {}
+
+  /** Set PID values */
+  default void setPID(double p, double i, double d) {}
+
+  /** Set MotionMagic constraints */
+  default void setProfileConstraints(
+      double cruiseVelocityRadsPerSec, double accelerationRadsPerSec2) {}
+
+  /**
+   * Stops motors
+   *
+   * @params none!
+   */
+  default void stop() {}
+
+  /**
+   * Set current position to home
+   *
+   * @params none!
+   */
+  default void setHome() {}
 }

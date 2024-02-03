@@ -11,8 +11,8 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 public class ShooterIOSparkMax implements ShooterIO {
   private CANSparkFlex leftMotor;
   private CANSparkFlex rightMotor;
-  private CANSparkFlex feederMotor;
 
+  private CANSparkFlex feederMotor;
   private RelativeEncoder leftEncoder;
   private RelativeEncoder rightEncoder;
 

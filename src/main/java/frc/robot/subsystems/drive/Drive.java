@@ -13,6 +13,7 @@
 
 package frc.robot.subsystems.drive;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.*;
@@ -21,6 +22,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.subsystems.drive.planners.AutoAlignMotionPlanner;
 import frc.robot.subsystems.drive.planners.TrajectoryMotionPlanner;
 import frc.robot.util.GeomUtil;
 import frc.robot.util.swerve.ModuleLimits;
@@ -31,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.junction.AutoLog;
@@ -56,6 +59,7 @@ public class Drive extends SubsystemBase {
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
   private final TrajectoryMotionPlanner trajectoryMotionPlanner;
+  private final AutoAlignMotionPlanner autoAlignMotionPlanner;
 
   private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
   private SwerveSetpoint currentSetpoint =
@@ -86,6 +90,7 @@ public class Drive extends SubsystemBase {
             .moduleLocations(DriveConstants.moduleTranslations)
             .build();
     trajectoryMotionPlanner = new TrajectoryMotionPlanner();
+    autoAlignMotionPlanner = new AutoAlignMotionPlanner();
   }
 
   public void periodic() {
@@ -219,6 +224,12 @@ public class Drive extends SubsystemBase {
     return run(() -> setVelocity(trajectoryMotionPlanner.update()))
         .beforeStarting(() -> trajectoryMotionPlanner.setTrajectory(trajectory))
         .until(trajectoryMotionPlanner::isFinished);
+  }
+
+  public Command autoAlignToPose(Supplier<Pose2d> goalPose) {
+    return run(() -> setVelocity(autoAlignMotionPlanner.update()))
+        .beforeStarting(() -> autoAlignMotionPlanner.setGoalPose(goalPose.get()))
+        .until(autoAlignMotionPlanner::atGoal);
   }
 
   @AutoLogOutput(key = "Drive/GyroYaw")

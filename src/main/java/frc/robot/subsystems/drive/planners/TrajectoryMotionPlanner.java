@@ -10,7 +10,6 @@ import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import frc.robot.Constants;
 import frc.robot.RobotState;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
@@ -78,6 +77,7 @@ public class TrajectoryMotionPlanner {
 
   /** Output setpoint chassis speeds in */
   public ChassisSpeeds update() {
+    updateControllers();
     Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
     Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
     // If disabled reset everything and stop
@@ -87,28 +87,6 @@ public class TrajectoryMotionPlanner {
       trajectoryTimer.reset();
       controller.resetControllers();
       return new ChassisSpeeds();
-    }
-
-    // Tunable numbers
-    if (Constants.tuningMode) {
-      // Update PID Controllers
-      LoggedTunableNumber.ifChanged(
-          hashCode(),
-          pid -> controller.setPID(pid[0], pid[1], pid[2], pid[3]),
-          trajectoryLinearKp,
-          trajectoryLinearKd,
-          trajectoryThetaKp,
-          trajectoryThetaKp);
-      // Tolerances
-      LoggedTunableNumber.ifChanged(
-          hashCode(),
-          this::configTrajectoryTolerances,
-          trajectoryLinearTolerance,
-          trajectoryThetaTolerance,
-          trajectoryGoalLinearTolerance,
-          trajectoryGoalThetaTolerance,
-          trajectoryLinearVelocityTolerance,
-          trajectoryAngularVelocityTolerance);
     }
 
     HolonomicDriveState currentState =
@@ -136,6 +114,27 @@ public class TrajectoryMotionPlanner {
         "Trajectory/rotationError", controller.getPoseError().getRotation().getRadians());
     Logger.recordOutput("Trajectory/speeds", speeds);
     return speeds;
+  }
+
+  private void updateControllers() {
+    // Update PID Controllers
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        pid -> controller.setPID(pid[0], pid[1], pid[2], pid[3]),
+        trajectoryLinearKp,
+        trajectoryLinearKd,
+        trajectoryThetaKp,
+        trajectoryThetaKp);
+    // Tolerances
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        this::configTrajectoryTolerances,
+        trajectoryLinearTolerance,
+        trajectoryThetaTolerance,
+        trajectoryGoalLinearTolerance,
+        trajectoryGoalThetaTolerance,
+        trajectoryLinearVelocityTolerance,
+        trajectoryAngularVelocityTolerance);
   }
 
   @AutoLogOutput(key = "Trajectory/finished")

@@ -106,15 +106,6 @@ public class HolonomicDriveController {
                 < goalTolerance.velocityY()
             && Math.abs(currentState.angularVelocity() - goalState.angularVelocity())
                 < goalTolerance.angularVelocity();
-    System.out.println(
-        "Pose: "
-            + withinPoseTolerance
-            + " Velocity: "
-            + withinVelocityTolerance
-            + " Error: "
-            + goalPoseError.getTranslation().getNorm()
-            + " "
-            + goalPoseError.getRotation().getRadians());
     return withinPoseTolerance && withinVelocityTolerance;
   }
 

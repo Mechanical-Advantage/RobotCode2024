@@ -15,6 +15,7 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
@@ -194,6 +195,18 @@ public class RobotContainer {
             () -> -controller.getLeftY(),
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
+    controller
+        .a()
+        .whileTrue(
+            drive.autoAlignToPose(
+                () ->
+                    AllianceFlipUtil.apply(
+                        new Pose2d(
+                            new Translation2d(
+                                FieldConstants.ampCenter.getX(),
+                                FieldConstants.ampCenter.getY()
+                                    - DriveConstants.driveConfig.trackwidthY() / 2.0),
+                            new Rotation2d(-Math.PI / 2.0)))));
     //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
     //    controller
     //        .a()

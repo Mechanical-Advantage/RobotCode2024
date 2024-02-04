@@ -14,15 +14,13 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 
 public class ArmIOKrakenFOC implements ArmIO {
   private final TalonFX leaderMotor;
   private final TalonFX followerMotor;
-  Double home = null;
   private final StatusSignal<Double> armPositionRotations;
-  private final StatusSignal<Double> armReferencePositionRotations;
+  private final StatusSignal<Double> armTrajectorySetpointPositionRotations;
   private final StatusSignal<Double> armVelocityRPS;
   private final StatusSignal<Double>[] armAppliedVoltage = new StatusSignal[2];
   private final StatusSignal<Double>[] armOutputCurrent = new StatusSignal[2];
@@ -44,7 +42,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     leaderConfig.Voltage.PeakReverseVoltage = 12.0;
     leaderConfig.MotorOutput.Inverted =
         leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
-    leaderConfig.Feedback.RotorToSensorRatio = 1.0 / reduction;
+    leaderConfig.Feedback.SensorToMechanismRatio = reduction;
     leaderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
     controllerConfig =
@@ -63,7 +61,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         new MotionMagicConfigs()
             .withMotionMagicCruiseVelocity(
                 Units.radiansToRotations(profileConstraints.cruiseVelocityRadPerSec()))
-            .withMotionMagicCruiseVelocity(
+            .withMotionMagicAcceleration(
                 Units.radiansToRotations(profileConstraints.accelerationRadPerSec2()));
     leaderMotor.getConfigurator().apply(leaderConfig, 1);
 
@@ -72,7 +70,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     // Status signals
     armPositionRotations = leaderMotor.getPosition();
-    armReferencePositionRotations = leaderMotor.getClosedLoopReference();
+    armTrajectorySetpointPositionRotations = leaderMotor.getClosedLoopReference();
     armVelocityRPS = leaderMotor.getVelocity();
     armAppliedVoltage[0] = leaderMotor.getMotorVoltage();
     armAppliedVoltage[1] = followerMotor.getMotorVoltage();
@@ -84,9 +82,9 @@ public class ArmIOKrakenFOC implements ArmIO {
     armTempCelsius[1] = followerMotor.getDeviceTemp();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50,
+        100,
         armPositionRotations,
-        armReferencePositionRotations,
+        armTrajectorySetpointPositionRotations,
         armVelocityRPS,
         armAppliedVoltage[0],
         armAppliedVoltage[1],
@@ -99,9 +97,11 @@ public class ArmIOKrakenFOC implements ArmIO {
   }
 
   public void updateInputs(ArmIOInputs inputs) {
+    inputs.hasFoc = true;
+
     BaseStatusSignal.refreshAll(
         armPositionRotations,
-        armReferencePositionRotations,
+        armTrajectorySetpointPositionRotations,
         armVelocityRPS,
         armAppliedVoltage[0],
         armAppliedVoltage[1],
@@ -112,9 +112,9 @@ public class ArmIOKrakenFOC implements ArmIO {
         armTempCelsius[0],
         armTempCelsius[1]);
 
-    inputs.armAnglePosition = Rotation2d.fromRotations(armPositionRotations.getValue() - home);
-    inputs.armReferencePosition =
-        Rotation2d.fromRotations(armReferencePositionRotations.getValue() - home);
+    inputs.armAnglePositionRads = Units.rotationsToRadians(armPositionRotations.getValue());
+    inputs.armTrajectorySetpointRads =
+        Units.rotationsToRadians(armTrajectorySetpointPositionRotations.getValue());
     inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRPS.getValue());
     inputs.armAppliedVolts =
         new double[] {armAppliedVoltage[0].getValue(), armAppliedVoltage[1].getValue()};
@@ -124,7 +124,6 @@ public class ArmIOKrakenFOC implements ArmIO {
         new double[] {armTorqueCurrent[0].getValue(), armTorqueCurrent[1].getValue()};
     inputs.armTempCelcius =
         new double[] {armTempCelsius[0].getValue(), armTempCelsius[1].getValue()};
-    inputs.homed = home != null;
   }
 
   @Override
@@ -172,8 +171,7 @@ public class ArmIOKrakenFOC implements ArmIO {
   }
 
   @Override
-  public void setHome() {
-    home = armPositionRotations.getValue();
-    leaderMotor.setPosition(0.0, 0.01);
+  public void setPosition(double positionRads) {
+    leaderMotor.setPosition(Units.radiansToRotations(positionRads));
   }
 }

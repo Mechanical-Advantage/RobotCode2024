@@ -206,8 +206,8 @@ public class RobotContainer {
     //            () -> -controller.getLeftX(),
     //            () -> -controller.getRightX()));
     //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
-    controller.a().onTrue(arm.home());
-    arm.setDefaultCommand(arm.runToSetpoint());
+
+    // arm.setDefaultCommand(arm.runToSetpoint());
     //    controller
     //        .a()
     //        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(),

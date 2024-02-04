@@ -5,10 +5,10 @@ import static frc.robot.subsystems.superstructure.SuperstructureConstants.ArmCon
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 
 public class ArmIOSim implements ArmIO {
@@ -26,8 +26,10 @@ public class ArmIOSim implements ArmIO {
   private final ProfiledPIDController profiledController;
   private ArmFeedforward ff;
   private double appliedVoltage = 0.0;
-  private boolean usingVoltageControl = false;
-  private boolean homed = false;
+  private double positionOffset = 0.0;
+
+  private boolean controllerNeedsReset = false;
+  private boolean closedLoop = false;
 
   public ArmIOSim() {
     ff =
@@ -43,50 +45,56 @@ public class ArmIOSim implements ArmIO {
             controllerConstants.kD(),
             new TrapezoidProfile.Constraints(
                 profileConstraints.cruiseVelocityRadPerSec(),
-                profileConstraints.accelerationRadPerSec2()));
+                profileConstraints.accelerationRadPerSec2()),
+            0.001);
     sim.setState(Units.degreesToRadians(45.0), 0.0);
   }
 
   @Override
   public void updateInputs(ArmIOInputs inputs) {
-    sim.update(0.02);
+    if (DriverStation.isDisabled()) {
+      controllerNeedsReset = true;
+    }
 
-    inputs.armAnglePosition = Rotation2d.fromRadians(sim.getAngleRads());
-    inputs.armReferencePosition = Rotation2d.fromRadians(profiledController.getGoal().position);
+    if (controllerNeedsReset) {
+      profiledController.reset(sim.getAngleRads() + positionOffset, sim.getVelocityRadPerSec());
+      controllerNeedsReset = false;
+    }
+
+    for (int i = 0; i < 20; i++) {
+      // control
+      if (closedLoop) {
+        appliedVoltage =
+            profiledController.calculate(sim.getAngleRads() + positionOffset)
+                + ff.calculate(
+                    profiledController.getSetpoint().position,
+                    profiledController.getSetpoint().velocity);
+        sim.setInputVoltage(MathUtil.clamp(appliedVoltage, -12.0, 12.0));
+      }
+      sim.update(0.001);
+    }
+
+    inputs.armAnglePositionRads = sim.getAngleRads() + positionOffset;
+    inputs.armTrajectorySetpointRads = profiledController.getSetpoint().position;
     inputs.armVelocityRadsPerSec = sim.getVelocityRadPerSec();
     inputs.armAppliedVolts = new double[] {appliedVoltage};
     inputs.armCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
     inputs.armTorqueCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
     inputs.armTempCelcius = new double[] {0.0};
-
-    inputs.homed = homed;
-
-    // control
-    if (!usingVoltageControl) {
-      appliedVoltage =
-          profiledController.calculate(sim.getAngleRads())
-              + ff.calculate(
-                  profiledController.getSetpoint().position,
-                  profiledController.getSetpoint().velocity);
-      System.out.println(
-          "Open loop voltage: "
-              + ff.calculate(
-                  profiledController.getSetpoint().position,
-                  profiledController.getSetpoint().velocity));
-      appliedVoltage = MathUtil.clamp(appliedVoltage, -12.0, 12.0);
-      sim.setInputVoltage(appliedVoltage);
-    }
   }
 
   @Override
   public void setSetpoint(double setpointRads) {
-    usingVoltageControl = false;
+    if (!closedLoop) {
+      controllerNeedsReset = true;
+    }
+    closedLoop = true;
     profiledController.setGoal(setpointRads);
   }
 
   @Override
   public void setVoltage(double volts) {
-    usingVoltageControl = true;
+    closedLoop = false;
     appliedVoltage = MathUtil.clamp(volts, -12.0, 12.0);
     sim.setInputVoltage(appliedVoltage);
   }
@@ -115,7 +123,7 @@ public class ArmIOSim implements ArmIO {
   }
 
   @Override
-  public void setHome() {
-    homed = true;
+  public void setPosition(double position) {
+    positionOffset = position - sim.getAngleRads();
   }
 }

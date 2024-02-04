@@ -54,7 +54,7 @@ public class SuperstructureConstants {
 
   public static class ArmConstants {
     // reduction is 12:62 18:60 12:65
-    public static double reduction = (93.2870);
+    public static double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
     public static Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
     public static Translation2d armOrigin2d =
         new Translation2d(-Units.inchesToMeters(9.37), Units.inchesToMeters(11.75));

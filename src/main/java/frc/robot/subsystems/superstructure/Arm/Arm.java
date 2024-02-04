@@ -2,19 +2,20 @@ package frc.robot.subsystems.superstructure.Arm;
 
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.ArmConstants.*;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.util.EqualsUtil;
 import frc.robot.util.LoggedTunableNumber;
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Arm extends SubsystemBase {
@@ -50,6 +51,12 @@ public class Arm extends SubsystemBase {
   private final MechanismRoot2d armRoot;
   private final MechanismLigament2d armMeasured;
 
+  private final Timer homingTimer = new Timer();
+
+  private boolean homed = false;
+
+  private double setpoint = 0.0;
+
   //  private final MechanismLigament2d armSetpoint;
 
   public Arm(ArmIO io) {
@@ -59,12 +66,16 @@ public class Arm extends SubsystemBase {
 
     // Create a mechanism
     armMechanism = new Mechanism2d(2, 3, new Color8Bit(Color.kAntiqueWhite));
-    armRoot = armMechanism.getRoot("Arm Joint", armOrigin2d.getX(), armOrigin2d.getY());
+    armRoot =
+        armMechanism.getRoot(
+            "Arm Joint",
+            armOrigin2d.getX() + DriveConstants.driveConfig.trackwidthX() / 2.0,
+            armOrigin2d.getY());
     armMeasured =
         new MechanismLigament2d(
             "Arm Measured",
             armLength,
-            inputs.armAnglePosition.getDegrees(),
+            Units.radiansToDegrees(inputs.armAnglePositionRads),
             2.0,
             new Color8Bit(Color.kBlack));
     armRoot.append(armMeasured);
@@ -88,12 +99,31 @@ public class Arm extends SubsystemBase {
     LoggedTunableNumber.ifChanged(
         hashCode(), () -> armIO.setPID(kP.get(), kI.get(), kD.get()), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
-        hashCode(), () -> armIO.setFF(kS.get(), kV.get(), kA.get(), kG.get()));
+        hashCode(), () -> armIO.setFF(kS.get(), kV.get(), kA.get(), kG.get()), kS, kV, kA, kG);
     LoggedTunableNumber.ifChanged(
         hashCode(),
         constraints -> armIO.setProfileConstraints(constraints[0], constraints[1]),
         armVelocity,
         armAcceleration);
+
+    setpoint = Units.degreesToRadians(armDesiredSetpoint.get());
+    // Home if not already homed
+    if (!homed && DriverStation.isEnabled()) {
+      armIO.setVoltage(-1.0);
+      if (EqualsUtil.epsilonEquals(
+          inputs.armVelocityRadsPerSec, 0.0, Units.degreesToRadians(1.0))) {
+        homingTimer.start();
+      } else {
+        homingTimer.reset();
+      }
+
+      if (homingTimer.hasElapsed(0.5)) {
+        armIO.setPosition(0);
+        homed = true;
+      }
+    } else {
+      setSetpoint(setpoint);
+    }
 
     if (DriverStation.isDisabled()) {
       armIO.stop();
@@ -102,41 +132,18 @@ public class Arm extends SubsystemBase {
     if (coastSupplier.getAsBoolean()) armIO.setBrakeMode(false);
 
     // Logs
-    armMeasured.setAngle(inputs.armAnglePosition);
+    armMeasured.setAngle(Units.radiansToDegrees(inputs.armAnglePositionRads));
     //    armSetpoint.setAngle(inputs.armReferencePosition);
-    Logger.recordOutput("Arm/SetpointAngle", inputs.armReferencePosition);
-    Logger.recordOutput("Arm/MeasuredAngle", inputs.armAnglePosition);
-    Logger.recordOutput("Arm/VelocityRadsPerSec", inputs.armVelocityRadsPerSec);
     Logger.recordOutput("Arm/Mechanism", armMechanism);
   }
 
-  public Command runToSetpoint() {
-    return run(
-        () -> {
-          if (inputs.homed) {
-            Rotation2d setpoint =
-                Rotation2d.fromDegrees(
-                    MathUtil.clamp(
-                        armDesiredSetpoint.get(), minAngle.getDegrees(), maxAngle.getDegrees()));
-            setSetpoint(setpoint);
-          }
-        });
+  public void setVoltage(double volts) {
+    armIO.setVoltage(volts);
   }
 
-  public Command home() {
-    return run(() -> armIO.setVoltage(-1.0))
-        .until(
-            () -> {
-              boolean homed = EqualsUtil.epsilonEquals(inputs.armVelocityRadsPerSec, 0.0, 0.01);
-              System.out.println(homed);
-              return homed;
-            })
-        .andThen(() -> armIO.setHome());
-  }
-
-  public void setSetpoint(Rotation2d setpoint) {
-    if (disableSupplier.getAsBoolean() || !inputs.homed) return;
-    armIO.setSetpoint(setpoint.getRadians());
+  public void setSetpoint(double setpointRads) {
+    if (disableSupplier.getAsBoolean() || !homed) return;
+    armIO.setSetpoint(setpointRads);
   }
 
   public void setBrakeMode(boolean enabled) {
@@ -150,5 +157,10 @@ public class Arm extends SubsystemBase {
 
   public void stop() {
     armIO.stop();
+  }
+
+  @AutoLogOutput(key = "Arm/Homed")
+  public boolean homed() {
+    return homed;
   }
 }

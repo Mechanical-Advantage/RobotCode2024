@@ -3,43 +3,65 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.72,
-        "y": 4.403737629236593
+        "x": 1.141872251083912,
+        "y": 6.49461889707923
       },
       "prevControl": null,
       "nextControl": {
-        "x": 0.6871248194252196,
-        "y": 0.9181545141122731
+        "x": 1.3880753829331574,
+        "y": 6.924435981628518
       },
       "isLocked": true,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 3.5513935601032007,
-        "y": 0.8177705484371478
+        "x": 2.193797844663109,
+        "y": 7.418948194099357
       },
       "prevControl": {
-        "x": 2.9896981201252255,
-        "y": 0.8532373227398375
+        "x": 1.879875320550699,
+        "y": 7.424056323987938
+      },
+      "nextControl": {
+        "x": 2.9311629448344396,
+        "y": 7.406949830115661
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 4.427862786566094,
+        "y": 7.418948194099357
+      },
+      "prevControl": {
+        "x": 3.3167030800207438,
+        "y": 7.436945053722283
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": null
     }
   ],
-  "rotationTargets": [
+  "rotationTargets": [],
+  "constraintZones": [
     {
-      "waypointRelativePos": 0,
-      "rotationDegrees": 121.26958668142112,
-      "rotateFast": false
+      "name": "New Constraints Zone",
+      "minWaypointRelativePos": 0,
+      "maxWaypointRelativePos": 0,
+      "constraints": {
+        "maxVelocity": 3.0,
+        "maxAcceleration": 3.0,
+        "maxAngularVelocity": 540.0,
+        "maxAngularAcceleration": 720.0
+      }
     }
   ],
-  "constraintZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxVelocity": 1.0,
+    "maxAcceleration": 2.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0
   },
@@ -48,8 +70,8 @@
     "rotation": 0,
     "rotateFast": false
   },
-  "reversed": false,
-  "folder": null,
+  "reversed": true,
+  "folder": "AO",
   "previewStartingState": null,
   "useDefaultConstraints": false
 }

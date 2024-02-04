@@ -2,10 +2,10 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 0.72,
-      "y": 4.403737629236593
+      "x": 1.141872251083912,
+      "y": 6.49461889707923
     },
-    "rotation": -60.0
+    "rotation": -120.0
   },
   "command": {
     "type": "sequential",
@@ -15,12 +15,6 @@
           "type": "path",
           "data": {
             "pathName": "AO_Path"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "AO_EndAngle"
           }
         }
       ]

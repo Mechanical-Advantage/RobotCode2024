@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
 import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
@@ -170,6 +171,10 @@ public class RobotContainer {
                 shooter::getRightCharacterizationVelocity)
             .beforeStarting(() -> shooter.setCharacterizing(true))
             .finallyDo(() -> shooter.setCharacterizing(false)));
+    autoChooser.addOption(
+        "Arm Quasistatic Forward", arm.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption("Arm Dynamic Forward", arm.sysIdDynamic(SysIdRoutine.Direction.kForward));
+    autoChooser.addOption("Arm get static current", arm.getKs());
 
     // Testing autos paths
     Function<File, Optional<Command>> trajectoryCommandFactory =

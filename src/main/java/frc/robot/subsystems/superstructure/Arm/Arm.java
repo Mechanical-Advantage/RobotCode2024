@@ -1,7 +1,9 @@
 package frc.robot.subsystems.superstructure.Arm;
 
+import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.ArmConstants.*;
 
+import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -10,7 +12,9 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.util.EqualsUtil;
 import frc.robot.util.LoggedTunableNumber;
@@ -57,6 +61,8 @@ public class Arm extends SubsystemBase {
 
   private double setpoint = 0.0;
 
+  private SysIdRoutine routine;
+
   //  private final MechanismLigament2d armSetpoint;
 
   public Arm(ArmIO io) {
@@ -87,6 +93,23 @@ public class Arm extends SubsystemBase {
     //            10.0,
     //            new Color8Bit(Color.kGreen));
     //    armRoot.append(armSetpoint);
+
+    routine =
+        new SysIdRoutine(
+            new SysIdRoutine.Config(
+                Volts.of(0.05).per(Seconds.of(1.0)),
+                Volts.of(4.0),
+                Seconds.of(30.0),
+                state -> {
+                  SignalLogger.writeString("SysIdState", state.toString());
+                }),
+            new SysIdRoutine.Mechanism(
+                voltageMeasure -> armIO.setVoltage(voltageMeasure.in(Volts)),
+                sysIdRoutineLog -> {
+                  Logger.recordOutput("Arm/SysIdVoltage", inputs.armAppliedVolts[0]);
+                  Logger.recordOutput("Arm/SysIdCurrent", inputs.armTorqueCurrentAmps[0]);
+                },
+                this));
   }
 
   @Override
@@ -157,6 +180,24 @@ public class Arm extends SubsystemBase {
 
   public void stop() {
     armIO.stop();
+  }
+
+  // SysId command factories
+  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+    return routine.quasistatic(direction).beforeStarting(SignalLogger::start);
+  }
+
+  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+    return routine.dynamic(direction).finallyDo(SignalLogger::stop);
+  }
+
+  public Command getKs() {
+    Timer timer = new Timer();
+    return run(() -> armIO.setCurrent(0.1 * timer.get()))
+        .beforeStarting(timer::restart)
+        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
+        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
+        .andThen(armIO::stop);
   }
 
   @AutoLogOutput(key = "Arm/Homed")

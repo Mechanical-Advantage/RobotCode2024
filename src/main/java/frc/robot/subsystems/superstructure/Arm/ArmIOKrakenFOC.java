@@ -7,9 +7,7 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.Follower;
-import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -133,7 +131,12 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   @Override
   public void setVoltage(double volts) {
-    leaderMotor.setControl(new VoltageOut(volts));
+    leaderMotor.setControl(new VoltageOut(volts).withEnableFOC(true));
+  }
+
+  @Override
+  public void setCurrent(double amps) {
+    leaderMotor.setControl(new TorqueCurrentFOC(amps));
   }
 
   @Override
@@ -173,5 +176,10 @@ public class ArmIOKrakenFOC implements ArmIO {
   @Override
   public void setPosition(double positionRads) {
     leaderMotor.setPosition(Units.radiansToRotations(positionRads));
+  }
+
+  @Override
+  public void stop() {
+    leaderMotor.setControl(new NeutralOut());
   }
 }

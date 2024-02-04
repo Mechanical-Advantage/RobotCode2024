@@ -95,7 +95,7 @@ public class SuperstructureConstants {
     public static ControllerConstants controllerConstants =
         switch (Constants.getRobot()) {
           case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-          case RAINBOWT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 1.84, 0.0001, 0.13);
+          case RAINBOWT -> new ControllerConstants(1200, 0.0,120, 1.71, 0.0, 0.0, 10.79);
           case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         };
 

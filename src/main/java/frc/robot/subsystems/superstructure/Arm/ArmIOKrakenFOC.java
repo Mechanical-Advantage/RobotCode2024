@@ -30,16 +30,16 @@ public class ArmIOKrakenFOC implements ArmIO {
   Slot0Configs controllerConfig;
 
   public ArmIOKrakenFOC() {
-    leaderMotor = new TalonFX(leaderID, "*");
-    followerMotor = new TalonFX(followerID, "*");
+    leaderMotor = new TalonFX(leaderID, "canivore");
+    followerMotor = new TalonFX(followerID, "canivore");
     followerMotor.setControl(new Follower(leaderID, true));
 
     // Leader motor configs
     TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
     leaderConfig.CurrentLimits.StatorCurrentLimit = 60.0;
     leaderConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
-    leaderConfig.Voltage.PeakForwardVoltage = 12.0;
-    leaderConfig.Voltage.PeakReverseVoltage = 12.0;
+    //    leaderConfig.Voltage.PeakForwardVoltage = 4.0;
+    //    leaderConfig.Voltage.PeakReverseVoltage = -4.0;
     leaderConfig.MotorOutput.Inverted =
         leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
     leaderConfig.Feedback.SensorToMechanismRatio = reduction;

@@ -64,12 +64,12 @@ public class SuperstructureConstants {
 
     public static int leaderID =
         switch (Constants.getRobot()) {
-          default -> 1;
+          default -> 25;
         };
 
     public static int followerID =
         switch (Constants.getRobot()) {
-          default -> 2;
+          default -> 26;
         };
 
     public static boolean leaderInverted =
@@ -94,7 +94,7 @@ public class SuperstructureConstants {
 
     public static ControllerConstants controllerConstants =
         switch (Constants.getRobot()) {
-          case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.13);
+          case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
           case RAINBOWT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 1.84, 0.0001, 0.13);
           case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         };

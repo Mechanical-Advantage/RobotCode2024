@@ -19,10 +19,8 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 
 public class DriveIOTalonFX implements DriveIO {
@@ -47,9 +45,6 @@ public class DriveIOTalonFX implements DriveIO {
   private final StatusSignal<Double> rightLeaderCurrent = rightLeader.getStatorCurrent();
   private final StatusSignal<Double> rightFollowerCurrent = rightFollower.getStatorCurrent();
 
-  private final Pigeon2 pigeon = new Pigeon2(20);
-  private final StatusSignal<Double> yaw = pigeon.getYaw();
-
   public DriveIOTalonFX() {
     var config = new TalonFXConfiguration();
     config.CurrentLimits.StatorCurrentLimit = 60.0;
@@ -65,7 +60,7 @@ public class DriveIOTalonFX implements DriveIO {
     rightFollower.setControl(new Follower(rightLeader.getDeviceID(), false));
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        100.0, leftPosition, rightPosition, yaw); // Required for odometry, use faster rate
+        100.0, leftPosition, rightPosition); // Required for odometry, use faster rate
     BaseStatusSignal.setUpdateFrequencyForAll(
         50.0,
         leftVelocity,
@@ -80,11 +75,10 @@ public class DriveIOTalonFX implements DriveIO {
     leftFollower.optimizeBusUtilization();
     rightLeader.optimizeBusUtilization();
     rightFollower.optimizeBusUtilization();
-    pigeon.optimizeBusUtilization();
   }
 
   @Override
-  public void updateInputs(DriveIOInputs inputs) {
+  public void updateInputs(DriveIOInputs inputs, GyroIO.GyroIOInputs gyroInputs) {
     BaseStatusSignal.refreshAll(
         leftPosition,
         leftVelocity,
@@ -95,8 +89,7 @@ public class DriveIOTalonFX implements DriveIO {
         rightVelocity,
         rightAppliedVolts,
         rightLeaderCurrent,
-        rightFollowerCurrent,
-        yaw);
+        rightFollowerCurrent);
 
     inputs.leftPositionRad = Units.rotationsToRadians(leftPosition.getValueAsDouble()) / GEAR_RATIO;
     inputs.leftVelocityRadPerSec =
@@ -114,8 +107,6 @@ public class DriveIOTalonFX implements DriveIO {
         new double[] {
           rightLeaderCurrent.getValueAsDouble(), rightFollowerCurrent.getValueAsDouble()
         };
-
-    inputs.gyroYaw = Rotation2d.fromDegrees(yaw.getValueAsDouble());
   }
 
   @Override

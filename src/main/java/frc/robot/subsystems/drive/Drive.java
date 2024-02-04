@@ -13,6 +13,8 @@
 
 package frc.robot.subsystems.drive;
 
+import static frc.robot.Constants.Mode.SIM;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 import com.pathplanner.lib.util.PathPlannerLogging;
@@ -30,7 +32,6 @@ import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.Constants.Mode;
 import frc.robot.util.LocalADStarAK;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -41,16 +42,16 @@ public class Drive extends SubsystemBase {
   public static final double MAX_SPEED_M_PER_S = Units.feetToMeters(10); // TODO find right value
 
   // Consider using SysId routines defined in RobotContainer
-  private static final double lKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.98355;
-  private static final double lKV = Constants.currentMode == Mode.SIM ? 0.227 : 30.42797;
+  private static final double lKS = Constants.currentMode == SIM ? 0.0 : 0.98355;
+  private static final double lKV = Constants.currentMode == SIM ? 0.227 : 30.42797;
 
-  private static final double rKS = Constants.currentMode == Mode.SIM ? 0.0 : 0.88676;
-  private static final double rKV = Constants.currentMode == Mode.SIM ? 0.227 : 32.08170;
-
-  private final PIDController pid = new PIDController(10, 0, 0);
-
+  private static final double rKS = Constants.currentMode == SIM ? 0.0 : 0.88676;
+  private static final double rKV = Constants.currentMode == SIM ? 0.227 : 32.08170;
+  private PIDController pid;
   private final DriveIO io;
+  private final GyroIO gyroIO;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
+  private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final DifferentialDriveOdometry odometry =
       new DifferentialDriveOdometry(new Rotation2d(), 0.0, 0.0);
   private final DifferentialDriveKinematics kinematics =
@@ -59,8 +60,16 @@ public class Drive extends SubsystemBase {
   private final SimpleMotorFeedforward feedforwardRight = new SimpleMotorFeedforward(rKS, rKV);
 
   /** Creates a new Drive. */
-  public Drive(DriveIO io) {
+  public Drive(DriveIO io, GyroIO gyroIO) {
     this.io = io;
+    this.gyroIO = gyroIO;
+
+    // different PID tuning for SIM
+    if (Constants.currentMode == SIM) {
+      pid = new PIDController(5, 0, 0); //  if SIM
+    } else {
+      pid = new PIDController(10, 0, 0); //  if Kitbot
+    }
 
     AutoBuilder.configureRamsete(
         this::getPose,
@@ -92,11 +101,17 @@ public class Drive extends SubsystemBase {
 
   @Override
   public void periodic() {
-    io.updateInputs(inputs);
+    io.updateInputs(inputs, gyroInputs);
+    gyroIO.updateInputs(gyroInputs);
+
     Logger.processInputs("Drive", inputs);
+    Logger.processInputs("Gyro", gyroInputs);
 
     // Update odometry
-    odometry.update(inputs.gyroYaw, getLeftPositionMeters(), getRightPositionMeters());
+    odometry.update(
+        Rotation2d.fromRadians(gyroInputs.yawPositionRad),
+        getLeftPositionMeters(),
+        getRightPositionMeters());
   }
 
   /** Run open loop at the specified voltage. */
@@ -135,7 +150,11 @@ public class Drive extends SubsystemBase {
 
   /** Resets the current odometry pose. */
   public void setPose(Pose2d pose) {
-    odometry.resetPosition(inputs.gyroYaw, getLeftPositionMeters(), getRightPositionMeters(), pose);
+    odometry.resetPosition(
+        Rotation2d.fromRadians(gyroInputs.yawPositionRad),
+        getLeftPositionMeters(),
+        getRightPositionMeters(),
+        pose);
   }
 
   /** Returns the position of the left wheels in meters. */
@@ -160,6 +179,15 @@ public class Drive extends SubsystemBase {
   @AutoLogOutput
   public double getRightVelocityMetersPerSec() {
     return inputs.rightVelocityRadPerSec * WHEEL_RADIUS;
+  }
+
+  @AutoLogOutput
+  public double getGyroYawDegrees() {
+    return Math.toDegrees(gyroInputs.yawPositionRad);
+  }
+
+  public GyroIO getGyroIO() {
+    return gyroIO;
   }
 
   /** Returns the average velocity in meters/second. */

@@ -15,15 +15,13 @@ package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.FeedForwardCharacterization;
-import frc.robot.commands.IntakeNote;
-import frc.robot.commands.LaunchNote;
-import frc.robot.commands.PrepareLaunch;
+import frc.robot.commands.*;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.flywheel.*;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -55,7 +53,7 @@ public class RobotContainer {
     switch (Constants.currentMode) {
       case REAL:
         // Real robot, instantiate hardware IO implementations
-        drive = new Drive(new DriveIOTalonSRX());
+        drive = new Drive(new DriveIOTalonSRX(), new GyroIOADIS16470());
         hopper = new Flywheel(new FlywheelIOTalonSRX(14));
         shooter = new Flywheel(new FlywheelIOTalonSRX(15));
 
@@ -63,14 +61,14 @@ public class RobotContainer {
 
       case SIM:
         // Sim robot, instantiate physics sim IO implementations
-        drive = new Drive(new DriveIOSim());
+        drive = new Drive(new DriveIOSim(), new GyroIO() {});
         shooter = new Flywheel(new FlywheelIOSim());
         hopper = new Flywheel(new FlywheelIOSim());
         break;
 
       default:
         // Replayed robot, disable IO implementations
-        drive = new Drive(new DriveIO() {});
+        drive = new Drive(new DriveIO() {}, new GyroIO() {});
         shooter = new Flywheel(new FlywheelIO() {});
         break;
     }

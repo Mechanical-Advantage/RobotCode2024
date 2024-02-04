@@ -23,27 +23,11 @@ import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
 public class DriveIOTalonSRX implements DriveIO {
-  private static final double GEAR_RATIO = 10.0; //  was 10
-
   private static final double MAX_VOLTAGE = 12.0;
-  private static final double KP = 1.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
-  private static final double KD = 0.0; // TODO: MUST BE TUNED, consider using Phoenix Tuner X
   private final TalonSRX leftLeader = new TalonSRX(2);
   private final TalonSRX leftFollower = new TalonSRX(0);
   private final TalonSRX rightLeader = new TalonSRX(3);
   private final TalonSRX rightFollower = new TalonSRX(1);
-
-  private double leftPosition = leftLeader.getSelectedSensorPosition();
-  private double leftVelocity = leftLeader.getSelectedSensorVelocity();
-  private double leftAppliedVolts = leftLeader.getMotorOutputVoltage();
-  private double leftLeaderCurrent = leftLeader.getStatorCurrent();
-  private double leftFollowerCurrent = leftFollower.getStatorCurrent();
-
-  private double rightPosition = rightLeader.getSelectedSensorPosition();
-  private double rightVelocity = rightLeader.getSelectedSensorVelocity();
-  private double rightAppliedVolts = rightLeader.getMotorOutputVoltage();
-  private double rightLeaderCurrent = rightLeader.getStatorCurrent();
-  private double rightFollowerCurrent = rightFollower.getStatorCurrent();
 
   // private final Pigeon2 pigeon = new Pigeon2(20);
 
@@ -69,37 +53,31 @@ public class DriveIOTalonSRX implements DriveIO {
 
     leftLeader.configSelectedFeedbackSensor(QuadEncoder);
     rightLeader.configSelectedFeedbackSensor(QuadEncoder);
-
-    // pigeon.optimizeBusUtilization();
   }
 
   @Override
-  public void updateInputs(DriveIOInputs inputs) {
-    leftPosition = leftLeader.getSelectedSensorPosition();
-    leftVelocity = leftLeader.getSelectedSensorVelocity();
-    leftAppliedVolts = leftLeader.getMotorOutputVoltage();
-    leftLeaderCurrent = leftLeader.getStatorCurrent();
-    leftFollowerCurrent = leftFollower.getStatorCurrent();
-
-    rightPosition = -rightLeader.getSelectedSensorPosition();
-    rightVelocity = -rightLeader.getSelectedSensorVelocity();
-    rightAppliedVolts = rightLeader.getMotorOutputVoltage();
-    rightLeaderCurrent = rightLeader.getStatorCurrent();
-    rightFollowerCurrent = rightFollower.getStatorCurrent();
-
+  public void updateInputs(DriveIOInputs inputs, GyroIO.GyroIOInputs gyroInputs) {
     inputs.leftPositionRad =
-        Units.rotationsToRadians(leftPosition / Constants.TICKS_PER_REVOLUTION);
+        Units.rotationsToRadians(
+            leftLeader.getSelectedSensorPosition() / Constants.TICKS_PER_REVOLUTION);
     inputs.leftVelocityRadPerSec =
-        Units.rotationsToRadians(leftVelocity / Constants.TICKS_PER_REVOLUTION);
-    inputs.leftAppliedVolts = leftAppliedVolts;
-    inputs.leftCurrentAmps = new double[] {leftLeaderCurrent, leftFollowerCurrent};
+        Units.rotationsToRadians(
+            leftLeader.getSelectedSensorVelocity() / Constants.TICKS_PER_REVOLUTION * 10);
+    inputs.leftAppliedVolts = leftLeader.getMotorOutputVoltage();
+    inputs.leftCurrentAmps =
+        new double[] {leftLeader.getStatorCurrent(), leftFollower.getStatorCurrent()};
 
     inputs.rightPositionRad =
-        Units.rotationsToRadians(rightPosition / Constants.TICKS_PER_REVOLUTION);
+        -1
+            * Units.rotationsToRadians(
+                rightLeader.getSelectedSensorPosition() / Constants.TICKS_PER_REVOLUTION);
     inputs.rightVelocityRadPerSec =
-        Units.rotationsToRadians(rightVelocity / Constants.TICKS_PER_REVOLUTION);
-    inputs.rightAppliedVolts = rightAppliedVolts;
-    inputs.rightCurrentAmps = new double[] {rightLeaderCurrent, rightFollowerCurrent};
+        -1
+            * Units.rotationsToRadians(
+                rightLeader.getSelectedSensorVelocity() / Constants.TICKS_PER_REVOLUTION * 10);
+    inputs.rightAppliedVolts = rightLeader.getMotorOutputVoltage();
+    inputs.rightCurrentAmps =
+        new double[] {rightLeader.getStatorCurrent(), rightFollower.getStatorCurrent()};
   }
 
   @Override

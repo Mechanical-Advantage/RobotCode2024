@@ -56,7 +56,6 @@ public class RobotState {
 
   /** Add odometry observation */
   public void addOdometryObservation(OdometryObservation observation) {
-    Pose2d lastOdometryPose = odometryPose;
     Twist2d twist = kinematics.toTwist2d(lastWheelPositions, observation.wheelPositions());
     lastWheelPositions = observation.wheelPositions();
     // Check gyro connected
@@ -72,7 +71,7 @@ public class RobotState {
     // Add pose to buffer at timestamp
     poseBuffer.addSample(observation.timestamp(), odometryPose);
     // Calculate diff from last odometry pose and add onto pose estimate
-    estimatedPose = estimatedPose.exp(lastOdometryPose.log(odometryPose));
+    estimatedPose = estimatedPose.exp(twist);
   }
 
   public void addVisionObservation(VisionObservation observation) {

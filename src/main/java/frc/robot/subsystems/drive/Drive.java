@@ -43,13 +43,14 @@ import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class Drive extends SubsystemBase {
-  private static final LoggedTunableNumber coastSpeedLimit = new LoggedTunableNumber(
+  private static final LoggedTunableNumber coastSpeedLimit =
+      new LoggedTunableNumber(
           "Drive/CoastSpeedLimit", DriveConstants.driveConfig.maxLinearVelocity() * 0.6);
-  private static final LoggedTunableNumber coastDisableTime = new LoggedTunableNumber(
-          "Drive/CoastDisableTimeSeconds", 0.5);
+  private static final LoggedTunableNumber coastDisableTime =
+      new LoggedTunableNumber("Drive/CoastDisableTimeSeconds", 0.5);
 
   @AutoLog
-  public static class OdometryTimeestampInputs {
+  public static class OdometryTimestampInputs {
     public double[] timestamps = new double[] {};
   }
 
@@ -57,14 +58,16 @@ public class Drive extends SubsystemBase {
   // TODO: DO THIS BETTER!
   public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
 
-  private final OdometryTimeestampInputsAutoLogged odometryTimestampInputs =
-      new OdometryTimeestampInputsAutoLogged();
+  private final OdometryTimestampInputsAutoLogged odometryTimestampInputs =
+      new OdometryTimestampInputsAutoLogged();
   private final GyroIO gyroIO;
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
   private boolean modulesOrienting = false;
   private boolean characterizing = false;
+  private final Timer coastTimer = new Timer();
+  private boolean brakeModeEnabled = true;
   private double characterizationVolts = 0.0;
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
   private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
@@ -82,11 +85,13 @@ public class Drive extends SubsystemBase {
   private final TrajectoryMotionPlanner trajectoryMotionPlanner;
   private final AutoAlignMotionPlanner autoAlignMotionPlanner;
 
-  private final Timer coastTimer = new Timer();
-  private boolean shouldCoast = false;
-
-  public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br,
-               boolean useMotorConroller) {
+  public Drive(
+      GyroIO gyroIO,
+      ModuleIO fl,
+      ModuleIO fr,
+      ModuleIO bl,
+      ModuleIO br,
+      boolean useMotorConroller) {
     System.out.println("[Init] Creating Drive");
     this.gyroIO = gyroIO;
     modules[0] = new Module(fl, 0, useMotorConroller);
@@ -153,8 +158,7 @@ public class Drive extends SubsystemBase {
     }
 
     // update current velocities use gyro when possible
-    ChassisSpeeds robotRelativeVelocity =
-        DriveConstants.kinematics.toChassisSpeeds(getModuleStates());
+    ChassisSpeeds robotRelativeVelocity = getSpeeds();
     robotRelativeVelocity.omegaRadiansPerSecond =
         gyroInputs.connected
             ? gyroInputs.yawVelocityRadPerSec
@@ -164,22 +168,20 @@ public class Drive extends SubsystemBase {
     // Disabled, stop modules and coast
     if (DriverStation.isDisabled()) {
       Arrays.stream(modules).forEach(Module::stop);
-      if (Math.hypot(robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond) <= coastSpeedLimit.get()) {
+      if (Math.hypot(
+                  robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond)
+              <= coastSpeedLimit.get()
+          && brakeModeEnabled) {
         setBrakeMode(false);
         coastTimer.stop();
         coastTimer.reset();
-      } else if (coastTimer.hasElapsed(coastDisableTime.get())) {
+      } else if (coastTimer.hasElapsed(coastDisableTime.get()) && brakeModeEnabled) {
         setBrakeMode(false);
         coastTimer.stop();
         coastTimer.reset();
       } else {
         coastTimer.start();
       }
-      // Clear logs
-      Logger.recordOutput("Drive/SwerveStates/Desired(b4 Poofs)", new double[] {});
-      Logger.recordOutput("Drive/SwerveStates/Setpoints", new double[] {});
-      Logger.recordOutput("Drive/DesiredSpeeds", new double[] {});
-      Logger.recordOutput("Drive/SetpointSpeeds", new double[] {});
       return;
     }
 
@@ -188,21 +190,11 @@ public class Drive extends SubsystemBase {
       for (Module module : modules) {
         module.runCharacterization(characterizationVolts);
       }
-      // Clear logs
-      Logger.recordOutput("Drive/SwerveStates/Desired(b4 Poofs)", new double[] {});
-      Logger.recordOutput("Drive/SwerveStates/Setpoints", new double[] {});
-      Logger.recordOutput("Drive/DesiredSpeeds", new double[] {});
-      Logger.recordOutput("Drive/SetpointSpeeds", new double[] {});
       return;
     }
 
     // Skip if orienting modules
     if (modulesOrienting) {
-      // Clear logs
-      Logger.recordOutput("Drive/SwerveStates/Desired(b4 Poofs)", new double[] {});
-      Logger.recordOutput("Drive/SwerveStates/Setpoints", new double[] {});
-      Logger.recordOutput("Drive/DesiredSpeeds", new double[] {});
-      Logger.recordOutput("Drive/SetpointSpeeds", new double[] {});
       return;
     }
 
@@ -258,6 +250,7 @@ public class Drive extends SubsystemBase {
 
   /** Set brake mode enabled */
   public void setBrakeMode(boolean enabled) {
+    brakeModeEnabled = enabled;
     Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
   }
 
@@ -267,14 +260,21 @@ public class Drive extends SubsystemBase {
 
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
-      for (int i = 0; i < orientations.length; i++) {
-        modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
-      }})
-            .beforeStarting(() -> modulesOrienting = true)
-            .until(() -> Arrays.stream(modules).allMatch(module ->
-                    Math.abs(
-                            module.getAngle().getDegrees() - module.getSetpointState().angle.getDegrees()) <= 2.0))
-            .andThen(() -> modulesOrienting = false);
+          for (int i = 0; i < orientations.length; i++) {
+            modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
+          }
+        })
+        .until(
+            () ->
+                Arrays.stream(modules)
+                    .allMatch(
+                        module ->
+                            Math.abs(
+                                    module.getAngle().getDegrees()
+                                        - module.getSetpointState().angle.getDegrees())
+                                <= 2.0))
+        .beforeStarting(() -> modulesOrienting = true)
+        .finallyDo(() -> modulesOrienting = false);
   }
 
   /** Follows a trajectory using the trajectory motion planner. */
@@ -302,6 +302,12 @@ public class Drive extends SubsystemBase {
   @AutoLogOutput(key = "Drive/SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {
     return Arrays.stream(modules).map(Module::getState).toArray(SwerveModuleState[]::new);
+  }
+
+  /** Returns the measured speeds of the robot in the robot's frame of reference. */
+  @AutoLogOutput(key = "Drive/MeasuredSpeeds")
+  private ChassisSpeeds getSpeeds() {
+    return DriveConstants.kinematics.toChassisSpeeds(getModuleStates());
   }
 
   public static Rotation2d[] getStraightOrientations() {

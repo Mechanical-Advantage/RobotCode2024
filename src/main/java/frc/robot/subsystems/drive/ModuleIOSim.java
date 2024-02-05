@@ -24,9 +24,9 @@ import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 public class ModuleIOSim implements ModuleIO {
 
   private final DCMotorSim driveSim =
-      new DCMotorSim(DCMotor.getKrakenX60(1), moduleConstants.driveReduction(), 0.025);
+      new DCMotorSim(DCMotor.getKrakenX60Foc(1), moduleConstants.driveReduction(), 0.025);
   private final DCMotorSim turnSim =
-      new DCMotorSim(DCMotor.getKrakenX60(1), moduleConstants.turnReduction(), 0.004);
+      new DCMotorSim(DCMotor.getKrakenX60Foc(1), moduleConstants.turnReduction(), 0.004);
 
   private final PIDController driveFeedback = new PIDController(0.0, 0.0, 0.0, 0.02);
   private final PIDController turnFeedback = new PIDController(0.0, 0.0, 0.0, 0.02);
@@ -48,14 +48,14 @@ public class ModuleIOSim implements ModuleIO {
     inputs.drivePositionRad = driveSim.getAngularPositionRad();
     inputs.driveVelocityRadPerSec = driveSim.getAngularVelocityRadPerSec();
     inputs.driveAppliedVolts = driveAppliedVolts;
-    inputs.driveCurrentAmps = Math.abs(driveSim.getCurrentDrawAmps());
+    inputs.driveSupplyCurrentAmps = Math.abs(driveSim.getCurrentDrawAmps());
 
     inputs.turnAbsolutePosition =
         new Rotation2d(turnSim.getAngularPositionRad()).plus(turnAbsoluteInitPosition);
     inputs.turnPosition = Rotation2d.fromRadians(turnSim.getAngularPositionRad());
     inputs.turnVelocityRadPerSec = turnSim.getAngularVelocityRadPerSec();
     inputs.turnAppliedVolts = turnAppliedVolts;
-    inputs.turnCurrentAmps = Math.abs(turnSim.getCurrentDrawAmps());
+    inputs.turnSupplyCurrentAmps = Math.abs(turnSim.getCurrentDrawAmps());
 
     inputs.odometryDrivePositionsMeters =
         new double[] {driveSim.getAngularPositionRad() * wheelRadius};
@@ -76,14 +76,13 @@ public class ModuleIOSim implements ModuleIO {
   @Override
   public void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {
     setDriveVoltage(
-            driveFeedback.calculate(driveSim.getAngularVelocityRadPerSec(), velocityRadsPerSec)
-                    + ffVolts);
+        driveFeedback.calculate(driveSim.getAngularVelocityRadPerSec(), velocityRadsPerSec)
+            + ffVolts);
   }
 
   @Override
   public void setTurnPositionSetpoint(double angleRads) {
-    setTurnVoltage(
-            turnFeedback.calculate(turnSim.getAngularPositionRad(), angleRads));
+    setTurnVoltage(turnFeedback.calculate(turnSim.getAngularPositionRad(), angleRads));
   }
 
   @Override

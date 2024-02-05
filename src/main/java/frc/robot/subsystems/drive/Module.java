@@ -38,8 +38,7 @@ public class Module {
       new SimpleMotorFeedforward(
           DriveConstants.moduleConstants.ffKs(), DriveConstants.moduleConstants.ffKv(), 0.0);
 
-  @Getter
-  private SwerveModuleState setpointState = new SwerveModuleState();
+  @Getter private SwerveModuleState setpointState = new SwerveModuleState();
 
   public Module(ModuleIO io, int index, boolean useMotorController) {
     this.io = io;
@@ -56,22 +55,18 @@ public class Module {
 
     // Update FF and controllers
     LoggedTunableNumber.ifChanged(
-            hashCode(),
-            () -> {
-              driveFF = new SimpleMotorFeedforward(driveKs.get(), driveKv.get(), 0);
-              io.setDriveFF(driveKs.get(), driveKv.get(), 0);
-            },
-            driveKs,
-            driveKv);
+        hashCode(),
+        () -> {
+          driveFF = new SimpleMotorFeedforward(driveKs.get(), driveKv.get(), 0);
+          io.setDriveFF(driveKs.get(), driveKv.get(), 0);
+        },
+        driveKs,
+        driveKv);
     if (useMotorController) {
       LoggedTunableNumber.ifChanged(
-              hashCode(),
-              () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()),
-              driveKp, driveKd);
+          hashCode(), () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()), driveKp, driveKd);
       LoggedTunableNumber.ifChanged(
-              hashCode(),
-              () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()),
-                turnKp, turnKd);
+          hashCode(), () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()), turnKp, turnKd);
     } else {
       driveController.setPID(driveKp.get(), 0, driveKd.get());
       turnController.setPID(turnKp.get(), 0, turnKd.get());
@@ -81,18 +76,19 @@ public class Module {
   public void runSetpoint(SwerveModuleState setpoint) {
     setpointState = setpoint;
     if (useMotorController) {
-      io.setDriveVelocitySetpoint(setpoint.speedMetersPerSecond,
-              driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
+      io.setDriveVelocitySetpoint(
+          setpoint.speedMetersPerSecond / DriveConstants.wheelRadius,
+          driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
       io.setTurnPositionSetpoint(setpoint.angle.getRadians());
     } else {
       io.setDriveVoltage(
-              driveController.calculate(
-                      inputs.driveVelocityRadPerSec,
-                      setpoint.speedMetersPerSecond / DriveConstants.wheelRadius)
-                      + driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
+          driveController.calculate(
+                  inputs.driveVelocityRadPerSec,
+                  setpoint.speedMetersPerSecond / DriveConstants.wheelRadius)
+              + driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
       io.setTurnVoltage(
-              turnController.calculate(
-                      inputs.turnAbsolutePosition.getRadians(), setpoint.angle.getRadians()));
+          turnController.calculate(
+              inputs.turnAbsolutePosition.getRadians(), setpoint.angle.getRadians()));
     }
   }
 

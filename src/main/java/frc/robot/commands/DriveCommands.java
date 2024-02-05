@@ -22,8 +22,8 @@ import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
-import frc.robot.subsystems.superstructure.ShotCalculator;
 import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.shooting.ShotCalculator;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 

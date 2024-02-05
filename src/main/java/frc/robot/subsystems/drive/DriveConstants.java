@@ -18,7 +18,7 @@ public final class DriveConstants {
 
   // For Kraken
   public static class KrakenDriveConstants {
-    public static final boolean useTorqueCurrentFOC = true;
+    public static final boolean useTorqueCurrentFOC = false;
     public static final boolean useMotionMagic = false;
     public static final double motionMagicCruiseVelocity = 0.0;
     public static final double motionMagicAcceleration = 0.0;

@@ -15,7 +15,6 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
@@ -25,17 +24,13 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
-import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
-import frc.robot.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.subsystems.superstructure.intake.IntakeIO;
 import frc.robot.subsystems.superstructure.intake.IntakeIOSim;
-import frc.robot.subsystems.superstructure.intake.IntakeIOSparkMax;
 import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
-import frc.robot.subsystems.superstructure.shooter.ShooterIOSparkMax;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
@@ -82,11 +77,12 @@ public class RobotContainer {
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]),
                     false);
-            aprilTagVision =
-                new AprilTagVision(
-                    new AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
-            shooter = new Shooter(new ShooterIOSparkMax());
-            intake = new Intake(new IntakeIOSparkMax());
+            //            aprilTagVision =
+            //                new AprilTagVision(
+            //                    new
+            // AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
+            //            shooter = new Shooter(new ShooterIOSparkMax());
+            //            intake = new Intake(new IntakeIOSparkMax());
           }
         }
       }
@@ -200,27 +196,6 @@ public class RobotContainer {
             () -> -controller.getLeftX(),
             () -> -controller.getRightX()));
     controller
-        .a()
-        .whileTrue(
-            drive.autoAlignToPose(
-                () ->
-                    AllianceFlipUtil.apply(
-                        new Pose2d(
-                            new Translation2d(
-                                FieldConstants.ampCenter.getX(),
-                                FieldConstants.ampCenter.getY()
-                                    - DriveConstants.driveConfig.trackwidthY() / 2.0),
-                            new Rotation2d(-Math.PI / 2.0)))));
-    //    controller.a().onTrue(DriveCommands.toggleCalculateShotWhileMovingRotation(drive));
-    //    controller
-    //        .a()
-    //        .onTrue(Commands.either(intake.stopCommand(), intake.intakeCommand(),
-    // intake::running));
-    //    controller
-    //        .x()
-    //        .onTrue(Commands.either(intake.stopCommand(), intake.ejectCommand(),
-    // intake::running));
-    controller
         .b()
         .onTrue(
             Commands.runOnce(
@@ -230,6 +205,17 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(), new Rotation2d())))
                 .ignoringDisable(true));
     controller.y().onTrue(Commands.runOnce(() -> robotState.resetPose(new Pose2d())));
+
+    controller
+        .a()
+        .whileTrue(
+            drive.autoAlignToPose(
+                () ->
+                    AllianceFlipUtil.apply(
+                        new Pose2d(
+                            FieldConstants.ampCenter.getX(),
+                            FieldConstants.ampCenter.getY() - 0.6,
+                            new Rotation2d(Math.PI / 2.0)))));
   }
 
   /**

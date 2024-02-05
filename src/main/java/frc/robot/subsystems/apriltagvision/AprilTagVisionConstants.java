@@ -22,7 +22,7 @@ public class AprilTagVisionConstants {
                       Units.inchesToMeters(9.974),
                       Units.inchesToMeters(6.839),
                       new Rotation3d(0.0, Units.degreesToRadians(-28.125), 0.0))
-                  .rotateBy(new Rotation3d(0.0, 0.0, Units.degreesToRadians(30.0))) // offset?
+                  .rotateBy(new Rotation3d(0.0, 0.0, Units.degreesToRadians(30.0)))
             };
         default -> new Pose3d[] {};
       };

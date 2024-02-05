@@ -1,4 +1,4 @@
-package frc.robot.subsystems.superstructure;
+package frc.robot.util.shooting;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;

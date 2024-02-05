@@ -63,6 +63,7 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
+  private boolean modulesOrienting = false;
   private boolean characterizing = false;
   private double characterizationVolts = 0.0;
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
@@ -182,9 +183,6 @@ public class Drive extends SubsystemBase {
       return;
     }
 
-    // Set brake mode we are enabled
-    setBrakeMode(true);
-
     // Run characterization
     if (characterizing) {
       for (Module module : modules) {
@@ -198,7 +196,17 @@ public class Drive extends SubsystemBase {
       return;
     }
 
-    // Run robot at speeds
+    // Skip if orienting modules
+    if (modulesOrienting) {
+      // Clear logs
+      Logger.recordOutput("Drive/SwerveStates/Desired(b4 Poofs)", new double[] {});
+      Logger.recordOutput("Drive/SwerveStates/Setpoints", new double[] {});
+      Logger.recordOutput("Drive/DesiredSpeeds", new double[] {});
+      Logger.recordOutput("Drive/SetpointSpeeds", new double[] {});
+      return;
+    }
+
+    // Run robot at desiredSpeeds
     // Generate feasible next setpoint
     currentSetpoint =
         setpointGenerator.generateSetpoint(
@@ -225,6 +233,7 @@ public class Drive extends SubsystemBase {
   /** Set drive velocity (robot relative) */
   public void setVelocity(ChassisSpeeds velocity) {
     desiredSpeeds = ChassisSpeeds.discretize(velocity, 0.02);
+    setBrakeMode(true);
   }
 
   /** Runs forwards at the commanded voltage. */
@@ -250,6 +259,22 @@ public class Drive extends SubsystemBase {
   /** Set brake mode enabled */
   public void setBrakeMode(boolean enabled) {
     Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
+  }
+
+  public Command orientModules(Rotation2d orientation) {
+    return orientModules(new Rotation2d[] {orientation, orientation, orientation, orientation});
+  }
+
+  public Command orientModules(Rotation2d[] orientations) {
+    return run(() -> {
+      for (int i = 0; i < orientations.length; i++) {
+        modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
+      }})
+            .beforeStarting(() -> modulesOrienting = true)
+            .until(() -> Arrays.stream(modules).allMatch(module ->
+                    Math.abs(
+                            module.getAngle().getDegrees() - module.getSetpointState().angle.getDegrees()) <= 2.0))
+            .andThen(() -> modulesOrienting = false);
   }
 
   /** Follows a trajectory using the trajectory motion planner. */

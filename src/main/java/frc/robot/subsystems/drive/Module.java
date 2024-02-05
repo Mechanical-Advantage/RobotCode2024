@@ -6,6 +6,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import frc.robot.util.LoggedTunableNumber;
+import lombok.Getter;
 import org.littletonrobotics.junction.Logger;
 
 public class Module {
@@ -36,6 +37,9 @@ public class Module {
   private SimpleMotorFeedforward driveFF =
       new SimpleMotorFeedforward(
           DriveConstants.moduleConstants.ffKs(), DriveConstants.moduleConstants.ffKv(), 0.0);
+
+  @Getter
+  private SwerveModuleState setpointState = new SwerveModuleState();
 
   public Module(ModuleIO io, int index, boolean useMotorController) {
     this.io = io;
@@ -75,6 +79,7 @@ public class Module {
   }
 
   public void runSetpoint(SwerveModuleState setpoint) {
+    setpointState = setpoint;
     if (useMotorController) {
       io.setDriveVelocitySetpoint(setpoint.speedMetersPerSecond,
               driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));

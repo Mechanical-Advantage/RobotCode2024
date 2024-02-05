@@ -9,8 +9,6 @@ import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 public class Module {
-  private static final LoggedTunableNumber wheelRadius =
-      new LoggedTunableNumber("Drive/Module/WheelRadius", DriveConstants.wheelRadius);
   private static final LoggedTunableNumber driveKp =
       new LoggedTunableNumber("Drive/Module/DriveKp", DriveConstants.moduleConstants.driveKp());
   private static final LoggedTunableNumber driveKd =
@@ -24,9 +22,10 @@ public class Module {
   private static final LoggedTunableNumber turnKd =
       new LoggedTunableNumber("Drive/Module/TurnKd", DriveConstants.moduleConstants.turnKd());
 
+  private final int index;
   private final ModuleIO io;
   private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
-  private final int index;
+  private final boolean useMotorController;
 
   private final PIDController driveController =
       new PIDController(
@@ -34,13 +33,14 @@ public class Module {
   private final PIDController turnController =
       new PIDController(
           DriveConstants.moduleConstants.turnKp(), 0.0, DriveConstants.moduleConstants.turnKd());
-  private SimpleMotorFeedforward driveFf =
+  private SimpleMotorFeedforward driveFF =
       new SimpleMotorFeedforward(
           DriveConstants.moduleConstants.ffKs(), DriveConstants.moduleConstants.ffKv(), 0.0);
 
-  public Module(ModuleIO io, int index) {
+  public Module(ModuleIO io, int index, boolean useMotorController) {
     this.io = io;
     this.index = index;
+    this.useMotorController = useMotorController;
 
     turnController.enableContinuousInput(-Math.PI, Math.PI);
   }
@@ -50,24 +50,45 @@ public class Module {
     io.updateInputs(inputs);
     Logger.processInputs("Drive/Module" + index, inputs);
 
-    driveController.setPID(driveKp.get(), 0, driveKd.get());
+    // Update FF and controllers
     LoggedTunableNumber.ifChanged(
-        hashCode(),
-        () -> driveFf = new SimpleMotorFeedforward(driveKs.get(), driveKv.get(), 0),
-        driveKs,
-        driveKv);
-    turnController.setPID(turnKp.get(), 0, driveKd.get());
+            hashCode(),
+            () -> {
+              driveFF = new SimpleMotorFeedforward(driveKs.get(), driveKv.get(), 0);
+              io.setDriveFF(driveKs.get(), driveKv.get(), 0);
+            },
+            driveKs,
+            driveKv);
+    if (useMotorController) {
+      LoggedTunableNumber.ifChanged(
+              hashCode(),
+              () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()),
+              driveKp, driveKd);
+      LoggedTunableNumber.ifChanged(
+              hashCode(),
+              () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()),
+                turnKp, turnKd);
+    } else {
+      driveController.setPID(driveKp.get(), 0, driveKd.get());
+      turnController.setPID(turnKp.get(), 0, turnKd.get());
+    }
   }
 
   public void runSetpoint(SwerveModuleState setpoint) {
-    io.setDriveVoltage(
-        driveController.calculate(
-                inputs.driveVelocityRadPerSec,
-                setpoint.speedMetersPerSecond / DriveConstants.wheelRadius)
-            + driveFf.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
-    io.setTurnVoltage(
-        turnController.calculate(
-            inputs.turnAbsolutePosition.getRadians(), setpoint.angle.getRadians()));
+    if (useMotorController) {
+      io.setDriveVelocitySetpoint(setpoint.speedMetersPerSecond,
+              driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
+      io.setTurnPositionSetpoint(setpoint.angle.getRadians());
+    } else {
+      io.setDriveVoltage(
+              driveController.calculate(
+                      inputs.driveVelocityRadPerSec,
+                      setpoint.speedMetersPerSecond / DriveConstants.wheelRadius)
+                      + driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
+      io.setTurnVoltage(
+              turnController.calculate(
+                      inputs.turnAbsolutePosition.getRadians(), setpoint.angle.getRadians()));
+    }
   }
 
   public void runCharacterization(double volts) {

@@ -76,13 +76,14 @@ public class Drive extends SubsystemBase {
   private boolean characterizing = false;
   private double characterizationVolts = 0.0;
 
-  public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
+  public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br,
+               boolean useMotorConroller) {
     System.out.println("[Init] Creating Drive");
     this.gyroIO = gyroIO;
-    modules[0] = new Module(fl, 0);
-    modules[1] = new Module(fr, 1);
-    modules[2] = new Module(bl, 2);
-    modules[3] = new Module(br, 3);
+    modules[0] = new Module(fl, 0, useMotorConroller);
+    modules[1] = new Module(fr, 1, useMotorConroller);
+    modules[2] = new Module(bl, 2, useMotorConroller);
+    modules[3] = new Module(br, 3, useMotorConroller);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -203,6 +204,7 @@ public class Drive extends SubsystemBase {
     characterizationVolts = volts;
   }
 
+  /** Disables the characterization mode. */
   public void endCharacterization() {
     characterizing = false;
   }
@@ -216,16 +218,19 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
+  /** Set brake mode enabled */
   public void setBrakeMode(boolean enabled) {
     Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
   }
 
+  /** Follows a trajectory using the trajectory motion planner. */
   public Command followTrajectory(Trajectory trajectory) {
     return run(() -> setVelocity(trajectoryMotionPlanner.update()))
         .beforeStarting(() -> trajectoryMotionPlanner.setTrajectory(trajectory))
         .until(trajectoryMotionPlanner::isFinished);
   }
 
+  /** Auto aligns to a pose using the auto align motion planner. */
   public Command autoAlignToPose(Supplier<Pose2d> goalPose) {
     return run(() -> setVelocity(autoAlignMotionPlanner.update()))
         .beforeStarting(() -> autoAlignMotionPlanner.setGoalPose(goalPose.get()))

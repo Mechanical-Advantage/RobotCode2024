@@ -17,40 +17,86 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import org.littletonrobotics.junction.AutoLog;
 
 public interface ModuleIO {
-  @AutoLog
-  class ModuleIOInputs {
-    public double drivePositionRad = 0.0;
-    public double driveVelocityRadPerSec = 0.0;
-    public double driveAppliedVolts = 0.0;
-    public double driveCurrentAmps = 0.0;
+    @AutoLog
+    class ModuleIOInputs {
+        public double drivePositionRad = 0.0;
+        public double driveVelocityRadPerSec = 0.0;
+        public double driveAppliedVolts = 0.0;
+        public double driveCurrentAmps = 0.0;
 
-    public Rotation2d turnAbsolutePosition = new Rotation2d();
-    public Rotation2d turnPosition = new Rotation2d();
-    public double turnVelocityRadPerSec = 0.0;
-    public double turnAppliedVolts = 0.0;
-    public double turnCurrentAmps = 0.0;
+        public Rotation2d turnAbsolutePosition = new Rotation2d();
+        public Rotation2d turnPosition = new Rotation2d();
+        public double turnVelocityRadPerSec = 0.0;
+        public double turnAppliedVolts = 0.0;
+        public double turnCurrentAmps = 0.0;
 
-    public double[] odometryDrivePositionsMeters = new double[] {};
-    public Rotation2d[] odometryTurnPositions = new Rotation2d[] {};
-  }
+        public double[] odometryDrivePositionsMeters = new double[]{};
+        public Rotation2d[] odometryTurnPositions = new Rotation2d[]{};
+    }
 
-  /** Updates the set of loggable inputs. */
-  default void updateInputs(ModuleIOInputs inputs) {}
+    /**
+     * Updates the set of loggable inputs.
+     */
+    default void updateInputs(ModuleIOInputs inputs) {
+    }
 
-  default void setDriveVoltage(double volts) {}
+    /**
+     * Run drive motor at volts
+     */
+    default void setDriveVoltage(double volts) {
+    }
 
-  default void setTurnVoltage(double volts) {}
+    /**
+     * Run turn motor at volts
+     */
+    default void setTurnVoltage(double volts) {
+    }
 
-  default void setDriveVelocitySetpoint(double velocityRadPerSec, double ffVolts) {}
+    /**
+     * Set drive velocity setpoint
+     */
+    default void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {
+    }
 
-  default void setTurnPositionSetpoint(double angleRadians, double ffVolts) {}
+    /**
+     * Set turn position setpoint
+     */
+    default void setTurnPositionSetpoint(double angleRads) {
+    }
 
-  /** Enable or disable brake mode on the drive motor. */
-  default void setDriveBrakeMode(boolean enable) {}
+    /**
+     * Configure drive PID
+     */
+    default void setDrivePID(double kP, double kI, double kD) {
+    }
 
-  /** Enable or disable brake mode on the turn motor. */
-  default void setTurnBrakeMode(boolean enable) {}
+    /**
+     * Configure turn PID
+     */
+    default void setTurnPID(double kP, double kI, double kD) {
+    }
 
-  /** Disable output to all motors */
-  default void stop() {}
+    /**
+     * Configure drive feedforward for TorqueCurrentFOC
+     */
+    default void setDriveFF(double kS, double kV, double kA) {
+    }
+
+    /**
+     * Enable or disable brake mode on the drive motor.
+     */
+    default void setDriveBrakeMode(boolean enable) {
+    }
+
+    /**
+     * Enable or disable brake mode on the turn motor.
+     */
+    default void setTurnBrakeMode(boolean enable) {
+    }
+
+    /**
+     * Disable output to all motors
+     */
+    default void stop() {
+    }
 }

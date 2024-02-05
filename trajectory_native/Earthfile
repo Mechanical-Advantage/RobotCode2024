@@ -1,0 +1,77 @@
+VERSION 0.7
+FROM debian:bookworm-20240110
+WORKDIR /RobotCode2024/trajectory_native
+
+apt-deps:
+    ENV DEBIAN_FRONTEND=noninteractive
+    RUN apt update && apt install -y wget build-essential cmake autoconf libtool pkg-config git libblas-dev liblapack-dev clang lld gfortran
+    SAVE IMAGE --cache-hint
+
+grpc:
+    FROM +apt-deps
+    RUN git clone --recurse-submodules -b v1.60.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
+    RUN mkdir grpc/build
+    WORKDIR grpc/build
+    ENV CC=clang
+    ENV CXX=clang++
+    RUN cmake -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF ..
+    RUN make -j4
+    RUN make DESTDIR=$(pwd)/installroot_top install
+    RUN mkdir installroot
+    RUN mv installroot_top/usr/local/* installroot/
+    SAVE ARTIFACT installroot
+
+ipopt:
+    FROM +apt-deps
+    RUN wget https://github.com/coin-or/Ipopt/archive/refs/tags/releases/3.14.14.tar.gz
+    RUN tar -zvxf 3.14.14.tar.gz
+    RUN mkdir Ipopt-releases-3.14.14/build
+    WORKDIR Ipopt-releases-3.14.14/build
+    ENV CC=clang
+    ENV CXX=clang++
+    RUN ../configure
+    RUN make -j4
+    RUN make DESTDIR=$(pwd)/installroot_top install
+    RUN mkdir installroot
+    RUN mv installroot_top/usr/local/* installroot/
+    SAVE ARTIFACT installroot
+
+trajoptlib:
+    FROM +apt-deps
+    BUILD +ipopt
+    COPY +ipopt/installroot /usr/local/
+    GIT CLONE https://github.com/camearle20/TrajoptLib TrajoptLib
+    RUN mkdir TrajoptLib/build
+    WORKDIR TrajoptLib/build
+    ENV CC=clang
+    ENV CXX=clang++
+    RUN cmake -DOPTIMIZER_BACKEND=casadi -DBUILD_TESTING=OFF ..
+    RUN make -j4
+    RUN make DESTDIR=$(pwd)/installroot_top install
+    RUN mkdir installroot
+    RUN mv installroot_top/usr/local/* installroot/
+    SAVE ARTIFACT installroot
+
+dev-image:
+    FROM +apt-deps
+    BUILD +grpc
+    BUILD +trajoptlib
+    COPY +grpc/installroot /usr/local/
+    COPY +trajoptlib/installroot /usr/local/
+    ENV CC=clang
+    ENV CXX=clang++
+    SAVE IMAGE littletonrobotics/vts-dev
+
+vts:
+    FROM +dev-image
+    COPY src src
+    COPY proto proto
+    COPY CMakeLists.txt CMakeLists.txt
+    RUN mkdir build
+    WORKDIR build
+    RUN cmake ..
+    RUN make -j4
+    EXPOSE 56328
+    ENV GRPC_VERBOSITY=info
+    ENTRYPOINT ["./trajectory_native"]
+    SAVE IMAGE littletonrobotics/vts

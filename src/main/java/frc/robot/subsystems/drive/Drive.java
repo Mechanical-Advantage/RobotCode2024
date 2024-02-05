@@ -25,6 +25,7 @@ import frc.robot.RobotState;
 import frc.robot.subsystems.drive.planners.AutoAlignMotionPlanner;
 import frc.robot.subsystems.drive.planners.TrajectoryMotionPlanner;
 import frc.robot.util.GeomUtil;
+import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.swerve.ModuleLimits;
 import frc.robot.util.swerve.SwerveSetpoint;
 import frc.robot.util.swerve.SwerveSetpointGenerator;
@@ -42,6 +43,11 @@ import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class Drive extends SubsystemBase {
+  private static final LoggedTunableNumber coastSpeedLimit = new LoggedTunableNumber(
+          "Drive/CoastSpeedLimit", DriveConstants.driveConfig.maxLinearVelocity() * 0.6);
+  private static final LoggedTunableNumber coastDisableTime = new LoggedTunableNumber(
+          "Drive/CoastDisableTimeSeconds", 0.5);
+
   @AutoLog
   public static class OdometryTimeestampInputs {
     public double[] timestamps = new double[] {};
@@ -57,10 +63,9 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
+  private boolean characterizing = false;
+  private double characterizationVolts = 0.0;
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private final TrajectoryMotionPlanner trajectoryMotionPlanner;
-  private final AutoAlignMotionPlanner autoAlignMotionPlanner;
-
   private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
   private SwerveSetpoint currentSetpoint =
       new SwerveSetpoint(
@@ -73,8 +78,11 @@ public class Drive extends SubsystemBase {
           });
   private SwerveSetpointGenerator setpointGenerator;
 
-  private boolean characterizing = false;
-  private double characterizationVolts = 0.0;
+  private final TrajectoryMotionPlanner trajectoryMotionPlanner;
+  private final AutoAlignMotionPlanner autoAlignMotionPlanner;
+
+  private final Timer coastTimer = new Timer();
+  private boolean shouldCoast = false;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br,
                boolean useMotorConroller) {
@@ -152,16 +160,37 @@ public class Drive extends SubsystemBase {
             : robotRelativeVelocity.omegaRadiansPerSecond;
     RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
 
+    // Disabled, stop modules and coast
     if (DriverStation.isDisabled()) {
       Arrays.stream(modules).forEach(Module::stop);
+      if (Math.hypot(robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond) <= coastSpeedLimit.get()) {
+        setBrakeMode(false);
+        coastTimer.stop();
+        coastTimer.reset();
+      } else if (coastTimer.hasElapsed(coastDisableTime.get())) {
+        setBrakeMode(false);
+        coastTimer.stop();
+        coastTimer.reset();
+      } else {
+        coastTimer.start();
+      }
+      // Clear logs
+      Logger.recordOutput("Drive/SwerveStates/Desired(b4 Poofs)", new double[] {});
+      Logger.recordOutput("Drive/SwerveStates/Setpoints", new double[] {});
+      Logger.recordOutput("Drive/DesiredSpeeds", new double[] {});
+      Logger.recordOutput("Drive/SetpointSpeeds", new double[] {});
+      return;
     }
+
+    // Set brake mode we are enabled
+    setBrakeMode(true);
 
     // Run characterization
     if (characterizing) {
       for (Module module : modules) {
         module.runCharacterization(characterizationVolts);
       }
-
+      // Clear logs
       Logger.recordOutput("Drive/SwerveStates/Desired(b4 Poofs)", new double[] {});
       Logger.recordOutput("Drive/SwerveStates/Setpoints", new double[] {});
       Logger.recordOutput("Drive/DesiredSpeeds", new double[] {});

@@ -2,7 +2,7 @@ package frc.robot.util.trajectory;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,20 +16,19 @@ public class HolonomicDriveController {
   /** -- SETTER -- Set tolerance for goal state */
   @Setter private HolonomicDriveState goalTolerance = null;
 
+  private Pose2d controllerTolerance = null;
+
   /** -- SETTER -- Set goal state */
   @Setter private HolonomicDriveState goalState = null;
 
   @Getter private Pose2d poseError;
-
-  /** -- SETTER -- Set tolerance of controller with Pose2d */
-  @Setter private Pose2d controllerTolerance = null;
 
   public HolonomicDriveController(
       double linearKp, double linearKd, double thetaKp, double thetaKd) {
     linearController = new PIDController(linearKp, 0, linearKd);
     thetaController = new PIDController(thetaKp, 0, thetaKd);
 
-    this.thetaController.enableContinuousInput(-Math.PI, Math.PI);
+    thetaController.enableContinuousInput(-Math.PI, Math.PI);
   }
 
   /** Reset all controllers */
@@ -42,6 +41,11 @@ public class HolonomicDriveController {
     thetaController.reset();
   }
 
+  public void setControllerTolerance(Pose2d controllerTolerance) {
+    linearController.setTolerance(controllerTolerance.getTranslation().getNorm());
+    thetaController.setTolerance(controllerTolerance.getRotation().getRadians());
+  }
+
   /** Set PID values */
   public void setPID(double linearKp, double linearKd, double thetaKp, double thetaKd) {
     linearController.setPID(linearKp, 0, linearKd);
@@ -52,20 +56,30 @@ public class HolonomicDriveController {
   public ChassisSpeeds calculate(
       HolonomicDriveState currentState, HolonomicDriveState setpointState) {
     this.currentState = currentState;
-    Pose2d poseRef = setpointState.pose();
-    poseError = poseRef.relativeTo(currentState.pose());
+    Pose2d setpointPose = setpointState.pose();
+    poseError = setpointPose.relativeTo(currentState.pose());
 
     // Calculate feedback velocities (based on position error).
-    Translation2d currToStateTranslation =
-        poseRef.getTranslation().minus(currentState.pose().getTranslation());
     double linearFeedback =
         linearController.calculate(
-            0, currentState.pose().getTranslation().getDistance(poseRef.getTranslation()));
-    double xFeedback = linearFeedback * (currToStateTranslation.getAngle().getCos());
-    double yFeedback = linearFeedback * (currToStateTranslation.getAngle().getSin());
+            0, currentState.pose().getTranslation().getDistance(setpointPose.getTranslation()));
+    Rotation2d currentToStateAngle =
+        setpointPose.getTranslation().minus(currentState.pose().getTranslation()).getAngle();
+    double xFeedback = linearFeedback * currentToStateAngle.getCos();
+    double yFeedback = linearFeedback * currentToStateAngle.getSin();
     double thetaFeedback =
         thetaController.calculate(
-            currentState.pose().getRotation().getRadians(), poseRef.getRotation().getRadians());
+            currentState.pose().getRotation().getRadians(),
+            setpointPose.getRotation().getRadians());
+    if (atGoal()) {
+      if (linearController.atSetpoint()) {
+        xFeedback = 0;
+        yFeedback = 0;
+      }
+      if (thetaController.atSetpoint()) {
+        thetaFeedback = 0;
+      }
+    }
 
     // Return next output.
     return ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -73,6 +87,10 @@ public class HolonomicDriveController {
         setpointState.velocityY() + yFeedback,
         setpointState.angularVelocity() + thetaFeedback,
         currentState.pose().getRotation());
+  }
+
+  public boolean atSetpoint() {
+    return linearController.atSetpoint() && thetaController.atSetpoint();
   }
 
   /** Within tolerance of current goal */

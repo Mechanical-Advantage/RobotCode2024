@@ -1,0 +1,12 @@
+{
+  "image": "littletonrobotics/vts-dev:latest",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools-extension-pack",
+        "zxh404.vscode-proto3"
+      ]
+    }
+  }
+}

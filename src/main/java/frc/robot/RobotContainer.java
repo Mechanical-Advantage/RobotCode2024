@@ -21,7 +21,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
@@ -56,7 +55,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-  // Load robot state as field
+  // Load robot state
   private final RobotState robotState = RobotState.getInstance();
 
   // Subsystems
@@ -85,12 +84,14 @@ public class RobotContainer {
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
-            aprilTagVision =
-                new AprilTagVision(
-                    new AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
-            shooter = new Shooter(new ShooterIOSparkMax());
-            intake = new Intake(new IntakeIOSparkMax());
+                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]),
+                    false);
+            //            aprilTagVision =
+            //                new AprilTagVision(
+            //                    new
+            // AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
+            //            shooter = new Shooter(new ShooterIOSparkMax());
+            //            intake = new Intake(new IntakeIOSparkMax());
             arm = new Arm(new ArmIOKrakenFOC());
           }
         }
@@ -103,7 +104,8 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.moduleConfigs[0]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[1]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[2]),
-                new ModuleIOSim(DriveConstants.moduleConfigs[3]));
+                new ModuleIOSim(DriveConstants.moduleConfigs[3]),
+                false);
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
         arm = new Arm(new ArmIOSim());
@@ -116,7 +118,8 @@ public class RobotContainer {
                 new ModuleIO() {},
                 new ModuleIO() {},
                 new ModuleIO() {},
-                new ModuleIO() {});
+                new ModuleIO() {},
+                false);
         shooter = new Shooter(new ShooterIO() {});
         intake = new Intake(new IntakeIO() {});
         arm = new Arm(new ArmIO() {});
@@ -130,7 +133,8 @@ public class RobotContainer {
               new ModuleIO() {},
               new ModuleIO() {},
               new ModuleIO() {},
-              new ModuleIO() {});
+              new ModuleIO() {},
+              false);
     }
 
     if (aprilTagVision == null) {
@@ -167,10 +171,7 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             shooter,
             shooter::runRightCharacterizationVolts,
-            shooter::getRightCharacterizationVelocity));
-    autoChooser.addOption(
-        "Arm Quasistatic Forward", arm.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption("Arm Dynamic Forward", arm.sysIdDynamic(SysIdRoutine.Direction.kForward));
+            shooter::getRightCharacterizationVelocity));\
     autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
 
     // Testing autos paths
@@ -181,7 +182,7 @@ public class RobotContainer {
               traj ->
                   Commands.runOnce(
                           () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
-                      .andThen(drive.setTrajectoryCommand(traj)));
+                      .andThen(drive.followTrajectory(traj)));
         };
     final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
     for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
@@ -226,6 +227,16 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(), new Rotation2d())))
                 .ignoringDisable(true));
     controller.y().onTrue(Commands.runOnce(() -> robotState.resetPose(new Pose2d())));
+    controller
+        .a()
+        .whileTrue(
+            drive.autoAlignToPose(
+                () ->
+                    AllianceFlipUtil.apply(
+                        new Pose2d(
+                            FieldConstants.ampCenter.getX(),
+                            FieldConstants.ampCenter.getY() - 0.6,
+                            new Rotation2d(Math.PI / 2.0)))));
   }
 
   /**

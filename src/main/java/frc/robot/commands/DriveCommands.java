@@ -22,8 +22,8 @@ import frc.robot.FieldConstants;
 import frc.robot.RobotState;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
-import frc.robot.subsystems.superstructure.ShotCalculator;
 import frc.robot.util.AllianceFlipUtil;
+import frc.robot.util.shooting.ShotCalculator;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -64,9 +64,10 @@ public class DriveCommands {
                   linearVelocity.getX() * DriveConstants.driveConfig.maxLinearVelocity(),
                   linearVelocity.getY() * DriveConstants.driveConfig.maxLinearVelocity(),
                   omega * DriveConstants.driveConfig.maxAngularVelocity());
-          drive.setDriveVelocity(
+          speeds =
               ChassisSpeeds.fromFieldRelativeSpeeds(
-                  speeds, RobotState.getInstance().getEstimatedPose().getRotation()));
+                  speeds, RobotState.getInstance().getEstimatedPose().getRotation());
+          drive.setVelocity(speeds);
         });
   }
 

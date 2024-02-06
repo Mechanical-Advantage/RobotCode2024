@@ -13,6 +13,18 @@ import frc.robot.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
+  // TODO: get effective wheel radius
+  public static final double wheelRadius = Units.inchesToMeters(2.0);
+
+  // For Kraken
+  public static class KrakenDriveConstants {
+    public static final boolean useTorqueCurrentFOC = false;
+    public static final boolean useMotionMagic = false;
+    public static final double motionMagicCruiseVelocity = 0.0;
+    public static final double motionMagicAcceleration = 0.0;
+  }
+
+  // Drive Constants
   public static DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
@@ -32,7 +44,6 @@ public final class DriveConstants {
                 7.93,
                 29.89);
       };
-  public static final double wheelRadius = Units.inchesToMeters(2.0);
   public static final Translation2d[] moduleTranslations =
       new Translation2d[] {
         new Translation2d(driveConfig.trackwidthX() / 2.0, driveConfig.trackwidthY() / 2.0),
@@ -40,10 +51,10 @@ public final class DriveConstants {
         new Translation2d(-driveConfig.trackwidthX() / 2.0, driveConfig.trackwidthY() / 2.0),
         new Translation2d(-driveConfig.trackwidthX() / 2.0, -driveConfig.trackwidthY() / 2.0)
       };
-
   public static final SwerveDriveKinematics kinematics =
       new SwerveDriveKinematics(moduleTranslations);
 
+  // Odometry Constants
   public static final double odometryFrequency =
       switch (Constants.getRobot()) {
         case SIMBOT -> 50.0;
@@ -56,6 +67,7 @@ public final class DriveConstants {
         default -> new Matrix<>(VecBuilder.fill(0.003, 0.003, 0.0002));
       };
 
+  // Module Constants
   public static ModuleConfig[] moduleConfigs =
       switch (Constants.getRobot()) {
         case COMPBOT, RAINBOWT ->
@@ -75,7 +87,17 @@ public final class DriveConstants {
 
   public static ModuleConstants moduleConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT, RAINBOWT ->
+        case COMPBOT ->
+            new ModuleConstants(
+                2.0,
+                0.0,
+                200.0,
+                0.0,
+                200.0,
+                20.0,
+                Mk4iReductions.L3.reduction,
+                Mk4iReductions.TURN.reduction);
+        case RAINBOWT ->
             new ModuleConstants(
                 0.1,
                 0.13,
@@ -93,7 +115,7 @@ public final class DriveConstants {
                 0.0,
                 10.0,
                 0.0,
-                Mk4iReductions.L2.reduction,
+                Mk4iReductions.L3.reduction,
                 Mk4iReductions.TURN.reduction);
       };
 
@@ -103,13 +125,14 @@ public final class DriveConstants {
           driveConfig.maxLinearVelocity() * 5,
           Units.degreesToRadians(1080.0));
 
+  // Trajectory Following
   public static TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
         case COMPBOT, RAINBOWT ->
             new TrajectoryConstants(
                 6.0,
                 0.0,
-                10.0,
+                5.0,
                 0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),
@@ -131,6 +154,21 @@ public final class DriveConstants {
                 driveConfig.maxAngularVelocity() / 2.0);
       };
 
+  // Auto Align
+  public static AutoAlignConstants autoAlignConstants =
+      new AutoAlignConstants(
+          6.0,
+          0.0,
+          5.0,
+          0.0,
+          Units.inchesToMeters(2.0),
+          Units.degreesToRadians(2.0),
+          driveConfig.maxLinearVelocity(),
+          driveConfig.maxLinearAcceleration() * 0.5,
+          driveConfig.maxAngularVelocity() * 0.3,
+          driveConfig.maxAngularAcceleration() * 0.5);
+
+  // Swerve Heading Control
   public static HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
         default -> new HeadingControllerConstants(3.0, 0.0);
@@ -176,6 +214,18 @@ public final class DriveConstants {
       double goalThetaTolerance,
       double linearVelocityTolerance,
       double angularVelocityTolerance) {}
+
+  public record AutoAlignConstants(
+      double linearKp,
+      double linearKd,
+      double thetaKp,
+      double thetaKd,
+      double linearTolerance,
+      double thetaTolerance,
+      double maxLinearVelocity,
+      double maxLinearAcceleration,
+      double maxAngularVelocity,
+      double maxAngularAcceleration) {}
 
   public record HeadingControllerConstants(double Kp, double Kd) {}
 

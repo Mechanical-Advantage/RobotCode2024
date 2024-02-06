@@ -113,13 +113,13 @@ public class ArmIOKrakenFOC implements ArmIO {
         Units.rotationsToRadians(armTrajectorySetpointPositionRotations.getValue());
     inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRPS.getValue());
     inputs.armAppliedVolts =
-        new double[] {armAppliedVoltage[0].getValue(), armAppliedVoltage[1].getValue()};
+        new double[] {armAppliedVoltage[0].getValueAsDouble(), armAppliedVoltage[1].getValueAsDouble()};
     inputs.armCurrentAmps =
-        new double[] {armOutputCurrent[0].getValue(), armOutputCurrent[1].getValue()};
+        new double[] {armOutputCurrent[0].getValueAsDouble(), armOutputCurrent[1].getValueAsDouble()};
     inputs.armTorqueCurrentAmps =
-        new double[] {armTorqueCurrent[0].getValue(), armTorqueCurrent[1].getValue()};
+        new double[] {armTorqueCurrent[0].getValueAsDouble(), armTorqueCurrent[1].getValueAsDouble()};
     inputs.armTempCelcius =
-        new double[] {armTempCelsius[0].getValue(), armTempCelsius[1].getValue()};
+        new double[] {armTempCelsius[0].getValueAsDouble(), armTempCelsius[1].getValueAsDouble()};
   }
 
   @Override

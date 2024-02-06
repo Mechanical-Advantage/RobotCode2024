@@ -133,7 +133,7 @@ public class Shooter extends SubsystemBase {
     intaking = false;
   }
 
-  public void setStop() {
+  public void stop() {
     characterizing = false;
     shooting = false;
     intaking = false;

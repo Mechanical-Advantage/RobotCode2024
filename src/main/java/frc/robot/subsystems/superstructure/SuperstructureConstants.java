@@ -74,28 +74,28 @@ public class SuperstructureConstants {
 
     public static boolean leaderInverted =
         switch (Constants.getRobot()) {
-          case RAINBOWT -> false;
+          case DEVBOT -> false;
           case COMPBOT -> false;
           case SIMBOT -> false;
         };
 
     public static boolean followerInverted =
         switch (Constants.getRobot()) {
-          case RAINBOWT -> false;
+          case DEVBOT -> false;
           case COMPBOT -> false;
           case SIMBOT -> false;
         };
 
     public static double armLength =
         switch (Constants.getRobot()) {
-          case RAINBOWT -> Units.inchesToMeters(24.8);
+          case DEVBOT -> Units.inchesToMeters(24.8);
           default -> Units.inchesToMeters(25.866);
         };
 
     public static ControllerConstants controllerConstants =
         switch (Constants.getRobot()) {
           case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-          case RAINBOWT -> new ControllerConstants(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
+          case DEVBOT -> new ControllerConstants(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
           case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         };
 

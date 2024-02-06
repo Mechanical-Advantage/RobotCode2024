@@ -35,6 +35,7 @@ import frc.robot.subsystems.superstructure.intake.IntakeIOSim;
 import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
+import frc.robot.subsystems.superstructure.shooter.ShooterIOSparkMax;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
@@ -69,31 +70,20 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-    switch (Constants.getMode()) {
-      case REAL -> {
-        // Real robot, instantiate hardware IO implementations\
-        switch (Constants.getRobot()) {
-          default -> {
-            drive =
-                new Drive(
-                    new GyroIOPigeon2(false),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
-                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]),
-                    false);
-            //            aprilTagVision =
-            //                new AprilTagVision(
-            //                    new
-            // AprilTagVisionIONorthstar(AprilTagVisionConstants.cameraNames[0]));
-            //            shooter = new Shooter(new ShooterIOSparkMax());
-            //            intake = new Intake(new IntakeIOSparkMax());
-            arm = new Arm(new ArmIOKrakenFOC());
-          }
-        }
+    switch (Constants.getRobot()) {
+      case DEVBOT -> {
+        drive =
+            new Drive(
+                new GyroIOPigeon2(false),
+                new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
+                new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
+                new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
+                new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]),
+                false);
+        arm = new Arm(new ArmIOKrakenFOC());
+        shooter = new Shooter(new ShooterIOSparkMax());
       }
-      case SIM -> {
-        // Sim robot, instantiate physics sim IO implementations
+      case SIMBOT -> {
         drive =
             new Drive(
                 new GyroIO() {},
@@ -102,23 +92,12 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[3]),
                 false);
+        arm = new Arm(new ArmIOSim());
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
-        arm = new Arm(new ArmIOSim());
       }
-      default -> {
-        // Replayed robot, disable IO implementations
-        drive =
-            new Drive(
-                new GyroIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                new ModuleIO() {},
-                false);
-        shooter = new Shooter(new ShooterIO() {});
-        intake = new Intake(new IntakeIO() {});
-        arm = new Arm(new ArmIO() {});
+      case COMPBOT -> {
+        // No impl yet
       }
     }
 
@@ -207,12 +186,11 @@ public class RobotContainer {
     controller
         .x()
         .onTrue(Commands.runOnce(shooter::setShooting))
-        .onFalse(Commands.runOnce(shooter::setStop));
+        .onFalse(Commands.runOnce(shooter::stop));
     controller
         .a()
         .onTrue(Commands.runOnce(shooter::setIntaking))
-        .onFalse(Commands.runOnce(shooter::setStop));
-
+        .onFalse(Commands.runOnce(shooter::stop));
     controller
         .b()
         .onTrue(
@@ -222,17 +200,6 @@ public class RobotContainer {
                             new Pose2d(
                                 robotState.getEstimatedPose().getTranslation(), new Rotation2d())))
                 .ignoringDisable(true));
-    controller.y().onTrue(Commands.runOnce(() -> robotState.resetPose(new Pose2d())));
-    controller
-        .a()
-        .whileTrue(
-            drive.autoAlignToPose(
-                () ->
-                    AllianceFlipUtil.apply(
-                        new Pose2d(
-                            FieldConstants.ampCenter.getX(),
-                            FieldConstants.ampCenter.getY() - 0.6,
-                            new Rotation2d(Math.PI / 2.0)))));
   }
 
   /**

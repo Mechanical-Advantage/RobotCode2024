@@ -15,7 +15,7 @@ public class AprilTagVisionConstants {
 
   public static final Pose3d[] cameraPoses =
       switch (Constants.getRobot()) {
-        case RAINBOWT ->
+        case DEVBOT ->
             new Pose3d[] {
               new Pose3d(
                       Units.inchesToMeters(9.735),
@@ -29,7 +29,7 @@ public class AprilTagVisionConstants {
 
   public static final String[] cameraNames =
       switch (Constants.getRobot()) {
-        case RAINBOWT -> new String[] {"northstar_0"};
+        case DEVBOT -> new String[] {"northstar_0"};
         default -> new String[] {};
       };
 }

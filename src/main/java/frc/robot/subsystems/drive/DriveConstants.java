@@ -58,7 +58,7 @@ public final class DriveConstants {
   public static final double odometryFrequency =
       switch (Constants.getRobot()) {
         case SIMBOT -> 50.0;
-        case RAINBOWT -> 100.0;
+        case DEVBOT -> 100.0;
         case COMPBOT -> 250.0;
       };
 
@@ -70,7 +70,7 @@ public final class DriveConstants {
   // Module Constants
   public static ModuleConfig[] moduleConfigs =
       switch (Constants.getRobot()) {
-        case COMPBOT, RAINBOWT ->
+        case COMPBOT, DEVBOT ->
             new ModuleConfig[] {
               new ModuleConfig(15, 11, 0, new Rotation2d(-0.036), true),
               new ModuleConfig(12, 9, 1, new Rotation2d(1.0185), true),
@@ -97,7 +97,7 @@ public final class DriveConstants {
                 20.0,
                 Mk4iReductions.L3.reduction,
                 Mk4iReductions.TURN.reduction);
-        case RAINBOWT ->
+        case DEVBOT ->
             new ModuleConstants(
                 0.1,
                 0.13,
@@ -128,7 +128,7 @@ public final class DriveConstants {
   // Trajectory Following
   public static TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT, RAINBOWT ->
+        case COMPBOT, DEVBOT ->
             new TrajectoryConstants(
                 6.0,
                 0.0,

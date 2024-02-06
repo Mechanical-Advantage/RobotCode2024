@@ -174,7 +174,7 @@ public class RobotContainer {
     autoChooser.addOption(
         "Arm Quasistatic Forward", arm.sysIdQuasistatic(SysIdRoutine.Direction.kForward));
     autoChooser.addOption("Arm Dynamic Forward", arm.sysIdDynamic(SysIdRoutine.Direction.kForward));
-    autoChooser.addOption("Arm get static current", arm.getKs());
+    autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
 
     // Testing autos paths
     Function<File, Optional<Command>> trajectoryCommandFactory =

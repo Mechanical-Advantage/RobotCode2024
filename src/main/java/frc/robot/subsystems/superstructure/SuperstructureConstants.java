@@ -95,13 +95,13 @@ public class SuperstructureConstants {
     public static ControllerConstants controllerConstants =
         switch (Constants.getRobot()) {
           case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-          case RAINBOWT -> new ControllerConstants(1200, 0.0,120, 1.71, 0.0, 0.0, 10.79);
+          case RAINBOWT -> new ControllerConstants(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
           case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         };
 
     public static ProfileConstraints profileConstraints =
         switch (Constants.getRobot()) {
-          default -> new ProfileConstraints(2.0 * Math.PI, 2.0 * Math.PI);
+          default -> new ProfileConstraints(2.0 * Math.PI, 10);
         };
 
     public record ProfileConstraints(

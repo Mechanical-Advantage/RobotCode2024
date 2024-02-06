@@ -35,7 +35,7 @@ public class RobotState {
   private Pose2d estimatedPose = new Pose2d();
   private final TimeInterpolatableBuffer<Pose2d> poseBuffer =
       TimeInterpolatableBuffer.createBuffer(poseBufferSizeSeconds);
-  private final Matrix<N3, N1> odometryStdDevs = new Matrix<>(Nat.N3(), Nat.N1());
+  private final Matrix<N3, N1> qStdDevs = new Matrix<>(Nat.N3(), Nat.N1());
   // odometry
   private final SwerveDriveKinematics kinematics;
   private SwerveDriveWheelPositions lastWheelPositions =
@@ -50,7 +50,9 @@ public class RobotState {
   private Twist2d robotVelocity = new Twist2d();
 
   private RobotState() {
-    odometryStdDevs.setColumn(0, DriveConstants.odometryStateStdDevs.extractColumnVector(0));
+    for (int i = 0; i < 3; ++i) {
+      qStdDevs.set(i, 0, Math.pow(qStdDevs.get(i, 0), 2));
+    }
     kinematics = DriveConstants.kinematics;
   }
 
@@ -106,7 +108,7 @@ public class RobotState {
     // and C = I. See wpimath/algorithms.md.
     Matrix<N3, N3> visionK = new Matrix<>(Nat.N3(), Nat.N3());
     for (int row = 0; row < 3; ++row) {
-      double stdDev = odometryStdDevs.get(row, 0);
+      double stdDev = qStdDevs.get(row, 0);
       if (stdDev == 0.0) {
         visionK.set(row, row, 0.0);
       } else {

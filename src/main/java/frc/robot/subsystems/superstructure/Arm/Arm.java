@@ -191,9 +191,9 @@ public class Arm extends SubsystemBase {
     return routine.dynamic(direction).finallyDo(SignalLogger::stop);
   }
 
-  public Command getKs() {
+  public Command getStaticCurrent() {
     Timer timer = new Timer();
-    return run(() -> armIO.setCurrent(0.1 * timer.get()))
+    return run(() -> armIO.setCurrent(0.5 * timer.get()))
         .beforeStarting(timer::restart)
         .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
         .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))

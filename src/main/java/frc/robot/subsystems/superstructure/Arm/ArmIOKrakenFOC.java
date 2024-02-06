@@ -34,10 +34,8 @@ public class ArmIOKrakenFOC implements ArmIO {
 
     // Leader motor configs
     TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
-    leaderConfig.CurrentLimits.StatorCurrentLimit = 60.0;
     leaderConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
-    //    leaderConfig.Voltage.PeakForwardVoltage = 4.0;
-    //    leaderConfig.Voltage.PeakReverseVoltage = -4.0;
+    leaderConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
     leaderConfig.MotorOutput.Inverted =
         leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
     leaderConfig.Feedback.SensorToMechanismRatio = reduction;

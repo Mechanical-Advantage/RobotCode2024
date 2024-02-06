@@ -38,6 +38,8 @@ public class Shooter extends SubsystemBase {
       new LoggedTunableNumber("Shooter/rightkA", rightFlywheelConstants.kA());
   private static final LoggedTunableNumber shooterTolerance =
       new LoggedTunableNumber("Shooter/ToleranceRPM", shooterToleranceRPM);
+  private static final LoggedTunableNumber intakeVolts =
+      new LoggedTunableNumber("Shooter/IntakeVolts", -5.0);
   private final LoggedDashboardNumber leftSpeedRpm =
       new LoggedDashboardNumber("Left Speed RPM", 6000);
   private final LoggedDashboardNumber rightSpeedRpm =
@@ -46,7 +48,10 @@ public class Shooter extends SubsystemBase {
   private final ShooterIO shooterIO;
   private final ShooterIOInputsAutoLogged shooterInputs = new ShooterIOInputsAutoLogged();
 
+  private double characterizationVolts = 0.0;
   private boolean characterizing = false;
+  private boolean shooting = false;
+  private boolean intaking = false;
 
   public Shooter(ShooterIO io) {
     System.out.println("[Init] Creating Shooter");
@@ -92,14 +97,22 @@ public class Shooter extends SubsystemBase {
       shooterIO.stop();
     } else {
       if (!characterizing) {
-        shooterIO.setRPM(leftSpeedRpm.get(), rightSpeedRpm.get());
-        double feederSetpointVolts = 0.0;
-        if (leftSpeedRpm.get() > 0 && rightSpeedRpm.get() > 0 && atSetpoint()) {
-          feederSetpointVolts = feedVolts.get();
+        if (shooting) {
+          shooterIO.setRPM(leftSpeedRpm.get(), rightSpeedRpm.get());
+          double feederSetpointVolts = 0.0;
+          if (leftSpeedRpm.get() > 0 && rightSpeedRpm.get() > 0 && atSetpoint()) {
+            feederSetpointVolts = feedVolts.get();
+          } else {
+            feederSetpointVolts = 0;
+          }
+          shooterIO.setFeederVoltage(feederSetpointVolts);
+        } else if (intaking) {
+          shooterIO.setLeftCharacterizationVoltage(intakeVolts.get());
+          shooterIO.setRightCharacterizationVoltage(intakeVolts.get());
+          shooterIO.setFeederVoltage(intakeVolts.get());
         } else {
-          feederSetpointVolts = 0;
+          shooterIO.stop();
         }
-        shooterIO.setFeederVoltage(feederSetpointVolts);
       }
     }
 
@@ -108,20 +121,36 @@ public class Shooter extends SubsystemBase {
     Logger.recordOutput("Shooter/FeederRPM", shooterInputs.feederVelocityRPM);
   }
 
+  public void setIntaking() {
+    characterizing = false;
+    shooting = false;
+    intaking = true;
+  }
+
+  public void setShooting() {
+    characterizing = false;
+    shooting = true;
+    intaking = false;
+  }
+
+  public void setStop() {
+    characterizing = false;
+    shooting = false;
+    intaking = false;
+  }
+
   public void runLeftCharacterizationVolts(double volts) {
+    characterizing = true;
     shooterIO.setLeftCharacterizationVoltage(volts);
   }
 
   public void runRightCharacterizationVolts(double volts) {
+    characterizing = true;
     shooterIO.setRightCharacterizationVoltage(volts);
   }
 
   public double getLeftCharacterizationVelocity() {
     return shooterInputs.leftFlywheelVelocityRPM;
-  }
-
-  public void setCharacterizing(boolean characterizing) {
-    this.characterizing = characterizing;
   }
 
   public double getRightCharacterizationVelocity() {

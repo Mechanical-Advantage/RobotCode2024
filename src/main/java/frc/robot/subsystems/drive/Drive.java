@@ -175,16 +175,17 @@ public class Drive extends SubsystemBase {
     // account for skew
     desiredSpeeds = ChassisSpeeds.discretize(desiredSpeeds, 0.02);
     // generate feasible next setpoint
-    currentSetpoint =
-        setpointGenerator.generateSetpoint(
-            currentModuleLimits, currentSetpoint, desiredSpeeds, 0.02);
+    //    currentSetpoint =
+    //        setpointGenerator.generateSetpoint(
+    //            currentModuleLimits, currentSetpoint, desiredSpeeds, 0.02);
 
     // run modules
-    SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
+    SwerveModuleState[] optimizedSetpointStates =
+        DriveConstants.kinematics.toSwerveModuleStates(desiredSpeeds);
     for (int i = 0; i < modules.length; i++) {
       // Optimize setpoints
       optimizedSetpointStates[i] =
-          SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
+          SwerveModuleState.optimize(optimizedSetpointStates[i], modules[i].getAngle());
       modules[i].runSetpoint(optimizedSetpointStates[i]);
     }
 

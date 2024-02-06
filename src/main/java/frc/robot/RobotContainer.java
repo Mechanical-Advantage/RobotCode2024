@@ -24,8 +24,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
-import frc.robot.subsystems.apriltagvision.AprilTagVisionConstants;
-import frc.robot.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.superstructure.Arm.Arm;
 import frc.robot.subsystems.superstructure.Arm.ArmIO;
@@ -34,11 +32,9 @@ import frc.robot.subsystems.superstructure.Arm.ArmIOSim;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.subsystems.superstructure.intake.IntakeIO;
 import frc.robot.subsystems.superstructure.intake.IntakeIOSim;
-import frc.robot.subsystems.superstructure.intake.IntakeIOSparkMax;
 import frc.robot.subsystems.superstructure.shooter.Shooter;
 import frc.robot.subsystems.superstructure.shooter.ShooterIO;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
-import frc.robot.subsystems.superstructure.shooter.ShooterIOSparkMax;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
 import frc.robot.util.trajectory.Trajectory;
@@ -171,7 +167,7 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             shooter,
             shooter::runRightCharacterizationVolts,
-            shooter::getRightCharacterizationVelocity));\
+            shooter::getRightCharacterizationVelocity));
     autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
 
     // Testing autos paths

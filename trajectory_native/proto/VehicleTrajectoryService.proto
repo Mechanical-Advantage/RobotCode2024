@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package org.littletonrobotics.vehicletrajectoryservice;
+
+message VehicleModel {
+  double mass = 1;
+  double moi = 2;
+  double vehicle_length = 3;
+  double vehicle_width = 4;
+  double wheel_radius = 5;
+  double max_wheel_omega = 6;
+  double max_wheel_torque = 7;
+}
+
+message VehicleState {
+  double x = 1;
+  double y = 2;
+  double theta = 3;
+  double vx = 4;
+  double vy = 5;
+  double omega = 6;
+}
+
+message TimestampedVehicleState {
+  double time = 1;
+  VehicleState state = 2;
+}
+
+message VehicleVelocityConstraint {
+  double vx = 1;
+  double vy = 2;
+  double omega = 3;
+}
+
+message ZeroVelocityConstraint {
+}
+
+message Waypoint {
+  reserved 5 to 9;
+  double x = 1;
+  double y = 2;
+  optional double heading_constraint = 3;
+  optional uint32 samples = 4;
+  oneof velocity_constraint {
+    ZeroVelocityConstraint zero_velocity = 10;
+    VehicleVelocityConstraint vehicle_velocity = 11;
+  }
+}
+
+message PathSegment {
+  repeated Waypoint waypoints = 1;
+  optional double max_velocity = 2;
+  optional double max_omega = 3;
+  bool straight_line = 4;
+}
+
+message Trajectory {
+  repeated TimestampedVehicleState states = 1;
+  string hash_code = 2;
+}
+
+message TrajectoryGenerationError {
+  string reason = 1;
+}
+
+message PathRequest {
+  repeated PathSegment segments = 1;
+  VehicleModel model = 2;
+}
+
+message TrajectoryResponse {
+  oneof response {
+    Trajectory trajectory = 1;
+    TrajectoryGenerationError error = 2;
+  }
+}
+
+service VehicleTrajectoryService {
+  rpc GenerateTrajectory(PathRequest) returns (TrajectoryResponse) {}
+}

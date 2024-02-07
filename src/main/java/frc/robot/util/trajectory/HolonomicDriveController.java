@@ -11,22 +11,22 @@ public class HolonomicDriveController {
   private final PIDController linearController;
   private final PIDController thetaController;
 
-  private HolonomicDriveState currentState = null;
+  private HolonomicTrajectory.State currentState = null;
 
   /** -- SETTER -- Set tolerance for goal state */
-  @Setter private HolonomicDriveState goalTolerance = null;
+  @Setter private HolonomicTrajectory.State goalTolerance = null;
 
   private Pose2d controllerTolerance = null;
 
   /** -- SETTER -- Set goal state */
-  @Setter private HolonomicDriveState goalState = null;
+  @Setter private HolonomicTrajectory.State goalState = null;
 
   @Getter private Pose2d poseError;
 
   public HolonomicDriveController(
-      double linearKp, double linearKd, double thetaKp, double thetaKd) {
-    linearController = new PIDController(linearKp, 0, linearKd);
-    thetaController = new PIDController(thetaKp, 0, thetaKd);
+      double linearkP, double linearkD, double thetakP, double thetakD) {
+    linearController = new PIDController(linearkP, 0, linearkD);
+    thetaController = new PIDController(thetakP, 0, thetakD);
 
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
   }
@@ -47,14 +47,14 @@ public class HolonomicDriveController {
   }
 
   /** Set PID values */
-  public void setPID(double linearKp, double linearKd, double thetaKp, double thetaKd) {
-    linearController.setPID(linearKp, 0, linearKd);
-    thetaController.setPID(thetaKp, 0, thetaKd);
+  public void setPID(double linearkP, double linearkD, double thetakP, double thetakD) {
+    linearController.setPID(linearkP, 0, linearkD);
+    thetaController.setPID(thetakP, 0, thetakD);
   }
 
   /** Calculate robot relative chassis speeds */
   public ChassisSpeeds calculate(
-      HolonomicDriveState currentState, HolonomicDriveState setpointState) {
+      HolonomicTrajectory.State currentState, HolonomicTrajectory.State setpointState) {
     this.currentState = currentState;
     Pose2d setpointPose = setpointState.pose();
     poseError = setpointPose.relativeTo(currentState.pose());
@@ -108,7 +108,4 @@ public class HolonomicDriveController {
                 < goalTolerance.angularVelocity();
     return withinPoseTolerance && withinVelocityTolerance;
   }
-
-  public record HolonomicDriveState(
-      Pose2d pose, double velocityX, double velocityY, double angularVelocity) {}
 }

@@ -1,6 +1,6 @@
 package frc.robot.util.trajectory;
 
-import static frc.robot.util.trajectory.HolonomicDriveController.HolonomicDriveState;
+import static frc.robot.util.trajectory.HolonomicTrajectory.State;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +17,7 @@ public final class ChoreoTrajectoryReader {
   private static ObjectMapper objectMapper = new ObjectMapper();
 
   /** Load Trajectory file (.traj) */
-  public static Optional<Trajectory> generate(File file) {
+  public static Optional<HolonomicTrajectory> generate(File file) {
     List<ChoreoTrajectoryState> choreoStates = new ArrayList<>();
     try {
       choreoStates =
@@ -32,9 +32,9 @@ public final class ChoreoTrajectoryReader {
     return Optional.of(generateTrajectoryImplementation(choreoStates));
   }
 
-  private static Trajectory generateTrajectoryImplementation(
+  private static HolonomicTrajectory generateTrajectoryImplementation(
       final List<ChoreoTrajectoryState> states) {
-    return new Trajectory() {
+    return new HolonomicTrajectory() {
       @Override
       public double getDuration() {
         return states.get(states.size() - 1).timestamp();
@@ -54,17 +54,17 @@ public final class ChoreoTrajectoryReader {
       }
 
       @Override
-      public HolonomicDriveState getStartState() {
+      public State getStartState() {
         return fromChoreoState(states.get(0));
       }
 
       @Override
-      public HolonomicDriveState getEndState() {
+      public State getEndState() {
         return fromChoreoState(states.get(states.size() - 1));
       }
 
       @Override
-      public HolonomicDriveState sample(double timeSeconds) {
+      public State sample(double timeSeconds) {
         ChoreoTrajectoryState before = null;
         ChoreoTrajectoryState after = null;
 
@@ -91,8 +91,8 @@ public final class ChoreoTrajectoryReader {
 
         double s = (timeSeconds - before.timestamp()) / (after.timestamp() - before.timestamp());
 
-        HolonomicDriveState beforeState = fromChoreoState(before);
-        HolonomicDriveState afterState = fromChoreoState(after);
+        State beforeState = fromChoreoState(before);
+        State afterState = fromChoreoState(after);
 
         Pose2d interpolatedPose = beforeState.pose().interpolate(afterState.pose(), s);
         double interpolatedVelocityX =
@@ -102,7 +102,8 @@ public final class ChoreoTrajectoryReader {
         double interpolatedAngularVelocity =
             MathUtil.interpolate(beforeState.angularVelocity(), afterState.angularVelocity(), s);
 
-        return new HolonomicDriveState(
+        return new State(
+            timeSeconds,
             interpolatedPose,
             interpolatedVelocityX,
             interpolatedVelocityY,
@@ -111,8 +112,9 @@ public final class ChoreoTrajectoryReader {
     };
   }
 
-  private static HolonomicDriveState fromChoreoState(ChoreoTrajectoryState state) {
-    return new HolonomicDriveState(
+  private static State fromChoreoState(ChoreoTrajectoryState state) {
+    return new State(
+        state.timestamp(),
         new Pose2d(state.x(), state.y(), new Rotation2d(state.heading())),
         state.velocityX(),
         state.velocityY(),

@@ -13,21 +13,6 @@ import frc.robot.util.shooting.ShotCalculator;
 import java.util.function.Supplier;
 
 public class AutoCommands {
-  //  public static Command moveWhileShooting(Drive drive) {
-  //    return drive
-  //        .setHeadingCommand(AutoCommands::calculateShootHeading)
-  //        .andThen(Commands.waitSeconds(0.7))
-  //        .andThen(drive.disableHeadingCommand());
-  //  }
-
-  private static Rotation2d calculateShootHeading() {
-    Twist2d fieldVel = RobotState.getInstance().fieldVelocity();
-    return ShotCalculator.calculate(
-            AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening.getTranslation()),
-            RobotState.getInstance().getEstimatedPose().getTranslation(),
-            new Translation2d(fieldVel.dx, fieldVel.dy))
-        .goalHeading();
-  }
 
   public static boolean inRegion(Supplier<Region> region) {
     return region.get().contains(RobotState.getInstance().getEstimatedPose().getTranslation());

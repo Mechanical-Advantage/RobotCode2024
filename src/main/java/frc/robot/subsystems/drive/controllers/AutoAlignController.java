@@ -1,4 +1,4 @@
-package frc.robot.subsystems.drive.planners;
+package frc.robot.subsystems.drive.controllers;
 
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -14,15 +14,15 @@ import lombok.Getter;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class AutoAlignMotionPlanner {
-  private static LoggedTunableNumber linearKp =
-      new LoggedTunableNumber("AutoAlign/driveKp", DriveConstants.autoAlignConstants.linearKp());
-  private static LoggedTunableNumber linearKd =
-      new LoggedTunableNumber("AutoAlign/driveKd", DriveConstants.autoAlignConstants.linearKd());
-  private static LoggedTunableNumber thetaKp =
-      new LoggedTunableNumber("AutoAlign/thetaKp", DriveConstants.autoAlignConstants.thetaKp());
-  private static LoggedTunableNumber thetaKd =
-      new LoggedTunableNumber("AutoAlign/thetaKd", DriveConstants.autoAlignConstants.thetaKd());
+public class AutoAlignController {
+  private static LoggedTunableNumber linearkP =
+      new LoggedTunableNumber("AutoAlign/drivekP", DriveConstants.autoAlignConstants.linearKp());
+  private static LoggedTunableNumber linearkD =
+      new LoggedTunableNumber("AutoAlign/drivekD", DriveConstants.autoAlignConstants.linearKd());
+  private static LoggedTunableNumber thetakP =
+      new LoggedTunableNumber("AutoAlign/thetakP", DriveConstants.autoAlignConstants.thetaKp());
+  private static LoggedTunableNumber thetakD =
+      new LoggedTunableNumber("AutoAlign/thetakD", DriveConstants.autoAlignConstants.thetaKd());
   private static LoggedTunableNumber linearTolerance =
       new LoggedTunableNumber(
           "AutoAlign/controllerLinearTolerance",
@@ -54,32 +54,28 @@ public class AutoAlignMotionPlanner {
 
   // Store previous velocities for acceleration limiting
   private Translation2d prevLinearVelocity;
-  private double prevAngularVelocity;
 
-  public AutoAlignMotionPlanner() {
+  public AutoAlignController(Pose2d goalPose) {
+    this.goalPose = goalPose;
+    // Set up both controllers
     linearController =
         new ProfiledPIDController(
-            linearKp.get(),
+            linearkP.get(),
             0,
-            linearKd.get(),
+            linearkD.get(),
             new TrapezoidProfile.Constraints(maxLinearVelocity.get(), maxLinearAcceleration.get()));
     linearController.setTolerance(linearTolerance.get());
-
     thetaController =
         new ProfiledPIDController(
-            thetaKp.get(),
+            thetakP.get(),
             0,
-            thetaKd.get(),
+            thetakD.get(),
             new TrapezoidProfile.Constraints(
                 maxAngularVelocity.get(), maxAngularAcceleration.get()));
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     thetaController.setTolerance(thetaTolerance.get());
-  }
 
-  public void setGoalPose(Pose2d goalPose) {
-    this.goalPose = goalPose;
-
-    // Reset controllers
+    // Reset measurements and velocities
     Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
     Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
     // Linear controller will control to 0 so distance is the measurement
@@ -91,15 +87,45 @@ public class AutoAlignMotionPlanner {
             .getX();
     linearController.reset(
         currentPose.getTranslation().getDistance(goalPose.getTranslation()), velocity);
-    linearController.setGoal(0.0);
     thetaController.reset(currentPose.getRotation().getRadians(), fieldVelocity.dtheta);
 
+    // Set goal positions
+    linearController.setGoal(0.0);
+    thetaController.setGoal(goalPose.getRotation().getRadians());
+
+    // Store linear velocity for acceleration limiting
     prevLinearVelocity = new Translation2d(fieldVelocity.dx, fieldVelocity.dy);
-    prevAngularVelocity = fieldVelocity.dtheta;
+
+    // Log goal pose
+    Logger.recordOutput("AutoAlign/GoalPose", goalPose);
   }
 
   public ChassisSpeeds update() {
-    updateControllers();
+    // Update PID Controllers
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> linearController.setPID(linearkP.get(), 0, linearkD.get()),
+            linearkP,
+            linearkD);
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> thetaController.setPID(thetakP.get(), 0, thetakD.get()),
+            thetakP,
+            thetakD);
+    LoggedTunableNumber.ifChanged(
+        hashCode(), () -> linearController.setTolerance(linearTolerance.get()), linearTolerance);
+    LoggedTunableNumber.ifChanged(
+        hashCode(), () -> thetaController.setTolerance(thetaTolerance.get()), thetaTolerance);
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () ->
+            linearController.setConstraints(
+                new TrapezoidProfile.Constraints(
+                    maxLinearVelocity.get(), maxLinearAcceleration.get())),
+        maxLinearVelocity,
+        maxLinearAcceleration);
+
+    // Control to setpoint
     Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
     Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
 
@@ -113,57 +139,33 @@ public class AutoAlignMotionPlanner {
     double xVelocity = -linearVelocityScalar * rotationToGoal.getCos();
     double yVelocity = -linearVelocityScalar * rotationToGoal.getSin();
 
-    // If current angular velocity is fast enough in current direction continue in direction
     double angularVelocity =
         thetaController.calculate(
                 currentPose.getRotation().getRadians(), goalPose.getRotation().getRadians())
             + thetaController.getSetpoint().velocity;
 
     // Limit linear acceleration
-    // Forward limiting and brake limiting
     Translation2d desiredLinearVelocity = new Translation2d(xVelocity, yVelocity);
     Translation2d deltaVelocity = desiredLinearVelocity.minus(prevLinearVelocity);
     double maxDeltaVelocity = maxLinearAcceleration.get() * 0.02;
-    if (deltaVelocity.getNorm() > maxDeltaVelocity) {
+    if (deltaVelocity.getNorm() * 0.02 > maxDeltaVelocity) {
       desiredLinearVelocity =
-          prevLinearVelocity.plus(deltaVelocity.times(maxDeltaVelocity / deltaVelocity.getNorm()));
+          prevLinearVelocity.plus(
+              deltaVelocity.times(maxDeltaVelocity / deltaVelocity.getNorm() * 0.02));
     }
     prevLinearVelocity = new Translation2d(fieldVelocity.dx, fieldVelocity.dy);
+    xVelocity = desiredLinearVelocity.getX();
+    yVelocity = desiredLinearVelocity.getY();
 
     ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(xVelocity, yVelocity, angularVelocity);
-    Logger.recordOutput("AutoAlign/speeds", fieldRelativeSpeeds);
-    Logger.recordOutput("AutoAlign/linearError", linearController.getPositionError());
-    Logger.recordOutput("AutoAlign/thetaError", thetaController.getPositionError());
+    Logger.recordOutput("AutoAlign/FieldRelativeSpeeds", fieldRelativeSpeeds);
+    Logger.recordOutput("AutoAlign/LinearError", linearController.getPositionError());
+    Logger.recordOutput("AutoAlign/RotationError", thetaController.getPositionError());
     return ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, currentPose.getRotation());
   }
 
-  @AutoLogOutput(key = "AutoAlign/atGoal")
+  @AutoLogOutput(key = "AutoAlign/AtGoal")
   public boolean atGoal() {
-    return linearController.atGoal() && thetaController.atSetpoint();
-  }
-
-  private void updateControllers() {
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        () -> linearController.setPID(linearKp.get(), 0, linearKd.get()),
-        linearKp,
-        linearKd);
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        () -> thetaController.setPID(thetaKp.get(), 0, thetaKd.get()),
-        thetaKp,
-        thetaKd);
-    LoggedTunableNumber.ifChanged(
-        hashCode(), () -> linearController.setTolerance(linearTolerance.get()), linearTolerance);
-    LoggedTunableNumber.ifChanged(
-        hashCode(), () -> thetaController.setTolerance(thetaTolerance.get()), thetaTolerance);
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        () ->
-            linearController.setConstraints(
-                new TrapezoidProfile.Constraints(
-                    maxLinearVelocity.get(), maxLinearAcceleration.get())),
-        maxLinearVelocity,
-        maxLinearAcceleration);
+    return linearController.atGoal() && thetaController.atGoal();
   }
 }

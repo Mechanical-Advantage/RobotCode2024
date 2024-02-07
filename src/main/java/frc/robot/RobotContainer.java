@@ -37,7 +37,7 @@ import frc.robot.subsystems.superstructure.shooter.ShooterIOSim;
 import frc.robot.subsystems.superstructure.shooter.ShooterIOSparkMax;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.trajectory.ChoreoTrajectoryReader;
-import frc.robot.util.trajectory.Trajectory;
+import frc.robot.util.trajectory.HolonomicTrajectory;
 import java.io.File;
 import java.util.Objects;
 import java.util.Optional;
@@ -148,12 +148,14 @@ public class RobotContainer {
     // Testing autos paths
     Function<File, Optional<Command>> trajectoryCommandFactory =
         trajectoryFile -> {
-          Optional<Trajectory> trajectory = ChoreoTrajectoryReader.generate(trajectoryFile);
+          Optional<HolonomicTrajectory> trajectory =
+              ChoreoTrajectoryReader.generate(trajectoryFile);
           return trajectory.map(
               traj ->
                   Commands.runOnce(
                           () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
-                      .andThen(drive.followTrajectory(traj)));
+                      .andThen(Commands.runOnce(() -> drive.setTrajectoryGoal(traj)))
+                      .until(drive::isTrajectoryGoalCompleted));
         };
     final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
     for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
@@ -179,13 +181,17 @@ public class RobotContainer {
                 drive.setTeleopDriveGoal(
                     -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX())));
     controller
-        .x()
-        .onTrue(Commands.runOnce(shooter::setShooting))
-        .onFalse(Commands.runOnce(shooter::stop));
-    controller
         .a()
-        .onTrue(Commands.runOnce(shooter::setIntaking))
-        .onFalse(Commands.runOnce(shooter::stop));
+        .onTrue(
+            Commands.runOnce(
+                () ->
+                    drive.setAutoAlignGoal(
+                        AllianceFlipUtil.apply(
+                            new Pose2d(
+                                FieldConstants.ampCenter.getX(),
+                                FieldConstants.ampCenter.getY() - 0.6,
+                                new Rotation2d(Math.PI / 2.0))))))
+        .onFalse(Commands.runOnce(drive::clearAutoAlignGoal));
     controller
         .b()
         .onTrue(

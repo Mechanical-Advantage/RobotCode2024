@@ -22,20 +22,19 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.subsystems.drive.controllers.AutoAlignController;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
-import frc.robot.subsystems.drive.planners.AutoAlignMotionPlanner;
-import frc.robot.subsystems.drive.planners.TrajectoryMotionPlanner;
+import frc.robot.subsystems.drive.controllers.TrajectoryController;
 import frc.robot.util.GeomUtil;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.swerve.ModuleLimits;
 import frc.robot.util.swerve.SwerveSetpoint;
 import frc.robot.util.swerve.SwerveSetpointGenerator;
-import frc.robot.util.trajectory.Trajectory;
+import frc.robot.util.trajectory.HolonomicTrajectory;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.junction.AutoLog;
@@ -51,7 +50,7 @@ public class Drive extends SubsystemBase {
       new LoggedTunableNumber("Drive/CoastDisableTimeSeconds", 0.5);
 
   public enum DriveMode {
-    /** Driving with input from driver joysticks. */
+    /** Driving with input from driver joysticks. (Default) */
     TELEOP,
 
     /** Driving based on a trajectory. */
@@ -101,8 +100,8 @@ public class Drive extends SubsystemBase {
   private SwerveSetpointGenerator setpointGenerator;
 
   private final TeleopDriveController teleopDriveController;
-  private final TrajectoryMotionPlanner trajectoryMotionPlanner;
-  private final AutoAlignMotionPlanner autoAlignMotionPlanner;
+  private TrajectoryController trajectoryController;
+  private AutoAlignController autoAlignController;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
     System.out.println("[Init] Creating Drive");
@@ -118,8 +117,6 @@ public class Drive extends SubsystemBase {
             .moduleLocations(DriveConstants.moduleTranslations)
             .build();
     teleopDriveController = new TeleopDriveController();
-    trajectoryMotionPlanner = new TrajectoryMotionPlanner();
-    autoAlignMotionPlanner = new AutoAlignMotionPlanner();
   }
 
   public void periodic() {
@@ -202,8 +199,24 @@ public class Drive extends SubsystemBase {
       setBrakeMode(true);
     }
 
+    // Run drive based on current mode
+    ChassisSpeeds teleopSpeeds = teleopDriveController.update();
     switch (currentDriveMode) {
-      case TELEOP -> desiredSpeeds = teleopDriveController.update();
+      case TELEOP -> {
+        // Plain teleop drive
+        desiredSpeeds = teleopSpeeds;
+      }
+      case TRAJECTORY -> {
+        // Run trajectory
+        desiredSpeeds = trajectoryController.update();
+      }
+      case AUTO_ALIGN -> {
+        // Run auto align with drive input
+        desiredSpeeds = autoAlignController.update();
+        desiredSpeeds.vxMetersPerSecond += teleopSpeeds.vxMetersPerSecond * 0.1;
+        desiredSpeeds.vyMetersPerSecond += teleopSpeeds.vyMetersPerSecond * 0.1;
+        desiredSpeeds.omegaRadiansPerSecond += teleopSpeeds.omegaRadiansPerSecond * 0.1;
+      }
       case CHARACTERIZATION -> {
         // run characterization
         for (Module module : modules) {
@@ -237,9 +250,52 @@ public class Drive extends SubsystemBase {
     Logger.recordOutput("Drive/SetpointSpeeds", currentSetpoint.chassisSpeeds());
   }
 
-  /* Pass controller input into teleopDriveController in field relative input */
+  /** Pass controller input into teleopDriveController in field relative input */
   public void setTeleopDriveGoal(double controllerX, double controllerY, double controllerOmega) {
-    teleopDriveController.acceptDriveInput(controllerX, controllerY, controllerOmega);
+    if (DriverStation.isTeleopEnabled()) {
+      if (currentDriveMode != DriveMode.AUTO_ALIGN) {
+        currentDriveMode = DriveMode.TELEOP;
+      }
+      teleopDriveController.acceptDriveInput(controllerX, controllerY, controllerOmega);
+    }
+  }
+
+  /** Sets the trajectory for the robot to follow. */
+  public void setTrajectoryGoal(HolonomicTrajectory trajectory) {
+    if (DriverStation.isAutonomousEnabled()) {
+      currentDriveMode = DriveMode.TRAJECTORY;
+      trajectoryController = new TrajectoryController(trajectory);
+    }
+  }
+
+  /** Clears the current trajectory goal. */
+  public void clearTrajectoryGoal() {
+    trajectoryController = null;
+    currentDriveMode = DriveMode.TELEOP;
+  }
+
+  /** Returns true if the robot is done with trajectory. */
+  public boolean isTrajectoryGoalCompleted() {
+    return trajectoryController != null && trajectoryController.isFinished();
+  }
+
+  /** Sets the goal pose for the robot to drive to */
+  public void setAutoAlignGoal(Pose2d goalPose) {
+    if (DriverStation.isTeleopEnabled()) {
+      currentDriveMode = DriveMode.AUTO_ALIGN;
+      autoAlignController = new AutoAlignController(goalPose);
+    }
+  }
+
+  /** Clears the current auto align goal. */
+  public void clearAutoAlignGoal() {
+    autoAlignController = null;
+    currentDriveMode = DriveMode.TELEOP;
+  }
+
+  /** Returns true if the robot is at current goal pose. */
+  public boolean isAutoAlignGoalCompleted() {
+    return autoAlignController != null && autoAlignController.atGoal();
   }
 
   /** Runs forwards at the commanded voltage. */
@@ -289,22 +345,6 @@ public class Drive extends SubsystemBase {
                                 <= 2.0))
         .beforeStarting(() -> modulesOrienting = true)
         .finallyDo(() -> modulesOrienting = false);
-  }
-
-  private void setVelocity(ChassisSpeeds speeds) {}
-
-  /** Follows a trajectory using the trajectory motion planner. */
-  public Command followTrajectory(Trajectory trajectory) {
-    return run(() -> setVelocity(trajectoryMotionPlanner.update()))
-        .beforeStarting(() -> trajectoryMotionPlanner.setTrajectory(trajectory))
-        .until(trajectoryMotionPlanner::isFinished);
-  }
-
-  /** Auto aligns to a pose using the auto align motion planner. */
-  public Command autoAlignToPose(Supplier<Pose2d> goalPose) {
-    return run(() -> setVelocity(autoAlignMotionPlanner.update()))
-        .beforeStarting(() -> autoAlignMotionPlanner.setGoalPose(goalPose.get()))
-        .until(autoAlignMotionPlanner::atGoal);
   }
 
   @AutoLogOutput(key = "Drive/GyroYaw")

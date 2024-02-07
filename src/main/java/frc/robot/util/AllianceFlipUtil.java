@@ -7,7 +7,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.FieldConstants;
 import frc.robot.commands.auto.AutoCommands;
-import frc.robot.util.trajectory.HolonomicDriveController;
+import frc.robot.util.trajectory.HolonomicTrajectory;
 
 /** Utility functions for flipping from the blue to red alliance. */
 public class AllianceFlipUtil {
@@ -50,11 +50,14 @@ public class AllianceFlipUtil {
   /**
    * Flips a trajectory state to the correct side of the field based on the current alliance color.
    */
-  public static HolonomicDriveController.HolonomicDriveState apply(
-      HolonomicDriveController.HolonomicDriveState state) {
+  public static HolonomicTrajectory.State apply(HolonomicTrajectory.State state) {
     if (shouldFlip()) {
-      return new HolonomicDriveController.HolonomicDriveState(
-          apply(state.pose()), -state.velocityX(), state.velocityY(), -state.angularVelocity());
+      return new HolonomicTrajectory.State(
+          state.timeSeconds(),
+          apply(state.pose()),
+          -state.velocityX(),
+          state.velocityY(),
+          -state.angularVelocity());
     } else {
       return state;
     }

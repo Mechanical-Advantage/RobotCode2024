@@ -1,33 +1,31 @@
-package frc.robot.subsystems.drive.planners;
+package frc.robot.subsystems.drive.controllers;
 
-import static frc.robot.subsystems.drive.DriveConstants.*;
-import static frc.robot.util.trajectory.HolonomicDriveController.HolonomicDriveState;
+import static frc.robot.subsystems.drive.DriveConstants.trajectoryConstants;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.RobotState;
 import frc.robot.util.AllianceFlipUtil;
 import frc.robot.util.LoggedTunableNumber;
 import frc.robot.util.trajectory.HolonomicDriveController;
-import frc.robot.util.trajectory.Trajectory;
+import frc.robot.util.trajectory.HolonomicTrajectory;
 import java.util.Arrays;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class TrajectoryMotionPlanner {
-  private static LoggedTunableNumber trajectoryLinearKp =
-      new LoggedTunableNumber("Trajectory/linearKp", trajectoryConstants.linearKp());
-  private static LoggedTunableNumber trajectoryLinearKd =
-      new LoggedTunableNumber("Trajectory/linearKd", trajectoryConstants.linearKd());
-  private static LoggedTunableNumber trajectoryThetaKp =
-      new LoggedTunableNumber("Trajectory/thetaKp", trajectoryConstants.thetaKp());
-  private static LoggedTunableNumber trajectoryThetaKd =
-      new LoggedTunableNumber("Trajectory/thetaKd", trajectoryConstants.thetaKd());
+public class TrajectoryController {
+  private static LoggedTunableNumber trajectoryLinearkP =
+      new LoggedTunableNumber("Trajectory/linearkP", trajectoryConstants.linearKp());
+  private static LoggedTunableNumber trajectoryLinearkD =
+      new LoggedTunableNumber("Trajectory/linearkD", trajectoryConstants.linearKd());
+  private static LoggedTunableNumber trajectoryThetakP =
+      new LoggedTunableNumber("Trajectory/thetakP", trajectoryConstants.thetaKp());
+  private static LoggedTunableNumber trajectoryThetakD =
+      new LoggedTunableNumber("Trajectory/thetakD", trajectoryConstants.thetaKd());
   private static LoggedTunableNumber trajectoryLinearTolerance =
       new LoggedTunableNumber(
           "Trajectory/controllerLinearTolerance", trajectoryConstants.linearTolerance());
@@ -48,25 +46,21 @@ public class TrajectoryMotionPlanner {
           "Trajectory/goalAngularVelocityTolerance",
           trajectoryConstants.angularVelocityTolerance());
 
-  private Trajectory trajectory = null;
-  private Timer trajectoryTimer = new Timer();
-  private final HolonomicDriveController controller;
+  private HolonomicDriveController controller;
+  private HolonomicTrajectory trajectory;
+  private double startTime;
 
-  public TrajectoryMotionPlanner() {
+  public TrajectoryController(HolonomicTrajectory trajectory) {
+    this.trajectory = trajectory;
     controller =
         new HolonomicDriveController(
-            trajectoryLinearKp.get(),
-            trajectoryLinearKd.get(),
-            trajectoryThetaKp.get(),
-            trajectoryThetaKd.get());
-    configTrajectoryTolerances();
-  }
-
-  public void setTrajectory(Trajectory trajectory) {
-    this.trajectory = trajectory;
+            trajectoryLinearkP.get(),
+            trajectoryLinearkD.get(),
+            trajectoryThetakP.get(),
+            trajectoryThetakD.get());
     controller.setGoalState(AllianceFlipUtil.apply(trajectory.getEndState()));
-    controller.resetControllers();
-    trajectoryTimer.restart();
+    configTrajectoryTolerances();
+    startTime = Timer.getFPGATimestamp();
     // Log poses
     Logger.recordOutput(
         "Trajectory/trajectoryPoses",
@@ -75,56 +69,15 @@ public class TrajectoryMotionPlanner {
             .toArray(Pose2d[]::new));
   }
 
-  /** Output setpoint chassis speeds in */
   public ChassisSpeeds update() {
-    updateControllers();
-    Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
-    Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
-    // If disabled reset everything and stop
-    if (DriverStation.isDisabled()) {
-      trajectory = null;
-      trajectoryTimer.stop();
-      trajectoryTimer.reset();
-      controller.resetControllers();
-      return new ChassisSpeeds();
-    }
-
-    HolonomicDriveState currentState =
-        new HolonomicDriveState(
-            currentPose, fieldVelocity.dx, fieldVelocity.dy, fieldVelocity.dtheta);
-    // Sample and flip state
-    HolonomicDriveState setpointState = trajectory.sample(trajectoryTimer.get());
-    setpointState = AllianceFlipUtil.apply(setpointState);
-    // calculate trajectory speeds
-    ChassisSpeeds speeds = controller.calculate(currentState, setpointState);
-    // Reached end
-    if (isFinished()) {
-      trajectoryTimer.stop();
-      // Stop logs
-      Logger.recordOutput("Trajectory/trajectoryPoses", new Pose2d[] {});
-      Logger.recordOutput("Trajectory/setpointPose", new Pose2d());
-      Logger.recordOutput("Trajectory/speeds", new double[] {});
-      return new ChassisSpeeds();
-    }
-    // Log trajectory data
-    Logger.recordOutput("Trajectory/setpointPose", setpointState.pose());
-    Logger.recordOutput(
-        "Trajectory/translationError", controller.getPoseError().getTranslation().getNorm());
-    Logger.recordOutput(
-        "Trajectory/rotationError", controller.getPoseError().getRotation().getRadians());
-    Logger.recordOutput("Trajectory/speeds", speeds);
-    return speeds;
-  }
-
-  private void updateControllers() {
     // Update PID Controllers
     LoggedTunableNumber.ifChanged(
         hashCode(),
         pid -> controller.setPID(pid[0], pid[1], pid[2], pid[3]),
-        trajectoryLinearKp,
-        trajectoryLinearKd,
-        trajectoryThetaKp,
-        trajectoryThetaKp);
+            trajectoryLinearkP,
+            trajectoryLinearkD,
+            trajectoryThetakP,
+            trajectoryThetakP);
     // Tolerances
     LoggedTunableNumber.ifChanged(
         hashCode(),
@@ -135,13 +88,40 @@ public class TrajectoryMotionPlanner {
         trajectoryGoalThetaTolerance,
         trajectoryLinearVelocityTolerance,
         trajectoryAngularVelocityTolerance);
+
+    // Run trajectory
+    Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
+    Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
+    double sampletime = Timer.getFPGATimestamp() - startTime;
+    HolonomicTrajectory.State currentState =
+        new HolonomicTrajectory.State(
+            sampletime, currentPose, fieldVelocity.dx, fieldVelocity.dy, fieldVelocity.dtheta);
+    // Sample and flip state
+    HolonomicTrajectory.State setpointState = trajectory.sample(sampletime);
+    setpointState = AllianceFlipUtil.apply(setpointState);
+    // calculate trajectory speeds
+    ChassisSpeeds speeds = controller.calculate(currentState, setpointState);
+    // Log trajectory data
+    Logger.recordOutput("Trajectory/SetpointPose", setpointState.pose());
+    Logger.recordOutput("Trajectory/FieldRelativeSpeeds", speeds);
+    return speeds;
   }
 
-  @AutoLogOutput(key = "Trajectory/finished")
+  @AutoLogOutput(key = "Trajectory/TranslationError")
+  public double getTranslationError() {
+    return controller.getPoseError().getTranslation().getNorm();
+  }
+
+  @AutoLogOutput(key = "Trajectory/RotationError")
+  public Rotation2d getRotationError() {
+    return controller.getPoseError().getRotation();
+  }
+
+  @AutoLogOutput(key = "Trajectory/Finished")
   public boolean isFinished() {
-    return trajectory != null
-        && trajectoryTimer.hasElapsed(trajectory.getDuration())
-        && controller.atGoal();
+    return Timer.getFPGATimestamp() - startTime > trajectory.getDuration()
+        && controller.atGoal()
+        && controller.atSetpoint();
   }
 
   private void configTrajectoryTolerances() {
@@ -152,7 +132,8 @@ public class TrajectoryMotionPlanner {
             Rotation2d.fromRadians(trajectoryThetaTolerance.get())));
     double velocityXTolerance = trajectoryLinearVelocityTolerance.get() / Math.sqrt(2.0);
     controller.setGoalTolerance(
-        new HolonomicDriveState(
+        new HolonomicTrajectory.State(
+            0.0,
             new Pose2d(
                 new Translation2d(
                     trajectoryGoalLinearTolerance.get(), Rotation2d.fromRadians(Math.PI / 4.0)),

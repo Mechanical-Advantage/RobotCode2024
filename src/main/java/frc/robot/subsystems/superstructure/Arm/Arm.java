@@ -1,9 +1,7 @@
 package frc.robot.subsystems.superstructure.Arm;
 
-import static edu.wpi.first.units.Units.*;
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.ArmConstants.*;
 
-import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -14,7 +12,6 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.util.EqualsUtil;
 import frc.robot.util.LoggedTunableNumber;
@@ -58,10 +55,7 @@ public class Arm extends SubsystemBase {
   private final Timer homingTimer = new Timer();
 
   private boolean homed = false;
-
   private double setpoint = 0.0;
-
-  private SysIdRoutine routine;
 
   //  private final MechanismLigament2d armSetpoint;
 
@@ -93,23 +87,6 @@ public class Arm extends SubsystemBase {
     //            10.0,
     //            new Color8Bit(Color.kGreen));
     //    armRoot.append(armSetpoint);
-
-    routine =
-        new SysIdRoutine(
-            new SysIdRoutine.Config(
-                Volts.of(0.05).per(Seconds.of(1.0)),
-                Volts.of(4.0),
-                Seconds.of(30.0),
-                state -> {
-                  SignalLogger.writeString("SysIdState", state.toString());
-                }),
-            new SysIdRoutine.Mechanism(
-                voltageMeasure -> armIO.setVoltage(voltageMeasure.in(Volts)),
-                sysIdRoutineLog -> {
-                  Logger.recordOutput("Arm/SysIdVoltage", inputs.armAppliedVolts[0]);
-                  Logger.recordOutput("Arm/SysIdCurrent", inputs.armTorqueCurrentAmps[0]);
-                },
-                this));
   }
 
   @Override
@@ -129,7 +106,6 @@ public class Arm extends SubsystemBase {
         armVelocity,
         armAcceleration);
 
-    setpoint = Units.degreesToRadians(armDesiredSetpoint.get());
     // Home if not already homed
     if (!homed && DriverStation.isEnabled()) {
       armIO.setVoltage(-1.0);
@@ -145,7 +121,7 @@ public class Arm extends SubsystemBase {
         homed = true;
       }
     } else {
-      setSetpoint(setpoint);
+      armIO.setSetpoint(setpoint);
     }
 
     if (DriverStation.isDisabled()) {
@@ -166,7 +142,6 @@ public class Arm extends SubsystemBase {
 
   public void setSetpoint(double setpointRads) {
     if (disableSupplier.getAsBoolean() || !homed) return;
-    armIO.setSetpoint(setpointRads);
   }
 
   public void setBrakeMode(boolean enabled) {
@@ -182,15 +157,6 @@ public class Arm extends SubsystemBase {
     armIO.stop();
   }
 
-  // SysId command factories
-  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-    return routine.quasistatic(direction).beforeStarting(SignalLogger::start);
-  }
-
-  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-    return routine.dynamic(direction).finallyDo(SignalLogger::stop);
-  }
-
   public Command getStaticCurrent() {
     Timer timer = new Timer();
     return run(() -> armIO.setCurrent(0.5 * timer.get()))
@@ -203,5 +169,10 @@ public class Arm extends SubsystemBase {
   @AutoLogOutput(key = "Arm/Homed")
   public boolean homed() {
     return homed;
+  }
+
+  @AutoLogOutput(key = "Arm/AtSetpoint")
+  public boolean atSetpoint() {
+    return Math.abs(inputs.armAnglePositionRads - setpoint) <= armTolerance.get();
   }
 }

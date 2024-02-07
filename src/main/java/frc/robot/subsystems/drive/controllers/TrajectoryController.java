@@ -19,13 +19,13 @@ import org.littletonrobotics.junction.Logger;
 
 public class TrajectoryController {
   private static LoggedTunableNumber trajectoryLinearkP =
-      new LoggedTunableNumber("Trajectory/linearkP", trajectoryConstants.linearKp());
+      new LoggedTunableNumber("Trajectory/linearkP", trajectoryConstants.linearkP());
   private static LoggedTunableNumber trajectoryLinearkD =
-      new LoggedTunableNumber("Trajectory/linearkD", trajectoryConstants.linearKd());
+      new LoggedTunableNumber("Trajectory/linearkD", trajectoryConstants.linearkD());
   private static LoggedTunableNumber trajectoryThetakP =
-      new LoggedTunableNumber("Trajectory/thetakP", trajectoryConstants.thetaKp());
+      new LoggedTunableNumber("Trajectory/thetakP", trajectoryConstants.thetakP());
   private static LoggedTunableNumber trajectoryThetakD =
-      new LoggedTunableNumber("Trajectory/thetakD", trajectoryConstants.thetaKd());
+      new LoggedTunableNumber("Trajectory/thetakD", trajectoryConstants.thetakD());
   private static LoggedTunableNumber trajectoryLinearTolerance =
       new LoggedTunableNumber(
           "Trajectory/controllerLinearTolerance", trajectoryConstants.linearTolerance());
@@ -74,10 +74,10 @@ public class TrajectoryController {
     LoggedTunableNumber.ifChanged(
         hashCode(),
         pid -> controller.setPID(pid[0], pid[1], pid[2], pid[3]),
-            trajectoryLinearkP,
-            trajectoryLinearkD,
-            trajectoryThetakP,
-            trajectoryThetakP);
+        trajectoryLinearkP,
+        trajectoryLinearkD,
+        trajectoryThetakP,
+        trajectoryThetakP);
     // Tolerances
     LoggedTunableNumber.ifChanged(
         hashCode(),

@@ -11,6 +11,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.util.AllianceFlipUtil;
 import java.util.NoSuchElementException;
 import org.littletonrobotics.junction.AutoLogOutput;
 
@@ -20,6 +21,9 @@ public class RobotState {
       SwerveDriveWheelPositions wheelPositions, Rotation2d gyroAngle, double timestamp) {}
 
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
+
+  public record AimingParameters(
+      Rotation2d driveHeading, double effectiveDistance, double radialFF) {}
 
   private static final double poseBufferSizeSeconds = 2.0;
 
@@ -128,6 +132,31 @@ public class RobotState {
 
   public void addVelocityData(Twist2d robotVelocity) {
     this.robotVelocity = robotVelocity;
+  }
+
+  public AimingParameters getAimingParameters() {
+    Pose2d robot = getEstimatedPose();
+    Twist2d fieldVelocity = fieldVelocity();
+
+    Translation2d originToGoal =
+        AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening.getTranslation());
+    Translation2d originToRobot = robot.getTranslation();
+
+    // Get robot to goal angle but limit to reasonable range
+    Rotation2d robotToGoalAngle = originToGoal.minus(originToGoal).getAngle();
+    // Subtract goal to robot angle from field velocity
+    Translation2d tangentialVelocity =
+        new Translation2d(fieldVelocity.dx, fieldVelocity.dy)
+            .rotateBy(robotToGoalAngle.unaryMinus());
+    // Subtract tangential velocity from goal to get virtual goal
+    Translation2d originToVirtualGoal = originToGoal.plus(tangentialVelocity.unaryMinus());
+
+    // Angle to virtual goal
+    Rotation2d driveHeading = originToVirtualGoal.minus(originToRobot).getAngle();
+    // Distance to virtual goal
+    double effectiveDistance = originToRobot.getDistance(originToVirtualGoal);
+    double radialFF = -tangentialVelocity.getX();
+    return new AimingParameters(driveHeading, effectiveDistance, radialFF);
   }
 
   /**

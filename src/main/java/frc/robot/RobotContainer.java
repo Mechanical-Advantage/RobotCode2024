@@ -193,6 +193,10 @@ public class RobotContainer {
                                 new Rotation2d(Math.PI / 2.0))))))
         .onFalse(Commands.runOnce(drive::clearAutoAlignGoal));
     controller
+        .x()
+        .onTrue(Commands.runOnce(drive::setAutoAimGoal))
+        .onFalse(Commands.runOnce(drive::clearAutoAimGoal));
+    controller
         .b()
         .onTrue(
             Commands.runOnce(

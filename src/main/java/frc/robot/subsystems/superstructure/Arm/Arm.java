@@ -21,11 +21,11 @@ import org.littletonrobotics.junction.Logger;
 
 public class Arm extends SubsystemBase {
   private static final LoggedTunableNumber kP =
-      new LoggedTunableNumber("Arm/Kp", controllerConstants.kP());
+      new LoggedTunableNumber("Arm/kP", controllerConstants.kP());
   private static final LoggedTunableNumber kI =
       new LoggedTunableNumber("Arm/Ki", controllerConstants.kI());
   private static final LoggedTunableNumber kD =
-      new LoggedTunableNumber("Arm/Kd", controllerConstants.kD());
+      new LoggedTunableNumber("Arm/kD", controllerConstants.kD());
   private static final LoggedTunableNumber kS =
       new LoggedTunableNumber("Arm/Ks", controllerConstants.ffkS());
   private static final LoggedTunableNumber kV =

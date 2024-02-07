@@ -16,13 +16,13 @@ import org.littletonrobotics.junction.Logger;
 
 public class AutoAlignController {
   private static LoggedTunableNumber linearkP =
-      new LoggedTunableNumber("AutoAlign/drivekP", DriveConstants.autoAlignConstants.linearKp());
+      new LoggedTunableNumber("AutoAlign/drivekP", DriveConstants.autoAlignConstants.linearkP());
   private static LoggedTunableNumber linearkD =
-      new LoggedTunableNumber("AutoAlign/drivekD", DriveConstants.autoAlignConstants.linearKd());
+      new LoggedTunableNumber("AutoAlign/drivekD", DriveConstants.autoAlignConstants.linearkD());
   private static LoggedTunableNumber thetakP =
-      new LoggedTunableNumber("AutoAlign/thetakP", DriveConstants.autoAlignConstants.thetaKp());
+      new LoggedTunableNumber("AutoAlign/thetakP", DriveConstants.autoAlignConstants.thetakP());
   private static LoggedTunableNumber thetakD =
-      new LoggedTunableNumber("AutoAlign/thetakD", DriveConstants.autoAlignConstants.thetaKd());
+      new LoggedTunableNumber("AutoAlign/thetakD", DriveConstants.autoAlignConstants.thetakD());
   private static LoggedTunableNumber linearTolerance =
       new LoggedTunableNumber(
           "AutoAlign/controllerLinearTolerance",
@@ -105,13 +105,13 @@ public class AutoAlignController {
     LoggedTunableNumber.ifChanged(
         hashCode(),
         () -> linearController.setPID(linearkP.get(), 0, linearkD.get()),
-            linearkP,
-            linearkD);
+        linearkP,
+        linearkD);
     LoggedTunableNumber.ifChanged(
         hashCode(),
         () -> thetaController.setPID(thetakP.get(), 0, thetakD.get()),
-            thetakP,
-            thetakD);
+        thetakP,
+        thetakD);
     LoggedTunableNumber.ifChanged(
         hashCode(), () -> linearController.setTolerance(linearTolerance.get()), linearTolerance);
     LoggedTunableNumber.ifChanged(

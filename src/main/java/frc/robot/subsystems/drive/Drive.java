@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotState;
+import frc.robot.subsystems.drive.controllers.AutoAimController;
 import frc.robot.subsystems.drive.controllers.AutoAlignController;
 import frc.robot.subsystems.drive.controllers.TeleopDriveController;
 import frc.robot.subsystems.drive.controllers.TrajectoryController;
@@ -100,8 +101,9 @@ public class Drive extends SubsystemBase {
   private SwerveSetpointGenerator setpointGenerator;
 
   private final TeleopDriveController teleopDriveController;
-  private TrajectoryController trajectoryController;
-  private AutoAlignController autoAlignController;
+  private TrajectoryController trajectoryController = null;
+  private AutoAlignController autoAlignController = null;
+  private AutoAimController autoAimController = null;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
     System.out.println("[Init] Creating Drive");
@@ -205,6 +207,10 @@ public class Drive extends SubsystemBase {
       case TELEOP -> {
         // Plain teleop drive
         desiredSpeeds = teleopSpeeds;
+        // Add auto aim if present
+        if (autoAimController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = autoAimController.update();
+        }
       }
       case TRAJECTORY -> {
         // Run trajectory
@@ -240,7 +246,6 @@ public class Drive extends SubsystemBase {
           SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
       modules[i].runSetpoint(optimizedSetpointStates[i]);
     }
-
     // Log chassis speeds and swerve states
     Logger.recordOutput(
         "Drive/SwerveStates/Desired(b4 Poofs)",
@@ -296,6 +301,21 @@ public class Drive extends SubsystemBase {
   /** Returns true if the robot is at current goal pose. */
   public boolean isAutoAlignGoalCompleted() {
     return autoAlignController != null && autoAlignController.atGoal();
+  }
+
+  /** Enable auto aiming on drive */
+  public void setAutoAimGoal() {
+    autoAimController = new AutoAimController();
+  }
+
+  /** Disable auto aiming on drive */
+  public void clearAutoAimGoal() {
+    autoAimController = null;
+  }
+
+  /** Returns true if robot is aimed at speaker */
+  public boolean isAutoAimGoalCompleted() {
+    return autoAimController != null && autoAimController.atSetpoint();
   }
 
   /** Runs forwards at the commanded voltage. */

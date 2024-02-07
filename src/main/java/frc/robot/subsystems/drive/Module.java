@@ -11,17 +11,17 @@ import org.littletonrobotics.junction.Logger;
 
 public class Module {
   private static final LoggedTunableNumber driveKp =
-      new LoggedTunableNumber("Drive/Module/DriveKp", DriveConstants.moduleConstants.driveKp());
+      new LoggedTunableNumber("Drive/Module/DriveKp", DriveConstants.moduleConstants.drivekP());
   private static final LoggedTunableNumber driveKd =
-      new LoggedTunableNumber("Drive/Module/DriveKd", DriveConstants.moduleConstants.driveKd());
+      new LoggedTunableNumber("Drive/Module/DriveKd", DriveConstants.moduleConstants.drivekD());
   private static final LoggedTunableNumber driveKs =
-      new LoggedTunableNumber("Drive/Module/DriveKs", DriveConstants.moduleConstants.ffKs());
+      new LoggedTunableNumber("Drive/Module/DriveKs", DriveConstants.moduleConstants.ffkS());
   private static final LoggedTunableNumber driveKv =
-      new LoggedTunableNumber("Drive/Module/DriveKv", DriveConstants.moduleConstants.ffKv());
+      new LoggedTunableNumber("Drive/Module/DriveKv", DriveConstants.moduleConstants.ffkV());
   private static final LoggedTunableNumber turnKp =
-      new LoggedTunableNumber("Drive/Module/TurnKp", DriveConstants.moduleConstants.turnKp());
+      new LoggedTunableNumber("Drive/Module/TurnKp", DriveConstants.moduleConstants.turnkP());
   private static final LoggedTunableNumber turnKd =
-      new LoggedTunableNumber("Drive/Module/TurnKd", DriveConstants.moduleConstants.turnKd());
+      new LoggedTunableNumber("Drive/Module/TurnKd", DriveConstants.moduleConstants.turnkD());
 
   private final int index;
   private final ModuleIO io;
@@ -29,13 +29,13 @@ public class Module {
 
   private final PIDController driveController =
       new PIDController(
-          DriveConstants.moduleConstants.driveKp(), 0.0, DriveConstants.moduleConstants.driveKd());
+          DriveConstants.moduleConstants.drivekP(), 0.0, DriveConstants.moduleConstants.drivekD());
   private final PIDController turnController =
       new PIDController(
-          DriveConstants.moduleConstants.turnKp(), 0.0, DriveConstants.moduleConstants.turnKd());
+          DriveConstants.moduleConstants.turnkP(), 0.0, DriveConstants.moduleConstants.turnkD());
   private SimpleMotorFeedforward driveFF =
       new SimpleMotorFeedforward(
-          DriveConstants.moduleConstants.ffKs(), DriveConstants.moduleConstants.ffKv(), 0.0);
+          DriveConstants.moduleConstants.ffkS(), DriveConstants.moduleConstants.ffkV(), 0.0);
 
   @Getter private SwerveModuleState setpointState = new SwerveModuleState();
 

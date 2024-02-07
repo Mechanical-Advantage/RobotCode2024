@@ -171,7 +171,7 @@ public final class DriveConstants {
   // Swerve Heading Control
   public static HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
-        default -> new HeadingControllerConstants(3.0, 0.0);
+        default -> new HeadingControllerConstants(5.0, 0.0);
       };
 
   public record DriveConfig(
@@ -194,20 +194,20 @@ public final class DriveConstants {
       boolean turnMotorInverted) {}
 
   public record ModuleConstants(
-      double ffKs,
-      double ffKv,
-      double driveKp,
-      double driveKd,
-      double turnKp,
-      double turnKd,
+      double ffkS,
+      double ffkV,
+      double drivekP,
+      double drivekD,
+      double turnkP,
+      double turnkD,
       double driveReduction,
       double turnReduction) {}
 
   public record TrajectoryConstants(
-      double linearKp,
-      double linearKd,
-      double thetaKp,
-      double thetaKd,
+      double linearkP,
+      double linearkD,
+      double thetakP,
+      double thetakD,
       double linearTolerance,
       double thetaTolerance,
       double goalLinearTolerance,
@@ -216,10 +216,10 @@ public final class DriveConstants {
       double angularVelocityTolerance) {}
 
   public record AutoAlignConstants(
-      double linearKp,
-      double linearKd,
-      double thetaKp,
-      double thetaKd,
+      double linearkP,
+      double linearkD,
+      double thetakP,
+      double thetakD,
       double linearTolerance,
       double thetaTolerance,
       double maxLinearVelocity,
@@ -227,7 +227,7 @@ public final class DriveConstants {
       double maxAngularVelocity,
       double maxAngularAcceleration) {}
 
-  public record HeadingControllerConstants(double Kp, double Kd) {}
+  public record HeadingControllerConstants(double kP, double kD) {}
 
   private enum Mk4iReductions {
     L2((50.0 / 14.0) * (17.0 / 27.0) * (45.0 / 15.0)),

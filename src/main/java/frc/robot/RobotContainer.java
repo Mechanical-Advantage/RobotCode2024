@@ -21,7 +21,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.commands.DriveCommands;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
 import frc.robot.subsystems.drive.*;
@@ -78,8 +77,7 @@ public class RobotContainer {
                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
-                new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]),
-                false);
+                new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
         arm = new Arm(new ArmIOKrakenFOC());
         shooter = new Shooter(new ShooterIOSparkMax());
       }
@@ -90,8 +88,7 @@ public class RobotContainer {
                 new ModuleIOSim(DriveConstants.moduleConfigs[0]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[1]),
                 new ModuleIOSim(DriveConstants.moduleConfigs[2]),
-                new ModuleIOSim(DriveConstants.moduleConfigs[3]),
-                false);
+                new ModuleIOSim(DriveConstants.moduleConfigs[3]));
         arm = new Arm(new ArmIOSim());
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
@@ -108,8 +105,7 @@ public class RobotContainer {
               new ModuleIO() {},
               new ModuleIO() {},
               new ModuleIO() {},
-              new ModuleIO() {},
-              false);
+              new ModuleIO() {});
     }
 
     if (aprilTagVision == null) {
@@ -178,11 +174,10 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     drive.setDefaultCommand(
-        DriveCommands.joystickDrive(
-            drive,
-            () -> -controller.getLeftY(),
-            () -> -controller.getLeftX(),
-            () -> -controller.getRightX()));
+        drive.run(
+            () ->
+                drive.setTeleopDriveGoal(
+                    -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX())));
     controller
         .x()
         .onTrue(Commands.runOnce(shooter::setShooting))

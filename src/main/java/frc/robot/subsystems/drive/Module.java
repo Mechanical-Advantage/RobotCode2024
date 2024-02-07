@@ -60,18 +60,18 @@ public class Module {
         },
         driveKs,
         driveKv);
-      LoggedTunableNumber.ifChanged(
-          hashCode(), () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()), driveKp, driveKd);
-      LoggedTunableNumber.ifChanged(
-          hashCode(), () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()), turnKp, turnKd);
+    LoggedTunableNumber.ifChanged(
+        hashCode(), () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()), driveKp, driveKd);
+    LoggedTunableNumber.ifChanged(
+        hashCode(), () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()), turnKp, turnKd);
   }
 
   public void runSetpoint(SwerveModuleState setpoint) {
     setpointState = setpoint;
-      io.setDriveVelocitySetpoint(
-          setpoint.speedMetersPerSecond / DriveConstants.wheelRadius,
-          driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
-      io.setTurnPositionSetpoint(setpoint.angle.getRadians());
+    io.setDriveVelocitySetpoint(
+        setpoint.speedMetersPerSecond / DriveConstants.wheelRadius,
+        driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
+    io.setTurnPositionSetpoint(setpoint.angle.getRadians());
   }
 
   public void runCharacterization(double volts) {

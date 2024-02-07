@@ -127,7 +127,6 @@ public class AutoAlignController {
 
     // Control to setpoint
     Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
-    Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
 
     // Calculate feedback velocities (based on position error).
     double linearVelocityScalar =
@@ -136,28 +135,16 @@ public class AutoAlignController {
             + linearController.getSetpoint().velocity;
     Rotation2d rotationToGoal =
         goalPose.getTranslation().minus(currentPose.getTranslation()).getAngle();
-    double xVelocity = -linearVelocityScalar * rotationToGoal.getCos();
-    double yVelocity = -linearVelocityScalar * rotationToGoal.getSin();
+    Translation2d desiredLinearVelocity = new Translation2d(-linearVelocityScalar, rotationToGoal);
 
     double angularVelocity =
         thetaController.calculate(
                 currentPose.getRotation().getRadians(), goalPose.getRotation().getRadians())
             + thetaController.getSetpoint().velocity;
 
-    // Limit linear acceleration
-    Translation2d desiredLinearVelocity = new Translation2d(xVelocity, yVelocity);
-    Translation2d deltaVelocity = desiredLinearVelocity.minus(prevLinearVelocity);
-    double maxDeltaVelocity = maxLinearAcceleration.get() * 0.02;
-    if (deltaVelocity.getNorm() * 0.02 > maxDeltaVelocity) {
-      desiredLinearVelocity =
-          prevLinearVelocity.plus(
-              deltaVelocity.times(maxDeltaVelocity / deltaVelocity.getNorm() * 0.02));
-    }
-    prevLinearVelocity = new Translation2d(fieldVelocity.dx, fieldVelocity.dy);
-    xVelocity = desiredLinearVelocity.getX();
-    yVelocity = desiredLinearVelocity.getY();
-
-    ChassisSpeeds fieldRelativeSpeeds = new ChassisSpeeds(xVelocity, yVelocity, angularVelocity);
+    ChassisSpeeds fieldRelativeSpeeds =
+        new ChassisSpeeds(
+            desiredLinearVelocity.getX(), desiredLinearVelocity.getY(), angularVelocity);
     Logger.recordOutput("AutoAlign/FieldRelativeSpeeds", fieldRelativeSpeeds);
     Logger.recordOutput("AutoAlign/LinearError", linearController.getPositionError());
     Logger.recordOutput("AutoAlign/RotationError", thetaController.getPositionError());

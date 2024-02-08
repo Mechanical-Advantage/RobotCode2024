@@ -15,12 +15,14 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.FeedForwardCharacterization;
 import frc.robot.subsystems.apriltagvision.AprilTagVision;
 import frc.robot.subsystems.drive.*;
@@ -28,6 +30,7 @@ import frc.robot.subsystems.superstructure.Arm.Arm;
 import frc.robot.subsystems.superstructure.Arm.ArmIO;
 import frc.robot.subsystems.superstructure.Arm.ArmIOKrakenFOC;
 import frc.robot.subsystems.superstructure.Arm.ArmIOSim;
+import frc.robot.subsystems.superstructure.DevBotSuperstructure;
 import frc.robot.subsystems.superstructure.intake.Intake;
 import frc.robot.subsystems.superstructure.intake.IntakeIO;
 import frc.robot.subsystems.superstructure.intake.IntakeIOSim;
@@ -60,6 +63,7 @@ public class RobotContainer {
   private Shooter shooter;
   private Intake intake;
   private Arm arm;
+  private DevBotSuperstructure superstructure;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -80,6 +84,8 @@ public class RobotContainer {
                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
         arm = new Arm(new ArmIOKrakenFOC());
         shooter = new Shooter(new ShooterIOSparkMax());
+        //        intake = new Intake(new IntakeIOSparkMax());
+        superstructure = new DevBotSuperstructure(arm, shooter);
       }
       case SIMBOT -> {
         drive =
@@ -92,6 +98,7 @@ public class RobotContainer {
         arm = new Arm(new ArmIOSim());
         shooter = new Shooter(new ShooterIOSim());
         intake = new Intake(new IntakeIOSim());
+        superstructure = new DevBotSuperstructure(arm, shooter);
       }
       case COMPBOT -> {
         // No impl yet
@@ -180,22 +187,66 @@ public class RobotContainer {
             () ->
                 drive.setTeleopDriveGoal(
                     -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX())));
+
+    controller.rightBumper().onTrue(intake.intakeCommand()).onFalse(intake.stopCommand());
+
     controller
-        .a()
+        .leftTrigger()
+        .onTrue(Commands.runOnce(drive::setAutoAimGoal))
+        .onFalse(Commands.runOnce(drive::clearAutoAimGoal));
+
+    if (superstructure != null) {
+      controller
+          .leftTrigger()
+          .onTrue(
+              Commands.runOnce(
+                  () -> superstructure.setDesiredState(DevBotSuperstructure.State.PREPARE_SHOOT)))
+          .onFalse(
+              Commands.runOnce(
+                  () -> superstructure.setDesiredState(DevBotSuperstructure.State.IDLE)));
+
+      Trigger readyToShootTrigger =
+          new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
+      readyToShootTrigger
+          .whileTrue(
+              Commands.run(
+                  () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
+          .whileFalse(
+              Commands.run(
+                  () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
+      controller
+          .rightTrigger()
+          .and(readyToShootTrigger)
+          .onTrue(
+              Commands.runOnce(
+                      () -> superstructure.setDesiredState(DevBotSuperstructure.State.SHOOT))
+                  .andThen(Commands.waitSeconds(0.5))
+                  .andThen(
+                      Commands.runOnce(
+                          () -> superstructure.setDesiredState(DevBotSuperstructure.State.IDLE))));
+
+      controller
+          .leftBumper()
+          .onTrue(
+              Commands.runOnce(
+                  () -> superstructure.setDesiredState(DevBotSuperstructure.State.INTAKE)))
+          .onFalse(
+              Commands.runOnce(
+                  () -> superstructure.setDesiredState(DevBotSuperstructure.State.IDLE)));
+    }
+
+    controller
+        .y()
         .onTrue(
             Commands.runOnce(
                 () ->
-                    drive.setAutoAlignGoal(
+                    robotState.resetPose(
                         AllianceFlipUtil.apply(
                             new Pose2d(
-                                FieldConstants.ampCenter.getX(),
-                                FieldConstants.ampCenter.getY() - 0.6,
-                                new Rotation2d(Math.PI / 2.0))))))
-        .onFalse(Commands.runOnce(drive::clearAutoAlignGoal));
-    controller
-        .x()
-        .onTrue(Commands.runOnce(drive::setAutoAimGoal))
-        .onFalse(Commands.runOnce(drive::clearAutoAimGoal));
+                                Units.inchesToMeters(36.0),
+                                FieldConstants.Speaker.centerSpeakerOpening.getY(),
+                                new Rotation2d())))));
+
     controller
         .b()
         .onTrue(

@@ -57,7 +57,7 @@ public class SuperstructureConstants {
     public static double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
     public static Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
     public static Translation2d armOrigin2d =
-        new Translation2d(-Units.inchesToMeters(9.37), Units.inchesToMeters(11.75));
+        new Translation2d(-Units.inchesToMeters(0), Units.inchesToMeters(11.75));
 
     public static Rotation2d minAngle = Rotation2d.fromDegrees(0.0);
     public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
@@ -94,7 +94,7 @@ public class SuperstructureConstants {
 
     public static ControllerConstants controllerConstants =
         switch (Constants.getRobot()) {
-          case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+          case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.02, 1.0, 0.0, 0.01);
           case DEVBOT -> new ControllerConstants(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
           case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         };

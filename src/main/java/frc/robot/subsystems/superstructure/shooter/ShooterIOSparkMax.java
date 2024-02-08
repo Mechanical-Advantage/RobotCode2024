@@ -113,12 +113,12 @@ public class ShooterIOSparkMax implements ShooterIO {
   }
 
   @Override
-  public void setLeftCharacterizationVoltage(double volts) {
+  public void setLeftVoltage(double volts) {
     leftMotor.setVoltage(volts);
   }
 
   @Override
-  public void setRightCharacterizationVoltage(double volts) {
+  public void setRightVoltage(double volts) {
     rightMotor.setVoltage(volts);
   }
 

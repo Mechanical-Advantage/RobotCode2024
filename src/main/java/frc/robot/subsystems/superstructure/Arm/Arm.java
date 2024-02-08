@@ -2,6 +2,8 @@ package frc.robot.subsystems.superstructure.Arm;
 
 import static frc.robot.subsystems.superstructure.SuperstructureConstants.ArmConstants.*;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -12,7 +14,6 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.util.EqualsUtil;
 import frc.robot.util.LoggedTunableNumber;
 import java.util.function.BooleanSupplier;
@@ -40,8 +41,10 @@ public class Arm extends SubsystemBase {
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.accelerationRadPerSec2());
   private static final LoggedTunableNumber armTolerance =
       new LoggedTunableNumber("Arm/Tolerance", positionTolerance.getRadians());
-  private static final LoggedTunableNumber armDesiredSetpoint =
-      new LoggedTunableNumber("Arm/SetpointDegrees", 0.0);
+  private static final LoggedTunableNumber armLowerLimit =
+      new LoggedTunableNumber("Arm/LowerLimitDegrees", 7.0);
+  private static final LoggedTunableNumber armUpperLimit =
+      new LoggedTunableNumber("Arm/UpperLimitDegrees", 90.0);
 
   private final ArmIO armIO;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
@@ -55,7 +58,7 @@ public class Arm extends SubsystemBase {
   private final Timer homingTimer = new Timer();
 
   private boolean homed = false;
-  private double setpoint = 0.0;
+  private double setpoint = armLowerLimit.get();
 
   //  private final MechanismLigament2d armSetpoint;
 
@@ -66,11 +69,7 @@ public class Arm extends SubsystemBase {
 
     // Create a mechanism
     armMechanism = new Mechanism2d(2, 3, new Color8Bit(Color.kAntiqueWhite));
-    armRoot =
-        armMechanism.getRoot(
-            "Arm Joint",
-            armOrigin2d.getX() + DriveConstants.driveConfig.trackwidthX() / 2.0,
-            armOrigin2d.getY());
+    armRoot = armMechanism.getRoot("Arm Joint", armOrigin2d.getX(), armOrigin2d.getY());
     armMeasured =
         new MechanismLigament2d(
             "Arm Measured",
@@ -79,14 +78,6 @@ public class Arm extends SubsystemBase {
             2.0,
             new Color8Bit(Color.kBlack));
     armRoot.append(armMeasured);
-    //    armSetpoint =
-    //        new MechanismLigament2d(
-    //            "Arm Setpoint",
-    //            armLength,
-    //            inputs.armReferencePosition.getDegrees(),
-    //            10.0,
-    //            new Color8Bit(Color.kGreen));
-    //    armRoot.append(armSetpoint);
   }
 
   @Override
@@ -117,10 +108,15 @@ public class Arm extends SubsystemBase {
       }
 
       if (homingTimer.hasElapsed(0.5)) {
-        armIO.setPosition(0);
+        armIO.setPosition(Units.degreesToRadians(armLowerLimit.get()));
         homed = true;
       }
     } else {
+      setpoint =
+          MathUtil.clamp(
+              setpoint,
+              Units.degreesToRadians(armLowerLimit.get()),
+              Units.degreesToRadians(armUpperLimit.get()));
       armIO.setSetpoint(setpoint);
     }
 
@@ -132,7 +128,6 @@ public class Arm extends SubsystemBase {
 
     // Logs
     armMeasured.setAngle(Units.radiansToDegrees(inputs.armAnglePositionRads));
-    //    armSetpoint.setAngle(inputs.armReferencePosition);
     Logger.recordOutput("Arm/Mechanism", armMechanism);
   }
 
@@ -142,28 +137,20 @@ public class Arm extends SubsystemBase {
 
   public void setSetpoint(double setpointRads) {
     if (disableSupplier.getAsBoolean() || !homed) return;
-  }
-
-  public void setBrakeMode(boolean enabled) {
-    armIO.setBrakeMode(enabled);
-  }
-
-  public void setOverrides(BooleanSupplier disableSupplier, BooleanSupplier coastSupplier) {
-    this.disableSupplier = disableSupplier;
-    this.coastSupplier = coastSupplier;
+    setpoint = setpointRads;
   }
 
   public void stop() {
     armIO.stop();
   }
 
-  public Command getStaticCurrent() {
-    Timer timer = new Timer();
-    return run(() -> armIO.setCurrent(0.5 * timer.get()))
-        .beforeStarting(timer::restart)
-        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
-        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
-        .andThen(armIO::stop);
+  public Rotation2d getAngle() {
+    return Rotation2d.fromRadians(inputs.armAnglePositionRads);
+  }
+
+  @AutoLogOutput(key = "Arm/SetpointAngle")
+  public Rotation2d getSetpoint() {
+    return Rotation2d.fromRadians(setpoint);
   }
 
   @AutoLogOutput(key = "Arm/Homed")
@@ -174,5 +161,14 @@ public class Arm extends SubsystemBase {
   @AutoLogOutput(key = "Arm/AtSetpoint")
   public boolean atSetpoint() {
     return Math.abs(inputs.armAnglePositionRads - setpoint) <= armTolerance.get();
+  }
+
+  public Command getStaticCurrent() {
+    Timer timer = new Timer();
+    return run(() -> armIO.setCurrent(0.5 * timer.get()))
+        .beforeStarting(timer::restart)
+        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
+        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
+        .andThen(armIO::stop);
   }
 }

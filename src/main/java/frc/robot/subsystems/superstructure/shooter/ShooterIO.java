@@ -45,9 +45,9 @@ public interface ShooterIO {
 
   default void setFeederBrakeMode(boolean enabled) {}
 
-  default void setLeftCharacterizationVoltage(double volts) {}
+  default void setLeftVoltage(double volts) {}
 
-  default void setRightCharacterizationVoltage(double volts) {}
+  default void setRightVoltage(double volts) {}
 
   default void setLeftPID(double p, double i, double d) {}
 

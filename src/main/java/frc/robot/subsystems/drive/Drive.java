@@ -280,6 +280,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns true if the robot is done with trajectory. */
+  @AutoLogOutput(key = "Drive/TrajectoryCompleted")
   public boolean isTrajectoryGoalCompleted() {
     return trajectoryController != null && trajectoryController.isFinished();
   }
@@ -299,6 +300,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns true if the robot is at current goal pose. */
+  @AutoLogOutput(key = "Drive/AutoAlignCompleted")
   public boolean isAutoAlignGoalCompleted() {
     return autoAlignController != null && autoAlignController.atGoal();
   }
@@ -314,6 +316,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Returns true if robot is aimed at speaker */
+  @AutoLogOutput(key = "Drive/AutoAimCompleted")
   public boolean isAutoAimGoalCompleted() {
     return autoAimController != null && autoAimController.atSetpoint();
   }

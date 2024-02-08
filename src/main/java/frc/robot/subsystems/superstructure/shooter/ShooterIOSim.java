@@ -11,9 +11,9 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 
 public class ShooterIOSim implements ShooterIO {
   private final FlywheelSim leftSim =
-      new FlywheelSim(DCMotor.getNeoVortex(1), flywheelReduction, 0.1);
+      new FlywheelSim(DCMotor.getNeoVortex(1), flywheelReduction, 0.01);
   private final FlywheelSim rightSim =
-      new FlywheelSim(DCMotor.getNeoVortex(1), flywheelReduction, 0.1);
+      new FlywheelSim(DCMotor.getNeoVortex(1), flywheelReduction, 0.01);
   private final FlywheelSim feederSim = new FlywheelSim(DCMotor.getAndymarkRs775_125(1), 1.0, 0.01);
 
   private final PIDController leftController =
@@ -88,14 +88,14 @@ public class ShooterIOSim implements ShooterIO {
   }
 
   @Override
-  public void setLeftCharacterizationVoltage(double volts) {
+  public void setLeftVoltage(double volts) {
     leftSetpointRPM = null;
     leftAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
     leftSim.setInputVoltage(leftAppliedVolts);
   }
 
   @Override
-  public void setRightCharacterizationVoltage(double volts) {
+  public void setRightVoltage(double volts) {
     rightSetpointRPM = null;
     rightAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
     rightSim.setInputVoltage(rightAppliedVolts);

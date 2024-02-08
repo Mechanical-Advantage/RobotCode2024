@@ -7,7 +7,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 public class Shooter extends SubsystemBase {
   private static final LoggedTunableNumber feedVolts =
@@ -40,26 +39,24 @@ public class Shooter extends SubsystemBase {
       new LoggedTunableNumber("Shooter/ToleranceRPM", shooterToleranceRPM);
   private static final LoggedTunableNumber intakeVolts =
       new LoggedTunableNumber("Shooter/IntakeVolts", -5.0);
-  private final LoggedDashboardNumber leftSpeedRpm =
-      new LoggedDashboardNumber("Left Speed RPM", 6000);
-  private final LoggedDashboardNumber rightSpeedRpm =
-      new LoggedDashboardNumber("Right Speed RPM", 4000);
 
-  private final ShooterIO shooterIO;
-  private final ShooterIOInputsAutoLogged shooterInputs = new ShooterIOInputsAutoLogged();
+  private final ShooterIO io;
+  private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
-  private double characterizationVolts = 0.0;
-  private boolean characterizing = false;
-  private boolean shooting = false;
+  private boolean spinning = false;
   private boolean intaking = false;
+
+  private boolean feeding = false;
+  private double leftRPM = 0.0;
+  private double rightRPM = 0.0;
 
   public Shooter(ShooterIO io) {
     System.out.println("[Init] Creating Shooter");
-    shooterIO = io;
-    shooterIO.setLeftPID(leftkP.get(), leftkI.get(), leftkD.get());
-    shooterIO.setLeftFF(leftkS.get(), leftkV.get(), leftkA.get());
-    shooterIO.setRightFF(rightkS.get(), rightkV.get(), rightkA.get());
-    shooterIO.setRightPID(rightkP.get(), rightkI.get(), rightkD.get());
+    this.io = io;
+    this.io.setLeftPID(leftkP.get(), leftkI.get(), leftkD.get());
+    this.io.setLeftFF(leftkS.get(), leftkV.get(), leftkA.get());
+    this.io.setRightFF(rightkS.get(), rightkV.get(), rightkA.get());
+    this.io.setRightPID(rightkP.get(), rightkI.get(), rightkD.get());
   }
 
   @Override
@@ -67,101 +64,97 @@ public class Shooter extends SubsystemBase {
     // check controllers
     LoggedTunableNumber.ifChanged(
         hashCode(),
-        () -> shooterIO.setLeftPID(leftkP.get(), leftkI.get(), leftkD.get()),
+        () -> io.setLeftPID(leftkP.get(), leftkI.get(), leftkD.get()),
         leftkP,
         leftkI,
         leftkD);
     LoggedTunableNumber.ifChanged(
         hashCode(),
-        () -> shooterIO.setLeftFF(leftkS.get(), leftkV.get(), leftkA.get()),
+        () -> io.setLeftFF(leftkS.get(), leftkV.get(), leftkA.get()),
         leftkS,
         leftkV,
         leftkA);
     LoggedTunableNumber.ifChanged(
         hashCode(),
-        () -> shooterIO.setRightPID(rightkP.get(), rightkI.get(), rightkD.get()),
+        () -> io.setRightPID(rightkP.get(), rightkI.get(), rightkD.get()),
         rightkP,
         rightkI,
         rightkD);
     LoggedTunableNumber.ifChanged(
         hashCode(),
-        () -> shooterIO.setRightFF(rightkS.get(), rightkV.get(), rightkA.get()),
+        () -> io.setRightFF(rightkS.get(), rightkV.get(), rightkA.get()),
         rightkS,
         rightkV,
         rightkA);
 
-    shooterIO.updateInputs(shooterInputs);
-    Logger.processInputs("Shooter", shooterInputs);
+    io.updateInputs(inputs);
+    Logger.processInputs("Shooter", inputs);
 
     if (DriverStation.isDisabled()) {
-      shooterIO.stop();
+      io.stop();
     } else {
-      if (!characterizing) {
-        if (shooting) {
-          shooterIO.setRPM(leftSpeedRpm.get(), rightSpeedRpm.get());
-          double feederSetpointVolts = 0.0;
-          if (leftSpeedRpm.get() > 0 && rightSpeedRpm.get() > 0 && atSetpoint()) {
-            feederSetpointVolts = feedVolts.get();
-          } else {
-            feederSetpointVolts = 0;
-          }
-          shooterIO.setFeederVoltage(feederSetpointVolts);
-        } else if (intaking) {
-          shooterIO.setLeftCharacterizationVoltage(intakeVolts.get());
-          shooterIO.setRightCharacterizationVoltage(intakeVolts.get());
-          shooterIO.setFeederVoltage(intakeVolts.get());
-        } else {
-          shooterIO.stop();
+      if (spinning) {
+        io.setRPM(leftRPM, rightRPM);
+        if (feeding) {
+          io.setFeederVoltage(feedVolts.get());
         }
+      } else if (intaking) {
+        io.setLeftVoltage(intakeVolts.get());
+        io.setRightVoltage(intakeVolts.get());
       }
     }
 
-    Logger.recordOutput("Shooter/LeftRPM", shooterInputs.leftFlywheelVelocityRPM);
-    Logger.recordOutput("Shooter/RightRPM", shooterInputs.rightFlywheelVelocityRPM);
-    Logger.recordOutput("Shooter/FeederRPM", shooterInputs.feederVelocityRPM);
+    Logger.recordOutput("Shooter/LeftRPM", inputs.leftFlywheelVelocityRPM);
+    Logger.recordOutput("Shooter/RightRPM", inputs.rightFlywheelVelocityRPM);
+    Logger.recordOutput("Shooter/FeederRPM", inputs.feederVelocityRPM);
   }
 
-  public void setIntaking() {
-    characterizing = false;
-    shooting = false;
+  public void requestRPM(double leftRPM, double rightRPM) {
+    intaking = false;
+    spinning = true;
+    this.leftRPM = leftRPM;
+    this.rightRPM = rightRPM;
+  }
+
+  public void requestFeed() {
+    intaking = false;
+    feeding = true;
+  }
+
+  public void requestIntake() {
+    spinning = false;
     intaking = true;
   }
 
-  public void setShooting() {
-    characterizing = false;
-    shooting = true;
-    intaking = false;
-  }
-
   public void stop() {
-    characterizing = false;
-    shooting = false;
+    spinning = false;
     intaking = false;
   }
 
   public void runLeftCharacterizationVolts(double volts) {
-    characterizing = true;
-    shooterIO.setLeftCharacterizationVoltage(volts);
+    spinning = false;
+    intaking = false;
+    io.setLeftVoltage(volts);
   }
 
   public void runRightCharacterizationVolts(double volts) {
-    characterizing = true;
-    shooterIO.setRightCharacterizationVoltage(volts);
+    spinning = false;
+    intaking = false;
+    io.setRightVoltage(volts);
   }
 
   public double getLeftCharacterizationVelocity() {
-    return shooterInputs.leftFlywheelVelocityRPM;
+    return inputs.leftFlywheelVelocityRPM;
   }
 
   public double getRightCharacterizationVelocity() {
-    return shooterInputs.rightFlywheelVelocityRPM;
+    return inputs.rightFlywheelVelocityRPM;
   }
 
   @AutoLogOutput(key = "Shooter/AtSetpoint")
   public boolean atSetpoint() {
-    return Math.abs(shooterInputs.leftFlywheelVelocityRPM - leftSpeedRpm.get())
-            <= shooterTolerance.get()
-        && Math.abs(shooterInputs.rightFlywheelVelocityRPM - rightSpeedRpm.get())
-            <= shooterTolerance.get();
+    return Math.abs(inputs.leftFlywheelVelocityRPM - leftRPM) <= shooterTolerance.get()
+        && Math.abs(inputs.rightFlywheelVelocityRPM - rightRPM) <= shooterTolerance.get()
+        && spinning;
   }
 }

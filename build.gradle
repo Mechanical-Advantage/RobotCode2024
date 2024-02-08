@@ -179,6 +179,7 @@ spotless {
         toggleOffOn()
         googleJavaFormat()
         removeUnusedImports()
+        indentWithTabs(2)
         indentWithSpaces(4)
         trimTrailingWhitespace()
         endWithNewline()

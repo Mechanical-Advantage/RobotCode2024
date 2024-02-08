@@ -28,45 +28,45 @@ import org.littletonrobotics.junction.Logger;
  * blocking thread. A Notifier thread is used to gather samples with consistent timing.
  */
 public class SparkMaxOdometryThread {
-  private List<DoubleSupplier> signals = new ArrayList<>();
-  private List<Queue<Double>> queues = new ArrayList<>();
-  private final Notifier notifier;
-  private static SparkMaxOdometryThread instance = null;
+    private List<DoubleSupplier> signals = new ArrayList<>();
+    private List<Queue<Double>> queues = new ArrayList<>();
+    private final Notifier notifier;
+    private static SparkMaxOdometryThread instance = null;
 
-  public static SparkMaxOdometryThread getInstance() {
-    if (instance == null) {
-      instance = new SparkMaxOdometryThread();
+    public static SparkMaxOdometryThread getInstance() {
+        if (instance == null) {
+            instance = new SparkMaxOdometryThread();
+        }
+        return instance;
     }
-    return instance;
-  }
 
-  private SparkMaxOdometryThread() {
-    notifier = new Notifier(this::periodic);
-    notifier.setName("SparkMaxOdometryThread");
-    notifier.startPeriodic(1.0 / DriveConstants.odometryFrequency);
-  }
-
-  public Queue<Double> registerSignal(DoubleSupplier signal) {
-    Queue<Double> queue = new ArrayBlockingQueue<>(100);
-    Drive.odometryLock.lock();
-    try {
-      signals.add(signal);
-      queues.add(queue);
-    } finally {
-      Drive.odometryLock.unlock();
+    private SparkMaxOdometryThread() {
+        notifier = new Notifier(this::periodic);
+        notifier.setName("SparkMaxOdometryThread");
+        notifier.startPeriodic(1.0 / DriveConstants.odometryFrequency);
     }
-    return queue;
-  }
 
-  private void periodic() {
-    Drive.odometryLock.lock();
-    Drive.timestampQueue.offer(Logger.getRealTimestamp() / 1.0e6);
-    try {
-      for (int i = 0; i < signals.size(); i++) {
-        queues.get(i).offer(signals.get(i).getAsDouble());
-      }
-    } finally {
-      Drive.odometryLock.unlock();
+    public Queue<Double> registerSignal(DoubleSupplier signal) {
+        Queue<Double> queue = new ArrayBlockingQueue<>(100);
+        Drive.odometryLock.lock();
+        try {
+            signals.add(signal);
+            queues.add(queue);
+        } finally {
+            Drive.odometryLock.unlock();
+        }
+        return queue;
     }
-  }
+
+    private void periodic() {
+        Drive.odometryLock.lock();
+        Drive.timestampQueue.offer(Logger.getRealTimestamp() / 1.0e6);
+        try {
+            for (int i = 0; i < signals.size(); i++) {
+                queues.get(i).offer(signals.get(i).getAsDouble());
+            }
+        } finally {
+            Drive.odometryLock.unlock();
+        }
+    }
 }

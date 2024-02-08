@@ -8,74 +8,74 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 public class Intake extends SubsystemBase {
-  private final LoggedDashboardNumber intakeVoltage =
-      new LoggedDashboardNumber("Intake/intakeVoltage", 12.0);
-  private final IntakeIO io;
-  private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
+    private final LoggedDashboardNumber intakeVoltage =
+            new LoggedDashboardNumber("Intake/intakeVoltage", 12.0);
+    private final IntakeIO io;
+    private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
-  private boolean intake = false;
-  private boolean eject = false;
+    private boolean intake = false;
+    private boolean eject = false;
 
-  public Intake(IntakeIO io) {
-    System.out.println("[Init] Creating Intake");
-    this.io = io;
-    // TODO: test if this is needed
-    io.setBrakeMode(false);
-  }
-
-  @Override
-  public void periodic() {
-    io.updateInputs(inputs);
-    Logger.processInputs("Intake", inputs);
-
-    if (DriverStation.isDisabled()) {
-      stop();
-    } else {
-      if (intake) {
-        io.setVoltage(intakeVoltage.get());
-      } else if (eject) {
-        io.setVoltage(-intakeVoltage.get());
-      }
+    public Intake(IntakeIO io) {
+        System.out.println("[Init] Creating Intake");
+        this.io = io;
+        // TODO: test if this is needed
+        io.setBrakeMode(false);
     }
-  }
 
-  public boolean intaking() {
-    return intake;
-  }
+    @Override
+    public void periodic() {
+        io.updateInputs(inputs);
+        Logger.processInputs("Intake", inputs);
 
-  public boolean ejecting() {
-    return eject;
-  }
+        if (DriverStation.isDisabled()) {
+            stop();
+        } else {
+            if (intake) {
+                io.setVoltage(intakeVoltage.get());
+            } else if (eject) {
+                io.setVoltage(-intakeVoltage.get());
+            }
+        }
+    }
 
-  public boolean running() {
-    return eject || intake;
-  }
+    public boolean intaking() {
+        return intake;
+    }
 
-  private void intake() {
-    intake = true;
-    eject = false;
-  }
+    public boolean ejecting() {
+        return eject;
+    }
 
-  private void eject() {
-    eject = true;
-    intake = false;
-  }
+    public boolean running() {
+        return eject || intake;
+    }
 
-  private void stop() {
-    intake = false;
-    eject = false;
-    io.stop();
-  }
+    private void intake() {
+        intake = true;
+        eject = false;
+    }
 
-  public Command intakeCommand() {
-    return Commands.runOnce(this::intake);
-  }
+    private void eject() {
+        eject = true;
+        intake = false;
+    }
 
-  public Command ejectCommand() {
-    return Commands.runOnce(this::eject);
-  }
+    private void stop() {
+        intake = false;
+        eject = false;
+        io.stop();
+    }
 
-  public Command stopCommand() {
-    return Commands.runOnce(this::stop);
-  }
+    public Command intakeCommand() {
+        return Commands.runOnce(this::intake);
+    }
+
+    public Command ejectCommand() {
+        return Commands.runOnce(this::eject);
+    }
+
+    public Command stopCommand() {
+        return Commands.runOnce(this::stop);
+    }
 }

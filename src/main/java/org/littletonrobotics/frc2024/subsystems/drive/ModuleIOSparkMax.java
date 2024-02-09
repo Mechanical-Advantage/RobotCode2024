@@ -95,7 +95,7 @@ public class ModuleIOSparkMax implements ModuleIO {
                 SparkMaxOdometryThread.getInstance().registerSignal(driveEncoder::getPosition);
         turnPositionQueue =
                 SparkMaxOdometryThread.getInstance()
-                        .registerSignal(() -> absoluteEncoderValue.get().getRadians());
+                        .registerSignal(absoluteEncoderValue.get()::getRadians);
 
         // Init Controllers
         driveController = new PIDController(moduleConstants.drivekP(), 0.0, moduleConstants.drivekD());
@@ -140,7 +140,7 @@ public class ModuleIOSparkMax implements ModuleIO {
                         .mapToDouble(
                                 motorPositionRevs ->
                                         Units.rotationsToRadians(motorPositionRevs / moduleConstants.driveReduction())
-                                                * wheelRadius)
+                                                * driveConfig.wheelRadius())
                         .toArray();
         inputs.odometryTurnPositions =
                 turnPositionQueue.stream().map(Rotation2d::fromRadians).toArray(Rotation2d[]::new);

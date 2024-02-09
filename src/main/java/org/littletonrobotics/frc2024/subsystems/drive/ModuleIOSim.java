@@ -58,7 +58,7 @@ public class ModuleIOSim implements ModuleIO {
         inputs.turnSupplyCurrentAmps = Math.abs(turnSim.getCurrentDrawAmps());
 
         inputs.odometryDrivePositionsMeters =
-                new double[] {driveSim.getAngularPositionRad() * wheelRadius};
+                new double[] {driveSim.getAngularPositionRad() * driveConfig.wheelRadius()};
         inputs.odometryTurnPositions =
                 new Rotation2d[] {Rotation2d.fromRadians(turnSim.getAngularPositionRad())};
     }

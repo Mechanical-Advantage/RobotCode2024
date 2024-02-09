@@ -13,11 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public final class ChoreoTrajectoryReader {
+public final class ChoreoTrajectoryDeserializer {
     private static ObjectMapper objectMapper = new ObjectMapper();
 
     /** Load Trajectory file (.traj) */
-    public static Optional<HolonomicTrajectory> generate(File file) {
+    public static Optional<HolonomicTrajectory> deserialize(File file) {
         List<ChoreoTrajectoryState> choreoStates = new ArrayList<>();
         try {
             choreoStates =

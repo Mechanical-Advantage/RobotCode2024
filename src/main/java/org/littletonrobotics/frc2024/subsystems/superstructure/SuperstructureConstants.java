@@ -14,7 +14,15 @@ public class SuperstructureConstants {
 
         public static FlywheelConstants leftFlywheelConstants =
                 switch (Constants.getRobot()) {
-                    default -> new FlywheelConstants(5, false, 0.0, 0.0, 0.0, 0.33329, 0.00083, 0.0);
+                    default -> new FlywheelConstants(
+                            5,
+                            false,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.33329,
+                            0.00083,
+                            0.0);
                 };
 
         public static FlywheelConstants rightFlywheelConstants =

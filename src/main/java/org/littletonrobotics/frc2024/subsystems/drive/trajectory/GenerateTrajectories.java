@@ -21,10 +21,10 @@ public class GenerateTrajectories {
                         .setMoi(6)
                         .setVehicleLength(DriveConstants.driveConfig.trackwidthX())
                         .setVehicleWidth(DriveConstants.driveConfig.trackwidthY())
-                        .setWheelRadius(DriveConstants.wheelRadius)
+                        .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
                         .setMaxWheelTorque(2)
                         .setMaxWheelOmega(
-                                DriveConstants.moduleLimits.maxDriveVelocity() / DriveConstants.wheelRadius)
+                                DriveConstants.moduleLimits.maxDriveVelocity() / DriveConstants.driveConfig.wheelRadius())
                         .build();
 
         PathRequest request =

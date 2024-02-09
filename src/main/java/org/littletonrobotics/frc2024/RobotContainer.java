@@ -43,7 +43,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.ShooterIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.ShooterIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.ShooterIOSparkMax;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
-import org.littletonrobotics.frc2024.util.trajectory.ChoreoTrajectoryReader;
+import org.littletonrobotics.frc2024.util.trajectory.ChoreoTrajectoryDeserializer;
 import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -156,7 +156,7 @@ public class RobotContainer {
         Function<File, Optional<Command>> trajectoryCommandFactory =
                 trajectoryFile -> {
                     Optional<HolonomicTrajectory> trajectory =
-                            ChoreoTrajectoryReader.generate(trajectoryFile);
+                            ChoreoTrajectoryDeserializer.deserialize(trajectoryFile);
                     return trajectory.map(
                             traj ->
                                     Commands.runOnce(

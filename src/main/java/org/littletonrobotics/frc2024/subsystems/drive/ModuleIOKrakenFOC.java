@@ -132,10 +132,6 @@ public class ModuleIOKrakenFOC implements ModuleIO {
                 PhoenixOdometryThread.getInstance().registerSignal(driveTalon, driveTalon.getPosition());
         turnPositionQueue =
                 PhoenixOdometryThread.getInstance().registerSignal(turnTalon, turnTalon.getPosition());
-
-        // TODO: what does this do?
-        //        driveTalon.optimizeBusUtilization();
-        //        turnTalon.optimizeBusUtilization();
     }
 
     @Override
@@ -175,7 +171,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
         inputs.odometryDrivePositionsMeters =
                 drivePositionQueue.stream()
-                        .mapToDouble(signalValue -> Units.rotationsToRadians(signalValue) * wheelRadius)
+                        .mapToDouble(signalValue -> Units.rotationsToRadians(signalValue) * driveConfig.wheelRadius())
                         .toArray();
         inputs.odometryTurnPositions =
                 turnPositionQueue.stream().map(Rotation2d::fromRotations).toArray(Rotation2d[]::new);

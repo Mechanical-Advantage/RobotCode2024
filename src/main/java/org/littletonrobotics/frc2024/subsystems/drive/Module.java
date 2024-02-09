@@ -8,26 +8,29 @@ import lombok.Getter;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
+import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.moduleConstants;
+import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.driveConfig;
+
 public class Module {
-    private static final LoggedTunableNumber driveKp =
-            new LoggedTunableNumber("Drive/Module/DriveKp", DriveConstants.moduleConstants.drivekP());
-    private static final LoggedTunableNumber driveKd =
-            new LoggedTunableNumber("Drive/Module/DriveKd", DriveConstants.moduleConstants.drivekD());
-    private static final LoggedTunableNumber driveKs =
-            new LoggedTunableNumber("Drive/Module/DriveKs", DriveConstants.moduleConstants.ffkS());
-    private static final LoggedTunableNumber driveKv =
-            new LoggedTunableNumber("Drive/Module/DriveKv", DriveConstants.moduleConstants.ffkV());
-    private static final LoggedTunableNumber turnKp =
-            new LoggedTunableNumber("Drive/Module/TurnKp", DriveConstants.moduleConstants.turnkP());
-    private static final LoggedTunableNumber turnKd =
-            new LoggedTunableNumber("Drive/Module/TurnKd", DriveConstants.moduleConstants.turnkD());
+    private static final LoggedTunableNumber drivekP =
+            new LoggedTunableNumber("Drive/Module/DrivekP", moduleConstants.drivekP());
+    private static final LoggedTunableNumber drivekD =
+            new LoggedTunableNumber("Drive/Module/DrivekD", moduleConstants.drivekD());
+    private static final LoggedTunableNumber drivekS =
+            new LoggedTunableNumber("Drive/Module/DrivekS", moduleConstants.ffkS());
+    private static final LoggedTunableNumber drivekV =
+            new LoggedTunableNumber("Drive/Module/DrivekV", moduleConstants.ffkV());
+    private static final LoggedTunableNumber turnkP =
+            new LoggedTunableNumber("Drive/Module/TurnkP", moduleConstants.turnkP());
+    private static final LoggedTunableNumber turnkD =
+            new LoggedTunableNumber("Drive/Module/TurnkD", moduleConstants.turnkD());
 
     private final int index;
     private final ModuleIO io;
     private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
     private SimpleMotorFeedforward driveFF =
             new SimpleMotorFeedforward(
-                    DriveConstants.moduleConstants.ffkS(), DriveConstants.moduleConstants.ffkV(), 0.0);
+                    moduleConstants.ffkS(), moduleConstants.ffkV(), 0.0);
 
     @Getter private SwerveModuleState setpointState = new SwerveModuleState();
 
@@ -45,22 +48,22 @@ public class Module {
         LoggedTunableNumber.ifChanged(
                 hashCode(),
                 () -> {
-                    driveFF = new SimpleMotorFeedforward(driveKs.get(), driveKv.get(), 0);
-                    io.setDriveFF(driveKs.get(), driveKv.get(), 0);
+                    driveFF = new SimpleMotorFeedforward(drivekS.get(), drivekV.get(), 0);
+                    io.setDriveFF(drivekS.get(), drivekV.get(), 0);
                 },
-                driveKs,
-                driveKv);
+                drivekS,
+                drivekV);
         LoggedTunableNumber.ifChanged(
-                hashCode(), () -> io.setDrivePID(driveKp.get(), 0, driveKd.get()), driveKp, driveKd);
+                hashCode(), () -> io.setDrivePID(drivekP.get(), 0, drivekD.get()), drivekP, drivekD);
         LoggedTunableNumber.ifChanged(
-                hashCode(), () -> io.setTurnPID(turnKp.get(), 0, turnKd.get()), turnKp, turnKd);
+                hashCode(), () -> io.setTurnPID(turnkP.get(), 0, turnkD.get()), turnkP, turnkD);
     }
 
     public void runSetpoint(SwerveModuleState setpoint) {
         setpointState = setpoint;
         io.setDriveVelocitySetpoint(
-                setpoint.speedMetersPerSecond / DriveConstants.wheelRadius,
-                driveFF.calculate(setpoint.speedMetersPerSecond / DriveConstants.wheelRadius));
+                setpoint.speedMetersPerSecond / driveConfig.wheelRadius(),
+                driveFF.calculate(setpoint.speedMetersPerSecond / driveConfig.wheelRadius()));
         io.setTurnPositionSetpoint(setpoint.angle.getRadians());
     }
 
@@ -95,11 +98,11 @@ public class Module {
     }
 
     public double getPositionMeters() {
-        return inputs.drivePositionRad * DriveConstants.wheelRadius;
+        return inputs.drivePositionRad * driveConfig.wheelRadius();
     }
 
     public double getVelocityMetersPerSec() {
-        return inputs.driveVelocityRadPerSec * DriveConstants.wheelRadius;
+        return inputs.driveVelocityRadPerSec * driveConfig.wheelRadius();
     }
 
     public SwerveModulePosition getPosition() {

@@ -24,17 +24,17 @@ public class Arm extends SubsystemBase {
     private static final LoggedTunableNumber kP =
             new LoggedTunableNumber("Arm/kP", controllerConstants.kP());
     private static final LoggedTunableNumber kI =
-            new LoggedTunableNumber("Arm/Ki", controllerConstants.kI());
+            new LoggedTunableNumber("Arm/kI", controllerConstants.kI());
     private static final LoggedTunableNumber kD =
             new LoggedTunableNumber("Arm/kD", controllerConstants.kD());
     private static final LoggedTunableNumber kS =
-            new LoggedTunableNumber("Arm/Ks", controllerConstants.ffkS());
+            new LoggedTunableNumber("Arm/kS", controllerConstants.ffkS());
     private static final LoggedTunableNumber kV =
-            new LoggedTunableNumber("Arm/Kv", controllerConstants.ffkV());
+            new LoggedTunableNumber("Arm/kV", controllerConstants.ffkV());
     private static final LoggedTunableNumber kA =
-            new LoggedTunableNumber("Arm/Ka", controllerConstants.ffkA());
+            new LoggedTunableNumber("Arm/kA", controllerConstants.ffkA());
     private static final LoggedTunableNumber kG =
-            new LoggedTunableNumber("Arm/Kg", controllerConstants.ffkG());
+            new LoggedTunableNumber("Arm/kG", controllerConstants.ffkG());
     private static final LoggedTunableNumber armVelocity =
             new LoggedTunableNumber("Arm/Velocity", profileConstraints.cruiseVelocityRadPerSec());
     private static final LoggedTunableNumber armAcceleration =

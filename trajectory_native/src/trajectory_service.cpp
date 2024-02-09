@@ -14,23 +14,23 @@ trajopt::SwerveDrivetrain create_drivetrain(const vts::VehicleModel &model) {
     trajopt::SwerveDrivetrain drivetrain{
             .mass = model.mass(),
             .moi = model.moi(),
-            .modules = {{.x = model.vehicle_length(),
-                                .y = model.vehicle_width(),
+            .modules = {{.x = model.vehicle_length() / 2.0,
+                                .y = model.vehicle_width() / 2.0,
                                 .wheelRadius = model.wheel_radius(),
                                 .wheelMaxAngularVelocity = model.max_wheel_omega(),
                                 .wheelMaxTorque = model.max_wheel_torque()},
-                        {.x = model.vehicle_length(),
-                                .y = -model.vehicle_width(),
+                        {.x = model.vehicle_length() / 2.0,
+                                .y = -model.vehicle_width() / 2.0,
                                 .wheelRadius = model.wheel_radius(),
                                 .wheelMaxAngularVelocity = model.max_wheel_omega(),
                                 .wheelMaxTorque = model.max_wheel_torque()},
-                        {.x = -model.vehicle_length(),
-                                .y = model.vehicle_width(),
+                        {.x = -model.vehicle_length() / 2.0,
+                                .y = model.vehicle_width() / 2.0,
                                 .wheelRadius = model.wheel_radius(),
                                 .wheelMaxAngularVelocity = model.max_wheel_omega(),
                                 .wheelMaxTorque = model.max_wheel_torque()},
-                        {.x = -model.vehicle_length(),
-                                .y = -model.vehicle_width(),
+                        {.x = -model.vehicle_length() / 2.0,
+                                .y = -model.vehicle_width() / 2.0,
                                 .wheelRadius = model.wheel_radius(),
                                 .wheelMaxAngularVelocity = model.max_wheel_omega(),
                                 .wheelMaxTorque = model.max_wheel_torque()}}};
@@ -72,6 +72,65 @@ void convert_trajectory(vts::Trajectory *trajectory_out, const trajopt::Holonomi
     for (const trajopt::HolonomicTrajectorySample &sample: trajectory_in.samples) {
         convert_sample(trajectory_out->add_states(), sample);
     }
+}
+
+std::string hash_request(const vts::PathRequest &request) {
+    // Function is somewhat messy but this is the simplest way I could think of to hash the request with
+    // fixed precision while accounting for optional fields
+
+    std::stringstream stream;
+    stream << std::fixed << std::setprecision(6);
+    stream << request.model().mass();
+    stream << request.model().moi();
+    stream << request.model().vehicle_length();
+    stream << request.model().vehicle_width();
+    stream << request.model().wheel_radius();
+    stream << request.model().max_wheel_omega();
+    stream << request.model().max_wheel_torque();
+
+    for (const vts::PathSegment &segment: request.segments()) {
+        for (const vts::Waypoint &waypoint: segment.waypoints()) {
+            stream << waypoint.x();
+            stream << waypoint.y();
+
+            if (waypoint.has_heading_constraint()) {
+                stream << waypoint.heading_constraint();
+            }
+
+            if (waypoint.has_samples()) {
+                stream << waypoint.samples();
+            }
+
+            switch (waypoint.velocity_constraint_case()) {
+                case vts::Waypoint::kZeroVelocity:
+                    stream << "0";
+                    break;
+                case vts::Waypoint::kVehicleVelocity:
+                    stream << waypoint.vehicle_velocity().vx();
+                    stream << waypoint.vehicle_velocity().vy();
+                    stream << waypoint.vehicle_velocity().omega();
+                    break;
+                case org::littletonrobotics::vehicletrajectoryservice::Waypoint::VELOCITY_CONSTRAINT_NOT_SET:
+                    break;
+            }
+        }
+
+        if (segment.has_max_velocity()) {
+            stream << segment.max_velocity();
+        }
+
+        if (segment.has_max_omega()) {
+            stream << segment.max_omega();
+        }
+
+        if (segment.straight_line()) {
+            stream << "1";
+        } else {
+            stream << "0";
+        }
+    }
+
+    return std::to_string(std::hash<std::string>{}(stream.str()));
 }
 
 class VehicleTrajectoryService final
@@ -134,6 +193,13 @@ public:
                                                       },
                                                       trajopt::CoordinateSystem::kField
                                               });
+                        builder.WptConstraint(segment_start_offset + waypoint_idx,
+                                              trajopt::AngularVelocityConstraint{
+                                                      trajopt::IntervalSet1d{
+                                                              waypoint.vehicle_velocity().omega(),
+                                                              waypoint.vehicle_velocity().omega()
+                                                      }
+                                              });
                         break;
                 }
 
@@ -187,8 +253,7 @@ public:
             trajopt::HolonomicTrajectory trajectory{trajopt::OptimalTrajectoryGenerator::Generate(builder)};
             fmt::print("Generation finished\n");
             convert_trajectory(response->mutable_trajectory(), trajectory);
-            std::size_t hash = std::hash<std::string>{}(request->SerializeAsString());
-            response->mutable_trajectory()->set_hash_code(std::to_string(hash));
+            response->mutable_trajectory()->set_hash_code(hash_request(*request));
         } catch (std::exception &e) {
             fmt::print("Generation failed: {}\n", std::string(e.what()));
             response->mutable_error()->set_reason(std::string(e.what()));

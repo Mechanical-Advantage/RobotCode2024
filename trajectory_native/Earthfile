@@ -21,28 +21,15 @@ grpc:
     RUN mv installroot_top/usr/local/* installroot/
     SAVE ARTIFACT installroot
 
-ipopt:
-    FROM +apt-deps
-    RUN wget https://github.com/coin-or/Ipopt/archive/refs/tags/releases/3.14.14.tar.gz
-    RUN tar -zvxf 3.14.14.tar.gz
-    RUN mkdir Ipopt-releases-3.14.14/build
-    WORKDIR Ipopt-releases-3.14.14/build
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN ../configure
-    RUN make -j4
-    RUN make DESTDIR=$(pwd)/installroot_top install
-    RUN mkdir installroot
-    RUN mv installroot_top/usr/local/* installroot/
-    SAVE ARTIFACT installroot
-
 trajoptlib:
     FROM +apt-deps
-    BUILD +ipopt
-    COPY +ipopt/installroot /usr/local/
-    GIT CLONE https://github.com/camearle20/TrajoptLib TrajoptLib
-    RUN mkdir TrajoptLib/build
-    WORKDIR TrajoptLib/build
+    # Latest commit seems to break casadi at least on arm64
+    GIT CLONE --branch 95c20be79be7557673d75d631703dc92fe6a191e https://github.com/SleipnirGroup/TrajoptLib TrajoptLib
+    WORKDIR TrajoptLib
+    COPY trajoptlib-aarch64.patch .
+    RUN git apply trajoptlib-aarch64.patch
+    RUN mkdir build
+    WORKDIR build
     ENV CC=clang
     ENV CXX=clang++
     RUN cmake -DOPTIMIZER_BACKEND=casadi -DBUILD_TESTING=OFF ..

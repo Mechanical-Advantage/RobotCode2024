@@ -9,6 +9,7 @@ find_package(gRPC CONFIG REQUIRED)
 find_package(Threads)
 find_package(fmt REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(TrajoptLib REQUIRED)
 
 add_library(trajectory_native_proto proto/VehicleTrajectoryService.proto)
 target_link_libraries(trajectory_native_proto PUBLIC protobuf::libprotobuf gRPC::grpc gRPC::grpc++ gRPC::grpc++_reflection)
@@ -17,7 +18,7 @@ target_include_directories(trajectory_native_proto PUBLIC ${CMAKE_CURRENT_BINARY
 get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
 protobuf_generate(TARGET trajectory_native_proto LANGUAGE cpp)
 protobuf_generate(TARGET trajectory_native_proto LANGUAGE grpc GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
- 
+
 find_library(TRAJOPT_LIBRARY NAMES TrajoptLib)
 message(${TRAJOPT_LIBRARY})
 

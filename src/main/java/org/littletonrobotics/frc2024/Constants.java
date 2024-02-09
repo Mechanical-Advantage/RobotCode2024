@@ -27,13 +27,13 @@ import org.littletonrobotics.frc2024.util.Alert;
  */
 public final class Constants {
     public static final int loopPeriodMs = 20;
-    private static RobotType robotType = RobotType.DEVBOT;
+    private static RobotType robotType = RobotType.SIMBOT;
     public static final boolean tuningMode = true;
 
     private static boolean invalidRobotAlertSent = false;
 
     public static RobotType getRobot() {
-        if (RobotBase.isReal() && robotType == RobotType.SIMBOT) {
+        if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
             new Alert("Invalid Robot Selected, using COMPBOT as default", Alert.AlertType.ERROR)
                     .set(true);
             invalidRobotAlertSent = true;
@@ -66,6 +66,12 @@ public final class Constants {
         SIMBOT,
         DEVBOT,
         COMPBOT
+    }
+
+    public static boolean disableHAL = false;
+
+    public static void disableHAL() {
+        disableHAL = true;
     }
 
     /** Checks whether the robot the correct robot is selected when deploying. */

@@ -253,6 +253,7 @@ public class Drive extends SubsystemBase {
         Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
         Logger.recordOutput("Drive/DesiredSpeeds", desiredSpeeds);
         Logger.recordOutput("Drive/SetpointSpeeds", currentSetpoint.chassisSpeeds());
+        Logger.recordOutput("Drive/DriveMode", currentDriveMode);
     }
 
     /** Pass controller input into teleopDriveController in field relative input */

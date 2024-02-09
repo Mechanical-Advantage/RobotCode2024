@@ -62,15 +62,9 @@ public class SuperstructureConstants {
         public static Rotation2d minAngle = Rotation2d.fromDegrees(0.0);
         public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
-        public static int leaderID =
-                switch (Constants.getRobot()) {
-                    default -> 25;
-                };
-
-        public static int followerID =
-                switch (Constants.getRobot()) {
-                    default -> 26;
-                };
+        public static int leaderID = 25;
+        public static int followerID = 26;
+        public static int armEncoderID = 1;
 
         public static boolean leaderInverted =
                 switch (Constants.getRobot()) {

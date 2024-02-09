@@ -18,6 +18,7 @@ import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.*;
 import com.revrobotics.*;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.CANSparkLowLevel.PeriodicFrame;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.AnalogInput;
@@ -34,8 +35,8 @@ public class ModuleIOSparkMax implements ModuleIO {
     private final AnalogInput turnAbsoluteEncoder;
 
     // Controllers
-    private final SparkPIDController driveController;
-    private final SparkPIDController turnController;
+    private final PIDController driveController;
+    private final PIDController turnController;
 
     // Queues
     private final Queue<Double> drivePositionQueue;
@@ -54,13 +55,6 @@ public class ModuleIOSparkMax implements ModuleIO {
         absoluteEncoderOffset = config.absoluteEncoderOffset();
         driveEncoder = driveMotor.getEncoder();
         turnRelativeEncoder = turnMotor.getEncoder();
-
-        driveController = driveMotor.getPIDController();
-        turnController = turnMotor.getPIDController();
-        turnController.setPositionPIDWrappingEnabled(true);
-        final double maxInput = Math.PI * moduleConstants.driveReduction();
-        turnController.setPositionPIDWrappingMinInput(-maxInput);
-        turnController.setPositionPIDWrappingMaxInput(maxInput);
 
         driveMotor.restoreFactoryDefaults();
         turnMotor.restoreFactoryDefaults();
@@ -102,6 +96,11 @@ public class ModuleIOSparkMax implements ModuleIO {
         turnPositionQueue =
                 SparkMaxOdometryThread.getInstance()
                         .registerSignal(() -> absoluteEncoderValue.get().getRadians());
+
+        // Init Controllers
+        driveController = new PIDController(moduleConstants.drivekP(), 0.0, moduleConstants.drivekD());
+        turnController = new PIDController(moduleConstants.turnkP(), 0.0, moduleConstants.turnkD());
+        turnController.enableContinuousInput(-Math.PI, Math.PI);
     }
 
     @Override
@@ -161,37 +160,29 @@ public class ModuleIOSparkMax implements ModuleIO {
 
     @Override
     public void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {
-        driveController.setReference(
-                Units.radiansToRotations(velocityRadsPerSec) * moduleConstants.driveReduction(),
-                CANSparkBase.ControlType.kVelocity,
-                0,
-                ffVolts,
-                SparkPIDController.ArbFFUnits.kVoltage);
+        double feedback =
+                driveController.calculate(
+                        Units.rotationsPerMinuteToRadiansPerSecond(driveEncoder.getVelocity())
+                                / moduleConstants.driveReduction(),
+                        velocityRadsPerSec);
+        setDriveVoltage(feedback + ffVolts);
     }
 
     @Override
     public void setTurnPositionSetpoint(double angleRads) {
-        turnController.setReference(
-                Units.radiansToRotations(angleRads) * moduleConstants.turnReduction(),
-                CANSparkBase.ControlType.kPosition);
+        setTurnVoltage(
+                turnController.calculate(
+                        Units.rotationsToRadians(turnRelativeEncoder.getPosition()), angleRads));
     }
 
     @Override
     public void setDrivePID(double kP, double kI, double kD) {
-        for (int i = 0; i < 4; i++) {
-            driveController.setP(kP);
-            driveController.setI(kI);
-            driveController.setD(kD);
-        }
+        driveController.setPID(kP, kI, kD);
     }
 
     @Override
     public void setTurnPID(double kP, double kI, double kD) {
-        for (int i = 0; i < 4; i++) {
-            turnController.setP(kP);
-            turnController.setI(kI);
-            turnController.setD(kD);
-        }
+        turnController.setPID(kP, kI, kD);
     }
 
     @Override

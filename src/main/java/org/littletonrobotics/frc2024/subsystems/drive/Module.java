@@ -1,6 +1,5 @@
 package org.littletonrobotics.frc2024.subsystems.drive;
 
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -26,13 +25,6 @@ public class Module {
     private final int index;
     private final ModuleIO io;
     private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
-
-    private final PIDController driveController =
-            new PIDController(
-                    DriveConstants.moduleConstants.drivekP(), 0.0, DriveConstants.moduleConstants.drivekD());
-    private final PIDController turnController =
-            new PIDController(
-                    DriveConstants.moduleConstants.turnkP(), 0.0, DriveConstants.moduleConstants.turnkD());
     private SimpleMotorFeedforward driveFF =
             new SimpleMotorFeedforward(
                     DriveConstants.moduleConstants.ffkS(), DriveConstants.moduleConstants.ffkV(), 0.0);
@@ -42,8 +34,6 @@ public class Module {
     public Module(ModuleIO io, int index) {
         this.io = io;
         this.index = index;
-
-        turnController.enableContinuousInput(-Math.PI, Math.PI);
     }
 
     /** Called while blocking odometry thread */
@@ -75,7 +65,7 @@ public class Module {
     }
 
     public void runCharacterization(double volts) {
-        io.setTurnVoltage(turnController.calculate(inputs.turnAbsolutePosition.getRadians(), 0));
+        io.setTurnPositionSetpoint(0.0);
         io.setDriveVoltage(volts);
     }
 

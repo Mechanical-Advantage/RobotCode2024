@@ -4,26 +4,30 @@ import static org.littletonrobotics.frc2024.subsystems.superstructure.Superstruc
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.*;
 import edu.wpi.first.math.util.Units;
+import java.util.List;
 
 public class ArmIOKrakenFOC implements ArmIO {
     private final TalonFX leaderMotor;
     private final TalonFX followerMotor;
+    private final CANcoder armEncoder;
+
     private final StatusSignal<Double> armPositionRotations;
+    private final StatusSignal<Double> absoluteEncoderPositionRotations;
     private final StatusSignal<Double> armTrajectorySetpointPositionRotations;
     private final StatusSignal<Double> armVelocityRPS;
-    private final StatusSignal<Double>[] armAppliedVoltage = new StatusSignal[2];
-    private final StatusSignal<Double>[] armOutputCurrent = new StatusSignal[2];
-    private final StatusSignal<Double>[] armTorqueCurrent = new StatusSignal[2];
-    private final StatusSignal<Double>[] armTempCelsius = new StatusSignal[2];
+    private final List<StatusSignal<Double>> armAppliedVoltage;
+    private final List<StatusSignal<Double>> armOutputCurrent;
+    private final List<StatusSignal<Double>> armTorqueCurrent;
+    private final List<StatusSignal<Double>> armTempCelsius;
 
     Slot0Configs controllerConfig;
 
@@ -31,15 +35,26 @@ public class ArmIOKrakenFOC implements ArmIO {
         leaderMotor = new TalonFX(leaderID, "canivore");
         followerMotor = new TalonFX(followerID, "canivore");
         followerMotor.setControl(new Follower(leaderID, true));
+        armEncoder = new CANcoder(armEncoderID, "canivore");
 
+        // Arm Encoder Configs
+        CANcoderConfiguration armEncoderConfig = new CANcoderConfiguration();
+        armEncoderConfig.MagnetSensor.AbsoluteSensorRange =
+                AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
+        armEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+        armEncoderConfig.MagnetSensor.MagnetOffset = 0.0;
+        armEncoder.getConfigurator().apply(armEncoderConfig);
         // Leader motor configs
         TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
         leaderConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
         leaderConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
         leaderConfig.MotorOutput.Inverted =
                 leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
-        leaderConfig.Feedback.SensorToMechanismRatio = reduction;
         leaderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        leaderConfig.Feedback.FeedbackRemoteSensorID = armEncoderID;
+        leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+        leaderConfig.Feedback.SensorToMechanismRatio = 1.0;
+        leaderConfig.Feedback.RotorToSensorRatio = reduction;
 
         controllerConfig =
                 new Slot0Configs()
@@ -64,32 +79,31 @@ public class ArmIOKrakenFOC implements ArmIO {
         // Follower configs
         TalonFXConfiguration followerConfig = new TalonFXConfiguration();
         followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+
         // Status signals
         armPositionRotations = leaderMotor.getPosition();
+        absoluteEncoderPositionRotations = armEncoder.getPosition();
         armTrajectorySetpointPositionRotations = leaderMotor.getClosedLoopReference();
         armVelocityRPS = leaderMotor.getVelocity();
-        armAppliedVoltage[0] = leaderMotor.getMotorVoltage();
-        armAppliedVoltage[1] = followerMotor.getMotorVoltage();
-        armOutputCurrent[0] = leaderMotor.getSupplyCurrent();
-        armOutputCurrent[1] = followerMotor.getSupplyCurrent();
-        armTorqueCurrent[0] = leaderMotor.getTorqueCurrent();
-        armTorqueCurrent[1] = followerMotor.getTorqueCurrent();
-        armTempCelsius[0] = leaderMotor.getDeviceTemp();
-        armTempCelsius[1] = followerMotor.getDeviceTemp();
+        armAppliedVoltage = List.of(leaderMotor.getMotorVoltage(), followerMotor.getMotorVoltage());
+        armOutputCurrent = List.of(leaderMotor.getSupplyCurrent(), followerMotor.getSupplyCurrent());
+        armTorqueCurrent = List.of(leaderMotor.getTorqueCurrent(), followerMotor.getTorqueCurrent());
+        armTempCelsius = List.of(leaderMotor.getDeviceTemp(), followerMotor.getDeviceTemp());
 
         BaseStatusSignal.setUpdateFrequencyForAll(
                 100,
                 armPositionRotations,
+                absoluteEncoderPositionRotations,
                 armTrajectorySetpointPositionRotations,
                 armVelocityRPS,
-                armAppliedVoltage[0],
-                armAppliedVoltage[1],
-                armOutputCurrent[0],
-                armOutputCurrent[1],
-                armTorqueCurrent[0],
-                armTorqueCurrent[1],
-                armTempCelsius[0],
-                armTempCelsius[1]);
+                armAppliedVoltage.get(0),
+                armAppliedVoltage.get(1),
+                armOutputCurrent.get(0),
+                armOutputCurrent.get(1),
+                armTorqueCurrent.get(0),
+                armTorqueCurrent.get(1),
+                armTempCelsius.get(0),
+                armTempCelsius.get(1));
     }
 
     public void updateInputs(ArmIOInputs inputs) {
@@ -99,33 +113,27 @@ public class ArmIOKrakenFOC implements ArmIO {
                 armPositionRotations,
                 armTrajectorySetpointPositionRotations,
                 armVelocityRPS,
-                armAppliedVoltage[0],
-                armAppliedVoltage[1],
-                armOutputCurrent[0],
-                armOutputCurrent[1],
-                armTorqueCurrent[0],
-                armTorqueCurrent[1],
-                armTempCelsius[0],
-                armTempCelsius[1]);
+                armAppliedVoltage.get(0),
+                armAppliedVoltage.get(1),
+                armOutputCurrent.get(0),
+                armOutputCurrent.get(1),
+                armTorqueCurrent.get(0),
+                armTorqueCurrent.get(1),
+                armTempCelsius.get(0),
+                armTempCelsius.get(1));
 
         inputs.armAnglePositionRads = Units.rotationsToRadians(armPositionRotations.getValue());
         inputs.armTrajectorySetpointRads =
                 Units.rotationsToRadians(armTrajectorySetpointPositionRotations.getValue());
         inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRPS.getValue());
         inputs.armAppliedVolts =
-                new double[] {
-                    armAppliedVoltage[0].getValueAsDouble(), armAppliedVoltage[1].getValueAsDouble()
-                };
+                armAppliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
         inputs.armCurrentAmps =
-                new double[] {
-                    armOutputCurrent[0].getValueAsDouble(), armOutputCurrent[1].getValueAsDouble()
-                };
+                armOutputCurrent.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
         inputs.armTorqueCurrentAmps =
-                new double[] {
-                    armTorqueCurrent[0].getValueAsDouble(), armTorqueCurrent[1].getValueAsDouble()
-                };
+                armTorqueCurrent.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
         inputs.armTempCelcius =
-                new double[] {armTempCelsius[0].getValueAsDouble(), armTempCelsius[1].getValueAsDouble()};
+                armTempCelsius.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
     }
 
     @Override

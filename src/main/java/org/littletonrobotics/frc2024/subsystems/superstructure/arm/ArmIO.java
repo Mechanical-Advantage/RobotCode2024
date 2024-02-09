@@ -7,7 +7,8 @@ public interface ArmIO {
     class ArmIOInputs {
         public boolean hasFoc = false;
         public boolean hasAbsoluteSensor = false;
-        public double armAnglePositionRads = 0.0;
+        public double armPositionRads = 0.0;
+        public double armAbsolutePositionRads = 0.0;
         public double armTrajectorySetpointRads = 0.0;
         public double armVelocityRadsPerSec = 0.0;
         public double[] armAppliedVolts = new double[] {};
@@ -21,11 +22,11 @@ public interface ArmIO {
     /** Run to setpoint angle in radians */
     default void setSetpoint(double setpointRads) {}
 
-    /** Run motors at voltage */
-    default void setVoltage(double volts) {}
+    /** Run motors at volts */
+    default void runVolts(double volts) {}
 
     /** Run motors at current */
-    default void setCurrent(double amps) {}
+    default void runCurrent(double amps) {}
 
     /** Set brake mode enabled */
     default void setBrakeMode(boolean enabled) {}
@@ -40,6 +41,7 @@ public interface ArmIO {
     default void setProfileConstraints(
             double cruiseVelocityRadsPerSec, double accelerationRadsPerSec2) {}
 
+    /** Sets position of internal encoder */
     default void setPosition(double positionRads) {}
 
     /** Stops motors */

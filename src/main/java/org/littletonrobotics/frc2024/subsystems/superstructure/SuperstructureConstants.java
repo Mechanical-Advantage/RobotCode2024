@@ -7,45 +7,34 @@ import org.littletonrobotics.frc2024.Constants;
 
 public class SuperstructureConstants {
 
-    public static class ShooterConstants {
+    public static class FeederConstants {
+        public static double reduction = (1.0 / 1.0);
+
+        public static int id =
+                switch (Constants.getRobot()) {
+                    default -> 6;
+                };
+        public static boolean inverted =
+                switch (Constants.getRobot()) {
+                    default -> false;
+                };
+    }
+
+    public static class FlywheelConstants {
         // encoder / flywheelReduction = flywheel
-        public static double flywheelReduction = (1.0 / 2.0);
+        public static double reduction = (1.0 / 2.0);
         public static double shooterToleranceRPM = 50.0;
+        public static int leftID = 5;
+        public static int rightID = 6;
 
-        public static FlywheelConstants leftFlywheelConstants =
+        public static Gains gains =
                 switch (Constants.getRobot()) {
-                    default -> new FlywheelConstants(
-                            5,
-                            false,
-                            0.0,
-                            0.0,
-                            0.0,
-                            0.33329,
-                            0.00083,
-                            0.0);
+                    case SIMBOT -> new Gains(0.0, 0.0, 0.0, 0.09078, 0.00103, 0.0);
+                    case DEVBOT -> new Gains(0.0, 0.0, 0.0, 0.33329, 0.00083, 0.0);
+                    case COMPBOT -> null;
                 };
 
-        public static FlywheelConstants rightFlywheelConstants =
-                switch (Constants.getRobot()) {
-                    default -> new FlywheelConstants(4, false, 0.0, 0.0, 0.0, 0.33329, 0.00083, 0.0);
-                };
-
-        public static FeederConstants feederConstants =
-                switch (Constants.getRobot()) {
-                    default -> new FeederConstants(6, false);
-                };
-
-        public record FlywheelConstants(
-                int id,
-                boolean inverted,
-                double kP,
-                double kI,
-                double kD,
-                double kS,
-                double kV,
-                double kA) {}
-
-        public record FeederConstants(int id, boolean inverted) {}
+        public record Gains(double kP, double kI, double kD, double kS, double kV, double kA) {}
     }
 
     public static class IntakeConstants {
@@ -64,29 +53,20 @@ public class SuperstructureConstants {
         // reduction is 12:62 18:60 12:65
         public static double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
         public static Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
-        public static Translation2d armOrigin2d =
-                new Translation2d(-Units.inchesToMeters(0), Units.inchesToMeters(11.75));
-
-        public static Rotation2d minAngle = Rotation2d.fromDegrees(0.0);
+        public static Translation2d armOrigin =
+                new Translation2d(-Units.inchesToMeters(9.11), Units.inchesToMeters(11.75));
+        public static Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
         public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
         public static int leaderID = 25;
         public static int followerID = 26;
         public static int armEncoderID = 1;
 
-        public static boolean leaderInverted =
-                switch (Constants.getRobot()) {
-                    case DEVBOT -> false;
-                    case COMPBOT -> false;
-                    case SIMBOT -> false;
-                };
+        public static boolean leaderInverted = false;
+        public static boolean followerInverted = false;
 
-        public static boolean followerInverted =
-                switch (Constants.getRobot()) {
-                    case DEVBOT -> false;
-                    case COMPBOT -> false;
-                    case SIMBOT -> false;
-                };
+        /** The offset of the arm encoder in rotations. */
+        public static double armEncoderOffsetRotations = 0.0;
 
         public static double armLength =
                 switch (Constants.getRobot()) {
@@ -101,10 +81,7 @@ public class SuperstructureConstants {
                     case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
                 };
 
-        public static ProfileConstraints profileConstraints =
-                switch (Constants.getRobot()) {
-                    default -> new ProfileConstraints(2.0 * Math.PI, 10);
-                };
+        public static ProfileConstraints profileConstraints = new ProfileConstraints(2 * Math.PI, 10);
 
         public record ProfileConstraints(
                 double cruiseVelocityRadPerSec, double accelerationRadPerSec2) {}

@@ -14,12 +14,12 @@ import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 public class ArmIOSim implements ArmIO {
     private final SingleJointedArmSim sim =
             new SingleJointedArmSim(
-                    DCMotor.getKrakenX60(2),
+                    DCMotor.getKrakenX60Foc(2),
                     reduction,
                     1.06328,
                     armLength,
-                    0.0,
-                    Units.degreesToRadians(110.0),
+                    minAngle.getRadians(),
+                    maxAngle.getRadians(),
                     true,
                     Units.degreesToRadians(0.0));
 
@@ -74,7 +74,7 @@ public class ArmIOSim implements ArmIO {
             sim.update(0.001);
         }
 
-        inputs.armAnglePositionRads = sim.getAngleRads() + positionOffset;
+        inputs.armPositionRads = sim.getAngleRads() + positionOffset;
         inputs.armTrajectorySetpointRads = profiledController.getSetpoint().position;
         inputs.armVelocityRadsPerSec = sim.getVelocityRadPerSec();
         inputs.armAppliedVolts = new double[] {appliedVoltage};
@@ -93,7 +93,7 @@ public class ArmIOSim implements ArmIO {
     }
 
     @Override
-    public void setVoltage(double volts) {
+    public void runVolts(double volts) {
         closedLoop = false;
         appliedVoltage = MathUtil.clamp(volts, -12.0, 12.0);
         sim.setInputVoltage(appliedVoltage);

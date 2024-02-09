@@ -1,5 +1,8 @@
 package org.littletonrobotics.frc2024.subsystems.drive;
 
+import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.driveConfig;
+import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.moduleConstants;
+
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -7,9 +10,6 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import lombok.Getter;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
-
-import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.moduleConstants;
-import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.driveConfig;
 
 public class Module {
     private static final LoggedTunableNumber drivekP =
@@ -29,8 +29,7 @@ public class Module {
     private final ModuleIO io;
     private final ModuleIOInputsAutoLogged inputs = new ModuleIOInputsAutoLogged();
     private SimpleMotorFeedforward driveFF =
-            new SimpleMotorFeedforward(
-                    moduleConstants.ffkS(), moduleConstants.ffkV(), 0.0);
+            new SimpleMotorFeedforward(moduleConstants.ffkS(), moduleConstants.ffkV(), 0.0);
 
     @Getter private SwerveModuleState setpointState = new SwerveModuleState();
 

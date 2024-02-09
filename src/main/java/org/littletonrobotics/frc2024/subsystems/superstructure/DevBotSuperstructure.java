@@ -1,13 +1,10 @@
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
-import org.littletonrobotics.frc2024.FieldConstants;
-import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
-import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.Shooter;
+import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -39,46 +36,23 @@ public class DevBotSuperstructure extends SubsystemBase {
 
     @Getter private State currentState = State.IDLE;
     private final Arm arm;
-    private final Shooter shooter;
+    private final Flywheels flywheels;
 
     private final Timer followThroughTimer = new Timer();
     private double followThroughArmAngle = 0.0;
 
-    public DevBotSuperstructure(Arm arm, Shooter shooter) {
+    public DevBotSuperstructure(Arm arm, Flywheels flywheels) {
         this.arm = arm;
-        this.shooter = shooter;
+        this.flywheels = flywheels;
     }
 
     @Override
     public void periodic() {
         switch (currentState) {
-            case IDLE -> {
-                arm.setSetpoint(Units.degreesToRadians(armIdleSetpointDegrees.get()));
-                shooter.requestRPM(idleLeftRPM.get(), idleRightRPM.get());
-            }
-            case INTAKE -> {
-                arm.setSetpoint(Units.degreesToRadians(armIntakeSetpointDegrees.get()));
-                if (arm.atSetpoint()) {
-                    shooter.requestIntake();
-                }
-            }
-            case PREPARE_SHOOT -> {
-                var aimingParameters = RobotState.getInstance().getAimingParameters();
-                double y = (FieldConstants.Speaker.centerSpeakerOpening.getY()) / 2.0;
-                y += Units.inchesToMeters(yCompensation.get());
-                double x = aimingParameters.effectiveDistance();
-                arm.setSetpoint(Math.atan(y / x));
-                shooter.requestRPM(shootingLeftRPM.get(), shootingRightRPM.get());
-            }
-            case SHOOT -> {
-                if (!atShootingSetpoint()) {
-                    currentState = State.PREPARE_SHOOT;
-                } else {
-                    shooter.requestFeed();
-                    followThroughArmAngle = arm.getAngle().getRadians();
-                    followThroughTimer.restart();
-                }
-            }
+            case IDLE -> {}
+            case INTAKE -> {}
+            case PREPARE_SHOOT -> {}
+            case SHOOT -> {}
         }
 
         Logger.recordOutput("DevBotSuperstructure/currentState", currentState.toString());
@@ -88,7 +62,7 @@ public class DevBotSuperstructure extends SubsystemBase {
     public boolean atShootingSetpoint() {
         return (currentState == State.PREPARE_SHOOT || currentState == State.SHOOT)
                 && arm.atSetpoint()
-                && shooter.atSetpoint();
+                && flywheels.atSetpoint();
     }
 
     public void setDesiredState(State desiredState) {

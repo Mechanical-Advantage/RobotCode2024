@@ -35,13 +35,13 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.Flywheels;
+import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIOSim;
-import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.Shooter;
-import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.ShooterIO;
-import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.ShooterIOSim;
-import org.littletonrobotics.frc2024.subsystems.superstructure.shooter.ShooterIOSparkMax;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.trajectory.ChoreoTrajectoryDeserializer;
 import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
@@ -60,7 +60,7 @@ public class RobotContainer {
     // Subsystems
     private Drive drive;
     private AprilTagVision aprilTagVision;
-    private Shooter shooter;
+    private Flywheels flywheels;
     private Intake intake;
     private Arm arm;
     private DevBotSuperstructure superstructure;
@@ -83,9 +83,9 @@ public class RobotContainer {
                                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
                                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
                 arm = new Arm(new ArmIOKrakenFOC());
-                shooter = new Shooter(new ShooterIOSparkMax());
+                flywheels = new Flywheels(new FlywheelsIOSparkFlex());
                 //        intake = new Intake(new IntakeIOSparkMax());
-                superstructure = new DevBotSuperstructure(arm, shooter);
+                superstructure = new DevBotSuperstructure(arm, flywheels);
             }
             case SIMBOT -> {
                 drive =
@@ -96,9 +96,9 @@ public class RobotContainer {
                                 new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                                 new ModuleIOSim(DriveConstants.moduleConfigs[3]));
                 arm = new Arm(new ArmIOSim());
-                shooter = new Shooter(new ShooterIOSim());
+                flywheels = new Flywheels(new FlywheelsIOSim());
                 intake = new Intake(new IntakeIOSim());
-                superstructure = new DevBotSuperstructure(arm, shooter);
+                superstructure = new DevBotSuperstructure(arm, flywheels);
             }
             case COMPBOT -> {
                 // No impl yet
@@ -119,8 +119,8 @@ public class RobotContainer {
             aprilTagVision = new AprilTagVision();
         }
 
-        if (shooter == null) {
-            shooter = new Shooter(new ShooterIO() {});
+        if (flywheels == null) {
+            flywheels = new Flywheels(new FlywheelsIO() {});
         }
 
         if (intake == null) {
@@ -141,15 +141,15 @@ public class RobotContainer {
         autoChooser.addOption(
                 "Left Flywheels FF Characterization",
                 new FeedForwardCharacterization(
-                        shooter,
-                        shooter::runLeftCharacterizationVolts,
-                        shooter::getLeftCharacterizationVelocity));
+                        flywheels,
+                        flywheels::runLeftCharacterizationVolts,
+                        flywheels::getLeftCharacterizationVelocity));
         autoChooser.addOption(
                 "Right Flywheels FF Characterization",
                 new FeedForwardCharacterization(
-                        shooter,
-                        shooter::runRightCharacterizationVolts,
-                        shooter::getRightCharacterizationVelocity));
+                        flywheels,
+                        flywheels::runRightCharacterizationVolts,
+                        flywheels::getRightCharacterizationVelocity));
         autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
 
         // Testing autos paths

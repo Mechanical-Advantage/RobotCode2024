@@ -21,7 +21,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     private final CANcoder armEncoder;
 
     private final StatusSignal<Double> armPositionRotations;
-    private final StatusSignal<Double> absoluteEncoderPositionRotations;
+    private final StatusSignal<Double> armAbsolutePositionRotations;
     private final StatusSignal<Double> armTrajectorySetpointPositionRotations;
     private final StatusSignal<Double> armVelocityRPS;
     private final List<StatusSignal<Double>> armAppliedVoltage;
@@ -42,8 +42,9 @@ public class ArmIOKrakenFOC implements ArmIO {
         armEncoderConfig.MagnetSensor.AbsoluteSensorRange =
                 AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
         armEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-        armEncoderConfig.MagnetSensor.MagnetOffset = 0.0;
+        armEncoderConfig.MagnetSensor.MagnetOffset = armEncoderOffsetRotations;
         armEncoder.getConfigurator().apply(armEncoderConfig);
+
         // Leader motor configs
         TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
         leaderConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
@@ -82,7 +83,7 @@ public class ArmIOKrakenFOC implements ArmIO {
 
         // Status signals
         armPositionRotations = leaderMotor.getPosition();
-        absoluteEncoderPositionRotations = armEncoder.getPosition();
+        armAbsolutePositionRotations = armEncoder.getPosition();
         armTrajectorySetpointPositionRotations = leaderMotor.getClosedLoopReference();
         armVelocityRPS = leaderMotor.getVelocity();
         armAppliedVoltage = List.of(leaderMotor.getMotorVoltage(), followerMotor.getMotorVoltage());
@@ -93,7 +94,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         BaseStatusSignal.setUpdateFrequencyForAll(
                 100,
                 armPositionRotations,
-                absoluteEncoderPositionRotations,
+                armAbsolutePositionRotations,
                 armTrajectorySetpointPositionRotations,
                 armVelocityRPS,
                 armAppliedVoltage.get(0),
@@ -122,7 +123,7 @@ public class ArmIOKrakenFOC implements ArmIO {
                 armTempCelsius.get(0),
                 armTempCelsius.get(1));
 
-        inputs.armAnglePositionRads = Units.rotationsToRadians(armPositionRotations.getValue());
+        inputs.armPositionRads = Units.rotationsToRadians(armPositionRotations.getValue());
         inputs.armTrajectorySetpointRads =
                 Units.rotationsToRadians(armTrajectorySetpointPositionRotations.getValue());
         inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRPS.getValue());
@@ -142,12 +143,12 @@ public class ArmIOKrakenFOC implements ArmIO {
     }
 
     @Override
-    public void setVoltage(double volts) {
+    public void runVolts(double volts) {
         leaderMotor.setControl(new VoltageOut(volts).withEnableFOC(true));
     }
 
     @Override
-    public void setCurrent(double amps) {
+    public void runCurrent(double amps) {
         leaderMotor.setControl(new TorqueCurrentFOC(amps));
     }
 

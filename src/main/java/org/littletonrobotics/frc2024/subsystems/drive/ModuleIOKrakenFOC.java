@@ -171,7 +171,8 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
         inputs.odometryDrivePositionsMeters =
                 drivePositionQueue.stream()
-                        .mapToDouble(signalValue -> Units.rotationsToRadians(signalValue) * driveConfig.wheelRadius())
+                        .mapToDouble(
+                                signalValue -> Units.rotationsToRadians(signalValue) * driveConfig.wheelRadius())
                         .toArray();
         inputs.odometryTurnPositions =
                 turnPositionQueue.stream().map(Rotation2d::fromRotations).toArray(Rotation2d[]::new);

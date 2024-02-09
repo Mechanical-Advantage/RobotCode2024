@@ -111,7 +111,35 @@ task(generateDriveTrajectories, dependsOn: "classes", type: JavaExec) {
     mainClass = "org.littletonrobotics.frc2024.subsystems.drive.trajectory.GenerateTrajectories"
     classpath = sourceSets.main.runtimeClasspath
 }
-compileJava.finalizedBy generateDriveTrajectories
+//compileJava.finalizedBy generateDriveTrajectories
+
+// Check robot type when deploying
+task(checkRobot, dependsOn: "classes", type: JavaExec) {
+    main = "org.littletonrobotics.frc2024.Constants"
+    classpath = sourceSets.main.runtimeClasspath
+}
+deployroborio.dependsOn(checkRobot)
+
+tasks.register('eventDeploy') {
+    dependsOn('deploy')
+    doFirst {
+        def branchPrefix = "event"
+        def branch = 'git branch --show-current'.execute().text.trim()
+        def commitMessage = "Update at '${new Date().toString()}'"
+
+        if (!branch.startsWith(branchPrefix)) {
+            throw new GradleException("Current branch '$branch' is not a valid event branch.")
+        }
+
+        exec {
+            commandLine 'git', 'add', '-A'
+            commandLine 'git', 'commit', '-m', commitMessage
+        }
+
+        println "Deployed to branch: '$branch'"
+        println "Commit message: '$commitMessage'"
+    }
+}
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 4.
@@ -192,26 +220,6 @@ gversion {
     indent       = "  "
 }
 
-tasks.register('eventDeploy') {
-    dependsOn('deploy')
-    doFirst {
-        def branchPrefix = "event"
-        def branch = 'git branch --show-current'.execute().text.trim()
-        def commitMessage = "Update at '${new Date().toString()}'"
-
-        if (!branch.startsWith(branchPrefix)) {
-            throw new GradleException("Current branch '$branch' is not a valid event branch.")
-        }
-
-        exec {
-            commandLine 'git', 'add', '-A'
-            commandLine 'git', 'commit', '-m', commitMessage
-        }
-
-        println "Deployed to branch: '$branch'"
-        println "Commit message: '$commitMessage'"
-    }
-}
 
 // Spotless formatting
 project.compileJava.dependsOn(spotlessApply)

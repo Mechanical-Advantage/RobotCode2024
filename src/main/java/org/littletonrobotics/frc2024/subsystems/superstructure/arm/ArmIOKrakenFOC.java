@@ -23,7 +23,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     private final StatusSignal<Double> armPositionRotations;
     private final StatusSignal<Double> armAbsolutePositionRotations;
     private final StatusSignal<Double> armTrajectorySetpointPositionRotations;
-    private final StatusSignal<Double> armVelocityRPS;
+    private final StatusSignal<Double> armVelocityRps;
     private final List<StatusSignal<Double>> armAppliedVoltage;
     private final List<StatusSignal<Double>> armOutputCurrent;
     private final List<StatusSignal<Double>> armTorqueCurrent;
@@ -85,7 +85,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         armPositionRotations = leaderMotor.getPosition();
         armAbsolutePositionRotations = armEncoder.getPosition();
         armTrajectorySetpointPositionRotations = leaderMotor.getClosedLoopReference();
-        armVelocityRPS = leaderMotor.getVelocity();
+        armVelocityRps = leaderMotor.getVelocity();
         armAppliedVoltage = List.of(leaderMotor.getMotorVoltage(), followerMotor.getMotorVoltage());
         armOutputCurrent = List.of(leaderMotor.getSupplyCurrent(), followerMotor.getSupplyCurrent());
         armTorqueCurrent = List.of(leaderMotor.getTorqueCurrent(), followerMotor.getTorqueCurrent());
@@ -96,7 +96,7 @@ public class ArmIOKrakenFOC implements ArmIO {
                 armPositionRotations,
                 armAbsolutePositionRotations,
                 armTrajectorySetpointPositionRotations,
-                armVelocityRPS,
+                armVelocityRps,
                 armAppliedVoltage.get(0),
                 armAppliedVoltage.get(1),
                 armOutputCurrent.get(0),
@@ -113,7 +113,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         BaseStatusSignal.refreshAll(
                 armPositionRotations,
                 armTrajectorySetpointPositionRotations,
-                armVelocityRPS,
+                armVelocityRps,
                 armAppliedVoltage.get(0),
                 armAppliedVoltage.get(1),
                 armOutputCurrent.get(0),
@@ -126,7 +126,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         inputs.armPositionRads = Units.rotationsToRadians(armPositionRotations.getValue());
         inputs.armTrajectorySetpointRads =
                 Units.rotationsToRadians(armTrajectorySetpointPositionRotations.getValue());
-        inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRPS.getValue());
+        inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRps.getValue());
         inputs.armAppliedVolts =
                 armAppliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
         inputs.armCurrentAmps =

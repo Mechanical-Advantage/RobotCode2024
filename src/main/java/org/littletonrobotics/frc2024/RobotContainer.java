@@ -200,10 +200,11 @@ public class RobotContainer {
                     .leftTrigger()
                     .onTrue(
                             Commands.runOnce(
-                                    () -> superstructure.setDesiredState(DevBotSuperstructure.State.PREPARE_SHOOT)))
+                                    () ->
+                                            superstructure.setGoalState(DevBotSuperstructure.SystemState.PREPARE_SHOOT)))
                     .onFalse(
                             Commands.runOnce(
-                                    () -> superstructure.setDesiredState(DevBotSuperstructure.State.IDLE)));
+                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE)));
 
             Trigger readyToShootTrigger =
                     new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
@@ -219,20 +220,21 @@ public class RobotContainer {
                     .and(readyToShootTrigger)
                     .onTrue(
                             Commands.runOnce(
-                                            () -> superstructure.setDesiredState(DevBotSuperstructure.State.SHOOT))
+                                            () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.SHOOT))
                                     .andThen(Commands.waitSeconds(0.5))
                                     .andThen(
                                             Commands.runOnce(
-                                                    () -> superstructure.setDesiredState(DevBotSuperstructure.State.IDLE))));
+                                                    () ->
+                                                            superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE))));
 
             controller
                     .leftBumper()
                     .onTrue(
                             Commands.runOnce(
-                                    () -> superstructure.setDesiredState(DevBotSuperstructure.State.INTAKE)))
+                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.INTAKE)))
                     .onFalse(
                             Commands.runOnce(
-                                    () -> superstructure.setDesiredState(DevBotSuperstructure.State.IDLE)));
+                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE)));
         }
 
         controller

@@ -57,7 +57,7 @@ public class RobotState {
 
     private RobotState() {
         for (int i = 0; i < 3; ++i) {
-            qStdDevs.set(i, 0, Math.pow(qStdDevs.get(i, 0), 2));
+            qStdDevs.set(i, 0, Math.pow(DriveConstants.odometryStateStdDevs.get(i, 0), 2));
         }
         kinematics = DriveConstants.kinematics;
     }
@@ -96,9 +96,10 @@ public class RobotState {
         }
         // Get odometry based pose at timestamp
         var sample = poseBuffer.getSample(observation.timestamp());
-        if (sample.isEmpty())
+        if (sample.isEmpty()) {
             // exit if not there
             return;
+        }
 
         // sample --> odometryPose transform and backwards of that
         var sampleToOdometryTransform = new Transform2d(sample.get(), odometryPose);

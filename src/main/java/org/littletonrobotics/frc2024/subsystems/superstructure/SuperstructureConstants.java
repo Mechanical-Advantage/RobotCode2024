@@ -60,13 +60,14 @@ public class SuperstructureConstants {
 
         public static int leaderID = 25;
         public static int followerID = 26;
-        public static int armEncoderID = 1;
+        public static int armEncoderID = 42;
 
         public static boolean leaderInverted = false;
         public static boolean followerInverted = false;
 
         /** The offset of the arm encoder in rotations. */
-        public static double armEncoderOffsetRotations = 0.0;
+        public static double armEncoderOffsetRotations =
+                Units.radiansToRotations(1.2747380347329678 + Math.PI / 2.0);
 
         public static double armLength =
                 switch (Constants.getRobot()) {

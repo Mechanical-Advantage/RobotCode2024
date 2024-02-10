@@ -21,7 +21,9 @@ public class ArmIOKrakenFOC implements ArmIO {
     private final CANcoder armEncoder;
 
     private final StatusSignal<Double> armPositionRotations;
-    private final StatusSignal<Double> armAbsolutePositionRotations;
+
+    private final StatusSignal<Double> armEncoderPositionRotations;
+    private final StatusSignal<Double> armEncoderAbsolutePositionRotations;
     private final StatusSignal<Double> armTrajectorySetpointPositionRotations;
     private final StatusSignal<Double> armVelocityRps;
     private final List<StatusSignal<Double>> armAppliedVoltage;
@@ -41,9 +43,9 @@ public class ArmIOKrakenFOC implements ArmIO {
         CANcoderConfiguration armEncoderConfig = new CANcoderConfiguration();
         armEncoderConfig.MagnetSensor.AbsoluteSensorRange =
                 AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
-        armEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+        armEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
         armEncoderConfig.MagnetSensor.MagnetOffset = armEncoderOffsetRotations;
-        armEncoder.getConfigurator().apply(armEncoderConfig);
+        armEncoder.getConfigurator().apply(armEncoderConfig, 1);
 
         // Leader motor configs
         TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
@@ -83,7 +85,8 @@ public class ArmIOKrakenFOC implements ArmIO {
 
         // Status signals
         armPositionRotations = leaderMotor.getPosition();
-        armAbsolutePositionRotations = armEncoder.getPosition();
+        armEncoderPositionRotations = armEncoder.getPosition();
+        armEncoderAbsolutePositionRotations = armEncoder.getAbsolutePosition();
         armTrajectorySetpointPositionRotations = leaderMotor.getClosedLoopReference();
         armVelocityRps = leaderMotor.getVelocity();
         armAppliedVoltage = List.of(leaderMotor.getMotorVoltage(), followerMotor.getMotorVoltage());
@@ -94,7 +97,8 @@ public class ArmIOKrakenFOC implements ArmIO {
         BaseStatusSignal.setUpdateFrequencyForAll(
                 100,
                 armPositionRotations,
-                armAbsolutePositionRotations,
+                armEncoderPositionRotations,
+                armEncoderAbsolutePositionRotations,
                 armTrajectorySetpointPositionRotations,
                 armVelocityRps,
                 armAppliedVoltage.get(0),
@@ -109,9 +113,12 @@ public class ArmIOKrakenFOC implements ArmIO {
 
     public void updateInputs(ArmIOInputs inputs) {
         inputs.hasFoc = true;
+        inputs.hasAbsoluteSensor = true;
 
         BaseStatusSignal.refreshAll(
                 armPositionRotations,
+                armEncoderPositionRotations,
+                armEncoderAbsolutePositionRotations,
                 armTrajectorySetpointPositionRotations,
                 armVelocityRps,
                 armAppliedVoltage.get(0),
@@ -124,6 +131,10 @@ public class ArmIOKrakenFOC implements ArmIO {
                 armTempCelsius.get(1));
 
         inputs.armPositionRads = Units.rotationsToRadians(armPositionRotations.getValue());
+        inputs.armEncoderPositionRads =
+                Units.rotationsToRadians(armEncoderPositionRotations.getValue());
+        inputs.armEncoderAbsolutePositionRads =
+                Units.rotationsToRadians(armEncoderAbsolutePositionRotations.getValue());
         inputs.armTrajectorySetpointRads =
                 Units.rotationsToRadians(armTrajectorySetpointPositionRotations.getValue());
         inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRps.getValue());

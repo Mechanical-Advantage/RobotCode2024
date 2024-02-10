@@ -114,7 +114,7 @@ public class Arm extends SubsystemBase {
     }
 
     public Rotation2d getAngle() {
-        return Rotation2d.fromRadians(inputs.armAbsolutePositionRads);
+        return Rotation2d.fromRadians(inputs.armPositionRads);
     }
 
     @AutoLogOutput(key = "Arm/SetpointAngle")
@@ -130,8 +130,7 @@ public class Arm extends SubsystemBase {
     @AutoLogOutput(key = "Arm/AtSetpoint")
     public boolean atSetpoint() {
         return setpoint != null
-                && Math.abs(
-                                Rotation2d.fromRadians(inputs.armAbsolutePositionRads).minus(setpoint).getDegrees())
+                && Math.abs(Rotation2d.fromRadians(inputs.armPositionRads).minus(setpoint).getDegrees())
                         <= armToleranceDegreees.get();
     }
 

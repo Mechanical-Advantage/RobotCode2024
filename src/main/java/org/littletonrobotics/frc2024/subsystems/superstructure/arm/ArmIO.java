@@ -8,7 +8,10 @@ public interface ArmIO {
         public boolean hasFoc = false;
         public boolean hasAbsoluteSensor = false;
         public double armPositionRads = 0.0;
-        public double armAbsolutePositionRads = 0.0;
+
+        public double armEncoderPositionRads = 0.0;
+
+        public double armEncoderAbsolutePositionRads = 0.0;
         public double armTrajectorySetpointRads = 0.0;
         public double armVelocityRadsPerSec = 0.0;
         public double[] armAppliedVolts = new double[] {};

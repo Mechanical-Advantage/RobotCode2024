@@ -4,6 +4,8 @@ import static org.littletonrobotics.frc2024.subsystems.superstructure.Superstruc
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import lombok.Getter;
+import lombok.Setter;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -15,6 +17,20 @@ public class Flywheels extends SubsystemBase {
     private static final LoggedTunableNumber kS = new LoggedTunableNumber("Flywheels/kS", gains.kS());
     private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
     private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
+
+    private static LoggedTunableNumber shootingLeftRPM =
+            new LoggedTunableNumber("Superstructure/ShootingLeftRPM", 6000.0);
+    private static LoggedTunableNumber shootingRightRPM =
+            new LoggedTunableNumber("Superstructure/ShootingRightRPM", 4000.0);
+    private static LoggedTunableNumber idleLeftRPM =
+            new LoggedTunableNumber("Superstructure/IdleLeftRPM", 200.0);
+    private static LoggedTunableNumber idleRightRPM =
+            new LoggedTunableNumber("Superstructure/IdleRightRPM", 200.0);
+
+    private static LoggedTunableNumber intakingLeftRPM =
+            new LoggedTunableNumber("Superstructure/IdleLeftRPM", 2000.0);
+    private static LoggedTunableNumber intakingRightRPM =
+            new LoggedTunableNumber("Superstructure/IdleRightRPM", -2000.0);
     private static final LoggedTunableNumber shooterTolerance =
             new LoggedTunableNumber("Flywheels/ToleranceRPM", shooterToleranceRPM);
 
@@ -23,6 +39,28 @@ public class Flywheels extends SubsystemBase {
 
     private Double leftSetpointRpm = null;
     private Double rightSetpointRPM = null;
+
+    public enum Goal {
+        IDLE,
+        SHOOTING,
+        INTAKING,
+
+        CHARACTERIZATION
+    }
+
+    @Getter @Setter private Goal goal = Goal.IDLE;
+
+    private void setSetpoint(double left, double right) {
+        leftSetpointRpm = left;
+        rightSetpointRPM = right;
+        io.runVelocity(left, right);
+    }
+
+    private void stop() {
+        leftSetpointRpm = null;
+        rightSetpointRPM = null;
+        io.stop();
+    }
 
     public Flywheels(FlywheelsIO io) {
         System.out.println("[Init] Creating Shooter");
@@ -40,31 +78,23 @@ public class Flywheels extends SubsystemBase {
         Logger.processInputs("Flywheels", inputs);
 
         if (DriverStation.isDisabled()) {
-            io.stop();
-            leftSetpointRpm = null;
-            rightSetpointRPM = null;
-        } else if (leftSetpointRpm != null && rightSetpointRPM != null) {
-            // Run to setpoint
-            io.runVelocity(leftSetpointRpm, rightSetpointRPM);
+            stop();
+            setGoal(Goal.IDLE);
+        } else {
+            switch (goal) {
+                case IDLE -> setSetpoint(idleLeftRPM.get(), idleRightRPM.get());
+                case INTAKING -> setSetpoint(intakingLeftRPM.get(), intakingRightRPM.get());
+                case SHOOTING -> setSetpoint(shootingLeftRPM.get(), shootingRightRPM.get());
+            }
         }
 
+        Logger.recordOutput("Flywheels/Goal", goal);
         Logger.recordOutput(
                 "Flywheels/LeftSetpointRPM", leftSetpointRpm != null ? leftSetpointRpm : 0.0);
         Logger.recordOutput(
                 "Flywheels/RightSetpointRPM", rightSetpointRPM != null ? rightSetpointRPM : 0.0);
         Logger.recordOutput("Flywheels/LeftRPM", inputs.leftVelocityRpm);
         Logger.recordOutput("Flywheels/RightRPM", inputs.rightVelocityRpm);
-    }
-
-    public void setSetpointRpm(double leftRpm, double rightRpm) {
-        leftSetpointRpm = leftRpm;
-        rightSetpointRPM = rightRpm;
-    }
-
-    public void runVolts(double leftVolts, double rightVolts) {
-        leftSetpointRpm = null;
-        rightSetpointRPM = null;
-        io.runVolts(leftVolts, rightVolts);
     }
 
     public void runLeftCharacterizationVolts(double volts) {

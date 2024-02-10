@@ -25,7 +25,7 @@ public class SuperstructureConstants {
         public static double reduction = (1.0 / 2.0);
         public static double shooterToleranceRPM = 50.0;
         public static int leftID = 5;
-        public static int rightID = 6;
+        public static int rightID = 4;
 
         public static Gains gains =
                 switch (Constants.getRobot()) {

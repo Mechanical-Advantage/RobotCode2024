@@ -41,12 +41,14 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIOSim;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.trajectory.ChoreoTrajectoryDeserializer;
@@ -94,7 +96,7 @@ public class RobotContainer {
                                     new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
                     arm = new Arm(new ArmIOKrakenFOC());
                     flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-                    feeder = new Feeder(new FeederIOSim());
+                    feeder = new Feeder(new FeederIOSparkFlex());
                     aprilTagVision =
                             new AprilTagVision(
                                     new AprilTagVisionIONorthstar(

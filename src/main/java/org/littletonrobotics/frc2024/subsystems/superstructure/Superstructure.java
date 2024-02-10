@@ -81,8 +81,8 @@ public class Superstructure extends SubsystemBase {
         switch (currentState) {
             case IDLE -> {
                 arm.setSetpoint(Rotation2d.fromDegrees(armIdleSetpointDegrees.get()));
-                flywheels.runVolts(4.0, 4.0);
-                feeder.stop();
+                flywheels.setGoal(Flywheels.Goal.IDLE);
+                feeder.setGoal(Feeder.Goal.IDLE);
             }
             case INTAKE -> {
                 arm.setSetpoint(Rotation2d.fromDegrees(armIntakeSetpointDegrees.get()));

@@ -14,13 +14,10 @@ import edu.wpi.first.networktables.IntegerSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.PubSubOption;
 import edu.wpi.first.wpilibj.Timer;
-import java.util.Arrays;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.util.Alert;
-import org.littletonrobotics.junction.Logger;
 
 public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
-    private static final int cameraId = 0;
     private static final int cameraResolutionWidth = 1600;
     private static final int cameraResolutionHeight = 1200;
     private static final int cameraAutoExposure = 1;
@@ -36,13 +33,13 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
     private final Timer disconnectedTimer = new Timer();
     private final String identifier;
 
-    public AprilTagVisionIONorthstar(String identifier) {
-        this.identifier = identifier;
-        System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + identifier + ")");
-        var northstarTable = NetworkTableInstance.getDefault().getTable(identifier);
+    public AprilTagVisionIONorthstar(String instanceId, String cameraId) {
+        this.identifier = instanceId;
+        System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + instanceId + ")");
+        var northstarTable = NetworkTableInstance.getDefault().getTable(instanceId);
 
         var configTable = northstarTable.getSubTable("config");
-        configTable.getIntegerTopic("camera_id").publish().set(cameraId);
+        configTable.getStringTopic("camera_id").publish().set(cameraId);
         configTable.getIntegerTopic("camera_resolution_width").publish().set(cameraResolutionWidth);
         configTable.getIntegerTopic("camera_resolution_height").publish().set(cameraResolutionHeight);
         configTable.getIntegerTopic("camera_auto_exposure").publish().set(cameraAutoExposure);
@@ -71,12 +68,9 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
                                 new double[] {}, PubSubOption.keepDuplicates(true), PubSubOption.sendAll(true));
         fpsSubscriber = outputTable.getIntegerTopic("fps").subscribe(0);
 
-        disconnectedAlert = new Alert("No data from \"" + identifier + "\"", Alert.AlertType.ERROR);
+        disconnectedAlert = new Alert("No data from \"" + instanceId + "\"", Alert.AlertType.ERROR);
         disconnectedTimer.start();
     }
-
-    private int outOfOrderCounter = 0;
-    private double prevLatestTime = 0;
 
     public void updateInputs(AprilTagVisionIOInputs inputs) {
         var queue = observationSubscriber.readQueue();
@@ -97,26 +91,5 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
             disconnectedTimer.reset();
         }
         disconnectedAlert.set(disconnectedTimer.hasElapsed(disconnectedTimeout));
-
-        // Log out of order
-        double[] orderedTimestamps = inputs.timestamps.clone();
-        Arrays.sort(orderedTimestamps);
-        for (int i = 0; i < inputs.timestamps.length; i++) {
-            if (orderedTimestamps[i] != inputs.timestamps[i]) {
-                outOfOrderCounter++;
-            }
-        }
-
-        if (orderedTimestamps.length > 0) {
-            for (double timestamp : inputs.timestamps) {
-                if (timestamp < prevLatestTime) {
-                    outOfOrderCounter++;
-                }
-            }
-            if (orderedTimestamps[orderedTimestamps.length - 1] > prevLatestTime) {
-                prevLatestTime = orderedTimestamps[orderedTimestamps.length - 1];
-            }
-        }
-        Logger.recordOutput("AprilTagVision/OutOfOrderCounter_" + identifier, outOfOrderCounter);
     }
 }

@@ -18,18 +18,34 @@ public class AprilTagVisionConstants {
                 case DEVBOT ->
                         new Pose3d[] {
                             new Pose3d(
-                                            Units.inchesToMeters(9.735),
-                                            Units.inchesToMeters(9.974),
-                                            Units.inchesToMeters(6.839),
-                                            new Rotation3d(0.0, Units.degreesToRadians(-28.125), 0.0))
-                                    .rotateBy(new Rotation3d(0.0, 0.0, Units.degreesToRadians(30.0)))
+                                    Units.inchesToMeters(9.735),
+                                    Units.inchesToMeters(9.974),
+                                    Units.inchesToMeters(8.837),
+                                    new Rotation3d(0.0, Units.degreesToRadians(-28.125), 0.0)
+                                            .rotateBy(new Rotation3d(0.0, 0.0, Units.degreesToRadians(30.0)))),
+                            new Pose3d(
+                                    Units.inchesToMeters(9.735),
+                                    Units.inchesToMeters(-9.974),
+                                    Units.inchesToMeters(8.837),
+                                    new Rotation3d(0.0, Units.degreesToRadians(-28.125), 0.0)
+                                            .rotateBy(new Rotation3d(0.0, 0.0, Units.degreesToRadians(-30.0))))
                         };
                 default -> new Pose3d[] {};
             };
 
-    public static final String[] cameraNames =
+    public static final String[] instanceNames =
             switch (Constants.getRobot()) {
-                case DEVBOT -> new String[] {"northstar_0"};
+                case DEVBOT -> new String[] {"northstar_0", "northstar_1"};
+                default -> new String[] {};
+            };
+
+    public static final String[] cameraIds =
+            switch (Constants.getRobot()) {
+                case DEVBOT ->
+                        new String[] {
+                            "/dev/v4l/by-path/platform-fc800000.usb-usb-0:1:1.0-video-index0",
+                            "/dev/v4l/by-path/platform-fc880000.usb-usb-0:1:1.0-video-index0"
+                        };
                 default -> new String[] {};
             };
 }

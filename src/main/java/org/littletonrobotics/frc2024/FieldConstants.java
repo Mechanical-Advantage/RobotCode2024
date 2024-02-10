@@ -79,11 +79,11 @@ public class FieldConstants {
                 new Translation3d(0.0, Units.inchesToMeters(197.765), Units.inchesToMeters(78.324));
 
         /** Center of the speaker opening (blue alliance) */
-        //    public static Translation2d centerSpeakerOpening =
-        //        new Translation2d(topLeftSpeaker.getX() / 2.0, Units.inchesToMeters(241.56));
-
-        public static Translation2d centerSpeakerOpening =
-                new Translation2d(topLeftSpeaker.getX() / 2, fieldWidth - Units.inchesToMeters(104.0));
+        public static Translation3d centerSpeakerOpening =
+                new Translation3d(
+                        topLeftSpeaker.getX() / 2.0,
+                        fieldWidth - Units.inchesToMeters(104.0),
+                        (bottomLeftSpeaker.getZ() + bottomRightSpeaker.getZ()) / 2.0);
     }
 
     public static double aprilTagWidth = Units.inchesToMeters(6.50);

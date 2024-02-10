@@ -35,6 +35,9 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.Feeder;
+import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSim;
@@ -61,6 +64,7 @@ public class RobotContainer {
     private Drive drive;
     private AprilTagVision aprilTagVision;
     private Flywheels flywheels;
+    private Feeder feeder;
     private Intake intake;
     private Arm arm;
     private DevBotSuperstructure superstructure;
@@ -84,8 +88,8 @@ public class RobotContainer {
                                 new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
                 arm = new Arm(new ArmIOKrakenFOC());
                 flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-                //        intake = new Intake(new IntakeIOSparkMax());
-                superstructure = new DevBotSuperstructure(arm, flywheels);
+                feeder = new Feeder(new FeederIOSparkFlex());
+                superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
             }
             case SIMBOT -> {
                 drive =
@@ -97,8 +101,9 @@ public class RobotContainer {
                                 new ModuleIOSim(DriveConstants.moduleConfigs[3]));
                 arm = new Arm(new ArmIOSim());
                 flywheels = new Flywheels(new FlywheelsIOSim());
+                feeder = new Feeder(new FeederIOSim());
                 intake = new Intake(new IntakeIOSim());
-                superstructure = new DevBotSuperstructure(arm, flywheels);
+                superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
             }
             case COMPBOT -> {
                 // No impl yet
@@ -208,24 +213,12 @@ public class RobotContainer {
 
             Trigger readyToShootTrigger =
                     new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
-            readyToShootTrigger
-                    .whileTrue(
-                            Commands.run(
-                                    () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
-                    .whileFalse(
-                            Commands.run(
-                                    () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
             controller
                     .rightTrigger()
                     .and(readyToShootTrigger)
                     .onTrue(
                             Commands.runOnce(
-                                            () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.SHOOT))
-                                    .andThen(Commands.waitSeconds(0.5))
-                                    .andThen(
-                                            Commands.runOnce(
-                                                    () ->
-                                                            superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE))));
+                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.SHOOT)));
 
             controller
                     .leftBumper()

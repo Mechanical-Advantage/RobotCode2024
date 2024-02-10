@@ -149,8 +149,9 @@ public class RobotState {
         Pose2d robot = getEstimatedPose();
         Twist2d fieldVelocity = fieldVelocity();
 
-        Translation2d originToGoal =
+        Translation3d originToGoal3d =
                 AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening);
+        Translation2d originToGoal = new Translation2d(originToGoal3d.getX(), originToGoal3d.getY());
         Translation2d originToRobot = robot.getTranslation();
 
         // Get robot to goal angle but limit to reasonable range

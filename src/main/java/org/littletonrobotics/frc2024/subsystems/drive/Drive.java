@@ -237,7 +237,6 @@ public class Drive extends SubsystemBase {
         currentSetpoint =
                 setpointGenerator.generateSetpoint(
                         currentModuleLimits, currentSetpoint, desiredSpeeds, 0.02);
-
         // run modules
         SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
         for (int i = 0; i < modules.length; i++) {

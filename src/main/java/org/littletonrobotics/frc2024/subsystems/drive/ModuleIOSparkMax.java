@@ -94,7 +94,8 @@ public class ModuleIOSparkMax implements ModuleIO {
         drivePositionQueue =
                 SparkMaxOdometryThread.getInstance().registerSignal(driveEncoder::getPosition);
         turnPositionQueue =
-                SparkMaxOdometryThread.getInstance().registerSignal(absoluteEncoderValue.get()::getRadians);
+                SparkMaxOdometryThread.getInstance()
+                        .registerSignal(() -> absoluteEncoderValue.get().getRadians());
 
         // Init Controllers
         driveController = new PIDController(moduleConstants.drivekP(), 0.0, moduleConstants.drivekD());

@@ -38,14 +38,14 @@ public class SuperstructureConstants {
     }
 
     public static class IntakeConstants {
-        public static double reduction = (1.0 / 1.0);
+        public static double reduction = (18.0 / 12.0);
         public static int id =
                 switch (Constants.getRobot()) {
                     default -> 45;
                 };
         public static boolean inverted =
                 switch (Constants.getRobot()) {
-                    default -> true;
+                    default -> false;
                 };
     }
 

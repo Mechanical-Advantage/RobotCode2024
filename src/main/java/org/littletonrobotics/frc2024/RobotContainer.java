@@ -33,7 +33,7 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionCon
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
-import org.littletonrobotics.frc2024.subsystems.superstructure.DevBotSuperstructure;
+import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
@@ -72,7 +72,7 @@ public class RobotContainer {
 
     private Feeder feeder;
 
-    private DevBotSuperstructure superstructure;
+    private Superstructure superstructure;
 
     // Controller
     private final CommandXboxController controller = new CommandXboxController(0);
@@ -103,8 +103,8 @@ public class RobotContainer {
                                     new AprilTagVisionIONorthstar(
                                             AprilTagVisionConstants.instanceNames[1],
                                             AprilTagVisionConstants.cameraIds[1]));
-                    // intake = new Intake(new IntakeIOSparkMax());
-                    superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
+                    intake = new Intake(new IntakeIOKrakenFOC());
+                    superstructure = new Superstructure(arm, flywheels, feeder);
                 }
                 case SIMBOT -> {
                     drive =
@@ -118,7 +118,7 @@ public class RobotContainer {
                     flywheels = new Flywheels(new FlywheelsIOSim());
                     intake = new Intake(new IntakeIOSim());
                     feeder = new Feeder(new FeederIOSim());
-                    superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
+                    superstructure = new Superstructure(arm, flywheels, feeder);
                 }
                 case COMPBOT -> {
                     // No impl yet
@@ -162,7 +162,7 @@ public class RobotContainer {
         }
 
         if (superstructure == null) {
-            superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
+            superstructure = new Superstructure(arm, flywheels, feeder);
         }
 
         autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -234,11 +234,9 @@ public class RobotContainer {
                     .leftTrigger()
                     .onTrue(
                             Commands.runOnce(
-                                    () ->
-                                            superstructure.setGoalState(DevBotSuperstructure.SystemState.PREPARE_SHOOT)))
+                                    () -> superstructure.setGoalState(Superstructure.SystemState.PREPARE_SHOOT)))
                     .onFalse(
-                            Commands.runOnce(
-                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE)));
+                            Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
 
             Trigger readyToShootTrigger =
                     new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
@@ -253,22 +251,19 @@ public class RobotContainer {
                     .rightTrigger()
                     .and(readyToShootTrigger)
                     .onTrue(
-                            Commands.runOnce(
-                                            () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.SHOOT))
+                            Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.SHOOT))
                                     .andThen(Commands.waitSeconds(0.5))
                                     .andThen(
                                             Commands.runOnce(
-                                                    () ->
-                                                            superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE))));
+                                                    () -> superstructure.setGoalState(Superstructure.SystemState.IDLE))));
 
             controller
                     .leftBumper()
                     .onTrue(
                             Commands.runOnce(
-                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.INTAKE)))
+                                    () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE)))
                     .onFalse(
-                            Commands.runOnce(
-                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE)));
+                            Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
         }
 
         controller

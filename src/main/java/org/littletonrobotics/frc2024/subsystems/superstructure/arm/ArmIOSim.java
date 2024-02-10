@@ -32,12 +32,7 @@ public class ArmIOSim implements ArmIO {
     private boolean closedLoop = false;
 
     public ArmIOSim() {
-        ff =
-                new ArmFeedforward(
-                        gains.ffkS(),
-                        gains.ffkG(),
-                        gains.ffkV(),
-                        gains.ffkA());
+        ff = new ArmFeedforward(gains.ffkS(), gains.ffkG(), gains.ffkV(), gains.ffkA());
         profiledController =
                 new ProfiledPIDController(
                         gains.kP(),

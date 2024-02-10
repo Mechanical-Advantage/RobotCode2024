@@ -9,7 +9,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 public class Intake extends SubsystemBase {
     private final LoggedDashboardNumber intakeVoltage =
-            new LoggedDashboardNumber("Intake/intakeVoltage", 12.0);
+            new LoggedDashboardNumber("Intake/intakeVoltage", 8.0);
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 

@@ -19,20 +19,13 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Arm extends SubsystemBase {
-    private static final LoggedTunableNumber kP =
-            new LoggedTunableNumber("Arm/kP", gains.kP());
-    private static final LoggedTunableNumber kI =
-            new LoggedTunableNumber("Arm/kI", gains.kI());
-    private static final LoggedTunableNumber kD =
-            new LoggedTunableNumber("Arm/kD", gains.kD());
-    private static final LoggedTunableNumber kS =
-            new LoggedTunableNumber("Arm/kS", gains.ffkS());
-    private static final LoggedTunableNumber kV =
-            new LoggedTunableNumber("Arm/kV", gains.ffkV());
-    private static final LoggedTunableNumber kA =
-            new LoggedTunableNumber("Arm/kA", gains.ffkA());
-    private static final LoggedTunableNumber kG =
-            new LoggedTunableNumber("Arm/kG", gains.ffkG());
+    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Arm/kP", gains.kP());
+    private static final LoggedTunableNumber kI = new LoggedTunableNumber("Arm/kI", gains.kI());
+    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Arm/kD", gains.kD());
+    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Arm/kS", gains.ffkS());
+    private static final LoggedTunableNumber kV = new LoggedTunableNumber("Arm/kV", gains.ffkV());
+    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Arm/kA", gains.ffkA());
+    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Arm/kG", gains.ffkG());
     private static final LoggedTunableNumber armVelocity =
             new LoggedTunableNumber("Arm/Velocity", profileConstraints.cruiseVelocityRadPerSec());
     private static final LoggedTunableNumber armAcceleration =

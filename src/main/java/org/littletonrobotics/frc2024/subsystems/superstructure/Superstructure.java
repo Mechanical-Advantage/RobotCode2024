@@ -15,29 +15,24 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class DevBotSuperstructure extends SubsystemBase {
+public class Superstructure extends SubsystemBase {
     private static LoggedTunableNumber armIdleSetpointDegrees =
-            new LoggedTunableNumber("DevBotSuperstructure/ArmIdleSetpointDegrees", 10.0);
+            new LoggedTunableNumber("Superstructure/ArmIdleSetpointDegrees", 20.0);
+    private static LoggedTunableNumber armStationIntakeSetpointDegrees =
+            new LoggedTunableNumber("Superstructure/ArmStationIntakeSetpointDegrees", 45.0);
     private static LoggedTunableNumber armIntakeSetpointDegrees =
-            new LoggedTunableNumber("DevBotSuperstructure/ArmIntakeSetpointDegrees", 50.0);
-    private static LoggedTunableNumber shootingLeftRPM =
-            new LoggedTunableNumber("DevBotSuperstructure/ShootingLeftRPM", 6000.0);
-    private static LoggedTunableNumber shootingRightRPM =
-            new LoggedTunableNumber("DevBotSuperstructure/ShootingRightRPM", 4000.0);
-    private static LoggedTunableNumber idleLeftRPM =
-            new LoggedTunableNumber("DevBotSuperstructure/IdleLeftRPM", 2000.0);
-    private static LoggedTunableNumber idleRightRPM =
-            new LoggedTunableNumber("DevBotSuperstructure/IdleRightRPM", 2000.0);
+            new LoggedTunableNumber("Superstructure/ArmIntakeDegrees", 20.0);
     private static LoggedTunableNumber yCompensation =
-            new LoggedTunableNumber("DevBotSuperstructure/CompensationInches", 6.0);
+            new LoggedTunableNumber("Superstructure/CompensationInches", 6.0);
     private static LoggedTunableNumber followThroughTime =
-            new LoggedTunableNumber("DevBotSuperstructure/FollowthroughTimeSecs", 0.5);
+            new LoggedTunableNumber("Superstructure/FollowthroughTimeSecs", 0.5);
 
     public enum SystemState {
         PREPARE_SHOOT,
         SHOOT,
         INTAKE,
-        IDLE
+        IDLE,
+        STATION_INTAKE
     }
 
     @Getter private SystemState currentState = SystemState.IDLE;
@@ -48,7 +43,7 @@ public class DevBotSuperstructure extends SubsystemBase {
 
     private final Timer followThroughTimer = new Timer();
 
-    public DevBotSuperstructure(Arm arm, Flywheels flywheels, Feeder feeder) {
+    public Superstructure(Arm arm, Flywheels flywheels, Feeder feeder) {
         this.arm = arm;
         this.flywheels = flywheels;
         this.feeder = feeder;
@@ -91,8 +86,13 @@ public class DevBotSuperstructure extends SubsystemBase {
             }
             case INTAKE -> {
                 arm.setSetpoint(Rotation2d.fromDegrees(armIntakeSetpointDegrees.get()));
-                flywheels.runVolts(-2.0, -2.0);
-                feeder.runVolts(-0.5);
+                flywheels.setGoal(Flywheels.Goal.IDLE);
+                feeder.setGoal(Feeder.Goal.INTAKING);
+            }
+            case STATION_INTAKE -> {
+                arm.setSetpoint(Rotation2d.fromDegrees(armStationIntakeSetpointDegrees.get()));
+                flywheels.setGoal(Flywheels.Goal.INTAKING);
+                feeder.setGoal(Feeder.Goal.REVERSE_INTAKING);
             }
             case PREPARE_SHOOT -> {
                 var aimingParams = RobotState.getInstance().getAimingParameters();
@@ -101,19 +101,19 @@ public class DevBotSuperstructure extends SubsystemBase {
                                 aimingParams.effectiveDistance(),
                                 FieldConstants.Speaker.centerSpeakerOpening.getZ()
                                         + Units.inchesToMeters(yCompensation.get())));
-                flywheels.setSetpointRpm(shootingLeftRPM.get(), shootingRightRPM.get());
-                feeder.runVolts(0.0);
+                flywheels.setGoal(Flywheels.Goal.SHOOTING);
+                feeder.setGoal(Feeder.Goal.IDLE);
             }
             case SHOOT -> {
-                feeder.runVolts(2.0);
+                feeder.setGoal(Feeder.Goal.FEEDING);
             }
         }
 
-        Logger.recordOutput("DevBotSuperstructure/GoalState", goalState);
-        Logger.recordOutput("DevBotSuperstructure/currentState", currentState);
+        Logger.recordOutput("Superstructure/GoalState", goalState);
+        Logger.recordOutput("Superstructure/CurrentState", currentState);
     }
 
-    @AutoLogOutput(key = "DevBotSuperstructure/ReadyToShoot")
+    @AutoLogOutput(key = "Superstructure/ReadyToShoot")
     public boolean atShootingSetpoint() {
         return flywheels.atSetpoint();
     }

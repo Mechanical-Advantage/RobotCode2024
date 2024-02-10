@@ -61,7 +61,7 @@ public class ModuleIOSparkMax implements ModuleIO {
         driveMotor.setCANTimeout(250);
         turnMotor.setCANTimeout(250);
 
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 30; i++) {
             turnMotor.setInverted(config.turnMotorInverted());
             driveMotor.setSmartCurrentLimit(40);
             turnMotor.setSmartCurrentLimit(30);
@@ -104,17 +104,6 @@ public class ModuleIOSparkMax implements ModuleIO {
 
     @Override
     public void updateInputs(ModuleIOInputs inputs) {
-        // Reset position of encoder to absolute position every shouldResetCount cycles
-        // Make sure turnMotor is not moving too fast
-        if (++resetCounter >= shouldResetCount
-                && Units.rotationsPerMinuteToRadiansPerSecond(turnRelativeEncoder.getVelocity()) <= 0.1) {
-            for (int i = 0; i < 4; i++) {
-                turnRelativeEncoder.setPosition(
-                        absoluteEncoderValue.get().getRotations() * moduleConstants.turnReduction());
-            }
-            resetCounter = 0;
-        }
-
         inputs.drivePositionRad =
                 Units.rotationsToRadians(driveEncoder.getPosition() / moduleConstants.driveReduction());
         inputs.driveVelocityRadPerSec =
@@ -169,9 +158,7 @@ public class ModuleIOSparkMax implements ModuleIO {
 
     @Override
     public void setTurnPositionSetpoint(double angleRads) {
-        setTurnVoltage(
-                turnController.calculate(
-                        Units.rotationsToRadians(turnRelativeEncoder.getPosition()), angleRads));
+        setTurnVoltage(turnController.calculate(absoluteEncoderValue.get().getRadians(), angleRads));
     }
 
     @Override

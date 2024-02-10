@@ -11,10 +11,14 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import java.util.NoSuchElementException;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.GeomUtil;
+import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 
+@ExtensionMethod({GeomUtil.class})
 public class RobotState {
     // Pose Estimation
     public record OdometryObservation(
@@ -24,6 +28,9 @@ public class RobotState {
 
     public record AimingParameters(
             Rotation2d driveHeading, double effectiveDistance, double radialFF) {}
+
+    private static final LoggedTunableNumber lookahead =
+            new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
 
     private static final double poseBufferSizeSeconds = 2.0;
 
@@ -147,29 +154,29 @@ public class RobotState {
             return latestParameters;
         }
 
-        Pose2d robot = getEstimatedPose();
-        Twist2d fieldVelocity = fieldVelocity();
+        Transform2d fieldToTarget =
+                AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening)
+                        .toTranslation2d()
+                        .toTransform2d();
+        Pose2d fieldToPredictedVehicle = getPredictedPose(lookahead.get(), lookahead.get());
+        Pose2d fieldToPredictedVehicleFixed =
+                new Pose2d(fieldToPredictedVehicle.getTranslation(), new Rotation2d());
 
-        Translation3d originToGoal3d =
-                AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening);
-        Translation2d originToGoal = new Translation2d(originToGoal3d.getX(), originToGoal3d.getY());
-        Translation2d originToRobot = robot.getTranslation();
+        Translation2d predictedVehicleToTargetTranslation =
+                fieldToPredictedVehicle.inverse().transformBy(fieldToTarget).getTranslation();
+        Translation2d predictedVehicleFixedToTargetTranslation =
+                fieldToPredictedVehicleFixed.inverse().transformBy(fieldToTarget).getTranslation();
 
-        // Get robot to goal angle but limit to reasonable range
-        Rotation2d robotToGoalAngle = originToGoal.minus(originToGoal).getAngle();
-        // Subtract goal to robot angle from field velocity
-        Translation2d tangentialVelocity =
-                new Translation2d(fieldVelocity.dx, fieldVelocity.dy)
-                        .rotateBy(robotToGoalAngle.unaryMinus());
-        // Subtract tangential velocity from goal to get virtual goal
-        Translation2d originToVirtualGoal = originToGoal.plus(tangentialVelocity.unaryMinus());
+        Rotation2d vehicleToGoalDirection = predictedVehicleToTargetTranslation.getAngle();
 
-        // Angle to virtual goal
-        Rotation2d driveHeading = originToVirtualGoal.minus(originToRobot).getAngle();
-        // Distance to virtual goal
-        double effectiveDistance = originToRobot.getDistance(originToVirtualGoal);
-        double radialFF = -tangentialVelocity.getX();
-        latestParameters = new AimingParameters(driveHeading, effectiveDistance, radialFF);
+        Rotation2d targetVehicleDirection = predictedVehicleFixedToTargetTranslation.getAngle();
+        double targetDistance = predictedVehicleToTargetTranslation.getNorm();
+
+        double feedVelocity =
+                robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
+                        - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
+
+        latestParameters = new AimingParameters(targetVehicleDirection, targetDistance, feedVelocity);
         return latestParameters;
     }
 

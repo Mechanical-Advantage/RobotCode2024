@@ -29,15 +29,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
+import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
+import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
+import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.superstructure.DevBotSuperstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
-import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.Feeder;
-import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIOSim;
-import org.littletonrobotics.frc2024.subsystems.superstructure.feeder.FeederIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSim;
@@ -64,7 +64,6 @@ public class RobotContainer {
     private Drive drive;
     private AprilTagVision aprilTagVision;
     private Flywheels flywheels;
-    private Feeder feeder;
     private Intake intake;
     private Arm arm;
     private DevBotSuperstructure superstructure;
@@ -77,36 +76,45 @@ public class RobotContainer {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     public RobotContainer() {
-        switch (Constants.getRobot()) {
-            case DEVBOT -> {
-                drive =
-                        new Drive(
-                                new GyroIOPigeon2(false),
-                                new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
-                                new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
-                                new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
-                                new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
-                arm = new Arm(new ArmIOKrakenFOC());
-                flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-                feeder = new Feeder(new FeederIOSparkFlex());
-                superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
-            }
-            case SIMBOT -> {
-                drive =
-                        new Drive(
-                                new GyroIO() {},
-                                new ModuleIOSim(DriveConstants.moduleConfigs[0]),
-                                new ModuleIOSim(DriveConstants.moduleConfigs[1]),
-                                new ModuleIOSim(DriveConstants.moduleConfigs[2]),
-                                new ModuleIOSim(DriveConstants.moduleConfigs[3]));
-                arm = new Arm(new ArmIOSim());
-                flywheels = new Flywheels(new FlywheelsIOSim());
-                feeder = new Feeder(new FeederIOSim());
-                intake = new Intake(new IntakeIOSim());
-                superstructure = new DevBotSuperstructure(arm, flywheels, feeder);
-            }
-            case COMPBOT -> {
-                // No impl yet
+        if (Constants.getMode() != Constants.Mode.REPLAY) {
+            switch (Constants.getRobot()) {
+                case DEVBOT -> {
+                    drive =
+                            new Drive(
+                                    new GyroIOPigeon2(false),
+                                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[0]),
+                                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
+                                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
+                                    new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
+                    arm = new Arm(new ArmIOKrakenFOC());
+                    flywheels = new Flywheels(new FlywheelsIOSparkFlex());
+                    aprilTagVision =
+                            new AprilTagVision(
+                                    new AprilTagVisionIONorthstar(
+                                            AprilTagVisionConstants.instanceNames[0],
+                                            AprilTagVisionConstants.cameraIds[0]),
+                                    new AprilTagVisionIONorthstar(
+                                            AprilTagVisionConstants.instanceNames[1],
+                                            AprilTagVisionConstants.cameraIds[1]));
+                    // intake = new Intake(new IntakeIOSparkMax());
+                    superstructure = new DevBotSuperstructure(arm, flywheels);
+                }
+                case SIMBOT -> {
+                    drive =
+                            new Drive(
+                                    new GyroIO() {},
+                                    new ModuleIOSim(DriveConstants.moduleConfigs[0]),
+                                    new ModuleIOSim(DriveConstants.moduleConfigs[1]),
+                                    new ModuleIOSim(DriveConstants.moduleConfigs[2]),
+                                    new ModuleIOSim(DriveConstants.moduleConfigs[3]));
+                    arm = new Arm(new ArmIOSim());
+                    flywheels = new Flywheels(new FlywheelsIOSim());
+                    intake = new Intake(new IntakeIOSim());
+                    superstructure = new DevBotSuperstructure(arm, flywheels);
+                }
+                case COMPBOT -> {
+                    // No impl yet
+                }
             }
         }
 
@@ -121,7 +129,12 @@ public class RobotContainer {
         }
 
         if (aprilTagVision == null) {
-            aprilTagVision = new AprilTagVision();
+            switch (Constants.getRobot()) {
+                case DEVBOT ->
+                        aprilTagVision =
+                                new AprilTagVision(new AprilTagVisionIO() {}, new AprilTagVisionIO() {});
+                default -> aprilTagVision = new AprilTagVision();
+            }
         }
 
         if (flywheels == null) {
@@ -134,6 +147,10 @@ public class RobotContainer {
 
         if (arm == null) {
             arm = new Arm(new ArmIO() {});
+        }
+
+        if (superstructure == null) {
+            superstructure = new DevBotSuperstructure(arm, flywheels);
         }
 
         autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -213,12 +230,24 @@ public class RobotContainer {
 
             Trigger readyToShootTrigger =
                     new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
+            readyToShootTrigger
+                    .whileTrue(
+                            Commands.run(
+                                    () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
+                    .whileFalse(
+                            Commands.run(
+                                    () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
             controller
                     .rightTrigger()
                     .and(readyToShootTrigger)
                     .onTrue(
                             Commands.runOnce(
-                                    () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.SHOOT)));
+                                            () -> superstructure.setGoalState(DevBotSuperstructure.SystemState.SHOOT))
+                                    .andThen(Commands.waitSeconds(0.5))
+                                    .andThen(
+                                            Commands.runOnce(
+                                                    () ->
+                                                            superstructure.setGoalState(DevBotSuperstructure.SystemState.IDLE))));
 
             controller
                     .leftBumper()

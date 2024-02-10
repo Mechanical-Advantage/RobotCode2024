@@ -61,13 +61,13 @@ public class ArmIOKrakenFOC implements ArmIO {
 
         controllerConfig =
                 new Slot0Configs()
-                        .withKP(controllerConstants.kP())
-                        .withKI(controllerConstants.kI())
-                        .withKD(controllerConstants.kD())
-                        .withKS(controllerConstants.ffkS())
-                        .withKV(controllerConstants.ffkV())
-                        .withKA(controllerConstants.ffkA())
-                        .withKG(controllerConstants.ffkG())
+                        .withKP(gains.kP())
+                        .withKI(gains.kI())
+                        .withKD(gains.kD())
+                        .withKS(gains.ffkS())
+                        .withKV(gains.ffkV())
+                        .withKA(gains.ffkA())
+                        .withKG(gains.ffkG())
                         .withGravityType(GravityTypeValue.Arm_Cosine);
         leaderConfig.Slot0 = controllerConfig;
 

@@ -75,11 +75,11 @@ public class SuperstructureConstants {
                     default -> Units.inchesToMeters(25.866);
                 };
 
-        public static ControllerConstants controllerConstants =
+        public static Gains gains =
                 switch (Constants.getRobot()) {
-                    case SIMBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.02, 1.0, 0.0, 0.01);
-                    case DEVBOT -> new ControllerConstants(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
-                    case COMPBOT -> new ControllerConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+                    case SIMBOT -> new Gains(0.0, 0.0, 0.0, 0.02, 1.0, 0.0, 0.01);
+                    case DEVBOT -> new Gains(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
+                    case COMPBOT -> new Gains(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
                 };
 
         public static ProfileConstraints profileConstraints = new ProfileConstraints(2 * Math.PI, 10);
@@ -87,7 +87,7 @@ public class SuperstructureConstants {
         public record ProfileConstraints(
                 double cruiseVelocityRadPerSec, double accelerationRadPerSec2) {}
 
-        public record ControllerConstants(
+        public record Gains(
                 double kP, double kI, double kD, double ffkS, double ffkV, double ffkA, double ffkG) {}
     }
 }

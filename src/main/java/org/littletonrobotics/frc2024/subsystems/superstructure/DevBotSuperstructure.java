@@ -47,7 +47,6 @@ public class DevBotSuperstructure extends SubsystemBase {
     private final Feeder feeder;
 
     private final Timer followThroughTimer = new Timer();
-    private double followThroughArmAngle = 0.0;
 
     public DevBotSuperstructure(Arm arm, Flywheels flywheels, Feeder feeder) {
         this.arm = arm;
@@ -79,6 +78,7 @@ public class DevBotSuperstructure extends SubsystemBase {
                 } else if (atShootingSetpoint()) {
                     currentState = SystemState.SHOOT;
                     followThroughTimer.restart();
+                    goalState = SystemState.IDLE;
                 }
             }
         }
@@ -102,6 +102,7 @@ public class DevBotSuperstructure extends SubsystemBase {
                                 FieldConstants.Speaker.centerSpeakerOpening.getZ()
                                         + Units.inchesToMeters(yCompensation.get())));
                 flywheels.setSetpointRpm(shootingLeftRPM.get(), shootingRightRPM.get());
+                feeder.runVolts(0.0);
             }
             case SHOOT -> {
                 feeder.runVolts(2.0);
@@ -114,6 +115,6 @@ public class DevBotSuperstructure extends SubsystemBase {
 
     @AutoLogOutput(key = "DevBotSuperstructure/ReadyToShoot")
     public boolean atShootingSetpoint() {
-        return arm.atSetpoint() && flywheels.atSetpoint();
+        return flywheels.atSetpoint();
     }
 }

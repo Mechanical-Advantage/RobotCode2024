@@ -34,15 +34,15 @@ public class ArmIOSim implements ArmIO {
     public ArmIOSim() {
         ff =
                 new ArmFeedforward(
-                        controllerConstants.ffkS(),
-                        controllerConstants.ffkG(),
-                        controllerConstants.ffkV(),
-                        controllerConstants.ffkA());
+                        gains.ffkS(),
+                        gains.ffkG(),
+                        gains.ffkV(),
+                        gains.ffkA());
         profiledController =
                 new ProfiledPIDController(
-                        controllerConstants.kP(),
-                        controllerConstants.kI(),
-                        controllerConstants.kD(),
+                        gains.kP(),
+                        gains.kI(),
+                        gains.kD(),
                         new TrapezoidProfile.Constraints(
                                 profileConstraints.cruiseVelocityRadPerSec(),
                                 profileConstraints.accelerationRadPerSec2()),

@@ -16,18 +16,14 @@ package org.littletonrobotics.frc2024;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import java.io.File;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
+import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
@@ -51,8 +47,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.intake.IntakeIOSim;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
-import org.littletonrobotics.frc2024.util.trajectory.ChoreoTrajectoryDeserializer;
-import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -168,6 +162,7 @@ public class RobotContainer {
         }
 
         autoChooser = new LoggedDashboardChooser<>("Auto Choices");
+        autoChooser.addDefaultOption("Do Nothing", Commands.none());
         // Set up feedforward characterization
         autoChooser.addOption(
                 "Drive FF Characterization",
@@ -188,24 +183,30 @@ public class RobotContainer {
                         flywheels::getRightCharacterizationVelocity));
         autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
 
+        AutoCommands autoCommands = new AutoCommands(drive, superstructure);
+
+        autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+
         // Testing autos paths
-        Function<File, Optional<Command>> trajectoryCommandFactory =
-                trajectoryFile -> {
-                    Optional<HolonomicTrajectory> trajectory =
-                            ChoreoTrajectoryDeserializer.deserialize(trajectoryFile);
-                    return trajectory.map(
-                            traj ->
-                                    Commands.runOnce(
-                                                    () -> robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
-                                            .andThen(Commands.runOnce(() -> drive.setTrajectoryGoal(traj)))
-                                            .until(drive::isTrajectoryGoalCompleted));
-                };
-        final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
-        for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
-            trajectoryCommandFactory
-                    .apply(trajectoryFile)
-                    .ifPresent(command -> autoChooser.addOption(trajectoryFile.getName(), command));
-        }
+        // Function<File, Optional<Command>> trajectoryCommandFactory =
+        //         trajectoryFile -> {
+        //             Optional<HolonomicTrajectory> trajectory =
+        //                     ChoreoTrajectoryDeserializer.deserialize(trajectoryFile);
+        //             return trajectory.map(
+        //                     traj ->
+        //                             Commands.runOnce(
+        //                                             () ->
+        // robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
+        //                                     .andThen(Commands.runOnce(() ->
+        // drive.setTrajectoryGoal(traj)))
+        //                                     .until(drive::isTrajectoryGoalCompleted));
+        //         };
+        // final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
+        // for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
+        //     trajectoryCommandFactory
+        //             .apply(trajectoryFile)
+        //             .ifPresent(command -> autoChooser.addOption(trajectoryFile.getName(), command));
+        // }
 
         // Configure the button bindings
         configureButtonBindings();

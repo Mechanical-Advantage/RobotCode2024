@@ -1,50 +1,44 @@
 package org.littletonrobotics.frc2024.commands.auto;
 
-import edu.wpi.first.math.geometry.Translation2d;
+import static edu.wpi.first.wpilibj2.command.Commands.*;
+
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
+import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 
 public class AutoCommands {
+    private Drive drive;
+    private Superstructure superstructure;
 
-    public static boolean inRegion(Supplier<Region> region) {
-        return region.get().contains(RobotState.getInstance().getEstimatedPose().getTranslation());
+    public AutoCommands(Drive drive, Superstructure superstructure) {
+        this.drive = drive;
+        this.superstructure = superstructure;
     }
 
-    public static Command waitForRegion(Supplier<Region> region) {
-        return Commands.waitUntil(() -> inRegion(region));
+    private Command path(String pathName) {
+        HolonomicTrajectory trajectory = new HolonomicTrajectory(pathName);
+
+        return startEnd(
+                        () -> {
+                            drive.setTrajectoryGoal(trajectory);
+                        },
+                        () -> {
+                            drive.clearTrajectoryGoal();
+                        })
+                .until(() -> drive.isTrajectoryGoalCompleted());
     }
 
-    public interface Region {
-        boolean contains(Translation2d point);
+    private Command reset(String path) {
+        HolonomicTrajectory trajectory = new HolonomicTrajectory(path);
+        return runOnce(
+                () ->
+                        RobotState.getInstance().resetPose(AllianceFlipUtil.apply(trajectory.getStartPose())));
     }
 
-    public static class RectangularRegion implements Region {
-        public final Translation2d topLeft;
-        public final Translation2d bottomRight;
-
-        public RectangularRegion(Translation2d topLeft, Translation2d bottomRight) {
-            this.topLeft = topLeft;
-            this.bottomRight = bottomRight;
-        }
-
-        public RectangularRegion(Translation2d center, double width, double height) {
-            topLeft = new Translation2d(center.getX() - width / 2, center.getY() + height / 2);
-            bottomRight = new Translation2d(center.getX() + width / 2, center.getY() - height / 2);
-        }
-
-        public boolean contains(Translation2d point) {
-            return point.getX() >= topLeft.getX()
-                    && point.getX() <= bottomRight.getX()
-                    && point.getY() <= topLeft.getY()
-                    && point.getY() >= bottomRight.getY();
-        }
-    }
-
-    public record CircularRegion(Translation2d center, double radius) implements Region {
-        public boolean contains(Translation2d point) {
-            return center.getDistance(point) <= radius;
-        }
+    public Command driveStraight() {
+        return reset("driveStraight").andThen(path("driveStraight"));
     }
 }

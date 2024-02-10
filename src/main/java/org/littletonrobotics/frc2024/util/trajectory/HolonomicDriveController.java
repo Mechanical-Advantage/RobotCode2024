@@ -1,25 +1,16 @@
 package org.littletonrobotics.frc2024.util.trajectory;
 
+import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.*;
+
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import lombok.Getter;
-import lombok.Setter;
 
 public class HolonomicDriveController {
     private final PIDController linearController;
     private final PIDController thetaController;
-
-    private HolonomicTrajectory.State currentState = null;
-
-    /** -- SETTER -- Set tolerance for goal state */
-    @Setter private HolonomicTrajectory.State goalTolerance = null;
-
-    private Pose2d controllerTolerance = null;
-
-    /** -- SETTER -- Set goal state */
-    @Setter private HolonomicTrajectory.State goalState = null;
 
     @Getter private Pose2d poseError;
 
@@ -53,59 +44,32 @@ public class HolonomicDriveController {
     }
 
     /** Calculate robot relative chassis speeds */
-    public ChassisSpeeds calculate(
-            HolonomicTrajectory.State currentState, HolonomicTrajectory.State setpointState) {
-        this.currentState = currentState;
-        Pose2d setpointPose = setpointState.pose();
-        poseError = setpointPose.relativeTo(currentState.pose());
+    public ChassisSpeeds calculate(VehicleState currentState, VehicleState setpointState) {
+        Pose2d currentPose =
+                new Pose2d(
+                        currentState.getX(), currentState.getY(), new Rotation2d(currentState.getTheta()));
+        Pose2d setpointPose =
+                new Pose2d(
+                        setpointState.getX(), setpointState.getY(), new Rotation2d(setpointState.getTheta()));
+        poseError = setpointPose.relativeTo(currentPose);
 
         // Calculate feedback velocities (based on position error).
         double linearFeedback =
                 linearController.calculate(
-                        0, currentState.pose().getTranslation().getDistance(setpointPose.getTranslation()));
+                        0, currentPose.getTranslation().getDistance(setpointPose.getTranslation()));
         Rotation2d currentToStateAngle =
-                setpointPose.getTranslation().minus(currentState.pose().getTranslation()).getAngle();
+                setpointPose.getTranslation().minus(currentPose.getTranslation()).getAngle();
         double xFeedback = linearFeedback * currentToStateAngle.getCos();
         double yFeedback = linearFeedback * currentToStateAngle.getSin();
         double thetaFeedback =
                 thetaController.calculate(
-                        currentState.pose().getRotation().getRadians(),
-                        setpointPose.getRotation().getRadians());
-        if (atGoal()) {
-            if (linearController.atSetpoint()) {
-                xFeedback = 0;
-                yFeedback = 0;
-            }
-            if (thetaController.atSetpoint()) {
-                thetaFeedback = 0;
-            }
-        }
+                        currentPose.getRotation().getRadians(), setpointPose.getRotation().getRadians());
 
         // Return next output.
         return ChassisSpeeds.fromFieldRelativeSpeeds(
-                setpointState.velocityX() + xFeedback,
-                setpointState.velocityY() + yFeedback,
-                setpointState.angularVelocity() + thetaFeedback,
-                currentState.pose().getRotation());
-    }
-
-    public boolean atSetpoint() {
-        return linearController.atSetpoint() && thetaController.atSetpoint();
-    }
-
-    /** Within tolerance of current goal */
-    public boolean atGoal() {
-        Pose2d goalPoseError = goalState.pose().relativeTo(currentState.pose());
-        boolean withinPoseTolerance =
-                goalPoseError.getTranslation().getNorm() <= goalTolerance.pose().getTranslation().getNorm()
-                        && Math.abs(goalPoseError.getRotation().getRadians())
-                                <= goalTolerance.pose().getRotation().getRadians();
-        boolean withinVelocityTolerance =
-                Math.abs(currentState.velocityX() - goalState.velocityX()) < goalTolerance.velocityX()
-                        && Math.abs(currentState.velocityY() - goalState.velocityY())
-                                < goalTolerance.velocityY()
-                        && Math.abs(currentState.angularVelocity() - goalState.angularVelocity())
-                                < goalTolerance.angularVelocity();
-        return withinPoseTolerance && withinVelocityTolerance;
+                setpointState.getVx() + xFeedback,
+                setpointState.getVy() + yFeedback,
+                setpointState.getOmega() + thetaFeedback,
+                currentPose.getRotation());
     }
 }

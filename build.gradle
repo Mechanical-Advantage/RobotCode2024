@@ -111,7 +111,7 @@ task(generateDriveTrajectories, dependsOn: "classes", type: JavaExec) {
     mainClass = "org.littletonrobotics.frc2024.subsystems.drive.trajectory.GenerateTrajectories"
     classpath = sourceSets.main.runtimeClasspath
 }
-//compileJava.finalizedBy generateDriveTrajectories
+compileJava.finalizedBy generateDriveTrajectories
 
 // Check robot type when deploying
 task(checkRobot, dependsOn: "classes", type: JavaExec) {
@@ -171,6 +171,7 @@ dependencies {
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
     runtimeOnly "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    implementation "com.google.guava:guava:31.1-jre"
 
     def akitJson = new groovy.json.JsonSlurper().parseText(new File(projectDir.getAbsolutePath() + "/vendordeps/AdvantageKit.json").text)
     annotationProcessor "org.littletonrobotics.akit.junction:junction-autolog:$akitJson.version"

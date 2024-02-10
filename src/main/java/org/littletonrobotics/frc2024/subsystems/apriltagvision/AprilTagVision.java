@@ -11,11 +11,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Quaternion;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.Timer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
@@ -190,14 +186,17 @@ public class AprilTagVision extends VirtualSubsystem {
 
             // If no frames from instances, clear robot pose
             if (inputs[instanceIndex].timestamps.length == 0) {
-                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose", new double[] {});
+                //noinspection RedundantArrayCreation
+                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose", new Pose2d[] {});
+                //noinspection RedundantArrayCreation
                 Logger.recordOutput(
-                        "AprilTagVision/Inst" + instanceIndex + "/RobotPose3d", new double[] {});
+                        "AprilTagVision/Inst" + instanceIndex + "/RobotPose3d", new Pose3d[] {});
             }
 
             // If no recent frames from instance, clear tag poses
             if (Timer.getFPGATimestamp() - lastFrameTimes.get(instanceIndex) > targetLogTimeSecs) {
-                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/TagPoses", new double[] {});
+                //noinspection RedundantArrayCreation
+                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/TagPoses", new Pose3d[] {});
             }
         }
 
@@ -216,7 +215,9 @@ public class AprilTagVision extends VirtualSubsystem {
 
         // Send results to robot state
         if (enableVisionUpdates) {
-            allVisionObservations.forEach(robotState::addVisionObservation);
+            allVisionObservations.stream()
+                    .sorted(Comparator.comparingDouble(VisionObservation::timestamp))
+                    .forEach(robotState::addVisionObservation);
         }
     }
 }

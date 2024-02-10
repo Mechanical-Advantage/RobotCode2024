@@ -28,9 +28,9 @@ public class Flywheels extends SubsystemBase {
             new LoggedTunableNumber("Superstructure/IdleRightRPM", 200.0);
 
     private static LoggedTunableNumber intakingLeftRPM =
-            new LoggedTunableNumber("Superstructure/IdleLeftRPM", 2000.0);
+            new LoggedTunableNumber("Superstructure/IntakingLeftRPM", -2000.0);
     private static LoggedTunableNumber intakingRightRPM =
-            new LoggedTunableNumber("Superstructure/IdleRightRPM", -2000.0);
+            new LoggedTunableNumber("Superstructure/IntakingRightRPM", -2000.0);
     private static final LoggedTunableNumber shooterTolerance =
             new LoggedTunableNumber("Flywheels/ToleranceRPM", shooterToleranceRPM);
 

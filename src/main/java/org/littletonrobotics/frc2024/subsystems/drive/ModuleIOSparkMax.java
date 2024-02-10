@@ -78,10 +78,11 @@ public class ModuleIOSparkMax implements ModuleIO {
 
             driveMotor.setPeriodicFramePeriod(PeriodicFrame.kStatus2, (int) (1000.0 / odometryFrequency));
             turnMotor.setPeriodicFramePeriod(PeriodicFrame.kStatus2, (int) (1000.0 / odometryFrequency));
-
-            if (driveMotor.burnFlash().equals(REVLibError.kOk)
-                    && turnMotor.burnFlash().equals(REVLibError.kOk)) break;
         }
+
+        driveMotor.burnFlash();
+        turnMotor.burnFlash();
+
         driveMotor.setCANTimeout(0);
         turnMotor.setCANTimeout(0);
 

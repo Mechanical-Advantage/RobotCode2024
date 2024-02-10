@@ -12,7 +12,7 @@ public class GenerateTrajectories {
     public static void main(String[] args) {
         Constants.disableHAL();
         var channel =
-                Grpc.newChannelBuilder("10.63.28.184:56328", InsecureChannelCredentials.create()).build();
+                Grpc.newChannelBuilder("127.0.0.1:56328", InsecureChannelCredentials.create()).build();
         var service = VehicleTrajectoryServiceGrpc.newBlockingStub(channel);
 
         VehicleModel model =

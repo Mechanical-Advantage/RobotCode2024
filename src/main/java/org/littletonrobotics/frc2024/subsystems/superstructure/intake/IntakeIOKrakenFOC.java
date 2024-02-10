@@ -56,7 +56,7 @@ public class IntakeIOKrakenFOC implements IntakeIO {
     }
 
     @Override
-    public void setVoltage(double volts) {
+    public void runVolts(double volts) {
         motor.setControl(new VoltageOut(volts).withEnableFOC(true));
         otherMotor.setControl(new VoltageOut(volts).withEnableFOC(true));
     }

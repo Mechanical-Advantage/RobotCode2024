@@ -5,7 +5,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.RobotState;
-import org.littletonrobotics.frc2024.subsystems.superstructure.intake.Intake;
 
 public class AutoCommands {
 
@@ -15,14 +14,6 @@ public class AutoCommands {
 
     public static Command waitForRegion(Supplier<Region> region) {
         return Commands.waitUntil(() -> inRegion(region));
-    }
-
-    public static Command intakeWhileInRegion(Intake intake, Supplier<Region> region) {
-        return Commands.sequence(
-                Commands.waitUntil(() -> inRegion(region)),
-                intake.intakeCommand(),
-                Commands.waitUntil(() -> !inRegion(region)),
-                intake.stopCommand());
     }
 
     public interface Region {

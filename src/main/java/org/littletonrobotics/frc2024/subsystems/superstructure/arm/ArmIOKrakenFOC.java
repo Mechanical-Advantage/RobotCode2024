@@ -55,7 +55,7 @@ public class ArmIOKrakenFOC implements ArmIO {
                 leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
         leaderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         leaderConfig.Feedback.FeedbackRemoteSensorID = armEncoderID;
-        leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+        leaderConfig.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.SyncCANcoder;
         leaderConfig.Feedback.SensorToMechanismRatio = 1.0;
         leaderConfig.Feedback.RotorToSensorRatio = reduction;
 

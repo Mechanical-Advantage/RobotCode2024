@@ -30,13 +30,8 @@ public class IntakeIOSparkMax implements IntakeIO {
     }
 
     @Override
-    public void setVoltage(double volts) {
+    public void runVolts(double volts) {
         motor.setVoltage(volts);
-    }
-
-    @Override
-    public void setBrakeMode(boolean enabled) {
-        motor.setIdleMode(enabled ? CANSparkMax.IdleMode.kBrake : CANSparkMax.IdleMode.kCoast);
     }
 
     @Override

@@ -14,6 +14,7 @@ public class FeederIOSparkFlex implements FeederIO {
     public FeederIOSparkFlex() {
         motor = new CANSparkFlex(id, CANSparkBase.MotorType.kBrushless);
 
+        motor.setSmartCurrentLimit(80);
         motor.setInverted(inverted);
         motor.setIdleMode(CANSparkBase.IdleMode.kBrake);
 

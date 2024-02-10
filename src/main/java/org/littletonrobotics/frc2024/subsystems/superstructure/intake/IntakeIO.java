@@ -15,10 +15,7 @@ public interface IntakeIO {
     default void updateInputs(IntakeIOInputs inputs) {}
 
     /** Set voltage of intake */
-    default void setVoltage(double volts) {}
-
-    /** Set brake mode of intake */
-    default void setBrakeMode(boolean enabled) {}
+    default void runVolts(double volts) {}
 
     /** Stop intake */
     default void stop() {}

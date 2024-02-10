@@ -1,26 +1,29 @@
 package org.littletonrobotics.frc2024.subsystems.superstructure.intake;
 
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import lombok.Getter;
+import lombok.Setter;
+import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 public class Intake extends SubsystemBase {
-    private final LoggedDashboardNumber intakeVoltage =
-            new LoggedDashboardNumber("Intake/intakeVoltage", 8.0);
+    private final LoggedTunableNumber intakeVolts =
+            new LoggedTunableNumber("Intake/intakeVoltage", 8.0);
+    private final LoggedTunableNumber ejectVolts = new LoggedTunableNumber("Intake/ejectVolts", -2.0);
     private final IntakeIO io;
     private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
-    private boolean intake = false;
-    private boolean eject = false;
+    public enum Goal {
+        IDLE,
+        INTAKE,
+        REVERSE_INTAKE
+    }
+
+    @Setter @Getter Goal goal = Goal.IDLE;
 
     public Intake(IntakeIO io) {
         System.out.println("[Init] Creating Intake");
         this.io = io;
-        // TODO: test if this is needed
-        io.setBrakeMode(false);
     }
 
     @Override
@@ -28,54 +31,10 @@ public class Intake extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Intake", inputs);
 
-        if (DriverStation.isDisabled()) {
-            stop();
-        } else {
-            if (intake) {
-                io.setVoltage(intakeVoltage.get());
-            } else if (eject) {
-                io.setVoltage(-intakeVoltage.get());
-            }
+        switch (goal) {
+            case IDLE -> io.stop();
+            case INTAKE -> io.runVolts(intakeVolts.get());
+            case REVERSE_INTAKE -> io.runVolts(ejectVolts.get());
         }
-    }
-
-    public boolean intaking() {
-        return intake;
-    }
-
-    public boolean ejecting() {
-        return eject;
-    }
-
-    public boolean running() {
-        return eject || intake;
-    }
-
-    private void intake() {
-        intake = true;
-        eject = false;
-    }
-
-    private void eject() {
-        eject = true;
-        intake = false;
-    }
-
-    private void stop() {
-        intake = false;
-        eject = false;
-        io.stop();
-    }
-
-    public Command intakeCommand() {
-        return Commands.runOnce(this::intake);
-    }
-
-    public Command ejectCommand() {
-        return Commands.runOnce(this::eject);
-    }
-
-    public Command stopCommand() {
-        return Commands.runOnce(this::stop);
     }
 }

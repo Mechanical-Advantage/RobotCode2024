@@ -106,7 +106,7 @@ public class RobotContainer {
                                             AprilTagVisionConstants.instanceNames[1],
                                             AprilTagVisionConstants.cameraIds[1]));
                     intake = new Intake(new IntakeIOKrakenFOC());
-                    superstructure = new Superstructure(arm, flywheels, feeder);
+                    superstructure = new Superstructure(arm, flywheels, feeder, intake);
                 }
                 case SIMBOT -> {
                     drive =
@@ -120,7 +120,7 @@ public class RobotContainer {
                     flywheels = new Flywheels(new FlywheelsIOSim());
                     intake = new Intake(new IntakeIOSim());
                     feeder = new Feeder(new FeederIOSim());
-                    superstructure = new Superstructure(arm, flywheels, feeder);
+                    superstructure = new Superstructure(arm, flywheels, feeder, intake);
                 }
                 case COMPBOT -> {
                     // No impl yet
@@ -164,7 +164,7 @@ public class RobotContainer {
         }
 
         if (superstructure == null) {
-            superstructure = new Superstructure(arm, flywheels, feeder);
+            superstructure = new Superstructure(arm, flywheels, feeder, intake);
         }
 
         autoChooser = new LoggedDashboardChooser<>("Auto Choices");
@@ -224,8 +224,6 @@ public class RobotContainer {
                                 drive.setTeleopDriveGoal(
                                         -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX())));
 
-        controller.rightBumper().onTrue(intake.intakeCommand()).onFalse(intake.stopCommand());
-
         controller
                 .leftTrigger()
                 .onTrue(Commands.runOnce(drive::setAutoAimGoal))
@@ -263,7 +261,15 @@ public class RobotContainer {
                     .leftBumper()
                     .onTrue(
                             Commands.runOnce(
-                                    () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE)))
+                                    () -> superstructure.setGoalState(Superstructure.SystemState.STATION_INTAKE)))
+                    .onFalse(
+                            Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
+
+            controller
+                    .a()
+                    .onTrue(
+                            Commands.runOnce(
+                                    () -> superstructure.setGoalState(Superstructure.SystemState.REVERSE_INTAKE)))
                     .onFalse(
                             Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
         }

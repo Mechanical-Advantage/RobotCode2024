@@ -154,6 +154,8 @@ public class Robot extends LoggedRobot {
                 autoMessagePrinted = true;
             }
         }
+
+        Threads.setCurrentThreadPriority(true, 10);
     }
 
     /** This function is called once when the robot is disabled. */

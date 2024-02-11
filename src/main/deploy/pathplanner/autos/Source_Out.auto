@@ -16,12 +16,6 @@
           "data": {
             "pathName": "SO_Path"
           }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "SO_EndAngle"
-          }
         }
       ]
     }

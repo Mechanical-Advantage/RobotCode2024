@@ -145,6 +145,8 @@ public class RobotContainer {
                 .andThen(new LaunchNote(shooter, hopper))
                 .handleInterrupt(() -> shooter.stop()));
     controller.b().whileTrue(new IntakeNote(shooter, hopper).handleInterrupt(() -> shooter.stop()));
+    controller.x().whileTrue(new TurnToSpeaker(drive));
+    controller.y().whileTrue(AutoBuilder.buildAuto("Reset_Odometry"));
   }
 
   /**

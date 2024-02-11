@@ -13,6 +13,8 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.util.Units;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -27,9 +29,10 @@ public final class Constants {
   public static final double SHOOTER_DELAY = 1;
   public static final double INTAKE_SHOOTER_VOLTS = -8.0;
   public static final double INTAKE_HOPPER_VOLTS = -4.0;
-
   public static final double TICKS_PER_REVOLUTION = 1440;
   public static final Mode currentMode = Mode.REAL;
+  public static final double FIELD_LENGTH = Units.inchesToMeters(651.223);
+  public static final double SPEAKER_Y = Units.inchesToMeters(219.277);
 
   public static enum Mode {
     /** Running on a real robot. */

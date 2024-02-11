@@ -186,11 +186,8 @@ public class AprilTagVision extends VirtualSubsystem {
 
             // If no frames from instances, clear robot pose
             if (inputs[instanceIndex].timestamps.length == 0) {
-                //noinspection RedundantArrayCreation
-                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose", new Pose2d[] {});
-                //noinspection RedundantArrayCreation
-                Logger.recordOutput(
-                        "AprilTagVision/Inst" + instanceIndex + "/RobotPose3d", new Pose3d[] {});
+                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose", new Pose2d());
+                Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose3d", new Pose3d());
             }
 
             // If no recent frames from instance, clear tag poses

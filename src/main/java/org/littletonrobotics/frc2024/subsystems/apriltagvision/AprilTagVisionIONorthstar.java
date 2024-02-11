@@ -18,78 +18,78 @@ import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.util.Alert;
 
 public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
-    private static final int cameraResolutionWidth = 1600;
-    private static final int cameraResolutionHeight = 1200;
-    private static final int cameraAutoExposure = 1;
-    private static final int cameraExposure = 10;
-    private static final int cameraGain = 25;
+  private static final int cameraResolutionWidth = 1600;
+  private static final int cameraResolutionHeight = 1200;
+  private static final int cameraAutoExposure = 1;
+  private static final int cameraExposure = 10;
+  private static final int cameraGain = 25;
 
-    private final DoubleArraySubscriber observationSubscriber;
-    private final DoubleArraySubscriber demoObservationSubscriber;
-    private final IntegerSubscriber fpsSubscriber;
+  private final DoubleArraySubscriber observationSubscriber;
+  private final DoubleArraySubscriber demoObservationSubscriber;
+  private final IntegerSubscriber fpsSubscriber;
 
-    private static final double disconnectedTimeout = 0.5;
-    private final Alert disconnectedAlert;
-    private final Timer disconnectedTimer = new Timer();
-    private final String identifier;
+  private static final double disconnectedTimeout = 0.5;
+  private final Alert disconnectedAlert;
+  private final Timer disconnectedTimer = new Timer();
+  private final String identifier;
 
-    public AprilTagVisionIONorthstar(String instanceId, String cameraId) {
-        this.identifier = instanceId;
-        System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + instanceId + ")");
-        var northstarTable = NetworkTableInstance.getDefault().getTable(instanceId);
+  public AprilTagVisionIONorthstar(String instanceId, String cameraId) {
+    this.identifier = instanceId;
+    System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + instanceId + ")");
+    var northstarTable = NetworkTableInstance.getDefault().getTable(instanceId);
 
-        var configTable = northstarTable.getSubTable("config");
-        configTable.getStringTopic("camera_id").publish().set(cameraId);
-        configTable.getIntegerTopic("camera_resolution_width").publish().set(cameraResolutionWidth);
-        configTable.getIntegerTopic("camera_resolution_height").publish().set(cameraResolutionHeight);
-        configTable.getIntegerTopic("camera_auto_exposure").publish().set(cameraAutoExposure);
-        configTable.getIntegerTopic("camera_exposure").publish().set(cameraExposure);
-        configTable.getIntegerTopic("camera_gain").publish().set(cameraGain);
-        configTable.getDoubleTopic("fiducial_size_m").publish().set(FieldConstants.aprilTagWidth);
-        try {
-            configTable
-                    .getStringTopic("tag_layout")
-                    .publish()
-                    .set(new ObjectMapper().writeValueAsString(FieldConstants.aprilTags));
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize AprilTag layout JSON for Northstar");
-        }
-
-        var outputTable = northstarTable.getSubTable("output");
-        observationSubscriber =
-                outputTable
-                        .getDoubleArrayTopic("observations")
-                        .subscribe(
-                                new double[] {}, PubSubOption.keepDuplicates(true), PubSubOption.sendAll(true));
-        demoObservationSubscriber =
-                outputTable
-                        .getDoubleArrayTopic("demo_observations")
-                        .subscribe(
-                                new double[] {}, PubSubOption.keepDuplicates(true), PubSubOption.sendAll(true));
-        fpsSubscriber = outputTable.getIntegerTopic("fps").subscribe(0);
-
-        disconnectedAlert = new Alert("No data from \"" + instanceId + "\"", Alert.AlertType.ERROR);
-        disconnectedTimer.start();
+    var configTable = northstarTable.getSubTable("config");
+    configTable.getStringTopic("camera_id").publish().set(cameraId);
+    configTable.getIntegerTopic("camera_resolution_width").publish().set(cameraResolutionWidth);
+    configTable.getIntegerTopic("camera_resolution_height").publish().set(cameraResolutionHeight);
+    configTable.getIntegerTopic("camera_auto_exposure").publish().set(cameraAutoExposure);
+    configTable.getIntegerTopic("camera_exposure").publish().set(cameraExposure);
+    configTable.getIntegerTopic("camera_gain").publish().set(cameraGain);
+    configTable.getDoubleTopic("fiducial_size_m").publish().set(FieldConstants.aprilTagWidth);
+    try {
+      configTable
+          .getStringTopic("tag_layout")
+          .publish()
+          .set(new ObjectMapper().writeValueAsString(FieldConstants.aprilTags));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException("Failed to serialize AprilTag layout JSON for Northstar");
     }
 
-    public void updateInputs(AprilTagVisionIOInputs inputs) {
-        var queue = observationSubscriber.readQueue();
-        inputs.timestamps = new double[queue.length];
-        inputs.frames = new double[queue.length][];
-        for (int i = 0; i < queue.length; i++) {
-            inputs.timestamps[i] = queue[i].timestamp / 1000000.0;
-            inputs.frames[i] = queue[i].value;
-        }
-        inputs.demoFrame = new double[] {};
-        for (double[] demoFrame : demoObservationSubscriber.readQueueValues()) {
-            inputs.demoFrame = demoFrame;
-        }
-        inputs.fps = fpsSubscriber.get();
+    var outputTable = northstarTable.getSubTable("output");
+    observationSubscriber =
+        outputTable
+            .getDoubleArrayTopic("observations")
+            .subscribe(
+                new double[] {}, PubSubOption.keepDuplicates(true), PubSubOption.sendAll(true));
+    demoObservationSubscriber =
+        outputTable
+            .getDoubleArrayTopic("demo_observations")
+            .subscribe(
+                new double[] {}, PubSubOption.keepDuplicates(true), PubSubOption.sendAll(true));
+    fpsSubscriber = outputTable.getIntegerTopic("fps").subscribe(0);
 
-        // Update disconnected alert
-        if (queue.length > 0) {
-            disconnectedTimer.reset();
-        }
-        disconnectedAlert.set(disconnectedTimer.hasElapsed(disconnectedTimeout));
+    disconnectedAlert = new Alert("No data from \"" + instanceId + "\"", Alert.AlertType.ERROR);
+    disconnectedTimer.start();
+  }
+
+  public void updateInputs(AprilTagVisionIOInputs inputs) {
+    var queue = observationSubscriber.readQueue();
+    inputs.timestamps = new double[queue.length];
+    inputs.frames = new double[queue.length][];
+    for (int i = 0; i < queue.length; i++) {
+      inputs.timestamps[i] = queue[i].timestamp / 1000000.0;
+      inputs.frames[i] = queue[i].value;
     }
+    inputs.demoFrame = new double[] {};
+    for (double[] demoFrame : demoObservationSubscriber.readQueueValues()) {
+      inputs.demoFrame = demoFrame;
+    }
+    inputs.fps = fpsSubscriber.get();
+
+    // Update disconnected alert
+    if (queue.length > 0) {
+      disconnectedTimer.reset();
+    }
+    disconnectedAlert.set(disconnectedTimer.hasElapsed(disconnectedTimeout));
+  }
 }

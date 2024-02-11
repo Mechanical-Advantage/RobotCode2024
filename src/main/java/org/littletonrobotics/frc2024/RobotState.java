@@ -26,11 +26,13 @@ public class RobotState {
 
     public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
 
-    public record AimingParameters(
-            Rotation2d driveHeading, double effectiveDistance, double radialFF) {}
+    public record AimingParameters(Rotation2d driveHeading, Rotation2d armAngle, double radialFF) {}
 
     private static final LoggedTunableNumber lookahead =
             new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
+
+    private static LoggedTunableNumber shotHeightCompensation =
+            new LoggedTunableNumber("Superstructure/CompensationInches", 6.0);
 
     private static final double poseBufferSizeSeconds = 2.0;
 
@@ -176,7 +178,15 @@ public class RobotState {
                 robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
                         - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
-        latestParameters = new AimingParameters(targetVehicleDirection, targetDistance, feedVelocity);
+        latestParameters =
+                new AimingParameters(
+                        targetVehicleDirection,
+                        new Rotation2d(
+                                targetDistance - SuperstructureConstants.ArmConstants.armOrigin.getX(),
+                                FieldConstants.Speaker.centerSpeakerOpening.getZ()
+                                        - SuperstructureConstants.ArmConstants.armOrigin.getY()
+                                        + shotHeightCompensation.get()),
+                        feedVelocity);
         return latestParameters;
     }
 

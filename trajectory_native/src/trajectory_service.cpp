@@ -113,12 +113,14 @@ public:
                             fmt::print("Adding implicit zero velocity constraint to waypoint {}\n",
                                        segment_start_offset + waypoint_idx);
                             builder.WptZeroVelocity(segment_start_offset + waypoint_idx);
+                            builder.WptZeroAngularVelocity(segment_start_offset + waypoint_idx);
                         }
                         break;
                     case vts::Waypoint::kZeroVelocity:
                         fmt::print("Adding zero velocity constraint to waypoint {}\n",
                                    segment_start_offset + waypoint_idx);
                         builder.WptZeroVelocity(segment_start_offset + waypoint_idx);
+                        builder.WptZeroAngularVelocity(segment_start_offset + waypoint_idx);
                         break;
                     case vts::Waypoint::kVehicleVelocity:
                         fmt::print("Adding vehicle velocity constraint ({}, {}, {}) to waypoint {}\n",

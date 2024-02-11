@@ -102,16 +102,17 @@ public class RobotContainer {
         Commands.sequence(
             new PrepareLaunch(shooter, hopper)
                 .withTimeout(Constants.SHOOTER_DELAY)
-                .andThen(new LaunchNote(shooter, hopper).withTimeout(3)),
-            AutoBuilder.buildAuto("Amp_Out")));
+                .andThen(new LaunchNote(shooter, hopper).withTimeout(2)),
+            AutoBuilder.buildAuto("Amp_Out"),
+            new Turn(drive, Rotation2d.fromDegrees(180), true)));
     autoChooser.addOption(
         "Shoot Source Out",
         Commands.sequence(
             new PrepareLaunch(shooter, hopper)
                 .withTimeout(Constants.SHOOTER_DELAY)
-                .andThen(new LaunchNote(shooter, hopper).withTimeout(3)),
-            AutoBuilder.buildAuto("Source_Out")));
-    autoChooser.addOption("Turn", new Turn(drive, Rotation2d.fromDegrees(90), false));
+                .andThen(new LaunchNote(shooter, hopper).withTimeout(2)),
+            AutoBuilder.buildAuto("Source_Out"),
+            new Turn(drive, Rotation2d.fromDegrees(180), true)));
 
     // Configure the button bindings
     configureButtonBindings();

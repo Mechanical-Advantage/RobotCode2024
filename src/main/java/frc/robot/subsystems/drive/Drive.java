@@ -47,7 +47,7 @@ public class Drive extends SubsystemBase {
 
   private static final double rKS = Constants.currentMode == SIM ? 0.0 : 0.88676;
   private static final double rKV = Constants.currentMode == SIM ? 0.227 : 32.08170;
-  private PIDController pid;
+  public PIDController pid = new PIDController(7, 0, 0);
   private final DriveIO io;
   private final GyroIO gyroIO;
   private final DriveIOInputsAutoLogged inputs = new DriveIOInputsAutoLogged();
@@ -63,13 +63,6 @@ public class Drive extends SubsystemBase {
   public Drive(DriveIO io, GyroIO gyroIO) {
     this.io = io;
     this.gyroIO = gyroIO;
-
-    // different PID tuning for SIM
-    if (Constants.currentMode == SIM) {
-      pid = new PIDController(5, 0, 0); //  if SIM
-    } else {
-      pid = new PIDController(10, 0, 0); //  if Kitbot
-    }
 
     AutoBuilder.configureRamsete(
         this::getPose,

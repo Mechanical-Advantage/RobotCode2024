@@ -93,7 +93,7 @@ public:
             const vts::Waypoint *prev_waypoint;
 
             for (int waypoint_idx = 0; waypoint_idx < segment.waypoints_size(); waypoint_idx++) {
-                const vts::Waypoint &waypoint = segment.waypoints(segment_start_offset + waypoint_idx);
+                const vts::Waypoint &waypoint = segment.waypoints(waypoint_idx);
 
                 if (waypoint.has_heading_constraint()) {
                     fmt::print("Adding pose waypoint {} ({}, {}, {})\n", segment_start_offset + waypoint_idx,
@@ -175,10 +175,10 @@ public:
             }
 
             if (segment.straight_line()) {
-                double x1 = segment.waypoints(segment_start_offset).x();
-                double x2 = segment.waypoints(segment_start_offset + last_waypoint_idx).x();
-                double y1 = segment.waypoints(segment_start_offset).y();
-                double y2 = segment.waypoints(segment_start_offset + last_waypoint_idx).y();
+                double x1 = segment.waypoints(0).x();
+                double x2 = segment.waypoints(last_waypoint_idx).x();
+                double y1 = segment.waypoints(0).y();
+                double y2 = segment.waypoints(last_waypoint_idx).y();
                 double angle = atan2(y2 - y1, x2 - x1);
                 fmt::print("Adding straight line constraint with angle {} to segment {} (waypoints {}-{})\n", angle,
                            segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx);

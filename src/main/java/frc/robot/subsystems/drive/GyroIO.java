@@ -4,7 +4,7 @@ import org.littletonrobotics.junction.AutoLog;
 
 public interface GyroIO {
   @AutoLog
-  public static class GyroIOInputs {
+  class GyroIOInputs {
     public boolean connected = false;
     public double yawPositionRad = 0;
     public double pitchPositionRad = 0;
@@ -14,9 +14,11 @@ public interface GyroIO {
     public double rollVelocityRadPerSec = 0.0;
   }
 
-  public default void updateInputs(GyroIOInputs inputs) {}
+  default void updateInputs(GyroIOInputs inputs) {}
 
-  public default double getYawDegrees() {
-    return 0;
+  default void setGyro(GyroIOInputs inputs, double degrees) {
+    inputs.yawPositionRad = Math.toRadians(degrees);
   }
+
+  default void resetGyro() {}
 }

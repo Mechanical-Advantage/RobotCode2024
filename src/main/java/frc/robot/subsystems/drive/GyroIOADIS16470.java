@@ -37,4 +37,13 @@ public class GyroIOADIS16470 implements GyroIO {
     gyroInputs.rollVelocityRadPerSec =
         Units.degreesToRadians(gyro.getRate(ADIS16470_IMU.IMUAxis.kZ));
   }
+
+  public void setGyro(GyroIOInputs inputs, double degrees) {
+    gyro.setGyroAngle(ADIS16470_IMU.IMUAxis.kZ, Math.toRadians(degrees));
+    inputs.yawPositionRad = Math.toRadians(degrees);
+  }
+
+  public void resetGyro() {
+    gyro.reset();
+  }
 }

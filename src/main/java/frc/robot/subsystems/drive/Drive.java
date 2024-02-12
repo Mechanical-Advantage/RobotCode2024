@@ -28,7 +28,6 @@ import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -39,9 +38,8 @@ import org.littletonrobotics.junction.Logger;
 public class Drive extends SubsystemBase {
   public static final double WHEEL_RADIUS = Units.inchesToMeters(3.0);
   public static final double TRACK_WIDTH = Units.inchesToMeters(26.0);
-  public static final double MAX_SPEED_M_PER_S = Units.feetToMeters(10); // TODO find right value
-
-  // Consider using SysId routines defined in RobotContainer
+  public static final double MAX_SPEED_M_PER_S = Units.feetToMeters(10);
+  public static double YAW_DISPLACEMENT = 0;
   private static final double lKS = Constants.currentMode == SIM ? 0.0 : 0.98355;
   private static final double lKV = Constants.currentMode == SIM ? 0.227 : 30.42797;
 
@@ -78,7 +76,7 @@ public class Drive extends SubsystemBase {
         new ReplanningConfig(),
         () ->
             DriverStation.getAlliance().isPresent()
-                && DriverStation.getAlliance().get() == Alliance.Red,
+                && DriverStation.getAlliance().get() == DriverStation.Alliance.Red,
         this);
     Pathfinding.setPathfinder(new LocalADStarAK());
     PathPlannerLogging.setLogActivePathCallback(
@@ -148,6 +146,10 @@ public class Drive extends SubsystemBase {
         getLeftPositionMeters(),
         getRightPositionMeters(),
         pose);
+    gyroIO.setGyro(gyroInputs, pose.getRotation().getDegrees());
+    if (Constants.currentMode == SIM) {
+      YAW_DISPLACEMENT = pose.getRotation().getDegrees();
+    }
   }
 
   /** Returns the position of the left wheels in meters. */

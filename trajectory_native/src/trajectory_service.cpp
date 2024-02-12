@@ -186,7 +186,7 @@ public:
                                               angle);
             }
 
-            segment_start_offset = last_waypoint_idx;
+            segment_start_offset += last_waypoint_idx + 1;
         }
 
         builder.ControlIntervalCounts(std::move(control_intervals));

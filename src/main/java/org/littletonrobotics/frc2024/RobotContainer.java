@@ -252,7 +252,7 @@ public class RobotContainer {
 
     if (superstructure != null) {
       controller
-          .leftTrigger()
+          .a()
           .onTrue(
               Commands.runOnce(
                   () -> superstructure.setGoalState(Superstructure.SystemState.PREPARE_SHOOT)))
@@ -276,8 +276,10 @@ public class RobotContainer {
                       () -> {
                         superstructure.setGoalState(Superstructure.SystemState.SHOOT);
                         rollers.setGoal(Rollers.Goal.FEED_SHOOTER);
-                      })
-                  .andThen(Commands.waitSeconds(0.5))
+                      },
+                      superstructure,
+                      rollers)
+                  .andThen(Commands.waitSeconds(1.0))
                   .andThen(
                       Commands.runOnce(
                           () -> {
@@ -293,7 +295,8 @@ public class RobotContainer {
                       superstructure)
                   .andThen(
                       Commands.waitSeconds(0.25),
-                      Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.FLOOR_INTAKE), rollers))
+                      Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.FLOOR_INTAKE), rollers),
+                      Commands.idle())
                   .finallyDo(
                       () -> {
                         rollers.setGoal(Rollers.Goal.IDLE);
@@ -308,7 +311,8 @@ public class RobotContainer {
                       superstructure)
                   .andThen(
                       Commands.waitSeconds(0.25),
-                      Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.EJECT_TO_FLOOR), rollers))
+                      Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.EJECT_TO_FLOOR), rollers),
+                      Commands.idle())
                   .finallyDo(
                       () -> {
                         rollers.setGoal(Rollers.Goal.IDLE);

@@ -82,7 +82,7 @@ public class Flywheels extends SubsystemBase {
       setGoal(Goal.IDLE);
     } else {
       switch (goal) {
-        case IDLE -> setSetpoint(idleLeftRPM.get(), idleRightRPM.get());
+        case IDLE -> io.stop();
         case INTAKING -> setSetpoint(intakingLeftRPM.get(), intakingRightRPM.get());
         case SHOOTING -> setSetpoint(shootingLeftRPM.get(), shootingRightRPM.get());
       }

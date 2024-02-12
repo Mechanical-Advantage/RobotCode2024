@@ -86,13 +86,13 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
   @Override
   public void runVelocity(double leftRpm, double rightRpm) {
     leftController.setReference(
-        leftRpm,
+        leftRpm * reduction,
         CANSparkBase.ControlType.kVelocity,
         0,
         ff.calculate(leftRpm),
         SparkPIDController.ArbFFUnits.kVoltage);
     rightController.setReference(
-        rightRpm,
+        rightRpm * reduction,
         CANSparkBase.ControlType.kVelocity,
         0,
         ff.calculate(rightRpm),
@@ -126,6 +126,7 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
 
   @Override
   public void stop() {
-    runVelocity(0.0, 0.0);
+    leftMotor.stopMotor();
+    rightMotor.stopMotor();
   }
 }

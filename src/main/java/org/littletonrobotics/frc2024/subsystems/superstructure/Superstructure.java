@@ -21,8 +21,6 @@ public class Superstructure extends SubsystemBase {
       new LoggedTunableNumber("Superstructure/ArmStationIntakeSetpointDegrees", 45.0);
   private static LoggedTunableNumber armIntakeSetpointDegrees =
       new LoggedTunableNumber("Superstructure/ArmIntakeDegrees", 40.0);
-  private static LoggedTunableNumber yCompensation =
-      new LoggedTunableNumber("Superstructure/CompensationMeters", 0.55);
   private static LoggedTunableNumber followThroughTime =
       new LoggedTunableNumber("Superstructure/FollowthroughTimeSecs", 0.5);
 
@@ -57,31 +55,11 @@ public class Superstructure extends SubsystemBase {
   @Override
   public void periodic() {
     switch (goalState) {
-      case IDLE -> {
-        if (currentState == SystemState.SHOOT) {
-          if (followThroughTimer.hasElapsed(followThroughTime.get())) {
-            currentState = SystemState.IDLE;
-            followThroughTimer.stop();
-            followThroughTimer.reset();
-          } else {
-            currentState = SystemState.SHOOT;
-          }
-        } else {
-          currentState = SystemState.IDLE;
-        }
-      }
+      case IDLE -> currentState = SystemState.IDLE;
       case STATION_INTAKE -> currentState = SystemState.STATION_INTAKE;
       case INTAKE -> currentState = SystemState.INTAKE;
       case PREPARE_SHOOT -> currentState = SystemState.PREPARE_SHOOT;
-      case SHOOT -> {
-        if (currentState != SystemState.PREPARE_SHOOT) {
-          currentState = SystemState.PREPARE_SHOOT;
-        } else if (atShootingSetpoint()) {
-          currentState = SystemState.SHOOT;
-          followThroughTimer.restart();
-          goalState = SystemState.IDLE;
-        }
-      }
+      case SHOOT -> currentState = SystemState.SHOOT;
     }
 
     switch (currentState) {
@@ -106,7 +84,9 @@ public class Superstructure extends SubsystemBase {
         flywheels.setGoal(Flywheels.Goal.SHOOTING);
       }
       case SHOOT -> {
-        gamepieceState = GamepieceState.NO_GAMEPIECE;
+        var aimingParams = RobotState.getInstance().getAimingParameters();
+        flywheels.setGoal(Flywheels.Goal.SHOOTING);
+        arm.setSetpoint(aimingParams.armAngle());
       }
     }
 

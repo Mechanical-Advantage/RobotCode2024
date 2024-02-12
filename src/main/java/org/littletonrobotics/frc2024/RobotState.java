@@ -35,7 +35,7 @@ public class RobotState {
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
 
   private static LoggedTunableNumber shotHeightCompensation =
-      new LoggedTunableNumber("Superstructure/CompensationInches", 6.0);
+      new LoggedTunableNumber("RobotState/CompensationMeters", 0.55);
 
   private static final double poseBufferSizeSeconds = 2.0;
 

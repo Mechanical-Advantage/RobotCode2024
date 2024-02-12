@@ -50,7 +50,11 @@ public class Rollers extends SubsystemBase {
       case STATION_INTAKE -> {
         indexer.setGoal(Indexer.Goal.STATION_INTAKING);
       }
-      case FEED_SHOOTER -> indexer.setGoal(Indexer.Goal.SHOOTING);
+      case FEED_SHOOTER -> {
+        indexer.setGoal(Indexer.Goal.SHOOTING);
+        intake.setGoal(Intake.Goal.SHOOTING);
+        feeder.setGoal(Feeder.Goal.SHOOTING);
+      }
       case EJECT_TO_FLOOR -> {
         feeder.setGoal(Feeder.Goal.EJECTING);
         indexer.setGoal(Indexer.Goal.EJECTING);

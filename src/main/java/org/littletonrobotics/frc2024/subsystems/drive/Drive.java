@@ -79,6 +79,9 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
+  private SwerveDriveWheelPositions lastPositions = null;
+  private double lastTime = 0.0;
+
   /** Active drive mode. */
   private DriveMode currentDriveMode = DriveMode.TELEOP;
 
@@ -154,6 +157,7 @@ public class Drive extends SubsystemBase {
     }
     // Pass odometry data to robot state
     for (int i = 0; i < minOdometryUpdates; i++) {
+      boolean includeMeasurement = true;
       int odometryIndex = i;
       Rotation2d yaw = gyroInputs.connected ? gyroInputs.odometryYawPositions[i] : null;
       // Get all four swerve module positions at that odometry update
@@ -163,12 +167,34 @@ public class Drive extends SubsystemBase {
               Arrays.stream(modules)
                   .map(module -> module.getModulePositions()[odometryIndex])
                   .toArray(SwerveModulePosition[]::new));
-      // Add observation to robot state
-      RobotState.getInstance()
-          .addOdometryObservation(
-              new RobotState.OdometryObservation(
-                  wheelPositions, yaw, odometryTimestampInputs.timestamps[i]));
+      // Filtering
+      if (lastPositions != null) {
+        double dt = Timer.getFPGATimestamp() - lastTime;
+        for (int j = 0; j < 4; j++) {
+          double velocity =
+              (wheelPositions.positions[j].distanceMeters
+                      - lastPositions.positions[j].distanceMeters)
+                  / dt;
+          double omega =
+              wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
+                  / dt;
+
+          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 10.0
+              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 10.0) {
+            includeMeasurement = false;
+            break;
+          }
+        }
+      }
+      if (includeMeasurement) {
+        lastPositions = wheelPositions;
+        RobotState.getInstance()
+            .addOdometryObservation(
+                new RobotState.OdometryObservation(
+                    wheelPositions, yaw, odometryTimestampInputs.timestamps[i]));
+      }
     }
+    lastTime = Timer.getFPGATimestamp();
 
     // update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity = getSpeeds();

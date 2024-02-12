@@ -4,7 +4,6 @@ import static frc.robot.Constants.Mode.REAL;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.subsystems.drive.Drive;
@@ -12,12 +11,10 @@ import org.littletonrobotics.junction.Logger;
 
 public class Turn extends Command {
   private final Drive drive;
-  private final Rotation2d setpoint;
+  private Rotation2d setpoint;
   private final boolean relative;
 
   private final PIDController controller;
-  private final Timer toleranceTimer = new Timer();
-
   private static double kP = 0;
   private static double kI = 0;
   private static double kD = 0;
@@ -28,7 +25,7 @@ public class Turn extends Command {
   public Turn(Drive drive, Rotation2d setpoint, boolean relative) {
     addRequirements(drive);
     this.drive = drive;
-    this.setpoint = setpoint;
+    this.setpoint = Rotation2d.fromDegrees(setpoint.getDegrees());
     this.relative = relative;
 
     switch (Constants.currentMode) {
@@ -40,7 +37,7 @@ public class Turn extends Command {
         toleranceDegrees = 1.0;
         break;
       default: // for SIM
-        kP = 0.5;
+        kP = 0.1;
         kI = 0.0;
         kD = 0.001;
         minVelocity = 0.0;
@@ -57,10 +54,11 @@ public class Turn extends Command {
   @Override
   public void initialize() {
     controller.reset();
-
+    Logger.recordOutput("Turn Input", setpoint.getDegrees());
     if (relative) {
       controller.setSetpoint(
           Rotation2d.fromDegrees(drive.getGyroYawDegrees()).rotateBy(setpoint).getDegrees());
+      setpoint = Rotation2d.fromDegrees((drive.getGyroYawDegrees()) + setpoint.getDegrees());
     } else {
       controller.setSetpoint(setpoint.getDegrees());
     }
@@ -70,6 +68,9 @@ public class Turn extends Command {
   @Override
   public void execute() {
     Logger.recordOutput("TurnActive", true);
+    Logger.recordOutput("Turn X Goal", setpoint.getDegrees());
+    /*Units.radiansToDegrees(
+    (Math.atan2(Constants.SPEAKER_Y - drive.getPose().getY(), drive.getPose().getX()))));*/
     // Update output speeds
 
     double angularSpeed = controller.calculate(drive.getGyroYawDegrees());

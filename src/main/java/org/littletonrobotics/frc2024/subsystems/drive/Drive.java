@@ -179,8 +179,8 @@ public class Drive extends SubsystemBase {
               wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
                   / dt;
 
-          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 10.0
-              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 10.0) {
+          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 100.0
+              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 100.0) {
             includeMeasurement = false;
             break;
           }

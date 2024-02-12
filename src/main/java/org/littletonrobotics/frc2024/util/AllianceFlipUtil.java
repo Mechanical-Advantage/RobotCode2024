@@ -67,7 +67,7 @@ public class AllianceFlipUtil {
           .setTheta(apply(new Rotation2d(state.getTheta())).getRadians())
           .setVx(-state.getVx())
           .setVy(state.getVy())
-          .setOmega(state.getOmega())
+          .setOmega(-state.getOmega())
           .build();
     } else {
       return state;

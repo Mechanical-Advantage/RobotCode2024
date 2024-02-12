@@ -73,6 +73,7 @@ public class GenerateTrajectories {
           PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
 
       TrajectoryResponse response = service.generateTrajectory(request);
+      System.out.println(response.getError());
 
       String responseHashCode = getHashCode(model, entry.getValue());
 

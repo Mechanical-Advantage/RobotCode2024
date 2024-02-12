@@ -39,6 +39,6 @@ public class AutoCommands {
   }
 
   public Command driveStraight() {
-    return null; // reset("driveStraight").andThen(path("driveStraight"));
+    return reset("driveStraight").andThen(path("driveStraight"));
   }
 }

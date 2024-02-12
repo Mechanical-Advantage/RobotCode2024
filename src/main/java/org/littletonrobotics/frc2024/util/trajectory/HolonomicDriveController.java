@@ -2,6 +2,7 @@ package org.littletonrobotics.frc2024.util.trajectory;
 
 import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.*;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -63,7 +64,8 @@ public class HolonomicDriveController {
     double yFeedback = linearFeedback * currentToStateAngle.getSin();
     double thetaFeedback =
         thetaController.calculate(
-            currentPose.getRotation().getRadians(), setpointPose.getRotation().getRadians());
+            MathUtil.angleModulus(currentPose.getRotation().getRadians()),
+            MathUtil.angleModulus(setpointPose.getRotation().getRadians()));
 
     // Return next output.
     return ChassisSpeeds.fromFieldRelativeSpeeds(

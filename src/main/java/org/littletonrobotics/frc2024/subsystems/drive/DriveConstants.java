@@ -143,7 +143,7 @@ public final class DriveConstants {
             new TrajectoryConstants(
                 4.0,
                 0.0,
-                2.0,
+                4.0,
                 0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),

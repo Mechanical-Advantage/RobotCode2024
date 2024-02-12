@@ -57,7 +57,7 @@ public class TrajectoryController {
         trajectoryLinearkP,
         trajectoryLinearkD,
         trajectoryThetakP,
-        trajectoryThetakP);
+        trajectoryThetakD);
 
     // Run trajectory
     Pose2d currentPose = RobotState.getInstance().getEstimatedPose();

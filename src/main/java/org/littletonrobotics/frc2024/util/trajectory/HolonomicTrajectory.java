@@ -5,6 +5,7 @@ import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectorySe
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Filesystem;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,7 +17,9 @@ public class HolonomicTrajectory {
   private final Trajectory trajectory;
 
   public HolonomicTrajectory(String name) {
-    File file = Path.of("src", "main", "deploy", "trajectories", name + ".pathblob").toFile();
+    File file =
+        Path.of(Filesystem.getDeployDirectory().getPath(), "trajectories", name + ".pathblob")
+            .toFile();
     try {
       InputStream fileStream = new FileInputStream(file);
       trajectory = Trajectory.parseFrom(fileStream);

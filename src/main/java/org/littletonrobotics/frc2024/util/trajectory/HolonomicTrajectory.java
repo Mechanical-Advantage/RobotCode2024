@@ -11,8 +11,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.TrajectoryGenerationHelpers;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleState;
 
+@ExtensionMethod({TrajectoryGenerationHelpers.class})
 public class HolonomicTrajectory {
   private final Trajectory trajectory;
 
@@ -85,18 +88,17 @@ public class HolonomicTrajectory {
 
     double s = (timeSeconds - before.getTime()) / (after.getTime() - before.getTime());
 
-    Pose2d beforePose =
-        new Pose2d(
-            before.getState().getX(),
-            before.getState().getY(),
-            new Rotation2d(before.getState().getTheta()));
-    Pose2d afterPose =
-        new Pose2d(
-            after.getState().getX(),
-            after.getState().getY(),
-            new Rotation2d(after.getState().getTheta()));
+    double interpolatedPoseX =
+        MathUtil.interpolate(before.getState().getX(), after.getState().getX(), s);
+    double interpolatedPoseY =
+        MathUtil.interpolate(before.getState().getY(), after.getState().getY(), s);
+    Rotation2d interpolatedRotation =
+        before
+            .getState()
+            .getPose()
+            .getRotation()
+            .interpolate(after.getState().getPose().getRotation(), s);
 
-    Pose2d interpolatedPose = beforePose.interpolate(afterPose, s);
     double interpolatedVelocityX =
         MathUtil.interpolate(before.getState().getVx(), after.getState().getVx(), s);
     double interpolatedVelocityY =
@@ -105,9 +107,9 @@ public class HolonomicTrajectory {
         MathUtil.interpolate(before.getState().getOmega(), after.getState().getOmega(), s);
 
     return VehicleState.newBuilder()
-        .setX(interpolatedPose.getTranslation().getX())
-        .setY(interpolatedPose.getTranslation().getY())
-        .setTheta(interpolatedPose.getRotation().getRadians())
+        .setX(interpolatedPoseX)
+        .setY(interpolatedPoseY)
+        .setTheta(interpolatedRotation.getRadians())
         .setVx(interpolatedVelocityX)
         .setVy(interpolatedVelocityY)
         .setOmega(interpolatedAngularVelocity)

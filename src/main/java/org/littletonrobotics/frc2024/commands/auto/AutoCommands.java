@@ -10,8 +10,8 @@ import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 
 public class AutoCommands {
-  private Drive drive;
-  private Superstructure superstructure;
+  private final Drive drive;
+  private final Superstructure superstructure;
 
   public AutoCommands(Drive drive, Superstructure superstructure) {
     this.drive = drive;
@@ -38,7 +38,18 @@ public class AutoCommands {
             RobotState.getInstance().resetPose(AllianceFlipUtil.apply(trajectory.getStartPose())));
   }
 
-  public Command driveStraight() {
-    return reset("driveStraight").andThen(path("driveStraight"));
+  public Command davisEthicalAuto() {
+    return sequence(
+        reset("driveToCenterline4"),
+        path("driveToCenterline4"),
+        path("driveToCenterline3"),
+        path("driveToPodium"));
   }
+  ;
+
+  public Command driveStraight() {
+    return reset("driveToCenterline4")
+        .andThen(path("driveToCenterline4"), path("driveToCenterline3"), path("driveToPodium"));
+  }
+  ;
 }

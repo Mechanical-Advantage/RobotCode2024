@@ -86,6 +86,26 @@ public class FieldConstants {
             (bottomLeftSpeaker.getZ() + bottomRightSpeaker.getZ()) / 2.0);
   }
 
+  public static final class Subwoofer {
+    public static Pose2d ampFaceCorner =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(239.366),
+            Rotation2d.fromDegrees(-120));
+
+    public static Pose2d sourceFaceCorner =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(197.466),
+            Rotation2d.fromDegrees(120));
+
+    public static Pose2d centerFace =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(218.416),
+            Rotation2d.fromDegrees(180));
+  }
+
   public static double aprilTagWidth = Units.inchesToMeters(6.50);
   public static AprilTagFieldLayout aprilTags;
 

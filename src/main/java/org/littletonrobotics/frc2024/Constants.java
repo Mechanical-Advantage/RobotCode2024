@@ -27,7 +27,7 @@ import org.littletonrobotics.frc2024.util.Alert;
  */
 public final class Constants {
   public static final int loopPeriodMs = 20;
-  private static RobotType robotType = RobotType.DEVBOT;
+  private static RobotType robotType = RobotType.SIMBOT;
   public static final boolean tuningMode = true;
 
   private static boolean invalidRobotAlertSent = false;

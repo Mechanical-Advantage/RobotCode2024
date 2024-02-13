@@ -202,11 +202,11 @@ public class RobotContainer {
             flywheels,
             flywheels::runRightCharacterizationVolts,
             flywheels::getRightCharacterizationVelocity));
-    autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
+    // autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
 
     AutoCommands autoCommands = new AutoCommands(drive, superstructure);
 
-    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    autoChooser.addOption("Davis Auto", autoCommands.davisEthicalAuto());
 
     // Testing autos paths
     // Function<File, Optional<Command>> trajectoryCommandFactory =

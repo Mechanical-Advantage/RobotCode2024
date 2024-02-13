@@ -11,10 +11,12 @@ import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstan
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -26,21 +28,20 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kS = new LoggedTunableNumber("Flywheels/kS", gains.kS());
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
-  private static LoggedTunableNumber shootingLeftRPM =
-      new LoggedTunableNumber("Superstructure/ShootingLeftRPM", 6000.0);
-  private static LoggedTunableNumber shootingRightRPM =
-      new LoggedTunableNumber("Superstructure/ShootingRightRPM", 4000.0);
-  private static LoggedTunableNumber idleLeftRPM =
-      new LoggedTunableNumber("Superstructure/IdleLeftRPM", 200.0);
-  private static LoggedTunableNumber idleRightRPM =
-      new LoggedTunableNumber("Superstructure/IdleRightRPM", 200.0);
-
-  private static LoggedTunableNumber intakingLeftRPM =
-      new LoggedTunableNumber("Superstructure/IntakingLeftRPM", -2000.0);
-  private static LoggedTunableNumber intakingRightRPM =
-      new LoggedTunableNumber("Superstructure/IntakingRightRPM", -2000.0);
+  private static final LoggedTunableNumber shootingLeftRpm =
+      new LoggedTunableNumber("Superstructure/ShootingLeftRpm", 6000.0);
+  private static final LoggedTunableNumber shootingRightRpm =
+      new LoggedTunableNumber("Superstructure/ShootingRightRpm", 4000.0);
+  private static final LoggedTunableNumber idleLeftRpm =
+      new LoggedTunableNumber("Superstructure/IdleLeftRpm", 1500.0);
+  private static final LoggedTunableNumber idleRightRpm =
+      new LoggedTunableNumber("Superstructure/IdleRightRpm", 1000.0);
+  private static final LoggedTunableNumber intakingRpm =
+      new LoggedTunableNumber("Superstructure/IntakingRpm", -2000.0);
+  private static final LoggedTunableNumber ejectingRpm =
+      new LoggedTunableNumber("Superstructure/EjectingRpm", 2000.0);
   private static final LoggedTunableNumber shooterTolerance =
-      new LoggedTunableNumber("Flywheels/ToleranceRPM", config.toleranceRPM());
+      new LoggedTunableNumber("Flywheels/ToleranceRpm", config.toleranceRpm());
 
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
@@ -48,9 +49,10 @@ public class Flywheels extends SubsystemBase {
   @RequiredArgsConstructor
   public enum Goal {
     STOP(() -> 0.0, () -> 0.0),
-    IDLE(idleLeftRPM, idleRightRPM),
-    SHOOTING(shootingLeftRPM, shootingRightRPM),
-    INTAKING(intakingLeftRPM, intakingRightRPM),
+    IDLING(idleLeftRpm, idleRightRpm),
+    SHOOTING(shootingLeftRpm, shootingRightRpm),
+    INTAKING(intakingRpm, intakingRpm),
+    EJECTing(ejectingRpm, ejectingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftSetpoint;
@@ -65,11 +67,15 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  @Getter private Goal goal = Goal.IDLE;
+  @Getter @Setter private Goal goal = Goal.IDLING;
+  private double characterizationVolts = 0.0;
+  private boolean characterizing = false;
 
   public Flywheels(FlywheelsIO io) {
+    System.out.println("[Init] Creating Shooter");
     this.io = io;
-    setDefaultCommand(runOnce(() -> goal = Goal.IDLE).withName("FlywheelsIdle"));
+
+    setDefaultCommand(idle());
   }
 
   @Override
@@ -83,7 +89,7 @@ public class Flywheels extends SubsystemBase {
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
 
     if (DriverStation.isDisabled()) {
-      goal = Goal.STOP;
+      setGoal(Goal.STOP);
     }
 
     switch (goal) {
@@ -93,14 +99,14 @@ public class Flywheels extends SubsystemBase {
     }
 
     Logger.recordOutput("Flywheels/Goal", goal);
-    Logger.recordOutput("Flywheels/LeftSetpointRPM", goal.getLeftSetpoint());
-    Logger.recordOutput("Flywheels/RightSetpointRPM", goal.getRightSetpoint());
-    Logger.recordOutput("Flywheels/LeftRPM", inputs.leftVelocityRpm);
-    Logger.recordOutput("Flywheels/RightRPM", inputs.rightVelocityRpm);
+    Logger.recordOutput("Flywheels/LeftSetpointRpm", goal.getLeftSetpoint());
+    Logger.recordOutput("Flywheels/RightSetpointRpm", goal.getRightSetpoint());
+    Logger.recordOutput("Flywheels/LeftRpm", inputs.leftVelocityRpm);
+    Logger.recordOutput("Flywheels/RightRpm", inputs.rightVelocityRpm);
   }
 
   public void runCharacterizationVolts(double volts) {
-    goal = Goal.CHARACTERIZING;
+    setGoal(Goal.CHARACTERIZING);
     io.runCharacterizationLeftVolts(volts);
     io.runCharacterizationRightVolts(volts);
   }
@@ -109,19 +115,35 @@ public class Flywheels extends SubsystemBase {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
-  @AutoLogOutput(key = "Shooter/AtSetpoint")
-  public boolean atSetpoint() {
-    return Math.abs(inputs.leftVelocityRpm - goal.leftSetpoint.getAsDouble())
-            <= shooterTolerance.get()
-        && Math.abs(inputs.rightVelocityRpm - goal.rightSetpoint.getAsDouble())
-            <= shooterTolerance.get();
+  @AutoLogOutput(key = "Flywheels/AtGoal")
+  public boolean atGoal() {
+    return Math.abs(inputs.leftVelocityRpm - goal.getLeftSetpoint()) <= shooterTolerance.get()
+        && Math.abs(inputs.rightVelocityRpm - goal.getRightSetpoint()) <= shooterTolerance.get();
   }
 
-  public Command shootCommand() {
-    return startEnd(() -> goal = Goal.SHOOTING, () -> goal = Goal.IDLE).withName("FlywheelsShoot");
+  public Command stop() {
+    return runOnce(() -> setGoal(Goal.STOP)).andThen(Commands.idle()).withName("Flywheels Stop");
   }
 
-  public Command intakeCommand() {
-    return startEnd(() -> goal = Goal.INTAKING, () -> goal = Goal.IDLE).withName("FlywheelsIntake");
+  public Command idle() {
+    return runOnce(() -> setGoal(Goal.IDLING)).andThen(Commands.idle()).withName("Flywheels Idle");
+  }
+
+  public Command shoot() {
+    return startEnd(() -> setGoal(Goal.SHOOTING), () -> setGoal(Goal.IDLING))
+        .andThen(Commands.idle())
+        .withName("Flywheels Shooting");
+  }
+
+  public Command intake() {
+    return startEnd(() -> setGoal(Goal.INTAKING), () -> setGoal(Goal.IDLING))
+        .andThen(Commands.idle())
+        .withName("Flywheels Intaking");
+  }
+
+  public Command eject() {
+    return startEnd(() -> setGoal(Goal.EJECTing), () -> setGoal(Goal.IDLING))
+        .andThen(Commands.idle())
+        .withName("Flywheels Ejecting");
   }
 }

@@ -109,6 +109,7 @@ Temporary Items
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/style.xml
 
 ### Windows ###
 # Windows thumbnail cache files
@@ -168,8 +169,10 @@ out/
 # Fleet
 .fleet
 
-# Simulation GUI and other tools window save file
+# Simulation GUI and other tools window save files
+*-window.json
 simgui*.json
+networktables.json
 
 # Version file
 src/main/java/org/littletonrobotics/frc2024/BuildConstants.java

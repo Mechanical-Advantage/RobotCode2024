@@ -11,14 +11,14 @@ import edu.wpi.first.math.util.Units;
 
 public class FlywheelsIOSparkFlex implements FlywheelsIO {
   // Hardware
-  private CANSparkFlex leftMotor;
-  private CANSparkFlex rightMotor;
-  private RelativeEncoder leftEncoder;
-  private RelativeEncoder rightEncoder;
+  private final CANSparkFlex leftMotor;
+  private final CANSparkFlex rightMotor;
+  private final RelativeEncoder leftEncoder;
+  private final RelativeEncoder rightEncoder;
 
   // Controllers
-  private SparkPIDController leftController;
-  private SparkPIDController rightController;
+  private final SparkPIDController leftController;
+  private final SparkPIDController rightController;
   // Open loop
   private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
 
@@ -64,13 +64,15 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
-    inputs.leftPositionRads = Units.rotationsToRadians(leftEncoder.getPosition()) / config.reduction();
+    inputs.leftPositionRads =
+        Units.rotationsToRadians(leftEncoder.getPosition()) / config.reduction();
     inputs.leftVelocityRpm = leftEncoder.getVelocity() / config.reduction();
     inputs.leftAppliedVolts = leftMotor.getAppliedOutput();
     inputs.leftOutputCurrent = leftMotor.getOutputCurrent();
     inputs.leftTempCelsius = leftMotor.getMotorTemperature();
 
-    inputs.rightPositionRads = Units.rotationsToRadians(rightEncoder.getPosition()) / config.reduction();
+    inputs.rightPositionRads =
+        Units.rotationsToRadians(rightEncoder.getPosition()) / config.reduction();
     inputs.rightVelocityRpm = rightEncoder.getVelocity() / config.reduction();
     inputs.rightAppliedVolts = rightMotor.getAppliedOutput();
     inputs.rightOutputCurrent = rightMotor.getOutputCurrent();

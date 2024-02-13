@@ -20,16 +20,15 @@ public class Feeder extends GenericRollerSystem<Feeder.Goal> {
   @RequiredArgsConstructor
   @Getter
   public enum Goal implements GenericRollerSystem.VoltageGoal {
-    IDLE(() -> 0.0),
+    IDLING(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Feeder/FloorIntakingVoltage", 8.0)),
-    BACKSTOPPING(new LoggedTunableNumber("Feeder/BackstoppingVoltage", -4.0)),
     SHOOTING(new LoggedTunableNumber("Feeder/Shooting", 8.0)),
     EJECTING(new LoggedTunableNumber("Feeder/EjectingVoltage", -6.0));
 
     private final DoubleSupplier voltageSupplier;
   }
 
-  private Feeder.Goal goal = Feeder.Goal.IDLE;
+  private Feeder.Goal goal = Feeder.Goal.IDLING;
 
   public Feeder(FeederIO io) {
     super("Feeder", io);

@@ -12,9 +12,9 @@ import static edu.wpi.first.wpilibj2.command.Commands.*;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
-import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 
 public class AutoCommands {
   private Drive drive;

@@ -5,7 +5,7 @@
 // license that can be found in the LICENSE file at
 // the root directory of this project.
 
-package org.littletonrobotics.frc2024.util.trajectory;
+package org.littletonrobotics.frc2024.subsystems.drive.trajectory;
 
 import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.*;
 

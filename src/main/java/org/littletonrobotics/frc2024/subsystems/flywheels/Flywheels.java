@@ -11,12 +11,10 @@ import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstan
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -67,15 +65,11 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  @Getter @Setter private Goal goal = Goal.IDLE;
-  private double characterizationVolts = 0.0;
-  private boolean characterizing = false;
+  @Getter private Goal goal = Goal.IDLE;
 
   public Flywheels(FlywheelsIO io) {
-    System.out.println("[Init] Creating Shooter");
     this.io = io;
-
-    setDefaultCommand(idleCommand());
+    setDefaultCommand(runOnce(() -> goal = Goal.IDLE).withName("FlywheelsIdle"));
   }
 
   @Override
@@ -89,7 +83,7 @@ public class Flywheels extends SubsystemBase {
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
 
     if (DriverStation.isDisabled()) {
-      setGoal(Goal.STOP);
+      goal = Goal.STOP;
     }
 
     switch (goal) {
@@ -105,22 +99,14 @@ public class Flywheels extends SubsystemBase {
     Logger.recordOutput("Flywheels/RightRPM", inputs.rightVelocityRpm);
   }
 
-  public void runLeftCharacterizationVolts(double volts) {
-    setGoal(Goal.CHARACTERIZING);
+  public void runCharacterizationVolts(double volts) {
+    goal = Goal.CHARACTERIZING;
     io.runCharacterizationLeftVolts(volts);
-  }
-
-  public void runRightCharacterizationVolts(double volts) {
-    setGoal(Goal.CHARACTERIZING);
     io.runCharacterizationRightVolts(volts);
   }
 
-  public double getLeftCharacterizationVelocity() {
-    return inputs.leftVelocityRpm;
-  }
-
-  public double getRightCharacterizationVelocity() {
-    return inputs.rightVelocityRpm;
+  public double getCharacterizationVelocity() {
+    return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
   @AutoLogOutput(key = "Shooter/AtSetpoint")
@@ -131,23 +117,11 @@ public class Flywheels extends SubsystemBase {
             <= shooterTolerance.get();
   }
 
-  public Command stopCommand() {
-    return runOnce(() -> setGoal(Goal.STOP)).andThen(Commands.idle()).withName("Flywheels Stop");
+  public Command shootCommand() {
+    return startEnd(() -> goal = Goal.SHOOTING, () -> goal = Goal.IDLE).withName("FlywheelsShoot");
   }
 
-  public Command idleCommand() {
-    return runOnce(() -> setGoal(Goal.IDLE)).andThen(Commands.idle()).withName("Flywheels Idle");
-  }
-
-  public Command shootingCommand() {
-    return runOnce(() -> setGoal(Goal.SHOOTING))
-        .andThen(Commands.idle())
-        .withName("Flywheels Shooting");
-  }
-
-  public Command intakingCommand() {
-    return runOnce(() -> setGoal(Goal.INTAKING))
-        .andThen(Commands.idle())
-        .withName("Flywheels Intaking");
+  public Command intakeCommand() {
+    return startEnd(() -> goal = Goal.INTAKING, () -> goal = Goal.IDLE).withName("FlywheelsIntake");
   }
 }

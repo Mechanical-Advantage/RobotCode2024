@@ -38,8 +38,6 @@ public class ModuleIOSparkMax implements ModuleIO {
 
   private final Rotation2d absoluteEncoderOffset;
   private final Supplier<Rotation2d> absoluteEncoderValue;
-  private static final int shouldResetCount = 100;
-  private int resetCounter = shouldResetCount;
 
   public ModuleIOSparkMax(ModuleConfig config) {
     // Init motor & encoder objects

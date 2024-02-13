@@ -13,7 +13,7 @@ import org.littletonrobotics.junction.Logger;
 
 @RequiredArgsConstructor
 public abstract class GenericRollerSystem<G extends GenericRollerSystem.VoltageGoal> {
-  protected interface VoltageGoal {
+  public interface VoltageGoal {
     DoubleSupplier getVoltageSupplier();
   }
 

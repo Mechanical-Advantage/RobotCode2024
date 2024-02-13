@@ -19,7 +19,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 public class Indexer extends GenericRollerSystem<Indexer.Goal> {
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements VoltageGoal {
+  public enum Goal implements GenericRollerSystem.VoltageGoal {
     IDLE(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Indexer/FloorIntakingVoltage", 2.0)),
     STATION_INTAKING(new LoggedTunableNumber("Indexer/StationIntakingVoltage", -2.0)),

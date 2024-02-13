@@ -12,9 +12,9 @@ import org.littletonrobotics.junction.AutoLog;
 public interface RollersSensorsIO {
   @AutoLog
   class RollersSensorsIOInputs {
-    boolean shooterStaged;
-    boolean backbackStaged;
-    boolean indexerCleared;
+    boolean shooterStaged = false;
+    boolean backbackStaged = false;
+    boolean indexerCleared = false;
   }
 
   default void updateInputs(RollersSensorsIOInputs inputs) {}

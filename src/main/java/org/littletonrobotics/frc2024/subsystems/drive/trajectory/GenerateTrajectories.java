@@ -7,8 +7,6 @@
 
 package org.littletonrobotics.frc2024.subsystems.drive.trajectory;
 
-import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.*;
-
 import com.google.common.hash.Hashing;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
@@ -151,6 +149,7 @@ public class GenerateTrajectories {
             hashString.append(format.format(waypoint.getVehicleVelocity().getVy()));
             hashString.append(format.format(waypoint.getVehicleVelocity().getOmega()));
           }
+          case VELOCITYCONSTRAINT_NOT_SET -> {}
         }
       }
 

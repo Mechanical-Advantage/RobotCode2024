@@ -8,8 +8,8 @@
 package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.wpilibj.RobotBase;
-import java.util.Map;
 import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.Alert.AlertType;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
@@ -24,13 +24,10 @@ public final class Constants {
   private static RobotType robotType = RobotType.DEVBOT;
   public static final boolean tuningMode = true;
 
-  private static boolean invalidRobotAlertSent = false;
-
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
-      new Alert("Invalid Robot Selected, using COMPBOT as default", Alert.AlertType.ERROR)
+      new Alert("Invalid robot selected, using competition robot as default.", AlertType.ERROR)
           .set(true);
-      invalidRobotAlertSent = true;
       robotType = RobotType.COMPBOT;
     }
     return robotType;
@@ -42,8 +39,6 @@ public final class Constants {
       case SIMBOT -> Mode.SIM;
     };
   }
-
-  public static final Map<RobotType, String> logFolders = Map.of(RobotType.DEVBOT, "/media/sda1/");
 
   public enum Mode {
     /** Running on a real robot. */

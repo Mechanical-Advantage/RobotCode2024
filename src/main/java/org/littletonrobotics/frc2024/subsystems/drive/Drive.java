@@ -26,12 +26,12 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAimControl
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.frc2024.util.swerve.SwerveSetpoint;
 import org.littletonrobotics.frc2024.util.swerve.SwerveSetpointGenerator;
-import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -103,7 +103,6 @@ public class Drive extends SubsystemBase {
   private AutoAimController autoAimController = null;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
-    System.out.println("[Init] Creating Drive");
     this.gyroIO = gyroIO;
     modules[0] = new Module(fl, 0);
     modules[1] = new Module(fr, 1);

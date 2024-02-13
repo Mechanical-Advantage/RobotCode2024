@@ -107,6 +107,7 @@ task(checkAkitInstall, dependsOn: "classes", type: JavaExec) {
 }
 compileJava.finalizedBy checkAkitInstall
 
+// Generate drive trajectories when building
 task(generateDriveTrajectories, dependsOn: "classes", type: JavaExec) {
     mainClass = "org.littletonrobotics.frc2024.subsystems.drive.trajectory.GenerateTrajectories"
     classpath = sourceSets.main.runtimeClasspath
@@ -120,6 +121,7 @@ task(checkRobot, dependsOn: "classes", type: JavaExec) {
 }
 deployroborio.dependsOn(checkRobot)
 
+// Create commit with working changes on event branches
 tasks.register('eventDeploy') {
     dependsOn('deploy')
     doFirst {
@@ -221,7 +223,6 @@ gversion {
     indent       = "  "
 }
 
-
 // Spotless formatting
 project.compileJava.dependsOn(spotlessApply)
 spotless {
@@ -260,7 +261,7 @@ spotless {
             exclude "**/build/**", "**/build-*/**"
         }
         trimTrailingWhitespace()
-        indentWithSpaces(4)
+        indentWithSpaces(2)
         endWithNewline()
     }
 }

@@ -160,27 +160,27 @@ public class SwerveSetpointGenerator {
     return findRoot(func, x_0, y_0, f_0 - offset, x_1, y_1, f_1 - offset, max_iterations);
   }
 
-  protected double findDriveMaxS(
-      double x_0, double y_0, double x_1, double y_1, double max_vel_step) {
-    // Our drive velocity between s=0 and s=1 is quadratic in s:
-    // v^2 = ((x_1 - x_0) * s + x_0)^2 + ((y_1 - y_0) * s + y_0)^2
-    //     = a * s^2 + b * s + c
-    // Where:
-    //   a = (x_1 - x_0)^2 + (y_1 - y_0)^2
-    //   b = 2 * x_0 * (x_1 - x_0) + 2 * y_0 * (y_1 - y_0)
-    //   c = x_0^2 + y_0^2
-    // We want to find where this quadratic results in a velocity that is > max_vel_step from our
-    // velocity at s=0:
-    // sqrt(x_0^2 + y_0^2) +/- max_vel_step = ...quadratic...
-    final double dx = x_1 - x_0;
-    final double dy = y_1 - y_0;
-    final double a = dx * dx + dy * dy;
-    final double b = 2.0 * x_0 * dx + 2.0 * y_0 * dy;
-    final double c = x_0 * x_0 + y_0 * y_0;
-    final double v_limit_upper_2 = Math.pow(Math.hypot(x_0, y_0) + max_vel_step, 2.0);
-    final double v_limit_lower_2 = Math.pow(Math.hypot(x_0, y_0) - max_vel_step, 2.0);
-    return 0.0;
-  }
+  // protected double findDriveMaxS(
+  //     double x_0, double y_0, double x_1, double y_1, double max_vel_step) {
+  //   // Our drive velocity between s=0 and s=1 is quadratic in s:
+  //   // v^2 = ((x_1 - x_0) * s + x_0)^2 + ((y_1 - y_0) * s + y_0)^2
+  //   //     = a * s^2 + b * s + c
+  //   // Where:
+  //   //   a = (x_1 - x_0)^2 + (y_1 - y_0)^2
+  //   //   b = 2 * x_0 * (x_1 - x_0) + 2 * y_0 * (y_1 - y_0)
+  //   //   c = x_0^2 + y_0^2
+  //   // We want to find where this quadratic results in a velocity that is > max_vel_step from our
+  //   // velocity at s=0:
+  //   // sqrt(x_0^2 + y_0^2) +/- max_vel_step = ...quadratic...
+  //   final double dx = x_1 - x_0;
+  //   final double dy = y_1 - y_0;
+  //   final double a = dx * dx + dy * dy;
+  //   final double b = 2.0 * x_0 * dx + 2.0 * y_0 * dy;
+  //   final double c = x_0 * x_0 + y_0 * y_0;
+  //   final double v_limit_upper_2 = Math.pow(Math.hypot(x_0, y_0) + max_vel_step, 2.0);
+  //   final double v_limit_lower_2 = Math.pow(Math.hypot(x_0, y_0) - max_vel_step, 2.0);
+  //   return 0.0;
+  // }
 
   /**
    * Generate a new setpoint.

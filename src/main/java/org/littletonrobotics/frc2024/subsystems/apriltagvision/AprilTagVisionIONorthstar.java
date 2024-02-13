@@ -31,11 +31,8 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private static final double disconnectedTimeout = 0.5;
   private final Alert disconnectedAlert;
   private final Timer disconnectedTimer = new Timer();
-  private final String identifier;
 
   public AprilTagVisionIONorthstar(String instanceId, String cameraId) {
-    this.identifier = instanceId;
-    System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + instanceId + ")");
     var northstarTable = NetworkTableInstance.getDefault().getTable(instanceId);
 
     var configTable = northstarTable.getSubTable("config");

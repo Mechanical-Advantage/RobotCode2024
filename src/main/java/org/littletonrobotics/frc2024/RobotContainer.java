@@ -48,10 +48,10 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
-import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.Flywheels;
-import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIO;
-import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSim;
-import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOSparkFlex;
+import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -206,28 +206,7 @@ public class RobotContainer {
 
     AutoCommands autoCommands = new AutoCommands(drive, superstructure);
 
-    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
-
-    // Testing autos paths
-    // Function<File, Optional<Command>> trajectoryCommandFactory =
-    //         trajectoryFile -> {
-    //             Optional<HolonomicTrajectory> trajectory =
-    //                     ChoreoTrajectoryDeserializer.deserialize(trajectoryFile);
-    //             return trajectory.map(
-    //                     traj ->
-    //                             Commands.runOnce(
-    //                                             () ->
-    // robotState.resetPose(AllianceFlipUtil.apply(traj.getStartPose())))
-    //                                     .andThen(Commands.runOnce(() ->
-    // drive.setTrajectoryGoal(traj)))
-    //                                     .until(drive::isTrajectoryGoalCompleted));
-    //         };
-    // final File rootTrajectoryDir = new File(Filesystem.getDeployDirectory(), "choreo");
-    // for (File trajectoryFile : Objects.requireNonNull(rootTrajectoryDir.listFiles())) {
-    //     trajectoryCommandFactory
-    //             .apply(trajectoryFile)
-    //             .ifPresent(command -> autoChooser.addOption(trajectoryFile.getName(), command));
-    // }
+    //    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
 
     // Configure the button bindings
     configureButtonBindings();
@@ -239,6 +218,7 @@ public class RobotContainer {
    * XboxController}), and then passing it to a {@link JoystickButton}.
    */
   private void configureButtonBindings() {
+    // Drive Commands
     drive.setDefaultCommand(
         drive.run(
             () ->
@@ -250,90 +230,73 @@ public class RobotContainer {
         .onTrue(Commands.runOnce(drive::setAutoAimGoal))
         .onFalse(Commands.runOnce(drive::clearAutoAimGoal));
 
-    if (superstructure != null) {
-      controller
-          .a()
-          .onTrue(
-              Commands.runOnce(
-                  () -> superstructure.setGoalState(Superstructure.SystemState.PREPARE_SHOOT)))
-          .onFalse(
-              Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
+    controller
+        .a()
+        .onTrue(
+            Commands.runOnce(
+                () -> superstructure.setGoalState(Superstructure.SystemState.PREPARE_SHOOT)))
+        .onFalse(
+            Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
 
-      Trigger readyToShootTrigger =
-          new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
-      readyToShootTrigger
-          .whileTrue(
-              Commands.run(
-                  () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
-          .whileFalse(
-              Commands.run(
-                  () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
-      controller
-          .rightTrigger()
-          .and(readyToShootTrigger)
-          .onTrue(
-              Commands.runOnce(
-                      () -> {
-                        superstructure.setGoalState(Superstructure.SystemState.SHOOT);
-                        rollers.setGoal(Rollers.Goal.FEED_SHOOTER);
-                      },
-                      superstructure,
-                      rollers)
-                  .andThen(Commands.waitSeconds(1.0))
-                  .andThen(
-                      Commands.runOnce(
-                          () -> {
-                            superstructure.setGoalState(Superstructure.SystemState.IDLE);
-                            rollers.setGoal(Rollers.Goal.IDLE);
-                          })));
+    Trigger readyToShootTrigger =
+        new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
+    readyToShootTrigger
+        .whileTrue(
+            Commands.run(
+                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
+        .whileFalse(
+            Commands.run(
+                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
+    controller
+        .rightTrigger()
+        .and(readyToShootTrigger)
+        .onTrue(
+            Commands.runOnce(
+                    () -> {
+                      superstructure.setGoalState(Superstructure.SystemState.SHOOT);
+                      rollers.setGoal(Rollers.Goal.FEED_SHOOTER);
+                    },
+                    superstructure,
+                    rollers)
+                .andThen(Commands.waitSeconds(1.0))
+                .andThen(
+                    Commands.runOnce(
+                        () -> {
+                          superstructure.setGoalState(Superstructure.SystemState.IDLE);
+                          rollers.setGoal(Rollers.Goal.IDLE);
+                        })));
 
-      controller
-          .leftTrigger()
-          .whileTrue(
-              Commands.runOnce(
-                      () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE),
-                      superstructure)
-                  .andThen(
-                      Commands.waitSeconds(0.25),
-                      Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.FLOOR_INTAKE), rollers),
-                      Commands.idle())
-                  .finallyDo(
-                      () -> {
-                        rollers.setGoal(Rollers.Goal.IDLE);
-                        superstructure.setGoalState(Superstructure.SystemState.IDLE);
-                      }));
+    controller
+        .leftTrigger()
+        .whileTrue(
+            Commands.runOnce(
+                    () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE),
+                    superstructure)
+                .andThen(
+                    Commands.waitSeconds(0.25),
+                    Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.FLOOR_INTAKE), rollers),
+                    Commands.idle())
+                .finallyDo(
+                    () -> {
+                      rollers.setGoal(Rollers.Goal.IDLE);
+                      superstructure.setGoalState(Superstructure.SystemState.IDLE);
+                    }));
 
-      controller
-          .leftBumper()
-          .whileTrue(
-              Commands.runOnce(
-                      () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE),
-                      superstructure)
-                  .andThen(
-                      Commands.waitSeconds(0.25),
-                      Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.EJECT_TO_FLOOR), rollers),
-                      Commands.idle())
-                  .finallyDo(
-                      () -> {
-                        rollers.setGoal(Rollers.Goal.IDLE);
-                        superstructure.setGoalState(Superstructure.SystemState.IDLE);
-                      }));
-
-      //      controller
-      //          .a()
-      //          .onTrue(
-      //              Commands.runOnce(
-      //                  () -> {
-      //                    superstructure.setGoalState(Superstructure.SystemState.REVERSE_INTAKE);
-      //                    rollers.setGoal(Rollers.Goal.STATION_INTAKE);
-      //                  }))
-      //          .onFalse(
-      //              Commands.runOnce(
-      //                  () -> {
-      //                    superstructure.setGoalState(Superstructure.SystemState.IDLE);
-      //                    rollers.setGoal(Rollers.Goal.IDLE);
-      //                  }));
-    }
+    controller
+        .leftBumper()
+        .whileTrue(
+            Commands.runOnce(
+                    () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE),
+                    superstructure)
+                .andThen(
+                    Commands.waitSeconds(0.25),
+                    Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.EJECT_TO_FLOOR), rollers),
+                    Commands.idle())
+                .finallyDo(
+                    () -> {
+                      rollers.setGoal(Rollers.Goal.IDLE);
+                      superstructure.setGoalState(Superstructure.SystemState.IDLE);
+                    }));
 
     controller
         .y()

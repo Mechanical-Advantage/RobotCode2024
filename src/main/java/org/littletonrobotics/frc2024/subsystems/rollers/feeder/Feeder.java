@@ -4,13 +4,15 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSubsystem;
+import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystem;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
-public class Feeder extends GenericRollerSubsystem<Feeder.Goal> {
+@Setter
+@Getter
+public class Feeder extends GenericRollerSystem<Feeder.Goal> {
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements GenericRollerSubsystem.VoltageGoal {
+  public enum Goal implements GenericRollerSystem.VoltageGoal {
     IDLE(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Feeder/FloorIntakingVoltage", 8.0)),
     BACKSTOPPING(new LoggedTunableNumber("Feeder/BackstoppingVoltage", -4.0)),
@@ -20,7 +22,7 @@ public class Feeder extends GenericRollerSubsystem<Feeder.Goal> {
     private final DoubleSupplier voltageSupplier;
   }
 
-  @Getter @Setter private Feeder.Goal goal = Feeder.Goal.IDLE;
+  private Feeder.Goal goal = Feeder.Goal.IDLE;
 
   public Feeder(FeederIO io) {
     super("Feeder", io);

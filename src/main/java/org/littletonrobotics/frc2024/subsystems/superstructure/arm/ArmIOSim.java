@@ -1,6 +1,6 @@
 package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 
-import static org.littletonrobotics.frc2024.subsystems.superstructure.SuperstructureConstants.ArmConstants.*;
+import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
@@ -34,39 +34,15 @@ public class ArmIOSim implements ArmIO {
   public ArmIOSim() {
     ff = new ArmFeedforward(gains.ffkS(), gains.ffkG(), gains.ffkV(), gains.ffkA());
     profiledController =
-        new ProfiledPIDController(
-            gains.kP(),
-            gains.kI(),
-            gains.kD(),
-            new TrapezoidProfile.Constraints(
-                profileConstraints.cruiseVelocityRadPerSec(),
-                profileConstraints.accelerationRadPerSec2()),
-            0.001);
+        new ProfiledPIDController(gains.kP(), gains.kI(), gains.kD(), profileConstraints, 0.001);
     sim.setState(Units.degreesToRadians(45.0), 0.0);
   }
 
   @Override
   public void updateInputs(ArmIOInputs inputs) {
+    sim.update(0.02);
     if (DriverStation.isDisabled()) {
       controllerNeedsReset = true;
-    }
-
-    if (controllerNeedsReset) {
-      profiledController.reset(sim.getAngleRads() + positionOffset, sim.getVelocityRadPerSec());
-      controllerNeedsReset = false;
-    }
-
-    for (int i = 0; i < 20; i++) {
-      // control
-      if (closedLoop) {
-        appliedVoltage =
-            profiledController.calculate(sim.getAngleRads() + positionOffset)
-                + ff.calculate(
-                    profiledController.getSetpoint().position,
-                    profiledController.getSetpoint().velocity);
-        sim.setInputVoltage(MathUtil.clamp(appliedVoltage, -12.0, 12.0));
-      }
-      sim.update(0.001);
     }
 
     inputs.armPositionRads = sim.getAngleRads() + positionOffset;
@@ -76,15 +52,23 @@ public class ArmIOSim implements ArmIO {
     inputs.armCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
     inputs.armTorqueCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
     inputs.armTempCelcius = new double[] {0.0};
+
+    // Reset input
+    sim.setInputVoltage(0.0);
   }
 
   @Override
-  public void setSetpoint(double setpointRads) {
+  public void runSetpoint(double setpointRads) {
     if (!closedLoop) {
       controllerNeedsReset = true;
     }
-    closedLoop = true;
-    profiledController.setGoal(setpointRads);
+    if (controllerNeedsReset) {
+      profiledController.reset(sim.getAngleRads(), sim.getVelocityRadPerSec());
+    }
+    // Control
+    double feedback = profiledController.calculate(sim.getAngleRads(), setpointRads);
+    sim.setInputVoltage(
+        feedback + ff.calculate(sim.getAngleRads(), profiledController.getSetpoint().velocity));
   }
 
   @Override

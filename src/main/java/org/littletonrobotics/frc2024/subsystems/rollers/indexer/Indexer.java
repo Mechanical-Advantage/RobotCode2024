@@ -4,12 +4,12 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSubsystem;
+import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystem;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 @Setter
 @Getter
-public class Indexer extends GenericRollerSubsystem<Indexer.Goal> {
+public class Indexer extends GenericRollerSystem<Indexer.Goal> {
   @RequiredArgsConstructor
   @Getter
   public enum Goal implements VoltageGoal {
@@ -22,7 +22,7 @@ public class Indexer extends GenericRollerSubsystem<Indexer.Goal> {
     private final DoubleSupplier voltageSupplier;
   }
 
-  @Getter @Setter private Indexer.Goal goal = Indexer.Goal.IDLE;
+  private Indexer.Goal goal = Indexer.Goal.IDLE;
 
   public Indexer(IndexerIO io) {
     super("Indexer", io);

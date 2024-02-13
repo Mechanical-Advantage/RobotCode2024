@@ -1,20 +1,20 @@
 package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 
-import static org.littletonrobotics.frc2024.subsystems.superstructure.SuperstructureConstants.ArmConstants.*;
+import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
-import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
-import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
-import edu.wpi.first.wpilibj.util.Color;
-import edu.wpi.first.wpilibj.util.Color8Bit;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.DoubleSupplier;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -28,44 +28,49 @@ public class Arm extends SubsystemBase {
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Arm/kA", gains.ffkA());
   private static final LoggedTunableNumber kG = new LoggedTunableNumber("Arm/kG", gains.ffkG());
   private static final LoggedTunableNumber armVelocity =
-      new LoggedTunableNumber("Arm/Velocity", profileConstraints.cruiseVelocityRadPerSec());
+      new LoggedTunableNumber("Arm/Velocity", profileConstraints.maxVelocity);
   private static final LoggedTunableNumber armAcceleration =
-      new LoggedTunableNumber("Arm/Acceleration", profileConstraints.accelerationRadPerSec2());
+      new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
   private static final LoggedTunableNumber armToleranceDegreees =
       new LoggedTunableNumber("Arm/ToleranceDegrees", positionTolerance.getDegrees());
   private static final LoggedTunableNumber armLowerLimit =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", 15.0);
   private static final LoggedTunableNumber armUpperLimit =
       new LoggedTunableNumber("Arm/UpperLimitDegrees", 90.0);
+  private static LoggedTunableNumber armStowDegrees =
+      new LoggedTunableNumber("Superstructure/ArmStowDegrees", 20.0);
+  private static LoggedTunableNumber armStationIntakeDegrees =
+      new LoggedTunableNumber("Superstructure/ArmStationIntakeDegrees", 45.0);
+  private static LoggedTunableNumber armIntakeDegrees =
+      new LoggedTunableNumber("Superstructure/ArmIntakeDegrees", 40.0);
+
+  @RequiredArgsConstructor
+  public enum Goal {
+    STOW(() -> Units.degreesToRadians(armStowDegrees.get())),
+    FLOOR_INTAKE(() -> Units.degreesToRadians(armIntakeDegrees.get())),
+    STATION_INTAKE(() -> Units.degreesToRadians(armStowDegrees.get())),
+    AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getRadians());
+
+    private final DoubleSupplier armSetpointSupplier;
+
+    private double getArmSetpointRads() {
+      return armSetpointSupplier.getAsDouble();
+    }
+  }
+
+  @Getter @Setter Goal goal;
 
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
-  private final Mechanism2d armMechanism;
-  private final MechanismRoot2d armRoot;
-  private final MechanismLigament2d armMeasured;
-
   private boolean homed = false;
-  @Setter private Rotation2d setpoint = null;
-
-  //  private final MechanismLigament2d armSetpoint;
 
   public Arm(ArmIO io) {
     System.out.println("[Init] Creating Arm");
     this.io = io;
     io.setBrakeMode(true);
 
-    // Create a mechanism
-    armMechanism = new Mechanism2d(2, 3, new Color8Bit(Color.kAntiqueWhite));
-    armRoot = armMechanism.getRoot("Arm Joint", armOrigin.getX(), armOrigin.getY());
-    armMeasured =
-        new MechanismLigament2d(
-            "Arm Measured",
-            armLength,
-            Units.radiansToDegrees(inputs.armPositionRads),
-            2.0,
-            new Color8Bit(Color.kBlack));
-    armRoot.append(armMeasured);
+    setDefaultCommand(stowCommand());
   }
 
   @Override
@@ -85,26 +90,17 @@ public class Arm extends SubsystemBase {
         armVelocity,
         armAcceleration);
 
-    if (setpoint != null) {
-      io.setSetpoint(
-          MathUtil.clamp(
-              setpoint.getRadians(),
-              Units.degreesToRadians(armLowerLimit.get()),
-              Units.degreesToRadians(armUpperLimit.get())));
-    }
+    io.runSetpoint(
+        MathUtil.clamp(
+            goal.getArmSetpointRads(),
+            Units.degreesToRadians(armLowerLimit.get()),
+            Units.degreesToRadians(armUpperLimit.get())));
 
     if (DriverStation.isDisabled()) {
       io.stop();
     }
 
-    // Logs
-    armMeasured.setAngle(Units.radiansToDegrees(inputs.armPositionRads));
-    Logger.recordOutput("Arm/Mechanism", armMechanism);
-  }
-
-  public void runVolts(double volts) {
-    setpoint = null;
-    io.runVolts(volts);
+    Logger.recordOutput("Arm/Goal", goal);
   }
 
   public void stop() {
@@ -117,7 +113,7 @@ public class Arm extends SubsystemBase {
 
   @AutoLogOutput(key = "Arm/SetpointAngle")
   public Rotation2d getSetpoint() {
-    return setpoint != null ? setpoint : new Rotation2d();
+    return Rotation2d.fromRadians(goal.getArmSetpointRads());
   }
 
   @AutoLogOutput(key = "Arm/Homed")
@@ -127,9 +123,28 @@ public class Arm extends SubsystemBase {
 
   @AutoLogOutput(key = "Arm/AtSetpoint")
   public boolean atSetpoint() {
-    return setpoint != null
-        && Math.abs(Rotation2d.fromRadians(inputs.armPositionRads).minus(setpoint).getDegrees())
-            <= armToleranceDegreees.get();
+    return Math.abs(inputs.armPositionRads - goal.getArmSetpointRads())
+        <= Units.degreesToRadians(armToleranceDegreees.get());
+  }
+
+  public Command stowCommand() {
+    return runOnce(() -> setGoal(Goal.STOW)).andThen(Commands.idle()).withName("Arm Stow");
+  }
+
+  public Command intakeCommand() {
+    return runOnce(() -> setGoal(Goal.FLOOR_INTAKE))
+        .andThen(Commands.idle())
+        .withName("Arm Intake");
+  }
+
+  public Command stationIntakeCommand() {
+    return runOnce(() -> setGoal(Goal.STATION_INTAKE))
+        .andThen(Commands.idle())
+        .withName("Arm Station Intake");
+  }
+
+  public Command aimCommand() {
+    return runOnce(() -> setGoal(Goal.AIM)).andThen(Commands.idle()).withName("Arm Aim");
   }
 
   public Command getStaticCurrent() {

@@ -13,7 +13,7 @@ import edu.wpi.first.math.numbers.N3;
 import java.util.NoSuchElementException;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
-import org.littletonrobotics.frc2024.subsystems.superstructure.SuperstructureConstants;
+import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -185,9 +185,9 @@ public class RobotState {
         new AimingParameters(
             targetVehicleDirection,
             new Rotation2d(
-                targetDistance - SuperstructureConstants.ArmConstants.armOrigin.getX(),
+                targetDistance - ArmConstants.armOrigin.getX(),
                 FieldConstants.Speaker.centerSpeakerOpening.getZ()
-                    - SuperstructureConstants.ArmConstants.armOrigin.getY()
+                    - ArmConstants.armOrigin.getY()
                     + shotHeightCompensation.get()),
             feedVelocity);
     Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading);

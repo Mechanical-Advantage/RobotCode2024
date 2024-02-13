@@ -10,7 +10,6 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.littletonrobotics.frc2024.subsystems.superstructure.flywheels.FlywheelsIOInputsAutoLogged;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;

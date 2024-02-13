@@ -31,6 +31,10 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionCon
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
+import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
@@ -48,10 +52,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
-import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -102,9 +102,8 @@ public class RobotContainer {
           intake = new Intake(new IntakeIOKrakenFOC());
           rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIOReal());
 
-          arm = new Arm(new ArmIOKrakenFOC());
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-          superstructure = new Superstructure(arm, flywheels);
+          arm = new Arm(new ArmIOKrakenFOC());
 
           aprilTagVision =
               new AprilTagVision(
@@ -125,8 +124,6 @@ public class RobotContainer {
                   new ModuleIOSim(DriveConstants.moduleConfigs[3]));
           arm = new Arm(new ArmIOSim());
           flywheels = new Flywheels(new FlywheelsIOSim());
-          // intake = new Intake(new IntakeIOSim());
-          // feeder = new Feeder(new FeederIOSim());
           superstructure = new Superstructure(arm, flywheels);
         }
         case COMPBOT -> {

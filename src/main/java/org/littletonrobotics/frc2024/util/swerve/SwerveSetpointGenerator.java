@@ -1,3 +1,10 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.util.swerve;
 
 import static org.littletonrobotics.frc2024.util.EqualsUtil.*;
@@ -18,7 +25,7 @@ import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 
 /**
- * "Inspired" by FRC team 254.
+ * "Inspired" by FRC team 254. See the license file in the root directory of this project.
  *
  * <p>Takes a prior setpoint (ChassisSpeeds), a desired setpoint (from a driver, or from a path
  * follower), and outputs a new setpoint that respects all of the kinematic constraints on module

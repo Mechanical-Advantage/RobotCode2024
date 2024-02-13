@@ -1,3 +1,10 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.util.shooting;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -8,11 +15,10 @@ import org.littletonrobotics.junction.Logger;
 
 /**
  * Util class to calculate robot rotation and shooter feedforward values for shooting while moving.
- * <br>
- * Based off of 254 Rapid React code from class <a
- * href="https://github.com/Team254/FRC-2022-Public/blob/main/src/main/java/com/team254/frc2022/shooting/ShootingUtil.java">ShootingUtil.java</a>
- * <br>
- * Units in meters, radians, and m/s
+ *
+ * <p>Based off of 254 Rapid React code from class <a
+ * href="https://github.com/Team254/FRC-2022-Public/blob/main/src/main/java/com/team254/frc2022/shooting/ShootingUtil.java">ShootingUtil.java</a>.
+ * See the license file in the root directory of this project.
  */
 @ExtensionMethod({GeomUtil.class})
 public class ShotCalculator {

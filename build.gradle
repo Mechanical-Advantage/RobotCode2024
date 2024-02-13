@@ -235,6 +235,7 @@ spotless {
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
+        licenseHeader("// Copyright (c) 2024 FRC 6328\n// http://github.com/Mechanical-Advantage\n//\n// Use of this source code is governed by an MIT-style\n// license that can be found in the LICENSE file at\n// the root directory of this project.\n\n")
     }
     groovyGradle {
         target fileTree(".") {

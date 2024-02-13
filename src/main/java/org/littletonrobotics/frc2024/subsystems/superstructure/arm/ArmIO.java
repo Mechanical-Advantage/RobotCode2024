@@ -15,7 +15,7 @@ public interface ArmIO {
     public double armPositionRads = 0.0;
     public double armEncoderPositionRads = 0.0;
     public double armAbsoluteEncoderPositionRads = 0.0;
-    public double armTrajectorySetpointRads = 0.0;
+    public double armSetpointRads = 0.0;
     public double armVelocityRadsPerSec = 0.0;
     public double[] armAppliedVolts = new double[] {};
     public double[] armCurrentAmps = new double[] {};

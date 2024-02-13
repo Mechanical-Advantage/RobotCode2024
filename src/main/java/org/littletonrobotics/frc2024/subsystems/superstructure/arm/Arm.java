@@ -1,10 +1,3 @@
-// Copyright (c) 2024 FRC 6328
-// http://github.com/Mechanical-Advantage
-//
-// Use of this source code is governed by an MIT-style
-// license that can be found in the LICENSE file at
-// the root directory of this project.
-
 package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 
 import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
@@ -13,6 +6,10 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +19,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class Arm {
+public class Arm extends SubsystemBase {
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Arm/kP", gains.kP());
   private static final LoggedTunableNumber kI = new LoggedTunableNumber("Arm/kI", gains.kI());
   private static final LoggedTunableNumber kD = new LoggedTunableNumber("Arm/kD", gains.kD());
@@ -61,14 +58,22 @@ public class Arm {
     }
   }
 
-  @Getter @Setter Goal goal = Goal.STOW;
+  @Getter @Setter private Goal goal = Goal.STOW;
+  private boolean characterizing = false;
+  private boolean homed = false;
 
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
+  private ArmVisualizer measuredVisualizer;
+  private ArmVisualizer setpointVisualizer;
+
   public Arm(ArmIO io) {
     this.io = io;
     io.setBrakeMode(true);
+
+    measuredVisualizer = new ArmVisualizer("measured", Color.kBlack);
+    setpointVisualizer = new ArmVisualizer("setpoint", Color.kGreen);
   }
 
   public void periodic() {
@@ -87,25 +92,25 @@ public class Arm {
         armVelocity,
         armAcceleration);
 
-    io.runSetpoint(
-        MathUtil.clamp(
-            goal.getArmSetpointRads(),
-            Units.degreesToRadians(armLowerLimit.get()),
-            Units.degreesToRadians(armUpperLimit.get())));
+    if (!characterizing) {
+      io.runSetpoint(
+          MathUtil.clamp(
+              goal.getArmSetpointRads(),
+              Units.degreesToRadians(armLowerLimit.get()),
+              Units.degreesToRadians(armUpperLimit.get())));
+    }
 
     if (DriverStation.isDisabled()) {
       io.stop();
     }
 
+    measuredVisualizer.update(Rotation2d.fromRadians(inputs.armPositionRads));
+    setpointVisualizer.update(Rotation2d.fromRadians(inputs.armSetpointRads));
     Logger.recordOutput("Arm/Goal", goal);
   }
 
   public void stop() {
     io.stop();
-  }
-
-  public Rotation2d getAngle() {
-    return Rotation2d.fromRadians(inputs.armPositionRads);
   }
 
   @AutoLogOutput(key = "Arm/SetpointAngle")

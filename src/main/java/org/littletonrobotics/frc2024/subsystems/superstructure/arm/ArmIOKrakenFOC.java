@@ -157,7 +157,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         Units.rotationsToRadians(armEncoderPositionRotations.getValue());
     inputs.armAbsoluteEncoderPositionRads =
         Units.rotationsToRadians(armAbsolutePositionRotations.getValue());
-    inputs.armTrajectorySetpointRads = setpointState.position;
+    inputs.armSetpointRads = setpointState.position;
     inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRps.getValue());
     inputs.armAppliedVolts =
         armAppliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
@@ -182,9 +182,10 @@ public class ArmIOKrakenFOC implements ArmIO {
             Units.rotationsToRadians(armInternalPositionRotations.getValue()),
             Units.rotationsToRadians(armVelocityRps.getValue()));
     setpointState =
-        motionProfile.calculate(0.0, currentState, new TrapezoidProfile.State(setpointRads, 0.0));
+        motionProfile.calculate(0.02, currentState, new TrapezoidProfile.State(setpointRads, 0.0));
     // Run control
-    leaderMotor.setControl(positionControl.withPosition(setpointState.position));
+    leaderMotor.setControl(positionControl.withPosition(
+            Units.radiansToRotations(setpointState.position)));
   }
 
   @Override

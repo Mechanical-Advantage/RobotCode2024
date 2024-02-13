@@ -10,7 +10,6 @@ package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -27,33 +26,31 @@ public class ArmIOSim implements ArmIO {
           armLength,
           minAngle.getRadians(),
           maxAngle.getRadians(),
-          true,
+          false,
           Units.degreesToRadians(0.0));
 
   private final ProfiledPIDController profiledController;
-  private ArmFeedforward ff;
   private double appliedVoltage = 0.0;
   private double positionOffset = 0.0;
 
   private boolean controllerNeedsReset = false;
-  private boolean closedLoop = false;
+  private boolean closedLoop = true;
 
   public ArmIOSim() {
-    ff = new ArmFeedforward(gains.ffkS(), gains.ffkG(), gains.ffkV(), gains.ffkA());
     profiledController =
-        new ProfiledPIDController(gains.kP(), gains.kI(), gains.kD(), profileConstraints, 0.001);
+        new ProfiledPIDController(gains.kP(), gains.kI(), gains.kD(), profileConstraints, 0.02);
     sim.setState(Units.degreesToRadians(45.0), 0.0);
   }
 
   @Override
   public void updateInputs(ArmIOInputs inputs) {
-    sim.update(0.02);
     if (DriverStation.isDisabled()) {
       controllerNeedsReset = true;
     }
+    sim.update(0.02);
 
     inputs.armPositionRads = sim.getAngleRads() + positionOffset;
-    inputs.armTrajectorySetpointRads = profiledController.getSetpoint().position;
+    inputs.armSetpointRads = profiledController.getSetpoint().position;
     inputs.armVelocityRadsPerSec = sim.getVelocityRadPerSec();
     inputs.armAppliedVolts = new double[] {appliedVoltage};
     inputs.armCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
@@ -71,11 +68,12 @@ public class ArmIOSim implements ArmIO {
     }
     if (controllerNeedsReset) {
       profiledController.reset(sim.getAngleRads(), sim.getVelocityRadPerSec());
+      controllerNeedsReset = false;
     }
     // Control
-    double feedback = profiledController.calculate(sim.getAngleRads(), setpointRads);
-    sim.setInputVoltage(
-        feedback + ff.calculate(sim.getAngleRads(), profiledController.getSetpoint().velocity));
+    runVolts(
+        profiledController.calculate(sim.getAngleRads() + positionOffset, setpointRads)
+            + profiledController.getSetpoint().velocity);
   }
 
   @Override
@@ -88,11 +86,6 @@ public class ArmIOSim implements ArmIO {
   @Override
   public void setPID(double p, double i, double d) {
     profiledController.setPID(p, i, d);
-  }
-
-  @Override
-  public void setFF(double s, double v, double a, double g) {
-    ff = new ArmFeedforward(s, g, v, a);
   }
 
   @Override

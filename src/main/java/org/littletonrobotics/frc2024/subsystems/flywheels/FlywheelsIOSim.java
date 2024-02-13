@@ -1,6 +1,6 @@
-package org.littletonrobotics.frc2024.subsystems.superstructure.flywheels;
+package org.littletonrobotics.frc2024.subsystems.flywheels;
 
-import static org.littletonrobotics.frc2024.subsystems.superstructure.SuperstructureConstants.FlywheelConstants.*;
+import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstants.*;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -11,9 +11,9 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 
 public class FlywheelsIOSim implements FlywheelsIO {
   private final FlywheelSim leftSim =
-      new FlywheelSim(DCMotor.getKrakenX60Foc(1), reduction, 0.00363458292);
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), config.reduction(), 0.00363458292);
   private final FlywheelSim rightSim =
-      new FlywheelSim(DCMotor.getKrakenX60Foc(1), reduction, 0.00363458292);
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), config.reduction(), 0.00363458292);
 
   private final PIDController leftController =
       new PIDController(gains.kP(), gains.kI(), gains.kD());

@@ -1,6 +1,6 @@
-package org.littletonrobotics.frc2024.subsystems.superstructure.flywheels;
+package org.littletonrobotics.frc2024.subsystems.flywheels;
 
-import static org.littletonrobotics.frc2024.subsystems.superstructure.SuperstructureConstants.FlywheelConstants.*;
+import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstants.*;
 
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkFlex;
@@ -24,8 +24,8 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
 
   public FlywheelsIOSparkFlex() {
     // Init Hardware
-    leftMotor = new CANSparkFlex(leftID, CANSparkFlex.MotorType.kBrushless);
-    rightMotor = new CANSparkFlex(rightID, CANSparkFlex.MotorType.kBrushless);
+    leftMotor = new CANSparkFlex(config.leftID(), CANSparkFlex.MotorType.kBrushless);
+    rightMotor = new CANSparkFlex(config.rightID(), CANSparkFlex.MotorType.kBrushless);
     leftEncoder = leftMotor.getEncoder();
     rightEncoder = rightMotor.getEncoder();
 
@@ -64,14 +64,14 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
-    inputs.leftPositionRads = Units.rotationsToRadians(leftEncoder.getPosition()) / reduction;
-    inputs.leftVelocityRpm = leftEncoder.getVelocity() / reduction;
+    inputs.leftPositionRads = Units.rotationsToRadians(leftEncoder.getPosition()) / config.reduction();
+    inputs.leftVelocityRpm = leftEncoder.getVelocity() / config.reduction();
     inputs.leftAppliedVolts = leftMotor.getAppliedOutput();
     inputs.leftOutputCurrent = leftMotor.getOutputCurrent();
     inputs.leftTempCelsius = leftMotor.getMotorTemperature();
 
-    inputs.rightPositionRads = Units.rotationsToRadians(rightEncoder.getPosition()) / reduction;
-    inputs.rightVelocityRpm = rightEncoder.getVelocity() / reduction;
+    inputs.rightPositionRads = Units.rotationsToRadians(rightEncoder.getPosition()) / config.reduction();
+    inputs.rightVelocityRpm = rightEncoder.getVelocity() / config.reduction();
     inputs.rightAppliedVolts = rightMotor.getAppliedOutput();
     inputs.rightOutputCurrent = rightMotor.getOutputCurrent();
     inputs.rightTempCelsius = rightMotor.getMotorTemperature();
@@ -86,13 +86,13 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
   @Override
   public void runVelocity(double leftRpm, double rightRpm) {
     leftController.setReference(
-        leftRpm * reduction,
+        leftRpm * config.reduction(),
         CANSparkBase.ControlType.kVelocity,
         0,
         ff.calculate(leftRpm),
         SparkPIDController.ArbFFUnits.kVoltage);
     rightController.setReference(
-        rightRpm * reduction,
+        rightRpm * config.reduction(),
         CANSparkBase.ControlType.kVelocity,
         0,
         ff.calculate(rightRpm),

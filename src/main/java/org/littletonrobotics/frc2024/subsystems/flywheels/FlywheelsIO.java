@@ -1,4 +1,4 @@
-package org.littletonrobotics.frc2024.subsystems.superstructure.flywheels;
+package org.littletonrobotics.frc2024.subsystems.flywheels;
 
 import org.littletonrobotics.junction.AutoLog;
 

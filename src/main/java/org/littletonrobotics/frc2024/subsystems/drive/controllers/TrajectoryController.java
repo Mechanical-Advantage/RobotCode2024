@@ -1,68 +1,69 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.subsystems.drive.controllers;
 
 import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.trajectoryConstants;
-import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.*;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.Arrays;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.TrajectoryGenerationHelpers;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
-import org.littletonrobotics.frc2024.util.trajectory.HolonomicDriveController;
-import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleState;
 
+@ExtensionMethod({TrajectoryGenerationHelpers.class})
 public class TrajectoryController {
-  private static LoggedTunableNumber trajectoryLinearkP =
+  private static LoggedTunableNumber linearkP =
       new LoggedTunableNumber("Trajectory/linearkP", trajectoryConstants.linearkP());
-  private static LoggedTunableNumber trajectoryLinearkD =
+  private static LoggedTunableNumber linearkD =
       new LoggedTunableNumber("Trajectory/linearkD", trajectoryConstants.linearkD());
-  private static LoggedTunableNumber trajectoryThetakP =
+  private static LoggedTunableNumber thetakP =
       new LoggedTunableNumber("Trajectory/thetakP", trajectoryConstants.thetakP());
-  private static LoggedTunableNumber trajectoryThetakD =
+  private static LoggedTunableNumber thetakD =
       new LoggedTunableNumber("Trajectory/thetakD", trajectoryConstants.thetakD());
 
-  private HolonomicDriveController controller;
-  private HolonomicTrajectory trajectory;
-  private double startTime;
+  private final HolonomicTrajectory trajectory;
+  private final PIDController xController;
+  private final PIDController yController;
+  private final PIDController thetaController;
+  private Timer timer = new Timer();
 
   public TrajectoryController(HolonomicTrajectory trajectory) {
     this.trajectory = trajectory;
-    controller =
-        new HolonomicDriveController(
-            trajectoryLinearkP.get(),
-            trajectoryLinearkD.get(),
-            trajectoryThetakP.get(),
-            trajectoryThetakD.get());
+    xController = new PIDController(linearkP.get(), 0, linearkD.get());
+    yController = new PIDController(linearkP.get(), 0, linearkD.get());
+    thetaController = new PIDController(thetakP.get(), 0, thetakD.get());
+    thetaController.enableContinuousInput(-Math.PI, Math.PI);
+    timer.start();
 
-    startTime = Timer.getFPGATimestamp();
     // Log poses
     Logger.recordOutput(
-        "Trajectory/trajectoryPoses",
+        "Trajectory/TrajectoryPoses",
         Arrays.stream(trajectory.getTrajectoryPoses())
             .map(AllianceFlipUtil::apply)
             .toArray(Pose2d[]::new));
   }
 
   public ChassisSpeeds update() {
-    // Update PID Controllers
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        pid -> controller.setPID(pid[0], pid[1], pid[2], pid[3]),
-        trajectoryLinearkP,
-        trajectoryLinearkD,
-        trajectoryThetakP,
-        trajectoryThetakD);
-
     // Run trajectory
     Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
     Twist2d fieldVelocity = RobotState.getInstance().fieldVelocity();
-    double sampletime = Timer.getFPGATimestamp() - startTime;
+    double sampletime = timer.get();
     VehicleState currentState =
         VehicleState.newBuilder()
             .setX(currentPose.getTranslation().getX())
@@ -72,36 +73,47 @@ public class TrajectoryController {
             .setVy(fieldVelocity.dy)
             .setOmega(fieldVelocity.dtheta)
             .build();
+
     // Sample and flip state
     VehicleState setpointState = trajectory.sample(sampletime);
     setpointState = AllianceFlipUtil.apply(setpointState);
 
-    // calculate trajectory speeds
-    ChassisSpeeds speeds = controller.calculate(currentState, setpointState);
+    // Calculate feedback velocities (based on position error).
+    double xFeedback = xController.calculate(currentState.getX(), setpointState.getX());
+    double yFeedback = yController.calculate(currentState.getY(), setpointState.getY());
+    double thetaFeedback =
+        thetaController.calculate(
+            MathUtil.angleModulus(currentState.getTheta()),
+            MathUtil.angleModulus(setpointState.getTheta()));
+
+    // Return next output.
+    ChassisSpeeds outputSpeeds =
+        ChassisSpeeds.fromFieldRelativeSpeeds(
+            setpointState.getVx() + xFeedback,
+            setpointState.getVy() + yFeedback,
+            setpointState.getOmega() + thetaFeedback,
+            currentPose.getRotation());
+
     // Log trajectory data
-    Logger.recordOutput(
-        "Trajectory/SetpointPose",
-        new Pose2d(
-            setpointState.getX(), setpointState.getY(), new Rotation2d(setpointState.getTheta())));
+    Logger.recordOutput("Trajectory/SetpointPose", setpointState.getPose());
     Logger.recordOutput("Trajectory/SetpointSpeeds/vx", setpointState.getVx());
     Logger.recordOutput("Trajectory/SetpointSpeeds/vy", setpointState.getVy());
     Logger.recordOutput("Trajectory/SetpointSpeeds/omega", setpointState.getOmega());
-    Logger.recordOutput("Trajectory/FieldRelativeSpeeds", speeds);
-    return speeds;
-  }
-
-  @AutoLogOutput(key = "Trajectory/TranslationError")
-  public double getTranslationError() {
-    return controller.getPoseError().getTranslation().getNorm();
-  }
-
-  @AutoLogOutput(key = "Trajectory/RotationError")
-  public Rotation2d getRotationError() {
-    return controller.getPoseError().getRotation();
+    Logger.recordOutput("Trajectory/OutputSpeeds", outputSpeeds);
+    Logger.recordOutput(
+        "Trajectory/TranslationError",
+        currentState
+            .getPose()
+            .getTranslation()
+            .getDistance(setpointState.getPose().getTranslation()));
+    Logger.recordOutput(
+        "Trajectory/RotationError",
+        currentState.getPose().getRotation().minus(setpointState.getPose().getRotation()));
+    return outputSpeeds;
   }
 
   @AutoLogOutput(key = "Trajectory/Finished")
   public boolean isFinished() {
-    return Timer.getFPGATimestamp() - startTime > trajectory.getDuration();
+    return timer.hasElapsed(trajectory.getDuration());
   }
 }

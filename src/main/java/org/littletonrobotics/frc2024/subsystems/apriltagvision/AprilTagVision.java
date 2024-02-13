@@ -1,3 +1,10 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.subsystems.apriltagvision;
 
 import static org.littletonrobotics.frc2024.RobotState.VisionObservation;
@@ -15,7 +22,6 @@ import java.util.*;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
-import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.Logger;
@@ -27,15 +33,10 @@ public class AprilTagVision extends VirtualSubsystem {
   private final AprilTagVisionIO[] io;
   private final AprilTagVisionIOInputs[] inputs;
 
-  private final RobotState robotState = RobotState.getInstance();
-  private boolean enableVisionUpdates = true;
-  private final Alert enableVisionUpdatesAlert =
-      new Alert("Vision updates are temporarily disabled.", Alert.AlertType.WARNING);
   private final Map<Integer, Double> lastFrameTimes = new HashMap<>();
   private final Map<Integer, Double> lastTagDetectionTimes = new HashMap<>();
 
   public AprilTagVision(AprilTagVisionIO... io) {
-    System.out.println("[Init] Creating AprilTagVision");
     this.io = io;
     inputs = new AprilTagVisionIOInputs[io.length];
     for (int i = 0; i < io.length; i++) {
@@ -54,12 +55,6 @@ public class AprilTagVision extends VirtualSubsystem {
             (AprilTag tag) -> {
               lastTagDetectionTimes.put(tag.ID, 0.0);
             });
-  }
-
-  /** Sets whether vision updates for odometry are enabled. */
-  public void setVisionUpdatesEnabled(boolean enabled) {
-    enableVisionUpdates = enabled;
-    enableVisionUpdatesAlert.set(!enabled);
   }
 
   public void periodic() {
@@ -211,10 +206,8 @@ public class AprilTagVision extends VirtualSubsystem {
     Logger.recordOutput("AprilTagVision/TagPoses", allTagPoses.toArray(Pose3d[]::new));
 
     // Send results to robot state
-    if (enableVisionUpdates) {
-      allVisionObservations.stream()
-          .sorted(Comparator.comparingDouble(VisionObservation::timestamp))
-          .forEach(robotState::addVisionObservation);
-    }
+    allVisionObservations.stream()
+        .sorted(Comparator.comparingDouble(VisionObservation::timestamp))
+        .forEach(RobotState.getInstance()::addVisionObservation);
   }
 }

@@ -1,3 +1,10 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024;
 
 import static edu.wpi.first.apriltag.AprilTagFields.k2024Crescendo;
@@ -65,7 +72,7 @@ public class FieldConstants {
         new Translation3d(
             Units.inchesToMeters(18.055),
             Units.inchesToMeters(238.815),
-            Units.inchesToMeters(13.091));
+            Units.inchesToMeters(83.091));
 
     public static Translation3d topLeftSpeaker =
         new Translation3d(
@@ -80,10 +87,7 @@ public class FieldConstants {
 
     /** Center of the speaker opening (blue alliance) */
     public static Translation3d centerSpeakerOpening =
-        new Translation3d(
-            topLeftSpeaker.getX() / 2.0,
-            fieldWidth - Units.inchesToMeters(104.0),
-            (bottomLeftSpeaker.getZ() + bottomRightSpeaker.getZ()) / 2.0);
+        bottomLeftSpeaker.interpolate(topRightSpeaker, 0.5);
   }
 
   public static final class Subwoofer {

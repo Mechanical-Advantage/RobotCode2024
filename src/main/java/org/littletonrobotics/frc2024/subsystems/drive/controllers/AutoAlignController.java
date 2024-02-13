@@ -1,3 +1,10 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.subsystems.drive.controllers;
 
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -52,9 +59,6 @@ public class AutoAlignController {
   private final ProfiledPIDController linearController;
   private final ProfiledPIDController thetaController;
 
-  // Store previous velocities for acceleration limiting
-  private Translation2d prevLinearVelocity;
-
   public AutoAlignController(Pose2d goalPose) {
     this.goalPose = goalPose;
     // Set up both controllers
@@ -92,9 +96,6 @@ public class AutoAlignController {
     // Set goal positions
     linearController.setGoal(0.0);
     thetaController.setGoal(goalPose.getRotation().getRadians());
-
-    // Store linear velocity for acceleration limiting
-    prevLinearVelocity = new Translation2d(fieldVelocity.dx, fieldVelocity.dy);
 
     // Log goal pose
     Logger.recordOutput("AutoAlign/GoalPose", goalPose);

@@ -1,3 +1,10 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.subsystems.rollers.indexer;
 
 import java.util.function.DoubleSupplier;
@@ -12,7 +19,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 public class Indexer extends GenericRollerSystem<Indexer.Goal> {
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements VoltageGoal {
+  public enum Goal implements GenericRollerSystem.VoltageGoal {
     IDLE(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Indexer/FloorIntakingVoltage", 2.0)),
     STATION_INTAKING(new LoggedTunableNumber("Indexer/StationIntakingVoltage", -2.0)),

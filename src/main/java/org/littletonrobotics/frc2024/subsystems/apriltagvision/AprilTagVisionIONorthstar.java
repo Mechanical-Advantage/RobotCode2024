@@ -1,11 +1,11 @@
-package org.littletonrobotics.frc2024.subsystems.apriltagvision;
-
-// Copyright (c) 2023 FRC 6328
+// Copyright (c) 2024 FRC 6328
 // http://github.com/Mechanical-Advantage
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file at
 // the root directory of this project.
+
+package org.littletonrobotics.frc2024.subsystems.apriltagvision;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,11 +31,8 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private static final double disconnectedTimeout = 0.5;
   private final Alert disconnectedAlert;
   private final Timer disconnectedTimer = new Timer();
-  private final String identifier;
 
   public AprilTagVisionIONorthstar(String instanceId, String cameraId) {
-    this.identifier = instanceId;
-    System.out.println("[Init] Creating AprilTagVisionIONorthstar (" + instanceId + ")");
     var northstarTable = NetworkTableInstance.getDefault().getTable(instanceId);
 
     var configTable = northstarTable.getSubTable("config");

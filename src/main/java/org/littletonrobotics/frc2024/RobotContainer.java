@@ -1,15 +1,9 @@
-// Copyright 2021-2024 FRC 6328
+// Copyright (c) 2024 FRC 6328
 // http://github.com/Mechanical-Advantage
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 3 as published by the Free Software Foundation or
-// available in the root directory of this project.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
 
 package org.littletonrobotics.frc2024;
 
@@ -68,26 +62,31 @@ public class RobotContainer {
   // Subsystems
   private Drive drive;
   private AprilTagVision aprilTagVision;
-
-  private Feeder feeder;
-  private Indexer indexer;
-  private Intake intake;
-  private Rollers rollers;
-
   private Flywheels flywheels;
-  private Arm arm;
+  private Rollers rollers;
   private Superstructure superstructure;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
 
   // Dashboard inputs
-  private final LoggedDashboardChooser<Command> autoChooser;
+  private final LoggedDashboardChooser<Command> autoChooser =
+      new LoggedDashboardChooser<>("Auto Choices");
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    // Declare component subsystems (not visible outside constructor)
+    Feeder feeder = null;
+    Indexer indexer = null;
+    Intake intake = null;
+    Arm arm = null;
+
+    // Create subsystems
     if (Constants.getMode() != Constants.Mode.REPLAY) {
       switch (Constants.getRobot()) {
+        case COMPBOT -> {
+          // No impl yet
+        }
         case DEVBOT -> {
           drive =
               new Drive(
@@ -96,15 +95,6 @@ public class RobotContainer {
                   new ModuleIOSparkMax(DriveConstants.moduleConfigs[1]),
                   new ModuleIOSparkMax(DriveConstants.moduleConfigs[2]),
                   new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
-
-          feeder = new Feeder(new FeederIOKrakenFOC());
-          indexer = new Indexer(new IndexerIOSparkFlex());
-          intake = new Intake(new IntakeIOKrakenFOC());
-          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIOReal());
-
-          flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-          arm = new Arm(new ArmIOKrakenFOC());
-
           aprilTagVision =
               new AprilTagVision(
                   new AprilTagVisionIONorthstar(
@@ -113,6 +103,14 @@ public class RobotContainer {
                   new AprilTagVisionIONorthstar(
                       AprilTagVisionConstants.instanceNames[1],
                       AprilTagVisionConstants.cameraIds[1]));
+          flywheels = new Flywheels(new FlywheelsIOSparkFlex());
+
+          feeder = new Feeder(new FeederIOKrakenFOC());
+          indexer = new Indexer(new IndexerIOSparkFlex());
+          intake = new Intake(new IntakeIOKrakenFOC());
+          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIOReal());
+
+          arm = new Arm(new ArmIOKrakenFOC());
         }
         case SIMBOT -> {
           drive =
@@ -122,12 +120,8 @@ public class RobotContainer {
                   new ModuleIOSim(DriveConstants.moduleConfigs[1]),
                   new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                   new ModuleIOSim(DriveConstants.moduleConfigs[3]));
-          arm = new Arm(new ArmIOSim());
           flywheels = new Flywheels(new FlywheelsIOSim());
-          superstructure = new Superstructure(arm, flywheels);
-        }
-        case COMPBOT -> {
-          // No impl yet
+          arm = new Arm(new ArmIOSim());
         }
       }
     }
@@ -141,7 +135,6 @@ public class RobotContainer {
               new ModuleIO() {},
               new ModuleIO() {});
     }
-
     if (aprilTagVision == null) {
       switch (Constants.getRobot()) {
         case DEVBOT ->
@@ -150,37 +143,36 @@ public class RobotContainer {
         default -> aprilTagVision = new AprilTagVision();
       }
     }
-
     if (flywheels == null) {
       flywheels = new Flywheels(new FlywheelsIO() {});
     }
-
-    if (intake == null) {
-      intake = new Intake(new IntakeIO() {});
-    }
-
-    if (arm == null) {
-      arm = new Arm(new ArmIO() {});
-    }
-
     if (feeder == null) {
       feeder = new Feeder(new FeederIO() {});
     }
-
     if (indexer == null) {
       indexer = new Indexer(new IndexerIO() {});
     }
-
+    if (intake == null) {
+      intake = new Intake(new IntakeIO() {});
+    }
     if (rollers == null) {
       rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
     }
-
-    if (superstructure == null) {
-      superstructure = new Superstructure(arm, flywheels);
+    if (arm == null) {
+      arm = new Arm(new ArmIO() {});
     }
+    superstructure = new Superstructure(arm);
 
-    autoChooser = new LoggedDashboardChooser<>("Auto Choices");
+    // Configure autos and buttons
+    configureAutos();
+    configureButtonBindings();
+  }
+
+  private void configureAutos() {
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
+    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
+    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive FF Characterization",
@@ -188,25 +180,11 @@ public class RobotContainer {
                 drive, drive::runCharacterizationVolts, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
     autoChooser.addOption(
-        "Left Flywheels FF Characterization",
+        "Flywheels FF Characterization",
         new FeedForwardCharacterization(
             flywheels,
-            flywheels::runLeftCharacterizationVolts,
-            flywheels::getLeftCharacterizationVelocity));
-    autoChooser.addOption(
-        "Right Flywheels FF Characterization",
-        new FeedForwardCharacterization(
-            flywheels,
-            flywheels::runRightCharacterizationVolts,
-            flywheels::getRightCharacterizationVelocity));
-    autoChooser.addOption("Arm get static current", arm.getStaticCurrent());
-
-    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
-
-    //    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
-
-    // Configure the button bindings
-    configureButtonBindings();
+            flywheels::runCharacterizationVolts,
+            flywheels::getCharacterizationVelocity));
   }
 
   /**
@@ -217,26 +195,24 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // Drive Commands
     drive.setDefaultCommand(
-        drive.run(
-            () ->
-                drive.setTeleopDriveGoal(
-                    -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX())));
-
+        drive
+            .run(
+                () ->
+                    drive.setTeleopDriveGoal(
+                        -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
+            .withName("DriveTeleop"));
     controller
         .a()
-        .onTrue(Commands.runOnce(drive::setAutoAimGoal))
-        .onFalse(Commands.runOnce(drive::clearAutoAimGoal));
-
-    controller
-        .a()
-        .onTrue(
-            Commands.runOnce(
-                () -> superstructure.setGoalState(Superstructure.SystemState.PREPARE_SHOOT)))
-        .onFalse(
-            Commands.runOnce(() -> superstructure.setGoalState(Superstructure.SystemState.IDLE)));
+        .whileTrue(
+            Commands.startEnd(drive::setAutoAimGoal, drive::clearAutoAimGoal)
+                .alongWith(superstructure.aimCommand(), flywheels.shootCommand()));
 
     Trigger readyToShootTrigger =
-        new Trigger(() -> drive.isAutoAimGoalCompleted() && superstructure.atShootingSetpoint());
+        new Trigger(
+            () ->
+                drive.isAutoAimGoalCompleted()
+                    && flywheels.atSetpoint()
+                    && superstructure.atArmSetpoint());
     readyToShootTrigger
         .whileTrue(
             Commands.run(
@@ -248,65 +224,37 @@ public class RobotContainer {
         .rightTrigger()
         .and(readyToShootTrigger)
         .onTrue(
-            Commands.runOnce(
-                    () -> {
-                      superstructure.setGoalState(Superstructure.SystemState.SHOOT);
-                      rollers.setGoal(Rollers.Goal.FEED_SHOOTER);
-                    },
-                    superstructure,
-                    rollers)
-                .andThen(Commands.waitSeconds(1.0))
-                .andThen(
-                    Commands.runOnce(
-                        () -> {
-                          superstructure.setGoalState(Superstructure.SystemState.IDLE);
-                          rollers.setGoal(Rollers.Goal.IDLE);
-                        })));
+            rollers
+                .feedShooterCommand()
+                .withTimeout(1.0)
+                // Take over superstructure and flywheels, cancelling the main aiming command
+                .deadlineWith(superstructure.aimCommand(), flywheels.shootCommand()));
 
     controller
         .leftTrigger()
         .whileTrue(
-            Commands.runOnce(
-                    () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE),
-                    superstructure)
-                .andThen(
-                    Commands.waitSeconds(0.25),
-                    Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.FLOOR_INTAKE), rollers),
-                    Commands.idle())
-                .finallyDo(
-                    () -> {
-                      rollers.setGoal(Rollers.Goal.IDLE);
-                      superstructure.setGoalState(Superstructure.SystemState.IDLE);
-                    }));
-
+            superstructure
+                .floorIntakeCommand()
+                .alongWith(Commands.waitSeconds(0.25).andThen(rollers.floorIntakeCommand())));
     controller
         .leftBumper()
         .whileTrue(
-            Commands.runOnce(
-                    () -> superstructure.setGoalState(Superstructure.SystemState.INTAKE),
-                    superstructure)
-                .andThen(
-                    Commands.waitSeconds(0.25),
-                    Commands.runOnce(() -> rollers.setGoal(Rollers.Goal.EJECT_TO_FLOOR), rollers),
-                    Commands.idle())
-                .finallyDo(
-                    () -> {
-                      rollers.setGoal(Rollers.Goal.IDLE);
-                      superstructure.setGoalState(Superstructure.SystemState.IDLE);
-                    }));
+            superstructure
+                .floorIntakeCommand()
+                .alongWith(Commands.waitSeconds(0.25).andThen(rollers.ejectFloorCommand())));
 
     controller
         .y()
         .onTrue(
             Commands.runOnce(
-                () ->
-                    robotState.resetPose(
-                        AllianceFlipUtil.apply(
-                            new Pose2d(
-                                Units.inchesToMeters(36.0),
-                                FieldConstants.Speaker.centerSpeakerOpening.getY(),
-                                new Rotation2d())))));
-
+                    () ->
+                        robotState.resetPose(
+                            AllianceFlipUtil.apply(
+                                new Pose2d(
+                                    Units.inchesToMeters(36.0),
+                                    FieldConstants.Speaker.centerSpeakerOpening.getY(),
+                                    new Rotation2d()))))
+                .ignoringDisable(true));
     controller
         .b()
         .onTrue(
@@ -314,7 +262,8 @@ public class RobotContainer {
                     () ->
                         robotState.resetPose(
                             new Pose2d(
-                                robotState.getEstimatedPose().getTranslation(), new Rotation2d())))
+                                robotState.getEstimatedPose().getTranslation(),
+                                AllianceFlipUtil.apply(new Rotation2d()))))
                 .ignoringDisable(true));
   }
 

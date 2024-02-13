@@ -1,21 +1,15 @@
-// Copyright 2021-2024 FRC 6328
+// Copyright (c) 2024 FRC 6328
 // http://github.com/Mechanical-Advantage
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 3 as published by the Free Software Foundation or
-// available in the root directory of this project.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
 
 package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.wpilibj.RobotBase;
-import java.util.Map;
 import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.Alert.AlertType;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
@@ -30,13 +24,10 @@ public final class Constants {
   private static RobotType robotType = RobotType.SIMBOT;
   public static final boolean tuningMode = true;
 
-  private static boolean invalidRobotAlertSent = false;
-
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
-      new Alert("Invalid Robot Selected, using COMPBOT as default", Alert.AlertType.ERROR)
+      new Alert("Invalid robot selected, using competition robot as default.", AlertType.ERROR)
           .set(true);
-      invalidRobotAlertSent = true;
       robotType = RobotType.COMPBOT;
     }
     return robotType;
@@ -48,8 +39,6 @@ public final class Constants {
       case SIMBOT -> Mode.SIM;
     };
   }
-
-  public static final Map<RobotType, String> logFolders = Map.of(RobotType.DEVBOT, "/media/sda1/");
 
   public enum Mode {
     /** Running on a real robot. */

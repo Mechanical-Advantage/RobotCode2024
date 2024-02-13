@@ -1,15 +1,9 @@
-// Copyright 2021-2024 FRC 6328
+// Copyright (c) 2024 FRC 6328
 // http://github.com/Mechanical-Advantage
 //
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// version 3 as published by the Free Software Foundation or
-// available in the root directory of this project.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
 
 package org.littletonrobotics.frc2024.subsystems.drive;
 
@@ -32,12 +26,12 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAimControl
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.frc2024.util.swerve.SwerveSetpoint;
 import org.littletonrobotics.frc2024.util.swerve.SwerveSetpointGenerator;
-import org.littletonrobotics.frc2024.util.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.junction.AutoLog;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -109,7 +103,6 @@ public class Drive extends SubsystemBase {
   private AutoAimController autoAimController = null;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
-    System.out.println("[Init] Creating Drive");
     this.gyroIO = gyroIO;
     modules[0] = new Module(fl, 0);
     modules[1] = new Module(fr, 1);

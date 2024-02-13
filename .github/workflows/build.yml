@@ -14,5 +14,9 @@ jobs:
         uses: actions/checkout@v2
       - name: Grant execute permission
         run: chmod +x gradlew
+      - name: Check formatting
+        run: ./gradlew spotlessCheck
       - name: Build robot code
         run: ./gradlew build
+        env:
+          GENERATE_EMPTY_DRIVE_TRAJECTORIES: true

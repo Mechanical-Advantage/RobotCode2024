@@ -1,10 +1,15 @@
+// Copyright (c) 2024 FRC 6328
+// http://github.com/Mechanical-Advantage
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file at
+// the root directory of this project.
+
 package org.littletonrobotics.frc2024.subsystems.rollers;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import lombok.Getter;
-import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
@@ -27,15 +32,13 @@ public class Rollers extends SubsystemBase {
     FEED_SHOOTER
   }
 
-  @Getter @Setter private Goal goal = Goal.IDLE;
-
   public Rollers(Feeder feeder, Indexer indexer, Intake intake, RollersSensorsIO sensorsIO) {
     this.feeder = feeder;
     this.indexer = indexer;
     this.intake = intake;
     this.sensorsIO = sensorsIO;
 
-    setDefaultCommand(idleCommand());
+    setDefaultCommand(runOnce(this::goIdle).withName("RollersIdle"));
   }
 
   @Override
@@ -43,24 +46,23 @@ public class Rollers extends SubsystemBase {
     sensorsIO.updateInputs(sensorInputs);
     Logger.processInputs("RollersSensors", sensorInputs);
 
+    if (DriverStation.isDisabled()) {
+      goIdle();
+    }
+
     feeder.periodic();
     indexer.periodic();
     intake.periodic();
   }
 
-  public Command idleCommand() {
-    return runOnce(
-            () -> {
-              feeder.setGoal(Feeder.Goal.IDLE);
-              indexer.setGoal(Indexer.Goal.IDLE);
-              intake.setGoal(Intake.Goal.IDLE);
-            })
-        .andThen(Commands.idle())
-        .withName("Rollers Idle");
+  private void goIdle() {
+    feeder.setGoal(Feeder.Goal.IDLE);
+    indexer.setGoal(Indexer.Goal.IDLE);
+    intake.setGoal(Intake.Goal.IDLE);
   }
 
   public Command floorIntakeCommand() {
-    return runOnce(
+    return startEnd(
             () -> {
               feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
               indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
@@ -68,13 +70,13 @@ public class Rollers extends SubsystemBase {
               if (sensorInputs.shooterStaged) {
                 indexer.setGoal(Indexer.Goal.IDLE);
               }
-            })
-        .andThen(Commands.idle())
-        .withName("Rollers Floor Intake");
+            },
+            this::goIdle)
+        .withName("RollersFloorIntake");
   }
 
   public Command stationIntakeCommand() {
-    return runOnce(
+    return startEnd(
             () -> {
               feeder.setGoal(Feeder.Goal.IDLE);
               indexer.setGoal(Indexer.Goal.STATION_INTAKING);
@@ -82,30 +84,30 @@ public class Rollers extends SubsystemBase {
               if (sensorInputs.shooterStaged) { // TODO: ADD THIS BANNER
                 indexer.setGoal(Indexer.Goal.IDLE);
               }
-            })
-        .andThen(Commands.idle())
-        .withName("Rollers Station Intake");
+            },
+            this::goIdle)
+        .withName("RollersStationIntake");
   }
 
   public Command ejectFloorCommand() {
-    return runOnce(
+    return startEnd(
             () -> {
               feeder.setGoal(Feeder.Goal.EJECTING);
               indexer.setGoal(Indexer.Goal.EJECTING);
               intake.setGoal(Intake.Goal.EJECTING);
-            })
-        .andThen(Commands.idle())
-        .withName("Rollers Eject Floor");
+            },
+            this::goIdle)
+        .withName("RollersEjectFloor");
   }
 
   public Command feedShooterCommand() {
-    return runOnce(
+    return startEnd(
             () -> {
               feeder.setGoal(Feeder.Goal.SHOOTING);
               indexer.setGoal(Indexer.Goal.SHOOTING);
               intake.setGoal(Intake.Goal.IDLE);
-            })
-        .andThen(Commands.idle())
-        .withName("Rollers Feed Shooter");
+            },
+            this::goIdle)
+        .withName("RollersFeedShooter");
   }
 }

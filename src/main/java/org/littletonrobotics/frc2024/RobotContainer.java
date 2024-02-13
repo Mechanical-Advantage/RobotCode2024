@@ -197,7 +197,7 @@ public class RobotContainer {
 
     AutoCommands autoCommands = new AutoCommands(drive, superstructure);
 
-    //    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
 
     // Configure the button bindings
     configureButtonBindings();

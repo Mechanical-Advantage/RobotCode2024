@@ -23,6 +23,12 @@ import java.util.Map;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceGrpc;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.PathRequest;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.PathSegment;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.Trajectory;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.TrajectoryResponse;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleModel;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.Waypoint;
 
 public class GenerateTrajectories {
   public static void main(String[] args) {
@@ -52,7 +58,6 @@ public class GenerateTrajectories {
         try {
           InputStream fileStream = new FileInputStream(pathFile);
           Trajectory trajectory = Trajectory.parseFrom(fileStream);
-          // trajectory.getStatesC
           if (!trajectory.getHashCode().equals(hashCode)) {
             pathQueue.put(entry.getKey(), entry.getValue());
           }
@@ -73,30 +78,36 @@ public class GenerateTrajectories {
     var channel =
         Grpc.newChannelBuilder("127.0.0.1:56328", InsecureChannelCredentials.create()).build();
     var service = VehicleTrajectoryServiceGrpc.newBlockingStub(channel);
+    String generateEmptyFlag = System.getenv("GENERATE_EMPTY_DRIVE_TRAJECTORIES");
+    boolean generateEmpty = generateEmptyFlag != null && generateEmptyFlag.length() > 0;
 
     // Generate trajectories
     for (Map.Entry<String, List<PathSegment>> entry : pathQueue.entrySet()) {
-      PathRequest request =
-          PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
-
-      TrajectoryResponse response = service.generateTrajectory(request);
-      System.out.println(response.getError());
-
-      String responseHashCode = getHashCode(model, entry.getValue());
-
-      response =
-          response.toBuilder()
-              .setTrajectory(
-                  response.getTrajectory().toBuilder().setHashCode(responseHashCode).build())
-              .build();
-
+      Trajectory trajectory;
+      if (generateEmpty) {
+        trajectory = Trajectory.newBuilder().build();
+      } else {
+        // Use service for generation
+        PathRequest request =
+            PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
+        TrajectoryResponse response = service.generateTrajectory(request);
+        String error = response.getError().getReason();
+        if (error.length() > 0) {
+          System.err.println(
+              "Got error response for trajectory \"" + entry.getKey() + "\": " + error);
+          System.exit(1);
+        }
+        trajectory =
+            response.getTrajectory().toBuilder()
+                .setHashCode(getHashCode(model, entry.getValue()))
+                .build();
+      }
       File pathFile =
           Path.of("src", "main", "deploy", "trajectories", entry.getKey() + ".pathblob").toFile();
-
       try {
         OutputStream fileStream = new FileOutputStream(pathFile);
         System.out.println("Writing to " + pathFile.getAbsolutePath());
-        response.getTrajectory().writeTo(fileStream);
+        trajectory.writeTo(fileStream);
       } catch (IOException e) {
         e.printStackTrace();
       }

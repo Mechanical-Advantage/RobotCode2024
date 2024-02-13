@@ -37,9 +37,12 @@ public class HolonomicTrajectory {
   }
 
   public double getDuration() {
-    return trajectory.getStates(trajectory.getStatesCount() - 1).getTime();
+    if (trajectory.getStatesCount() > 0) {
+      return trajectory.getStates(trajectory.getStatesCount() - 1).getTime();
+    } else {
+      return 0.0;
+    }
   }
-  ;
 
   public Pose2d getStartPose() {
     VehicleState startState = getStartState();
@@ -55,7 +58,6 @@ public class HolonomicTrajectory {
     }
     return poses;
   }
-  ;
 
   public VehicleState getStartState() {
     return trajectory.getStates(0).getState();

@@ -8,7 +8,6 @@
 package org.littletonrobotics.frc2024.subsystems.rollers;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
 import lombok.Setter;
@@ -90,30 +89,26 @@ public class Rollers extends SubsystemBase {
   }
 
   public Command idle() {
-    return runOnce(() -> setGoal(Goal.IDLING)).andThen(Commands.idle()).withName("Rollers Idle");
+    return runOnce(() -> setGoal(Goal.IDLING)).withName("Rollers Idle");
   }
 
   public Command floorIntake() {
     return startEnd(() -> setGoal(Goal.FLOOR_INTAKING), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
         .withName("Rollers Floor Intake");
   }
 
   public Command stationIntake() {
     return startEnd(() -> setGoal(Goal.STATION_INTAKING), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
         .withName("Rollers Station Intake");
   }
 
   public Command ejectFloor() {
     return startEnd(() -> setGoal(Goal.EJECTING_TO_FLOOR), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
         .withName("Rollers Eject Floor");
   }
 
   public Command feedShooter() {
     return startEnd(() -> setGoal(Goal.FEEDING_TO_SHOOTER), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
         .withName("Rollers Feed Shooter");
   }
 }

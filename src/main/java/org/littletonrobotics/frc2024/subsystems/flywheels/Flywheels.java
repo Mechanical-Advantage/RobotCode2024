@@ -11,7 +11,6 @@ import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstan
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
@@ -52,7 +51,7 @@ public class Flywheels extends SubsystemBase {
     IDLING(idleLeftRpm, idleRightRpm),
     SHOOTING(shootingLeftRpm, shootingRightRpm),
     INTAKING(intakingRpm, intakingRpm),
-    EJECTing(ejectingRpm, ejectingRpm),
+    EJECTING(ejectingRpm, ejectingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftSetpoint;
@@ -122,28 +121,25 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command stop() {
-    return runOnce(() -> setGoal(Goal.STOP)).andThen(Commands.idle()).withName("Flywheels Stop");
+    return runOnce(() -> setGoal(Goal.STOP)).withName("Flywheels Stop");
   }
 
   public Command idle() {
-    return runOnce(() -> setGoal(Goal.IDLING)).andThen(Commands.idle()).withName("Flywheels Idle");
+    return runOnce(() -> setGoal(Goal.IDLING)).withName("Flywheels Idle");
   }
 
   public Command shoot() {
     return startEnd(() -> setGoal(Goal.SHOOTING), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
         .withName("Flywheels Shooting");
   }
 
   public Command intake() {
     return startEnd(() -> setGoal(Goal.INTAKING), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
         .withName("Flywheels Intaking");
   }
 
   public Command eject() {
-    return startEnd(() -> setGoal(Goal.EJECTing), () -> setGoal(Goal.IDLING))
-        .andThen(Commands.idle())
+    return startEnd(() -> setGoal(Goal.EJECTING), () -> setGoal(Goal.IDLING))
         .withName("Flywheels Ejecting");
   }
 }

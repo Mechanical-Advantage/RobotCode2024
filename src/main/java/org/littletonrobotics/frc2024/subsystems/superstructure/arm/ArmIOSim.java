@@ -10,9 +10,8 @@ package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
 
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
@@ -29,7 +28,7 @@ public class ArmIOSim implements ArmIO {
           false,
           Units.degreesToRadians(0.0));
 
-  private final ProfiledPIDController profiledController;
+  private final PIDController controller;
   private double appliedVoltage = 0.0;
   private double positionOffset = 0.0;
 
@@ -37,9 +36,9 @@ public class ArmIOSim implements ArmIO {
   private boolean closedLoop = true;
 
   public ArmIOSim() {
-    profiledController =
-        new ProfiledPIDController(gains.kP(), gains.kI(), gains.kD(), profileConstraints, 0.02);
-    sim.setState(Units.degreesToRadians(45.0), 0.0);
+    controller = new PIDController(0.0, 0.0, 0.0);
+    sim.setState(0.0, 0.0);
+    setPosition(0.0);
   }
 
   @Override
@@ -47,10 +46,10 @@ public class ArmIOSim implements ArmIO {
     if (DriverStation.isDisabled()) {
       controllerNeedsReset = true;
     }
+
     sim.update(0.02);
 
     inputs.armPositionRads = sim.getAngleRads() + positionOffset;
-    inputs.armSetpointRads = profiledController.getSetpoint().position;
     inputs.armVelocityRadsPerSec = sim.getVelocityRadPerSec();
     inputs.armAppliedVolts = new double[] {appliedVoltage};
     inputs.armCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
@@ -62,18 +61,16 @@ public class ArmIOSim implements ArmIO {
   }
 
   @Override
-  public void runSetpoint(double setpointRads) {
+  public void runSetpoint(double setpointRads, double feedforward) {
     if (!closedLoop) {
       controllerNeedsReset = true;
+      closedLoop = true;
     }
     if (controllerNeedsReset) {
-      profiledController.reset(sim.getAngleRads(), sim.getVelocityRadPerSec());
+      controller.reset();
       controllerNeedsReset = false;
     }
-    // Control
-    runVolts(
-        profiledController.calculate(sim.getAngleRads() + positionOffset, setpointRads)
-            + profiledController.getSetpoint().velocity);
+    runVolts(controller.calculate(sim.getAngleRads(), setpointRads + positionOffset) + feedforward);
   }
 
   @Override
@@ -85,14 +82,7 @@ public class ArmIOSim implements ArmIO {
 
   @Override
   public void setPID(double p, double i, double d) {
-    profiledController.setPID(p, i, d);
-  }
-
-  @Override
-  public void setProfileConstraints(
-      double cruiseVelocityRadsPerSec, double accelerationRadsPerSec2) {
-    profiledController.setConstraints(
-        new TrapezoidProfile.Constraints(cruiseVelocityRadsPerSec, accelerationRadsPerSec2));
+    controller.setPID(p, i, d);
   }
 
   @Override

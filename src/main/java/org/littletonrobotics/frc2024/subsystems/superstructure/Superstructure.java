@@ -8,12 +8,10 @@
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -66,26 +64,21 @@ public class Superstructure extends SubsystemBase {
   }
 
   public Command stow() {
-    return runOnce(() -> setGoal(SystemState.STOWING))
-        .andThen(Commands.idle())
-        .withName("Superstructure Stow");
+    return runOnce(() -> setGoal(SystemState.STOWING)).withName("Superstructure Stow");
   }
 
   public Command aim() {
     return startEnd(() -> setGoal(SystemState.AIMING), () -> setGoal(SystemState.STOWING))
-        .andThen(Commands.idle())
         .withName("Superstructure Aim");
   }
 
   public Command intake() {
     return startEnd(() -> setGoal(SystemState.INTAKING), () -> setGoal(SystemState.STOWING))
-        .andThen(Commands.idle())
         .withName("Superstructure Intake");
   }
 
   public Command stationIntake() {
     return startEnd(() -> setGoal(SystemState.STATION_INTAKING), () -> setGoal(SystemState.STOWING))
-        .andThen(Commands.idle())
         .withName("Superstructure Station Intake");
   }
 }

@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
-import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
@@ -124,12 +123,19 @@ public class RobotContainer {
                   new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                   new ModuleIOSim(DriveConstants.moduleConfigs[3]));
           flywheels = new Flywheels(new FlywheelsIOSim());
+
+          feeder = new Feeder(new FeederIOSim());
+          indexer = new Indexer(new IndexerIOSim());
+          intake = new Intake(new IntakeIOSim());
+          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
+
           arm = new Arm(new ArmIOSim());
+          superstructure = new Superstructure(arm);
         }
       }
     }
 
-    // No implementation for replay
+    // No-op implementation for replay
     if (drive == null) {
       drive =
           new Drive(
@@ -167,9 +173,6 @@ public class RobotContainer {
     }
     superstructure = new Superstructure(arm);
 
-    if (superstructure == null) {
-      superstructure = new Superstructure(arm);
-    }
     // Configure autos and buttons
     configureAutos();
     configureButtonBindings();
@@ -177,8 +180,8 @@ public class RobotContainer {
 
   private void configureAutos() {
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
-    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
-    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    //    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
+    //    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
 
     // Set up feedforward characterization
     autoChooser.addOption(
@@ -202,18 +205,20 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // Drive Commands
     drive.setDefaultCommand(
-        drive.run(
-            () ->
-                drive.setTeleopDriveGoal(
-                    -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX())));
+        drive
+            .run(
+                () ->
+                    drive.setTeleopDriveGoal(
+                        -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
+            .withName("Drive Teleop Input"));
 
-    // Aim
+    // Aim and Rev Flywheels
     controller
         .a()
-        .onTrue(Commands.runOnce(drive::setAutoAimGoal))
-        .onFalse(Commands.runOnce(drive::clearAutoAimGoal));
-    controller.a().whileTrue(Commands.parallel(flywheels.shoot(), superstructure.aim()));
-
+        .whileTrue(
+            Commands.startEnd(drive::setAutoAimGoal, drive::clearAutoAimGoal)
+                .alongWith(superstructure.aim(), flywheels.shoot())
+                .withName("Aim"));
     // Shoot
     Trigger readyToShoot =
         new Trigger(
@@ -228,22 +233,26 @@ public class RobotContainer {
         .whileFalse(
             Commands.run(
                 () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
-    controller.rightTrigger().and(readyToShoot).whileTrue(rollers.feedShooter());
-
+    controller
+        .rightTrigger()
+        .and(readyToShoot)
+        .onTrue(rollers.feedShooter().withTimeout(1.0).withName("Shoot"));
     // Intake Floor
     controller
         .leftTrigger()
         .whileTrue(
-            Commands.parallel(
-                superstructure.intake(),
-                Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake())));
+            superstructure
+                .intake()
+                .alongWith(rollers.floorIntake().onlyIf(superstructure::atGoal))
+                .withName("Floor Intake"));
     // Eject Floor
     controller
         .leftBumper()
         .whileTrue(
-            Commands.parallel(
-                superstructure.intake(),
-                Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor())));
+            superstructure
+                .intake()
+                .alongWith(rollers.ejectFloor().onlyIf(superstructure::atGoal))
+                .withName("Eject Floor"));
 
     controller
         .y()

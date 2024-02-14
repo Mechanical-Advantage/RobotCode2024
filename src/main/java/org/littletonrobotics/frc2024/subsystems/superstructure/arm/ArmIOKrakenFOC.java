@@ -86,16 +86,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     leaderConfig.Feedback.RotorToSensorRatio = reduction;
 
     // Set up controller
-    controllerConfig =
-        new Slot0Configs()
-            .withKP(gains.kP())
-            .withKI(gains.kI())
-            .withKD(gains.kD())
-            .withKS(gains.ffkS())
-            .withKV(gains.ffkV())
-            .withKA(gains.ffkA())
-            .withKG(gains.ffkG())
-            .withGravityType(GravityTypeValue.Arm_Cosine);
+    controllerConfig = new Slot0Configs().withKP(gains.kP()).withKI(gains.kI()).withKD(gains.kD());
     leaderConfig.Slot0 = controllerConfig;
 
     // Follower configs
@@ -157,7 +148,6 @@ public class ArmIOKrakenFOC implements ArmIO {
         Units.rotationsToRadians(armEncoderPositionRotations.getValue());
     inputs.armAbsoluteEncoderPositionRads =
         Units.rotationsToRadians(armAbsolutePositionRotations.getValue());
-    inputs.armSetpointRads = setpointState.position;
     inputs.armVelocityRadsPerSec = Units.rotationsToRadians(armVelocityRps.getValue());
     inputs.armAppliedVolts =
         armAppliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
@@ -176,16 +166,11 @@ public class ArmIOKrakenFOC implements ArmIO {
   }
 
   @Override
-  public void runSetpoint(double setpointRads) {
-    TrapezoidProfile.State currentState =
-        new TrapezoidProfile.State(
-            Units.rotationsToRadians(armInternalPositionRotations.getValue()),
-            Units.rotationsToRadians(armVelocityRps.getValue()));
-    setpointState =
-        motionProfile.calculate(0.02, currentState, new TrapezoidProfile.State(setpointRads, 0.0));
-    // Run control
-    leaderMotor.setControl(positionControl.withPosition(
-            Units.radiansToRotations(setpointState.position)));
+  public void runSetpoint(double setpointRads, double feedforward) {
+    leaderMotor.setControl(
+        positionControl
+            .withPosition(Units.radiansToRotations(setpointRads))
+            .withFeedForward(feedforward));
   }
 
   @Override
@@ -210,23 +195,6 @@ public class ArmIOKrakenFOC implements ArmIO {
     controllerConfig.kI = i;
     controllerConfig.kD = d;
     leaderMotor.getConfigurator().apply(controllerConfig);
-  }
-
-  @Override
-  public void setFF(double s, double v, double a, double g) {
-    controllerConfig.kS = s;
-    controllerConfig.kV = v;
-    controllerConfig.kA = a;
-    controllerConfig.kG = g;
-    leaderMotor.getConfigurator().apply(controllerConfig);
-  }
-
-  @Override
-  public void setProfileConstraints(
-      double cruiseVelocityRadsPerSec, double accelerationRadsPerSec2) {
-    motionProfile =
-        new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(cruiseVelocityRadsPerSec, accelerationRadsPerSec2));
   }
 
   @Override

@@ -79,7 +79,7 @@ public class Drive extends SubsystemBase {
   /** Active drive mode. */
   private DriveMode currentDriveMode = DriveMode.TELEOP;
 
-  private double characterizationVolts = 0.0;
+  private double characterizationInput = 0.0;
   private boolean modulesOrienting = false;
   private final Timer coastTimer = new Timer();
   private boolean brakeModeEnabled = true;
@@ -245,7 +245,7 @@ public class Drive extends SubsystemBase {
       case CHARACTERIZATION -> {
         // run characterization
         for (Module module : modules) {
-          module.runCharacterization(characterizationVolts);
+          module.runCharacterization(characterizationInput);
         }
       }
       default -> {}
@@ -343,7 +343,7 @@ public class Drive extends SubsystemBase {
   /** Runs forwards at the commanded voltage. */
   public void runCharacterizationVolts(double volts) {
     currentDriveMode = DriveMode.CHARACTERIZATION;
-    characterizationVolts = volts;
+    characterizationInput = volts;
   }
 
   /** Disables the characterization mode. */

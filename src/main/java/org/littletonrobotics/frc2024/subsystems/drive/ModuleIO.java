@@ -13,6 +13,10 @@ import org.littletonrobotics.junction.AutoLog;
 public interface ModuleIO {
   @AutoLog
   class ModuleIOInputs {
+    public boolean driveMotorConnected = true;
+    public boolean turnMotorConnected = true;
+    public boolean hasCurrentControl = false;
+
     public double drivePositionRad = 0.0;
     public double driveVelocityRadPerSec = 0.0;
     public double driveAppliedVolts = 0.0;
@@ -34,25 +38,28 @@ public interface ModuleIO {
   default void updateInputs(ModuleIOInputs inputs) {}
 
   /** Run drive motor at volts */
-  default void setDriveVoltage(double volts) {}
+  default void runDriveVolts(double volts) {}
 
   /** Run turn motor at volts */
-  default void setTurnVoltage(double volts) {}
+  default void runTurnVolts(double volts) {}
 
-  /** Set drive velocity setpoint */
-  default void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {}
+  /** Run drive motor at current */
+  default void runDriveCurrent(double current) {}
 
-  /** Set turn position setpoint */
-  default void setTurnPositionSetpoint(double angleRads) {}
+  /** Run turn motor at current */
+  default void runTurnCurrent(double current) {}
+
+  /** Run to drive velocity setpoint with feedforward */
+  default void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {}
+
+  /** Run to turn position setpoint */
+  default void runTurnPositionSetpoint(double angleRads) {}
 
   /** Configure drive PID */
   default void setDrivePID(double kP, double kI, double kD) {}
 
   /** Configure turn PID */
   default void setTurnPID(double kP, double kI, double kD) {}
-
-  /** Configure drive feedforward for TorqueCurrentFOC */
-  default void setDriveFF(double kS, double kV, double kA) {}
 
   /** Enable or disable brake mode on the drive motor. */
   default void setDriveBrakeMode(boolean enable) {}

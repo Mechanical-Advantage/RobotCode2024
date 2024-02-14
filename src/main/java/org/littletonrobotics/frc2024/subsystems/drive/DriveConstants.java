@@ -20,15 +20,6 @@ import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
-  // For Kraken
-  public static class KrakenDriveConstants {
-    public static final boolean useTorqueCurrentFOC = false;
-    public static final boolean useMotionMagic = false;
-    public static final double motionMagicCruiseVelocity = 0.0;
-    public static final double motionMagicAcceleration = 0.0;
-  }
-
-  // Drive Constants
   public static DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->

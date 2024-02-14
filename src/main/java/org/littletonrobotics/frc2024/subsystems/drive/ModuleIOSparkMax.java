@@ -131,28 +131,28 @@ public class ModuleIOSparkMax implements ModuleIO {
   }
 
   @Override
-  public void setDriveVoltage(double volts) {
+  public void runDriveVolts(double volts) {
     driveMotor.setVoltage(volts);
   }
 
   @Override
-  public void setTurnVoltage(double volts) {
+  public void runTurnVolts(double volts) {
     turnMotor.setVoltage(volts);
   }
 
   @Override
-  public void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {
+  public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
     double feedback =
         driveController.calculate(
             Units.rotationsPerMinuteToRadiansPerSecond(driveEncoder.getVelocity())
                 / moduleConstants.driveReduction(),
             velocityRadsPerSec);
-    setDriveVoltage(feedback + ffVolts);
+    runDriveVolts(feedback + feedForward);
   }
 
   @Override
-  public void setTurnPositionSetpoint(double angleRads) {
-    setTurnVoltage(turnController.calculate(absoluteEncoderValue.get().getRadians(), angleRads));
+  public void runTurnPositionSetpoint(double angleRads) {
+    runTurnVolts(turnController.calculate(absoluteEncoderValue.get().getRadians(), angleRads));
   }
 
   @Override

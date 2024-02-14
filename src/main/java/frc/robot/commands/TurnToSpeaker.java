@@ -1,7 +1,5 @@
 package frc.robot.commands;
 
-import static frc.robot.Constants.Mode.SIM;
-
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -58,15 +56,13 @@ public class TurnToSpeaker extends Command {
     if (alliance == DriverStation.Alliance.Red) {
       controller.setSetpoint(
           Math.toDegrees(
-                  Math.atan2(
-                      Constants.SPEAKER_Y - drive.getPose().getY(),
-                      Constants.FIELD_LENGTH - drive.getPose().getX()))
-              - (Constants.currentMode == SIM ? Drive.YAW_DISPLACEMENT : 0));
+              Math.atan2(
+                  Constants.SPEAKER_Y - drive.getPose().getY(),
+                  Constants.FIELD_LENGTH - drive.getPose().getX())));
     } else {
       controller.setSetpoint(
           Math.toDegrees(
-              Math.atan2(Constants.SPEAKER_Y - drive.getPose().getY(), -drive.getPose().getX())
-                  - (Constants.currentMode == SIM ? Drive.YAW_DISPLACEMENT : 0)));
+              Math.atan2(Constants.SPEAKER_Y - drive.getPose().getY(), drive.getPose().getX())));
     }
   }
 

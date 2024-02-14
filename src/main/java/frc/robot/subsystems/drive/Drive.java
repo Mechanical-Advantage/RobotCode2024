@@ -39,7 +39,6 @@ public class Drive extends SubsystemBase {
   public static final double WHEEL_RADIUS = Units.inchesToMeters(3.0);
   public static final double TRACK_WIDTH = Units.inchesToMeters(26.0);
   public static final double MAX_SPEED_M_PER_S = Units.feetToMeters(10);
-  public static double YAW_DISPLACEMENT = 0;
   private static final double lKS = Constants.currentMode == SIM ? 0.0 : 0.98355;
   private static final double lKV = Constants.currentMode == SIM ? 0.227 : 30.42797;
 
@@ -147,9 +146,6 @@ public class Drive extends SubsystemBase {
         getRightPositionMeters(),
         pose);
     gyroIO.setGyro(gyroInputs, pose.getRotation().getDegrees());
-    if (Constants.currentMode == SIM) {
-      YAW_DISPLACEMENT = pose.getRotation().getDegrees();
-    }
   }
 
   /** Returns the position of the left wheels in meters. */

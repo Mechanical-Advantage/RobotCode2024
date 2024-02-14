@@ -95,7 +95,7 @@ public class Drive extends SubsystemBase {
             new SwerveModuleState(),
             new SwerveModuleState()
           });
-  private SwerveSetpointGenerator setpointGenerator;
+  private final SwerveSetpointGenerator setpointGenerator;
 
   private final TeleopDriveController teleopDriveController;
   private TrajectoryController trajectoryController = null;
@@ -150,7 +150,6 @@ public class Drive extends SubsystemBase {
     }
     // Pass odometry data to robot state
     for (int i = 0; i < minOdometryUpdates; i++) {
-      boolean includeMeasurement = true;
       int odometryIndex = i;
       Rotation2d yaw = gyroInputs.connected ? gyroInputs.odometryYawPositions[i] : null;
       // Get all four swerve module positions at that odometry update
@@ -160,10 +159,11 @@ public class Drive extends SubsystemBase {
               Arrays.stream(modules)
                   .map(module -> module.getModulePositions()[odometryIndex])
                   .toArray(SwerveModulePosition[]::new));
-      // Filtering
+      // Filtering based on delta wheel positions
+      boolean includeMeasurement = true;
       if (lastPositions != null) {
-        double dt = Timer.getFPGATimestamp() - lastTime;
-        for (int j = 0; j < 4; j++) {
+        double dt = odometryTimestampInputs.timestamps[i] - lastTime;
+        for (int j = 0; j < modules.length; j++) {
           double velocity =
               (wheelPositions.positions[j].distanceMeters
                       - lastPositions.positions[j].distanceMeters)
@@ -172,8 +172,8 @@ public class Drive extends SubsystemBase {
               wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
                   / dt;
 
-          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 100.0
-              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 100.0) {
+          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 2.0
+              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 2.0) {
             includeMeasurement = false;
             break;
           }
@@ -185,9 +185,9 @@ public class Drive extends SubsystemBase {
             .addOdometryObservation(
                 new RobotState.OdometryObservation(
                     wheelPositions, yaw, odometryTimestampInputs.timestamps[i]));
+        lastTime = odometryTimestampInputs.timestamps[i];
       }
     }
-    lastTime = Timer.getFPGATimestamp();
 
     // update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity = getSpeeds();

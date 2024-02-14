@@ -170,7 +170,7 @@ public class RobotContainer {
 
   private void configureAutos() {
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
-    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
+    AutoCommands autoCommands = new AutoCommands(drive, superstructure, flywheels, rollers);
     autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
 
     // Set up feedforward characterization
@@ -185,6 +185,9 @@ public class RobotContainer {
             flywheels,
             flywheels::runCharacterizationVolts,
             flywheels::getCharacterizationVelocity));
+
+    autoChooser.addOption(("Davis Ethical Auto"), autoCommands.davisEthicalAuto());
+    autoChooser.addOption("N5_S0_C0123", autoCommands.N5_S0_C012());
   }
 
   /**

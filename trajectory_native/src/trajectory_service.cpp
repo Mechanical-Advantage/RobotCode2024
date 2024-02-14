@@ -92,41 +92,51 @@ public:
             const int last_waypoint_idx = segment.waypoints_size() - 1;
             const vts::Waypoint *prev_waypoint;
 
+            if (segment.waypoints_size() == 0) {
+                response->mutable_error()->set_reason("Empty segment");
+                return grpc::Status::OK;
+            }
+
             for (int waypoint_idx = 0; waypoint_idx < segment.waypoints_size(); waypoint_idx++) {
                 const vts::Waypoint &waypoint = segment.waypoints(waypoint_idx);
+                int total_waypoint_idx = segment_start_offset + waypoint_idx;
+                if (segment_start_offset > 0) {
+                    total_waypoint_idx++;
+                }
 
                 if (waypoint.has_heading_constraint()) {
-                    fmt::print("Adding pose waypoint {} ({}, {}, {})\n", segment_start_offset + waypoint_idx,
+                    fmt::print("Adding pose waypoint {} ({}, {}, {})\n", total_waypoint_idx,
                                waypoint.x(), waypoint.y(), waypoint.heading_constraint());
-                    builder.PoseWpt(segment_start_offset + waypoint_idx, waypoint.x(), waypoint.y(),
+                    builder.PoseWpt(total_waypoint_idx, waypoint.x(), waypoint.y(),
                                     waypoint.heading_constraint());
                 } else {
-                    fmt::print("Adding translation waypoint {} ({}, {})\n", segment_start_offset + waypoint_idx,
+                    fmt::print("Adding translation waypoint {} ({}, {})\n", total_waypoint_idx,
                                waypoint.x(), waypoint.y());
-                    builder.TranslationWpt(segment_start_offset + waypoint_idx, waypoint.x(), waypoint.y());
+                    builder.TranslationWpt(total_waypoint_idx, waypoint.x(), waypoint.y());
                 }
 
                 switch (waypoint.velocity_constraint_case()) {
                     case vts::Waypoint::VELOCITY_CONSTRAINT_NOT_SET:
                         // If this is the first or last waypoint, add an implicit stop if no other constraint is added
-                        if (waypoint_idx == 0 || waypoint_idx == last_waypoint_idx) {
+                        if ((segment_idx == 0 && waypoint_idx == 0) ||
+                            (segment_idx == request->segments_size() - 1 && waypoint_idx == last_waypoint_idx)) {
                             fmt::print("Adding implicit zero velocity constraint to waypoint {}\n",
-                                       segment_start_offset + waypoint_idx);
-                            builder.WptZeroVelocity(segment_start_offset + waypoint_idx);
-                            builder.WptZeroAngularVelocity(segment_start_offset + waypoint_idx);
+                                       total_waypoint_idx);
+                            builder.WptZeroVelocity(total_waypoint_idx);
+                            builder.WptZeroAngularVelocity(total_waypoint_idx);
                         }
                         break;
                     case vts::Waypoint::kZeroVelocity:
                         fmt::print("Adding zero velocity constraint to waypoint {}\n",
-                                   segment_start_offset + waypoint_idx);
-                        builder.WptZeroVelocity(segment_start_offset + waypoint_idx);
-                        builder.WptZeroAngularVelocity(segment_start_offset + waypoint_idx);
+                                   total_waypoint_idx);
+                        builder.WptZeroVelocity(total_waypoint_idx);
+                        builder.WptZeroAngularVelocity(total_waypoint_idx);
                         break;
                     case vts::Waypoint::kVehicleVelocity:
                         fmt::print("Adding vehicle velocity constraint ({}, {}, {}) to waypoint {}\n",
                                    waypoint.vehicle_velocity().vx(), waypoint.vehicle_velocity().vy(),
-                                   waypoint.vehicle_velocity().omega(), segment_start_offset + waypoint_idx);
-                        builder.WptConstraint(segment_start_offset + waypoint_idx,
+                                   waypoint.vehicle_velocity().omega(), total_waypoint_idx);
+                        builder.WptConstraint(total_waypoint_idx,
                                               trajopt::HolonomicVelocityConstraint{
                                                       trajopt::RectangularSet2d{
                                                               {waypoint.vehicle_velocity().vx(),
@@ -136,7 +146,7 @@ public:
                                                       },
                                                       trajopt::CoordinateSystem::kField
                                               });
-                        builder.WptConstraint(segment_start_offset + waypoint_idx,
+                        builder.WptConstraint(total_waypoint_idx,
                                               trajopt::AngularVelocityConstraint{
                                                       trajopt::IntervalSet1d{
                                                               waypoint.vehicle_velocity().omega(),
@@ -151,8 +161,8 @@ public:
                                                                        : guess_control_interval_count(waypoint,
                                                                                                       *prev_waypoint,
                                                                                                       request->model());
-                    fmt::print("Adding sample count {} between waypoints {}-{}\n", sample_count, waypoint_idx - 1,
-                               waypoint_idx);
+                    fmt::print("Adding sample count {} between waypoints {}-{}\n", sample_count, total_waypoint_idx - 1,
+                               total_waypoint_idx);
                     control_intervals.push_back(sample_count);
                 }
 
@@ -162,31 +172,35 @@ public:
             // Segment constraints
             if (segment.has_max_velocity()) {
                 fmt::print("Adding max velocity {} to segment {} (waypoints {}-{})\n", segment.max_velocity(),
-                           segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx);
-                builder.SgmtVelocityMagnitude(segment_start_offset, segment_start_offset + last_waypoint_idx,
+                           segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx + 1);
+                builder.SgmtVelocityMagnitude(segment_start_offset, segment_start_offset + last_waypoint_idx + 1,
                                               segment.max_velocity());
             }
 
             if (segment.has_max_omega()) {
                 fmt::print("Adding max omega {} to segment {} (waypoints {}-{})\n", segment.max_omega(),
-                           segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx);
-                builder.SgmtConstraint(segment_start_offset, segment_start_offset + last_waypoint_idx,
+                           segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx + 1);
+                builder.SgmtConstraint(segment_start_offset, segment_start_offset + last_waypoint_idx + 1,
                                        trajopt::AngularVelocityConstraint{segment.max_omega()});
             }
 
             if (segment.straight_line()) {
+                if (segment.waypoints_size() > 2) {
+                    response->mutable_error()->set_reason("More than two waypoints in a straight segment");
+                    return grpc::Status::OK;
+                }
                 double x1 = segment.waypoints(0).x();
-                double x2 = segment.waypoints(last_waypoint_idx).x();
+                double x2 = segment.waypoints(1).x();
                 double y1 = segment.waypoints(0).y();
-                double y2 = segment.waypoints(last_waypoint_idx).y();
+                double y2 = segment.waypoints(1).y();
                 double angle = atan2(y2 - y1, x2 - x1);
                 fmt::print("Adding straight line constraint with angle {} to segment {} (waypoints {}-{})\n", angle,
-                           segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx);
-                builder.SgmtVelocityDirection(segment_start_offset, segment_start_offset + last_waypoint_idx,
+                           segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx + 1);
+                builder.SgmtVelocityDirection(segment_start_offset, segment_start_offset + last_waypoint_idx + 1,
                                               angle);
             }
 
-            segment_start_offset += last_waypoint_idx + 1;
+            segment_start_offset += last_waypoint_idx;
         }
 
         builder.ControlIntervalCounts(std::move(control_intervals));

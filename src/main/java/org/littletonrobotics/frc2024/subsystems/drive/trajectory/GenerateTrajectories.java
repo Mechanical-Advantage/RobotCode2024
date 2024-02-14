@@ -91,8 +91,7 @@ public class GenerateTrajectories {
         TrajectoryResponse response = service.generateTrajectory(request);
         String error = response.getError().getReason();
         if (error.length() > 0) {
-          System.err.println(
-              "Got error response for trajectory \"" + entry.getKey() + "\": " + error);
+          System.err.println("Error response for trajectory \"" + entry.getKey() + "\": " + error);
           System.exit(1);
         }
         trajectory =

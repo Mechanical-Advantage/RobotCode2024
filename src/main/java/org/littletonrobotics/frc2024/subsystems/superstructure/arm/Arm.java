@@ -15,7 +15,6 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +24,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-public class Arm extends SubsystemBase {
+public class Arm {
   private static final LoggedTunableNumber kP = new LoggedTunableNumber("Arm/kP", gains.kP());
   private static final LoggedTunableNumber kI = new LoggedTunableNumber("Arm/kI", gains.kI());
   private static final LoggedTunableNumber kD = new LoggedTunableNumber("Arm/kD", gains.kD());
@@ -128,6 +127,7 @@ public class Arm extends SubsystemBase {
 
       // Logs
       Logger.recordOutput("Arm/SetpointAngle", output.position);
+      Logger.recordOutput("Arm/SetpointVelocity", output.velocity);
       setpointVisualizer.update(Rotation2d.fromRadians(output.position));
       goalVisualizer.update(Rotation2d.fromRadians(goal.getRads()));
     }

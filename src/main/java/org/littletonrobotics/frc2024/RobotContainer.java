@@ -130,7 +130,6 @@ public class RobotContainer {
           rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
 
           arm = new Arm(new ArmIOSim());
-          superstructure = new Superstructure(arm);
         }
       }
     }
@@ -236,14 +235,19 @@ public class RobotContainer {
     controller
         .rightTrigger()
         .and(readyToShoot)
-        .onTrue(rollers.feedShooter().withTimeout(1.0).withName("Shoot"));
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.5),
+                    Commands.waitUntil(controller.rightTrigger().negate()))
+                .deadlineWith(rollers.feedShooter(), superstructure.aim(), flywheels.shoot()));
     // Intake Floor
     controller
         .leftTrigger()
         .whileTrue(
             superstructure
                 .intake()
-                .alongWith(rollers.floorIntake().onlyIf(superstructure::atGoal))
+                .alongWith(
+                    Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
                 .withName("Floor Intake"));
     // Eject Floor
     controller
@@ -251,8 +255,8 @@ public class RobotContainer {
         .whileTrue(
             superstructure
                 .intake()
-                .alongWith(rollers.ejectFloor().onlyIf(superstructure::atGoal))
-                .withName("Eject Floor"));
+                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
+                .withName("Eject To Floor"));
 
     controller
         .y()

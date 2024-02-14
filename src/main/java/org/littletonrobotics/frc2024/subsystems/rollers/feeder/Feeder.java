@@ -19,7 +19,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 public class Feeder extends GenericRollerSystem<Feeder.Goal> {
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements GenericRollerSystem.VoltageGoal {
+  public enum Goal implements VoltageGoal {
     IDLING(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Feeder/FloorIntakingVoltage", 8.0)),
     SHOOTING(new LoggedTunableNumber("Feeder/Shooting", 8.0)),

@@ -10,14 +10,14 @@ package org.littletonrobotics.frc2024.subsystems.rollers;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.simulation.FlywheelSim;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
 public class GenericRollerSystemIOSim implements GenericRollerSystemIO {
-  private final FlywheelSim sim;
+  private final DCMotorSim sim;
   private double appliedVoltage = 0.0;
 
   public GenericRollerSystemIOSim(DCMotor motorModel, double reduction, double moi) {
-    sim = new FlywheelSim(motorModel, reduction, moi);
+    sim = new DCMotorSim(motorModel, reduction, moi);
   }
 
   @Override
@@ -27,7 +27,7 @@ public class GenericRollerSystemIOSim implements GenericRollerSystemIO {
     }
 
     sim.update(0.02);
-    inputs.positionRads += sim.getAngularVelocityRadPerSec() * 0.02;
+    inputs.positionRads = sim.getAngularPositionRad();
     inputs.velocityRadsPerSec = sim.getAngularVelocityRadPerSec();
     inputs.appliedVoltage = appliedVoltage;
     inputs.outputCurrent = sim.getCurrentDrawAmps();

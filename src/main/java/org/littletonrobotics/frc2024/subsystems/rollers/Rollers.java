@@ -7,10 +7,10 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
-import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
@@ -26,14 +26,14 @@ public class Rollers extends SubsystemBase {
       new RollersSensorsIOInputsAutoLogged();
 
   public enum Goal {
-    IDLING,
-    FLOOR_INTAKING,
-    STATION_INTAKING,
-    EJECTING_TO_FLOOR,
-    FEEDING_TO_SHOOTER
+    IDLE,
+    FLOOR_INTAKE,
+    STATION_INTAKE,
+    EJECT_TO_FLOOR,
+    FEED_TO_SHOOTER
   }
 
-  @Getter @Setter private Goal goal = Goal.IDLING;
+  @Getter private Goal goal = Goal.IDLE;
 
   public Rollers(Feeder feeder, Indexer indexer, Intake intake, RollersSensorsIO sensorsIO) {
     this.feeder = feeder;
@@ -41,7 +41,7 @@ public class Rollers extends SubsystemBase {
     this.intake = intake;
     this.sensorsIO = sensorsIO;
 
-    setDefaultCommand(idle());
+    setDefaultCommand(runOnce(this::goIdle).withName("Rollers Idling"));
   }
 
   @Override
@@ -49,13 +49,17 @@ public class Rollers extends SubsystemBase {
     sensorsIO.updateInputs(sensorInputs);
     Logger.processInputs("RollersSensors", sensorInputs);
 
+    if (DriverStation.isDisabled()) {
+      goIdle();
+    }
+
     switch (goal) {
-      case IDLING -> {
+      case IDLE -> {
         feeder.setGoal(Feeder.Goal.IDLING);
         indexer.setGoal(Indexer.Goal.IDLING);
         intake.setGoal(Intake.Goal.IDLING);
       }
-      case FLOOR_INTAKING -> {
+      case FLOOR_INTAKE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);
@@ -63,7 +67,7 @@ public class Rollers extends SubsystemBase {
           indexer.setGoal(Indexer.Goal.IDLING);
         }
       }
-      case STATION_INTAKING -> {
+      case STATION_INTAKE -> {
         feeder.setGoal(Feeder.Goal.IDLING);
         indexer.setGoal(Indexer.Goal.STATION_INTAKING);
         intake.setGoal(Intake.Goal.IDLING);
@@ -71,12 +75,12 @@ public class Rollers extends SubsystemBase {
           indexer.setGoal(Indexer.Goal.IDLING);
         }
       }
-      case EJECTING_TO_FLOOR -> {
+      case EJECT_TO_FLOOR -> {
         feeder.setGoal(Feeder.Goal.EJECTING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.EJECTING);
       }
-      case FEEDING_TO_SHOOTER -> {
+      case FEED_TO_SHOOTER -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
         intake.setGoal(Intake.Goal.IDLING);
@@ -88,27 +92,25 @@ public class Rollers extends SubsystemBase {
     intake.periodic();
   }
 
-  public Command idle() {
-    return runOnce(() -> setGoal(Goal.IDLING)).withName("Rollers Idle");
+  private void goIdle() {
+    goal = Goal.IDLE;
   }
 
   public Command floorIntake() {
-    return startEnd(() -> setGoal(Goal.FLOOR_INTAKING), () -> setGoal(Goal.IDLING))
-        .withName("Rollers Floor Intake");
+    return startEnd(() -> goal = Goal.FLOOR_INTAKE, this::goIdle).withName("Rollers Floor Intake");
   }
 
   public Command stationIntake() {
-    return startEnd(() -> setGoal(Goal.STATION_INTAKING), () -> setGoal(Goal.IDLING))
+    return startEnd(() -> goal = Goal.STATION_INTAKE, this::goIdle)
         .withName("Rollers Station Intake");
   }
 
   public Command ejectFloor() {
-    return startEnd(() -> setGoal(Goal.EJECTING_TO_FLOOR), () -> setGoal(Goal.IDLING))
-        .withName("Rollers Eject Floor");
+    return startEnd(() -> goal = Goal.EJECT_TO_FLOOR, this::goIdle).withName("Rollers Eject Floor");
   }
 
   public Command feedShooter() {
-    return startEnd(() -> setGoal(Goal.FEEDING_TO_SHOOTER), () -> setGoal(Goal.IDLING))
+    return startEnd(() -> goal = Goal.FEED_TO_SHOOTER, this::goIdle)
         .withName("Rollers Feed Shooter");
   }
 }

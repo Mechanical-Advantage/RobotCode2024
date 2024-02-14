@@ -7,78 +7,86 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
-@RequiredArgsConstructor
 public class Superstructure extends SubsystemBase {
 
-  public enum SystemState {
-    STOWING,
-    AIMING,
-    INTAKING,
-    STATION_INTAKING,
+  public enum Goal {
+    STOW,
+    AIM,
+    INTAKE,
+    STATION_INTAKE,
     AMP,
     PREPARE_CLIMB,
     CLIMB,
     TRAP
   }
 
-  @Getter private SystemState currentState = SystemState.STOWING;
-  @Getter @Setter private SystemState goal = SystemState.STOWING;
+  @Getter private Goal currentGoal = Goal.STOW;
+  @Getter private Goal desiredGoal = Goal.STOW;
 
   private final Arm arm;
 
+  public Superstructure(Arm arm) {
+    this.arm = arm;
+
+    setDefaultCommand(runOnce(this::stow).withName("Superstructure Stowing"));
+  }
+
   @Override
   public void periodic() {
-    currentState = goal; // Will change soon
+    if (DriverStation.isDisabled()) {
+      desiredGoal = Goal.STOW;
+      arm.stop();
+    }
 
-    switch (currentState) {
-      case STOWING -> arm.setGoal(Arm.Goal.STOW);
-      case AIMING -> arm.setGoal(Arm.Goal.AIM);
-      case INTAKING -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
-      case STATION_INTAKING -> arm.setGoal(Arm.Goal.STATION_INTAKE);
+    currentGoal = desiredGoal; // Will change soon
+
+    switch (currentGoal) {
+      case STOW -> arm.setGoal(Arm.Goal.STOW);
+      case AIM -> arm.setGoal(Arm.Goal.AIM);
+      case INTAKE -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
+      case STATION_INTAKE -> arm.setGoal(Arm.Goal.STATION_INTAKE);
       default -> {} // DO NOTHING ELSE
     }
 
     arm.periodic();
 
-    Logger.recordOutput("Superstructure/GoalState", goal);
-    Logger.recordOutput("Superstructure/CurrentState", currentState);
+    Logger.recordOutput("Superstructure/GoalState", desiredGoal);
+    Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
   @AutoLogOutput(key = "Superstructure/ReadyToShoot")
   public boolean atShootingSetpoint() {
-    return currentState == SystemState.AIMING && arm.atSetpoint();
+    return currentGoal == Goal.AIM && arm.atSetpoint();
   }
 
-  @AutoLogOutput(key = "Superstructure/AtGoalState")
+  @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
-    return arm.atSetpoint();
+    return currentGoal == desiredGoal && arm.atSetpoint();
   }
 
-  public Command stow() {
-    return runOnce(() -> setGoal(SystemState.STOWING)).withName("Superstructure Stow");
+  public void stow() {
+    desiredGoal = Goal.STOW;
   }
 
   public Command aim() {
-    return startEnd(() -> setGoal(SystemState.AIMING), () -> setGoal(SystemState.STOWING))
-        .withName("Superstructure Aim");
+    return startEnd(() -> desiredGoal = Goal.AIM, this::stow).withName("Superstructure Aiming");
   }
 
   public Command intake() {
-    return startEnd(() -> setGoal(SystemState.INTAKING), () -> setGoal(SystemState.STOWING))
-        .withName("Superstructure Intake");
+    return startEnd(() -> desiredGoal = Goal.INTAKE, this::stow)
+        .withName("Superstructure Intaking");
   }
 
   public Command stationIntake() {
-    return startEnd(() -> setGoal(SystemState.STATION_INTAKING), () -> setGoal(SystemState.STOWING))
-        .withName("Superstructure Station Intake");
+    return startEnd(() -> desiredGoal = Goal.STATION_INTAKE, this::stow)
+        .withName("Superstructure Station Intaking");
   }
 }

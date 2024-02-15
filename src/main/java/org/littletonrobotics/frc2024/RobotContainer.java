@@ -211,7 +211,7 @@ public class RobotContainer {
         new Trigger(
             () ->
                 drive.isAutoAimGoalCompleted()
-                    && flywheels.atSetpoint()
+                    && flywheels.atGoal()
                     && superstructure.atArmSetpoint());
     readyToShootTrigger
         .whileTrue(

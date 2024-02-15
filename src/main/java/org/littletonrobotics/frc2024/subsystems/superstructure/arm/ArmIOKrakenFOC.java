@@ -139,7 +139,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     inputs.absoluteEncoderConnected =
         BaseStatusSignal.refreshAll(armEncoderPositionRotations, armAbsolutePositionRotations)
             .isOK();
-    absoluteEncoderDisconnected.set(inputs.absoluteEncoderConnected);
+    absoluteEncoderDisconnected.set(!inputs.absoluteEncoderConnected);
 
     inputs.armPositionRads = Units.rotationsToRadians(armInternalPositionRotations.getValue());
     inputs.armEncoderPositionRads =

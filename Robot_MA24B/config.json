@@ -17,7 +17,7 @@
   ],
   "cameras": [
     {
-      "name": "northstar-0 POV",
+      "name": "Northstar 0",
       "rotations": [
         {
           "axis": "y",
@@ -40,7 +40,7 @@
       "fov": 75
     },
     {
-      "name": "northstar-1 POV",
+      "name": "Northstar 1",
       "rotations": [
         {
           "axis": "y",

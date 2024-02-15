@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -34,16 +35,22 @@ public class Flywheels extends SubsystemBase {
       new LoggedTunableNumber("Superstructure/IdleLeftRPM", 200.0);
   private static LoggedTunableNumber idleRightRPM =
       new LoggedTunableNumber("Superstructure/IdleRightRPM", 200.0);
-
   private static LoggedTunableNumber intakingLeftRPM =
       new LoggedTunableNumber("Superstructure/IntakingLeftRPM", -2000.0);
   private static LoggedTunableNumber intakingRightRPM =
       new LoggedTunableNumber("Superstructure/IntakingRightRPM", -2000.0);
   private static final LoggedTunableNumber shooterTolerance =
-      new LoggedTunableNumber("Flywheels/ToleranceRPM", config.toleranceRPM());
+      new LoggedTunableNumber("Flywheels/ToleranceRPM", flywheelConfig.toleranceRPM());
+  private static final LoggedTunableNumber maxAcceleration =
+      new LoggedTunableNumber("Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
 
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
+
+  private final LinearProfile leftProfile;
+  private final LinearProfile rightProfile;
+  private boolean wasClosedLoop = false;
+  private boolean closedLoop = false;
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -53,15 +60,15 @@ public class Flywheels extends SubsystemBase {
     INTAKING(intakingLeftRPM, intakingRightRPM),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
-    private final DoubleSupplier leftSetpoint;
-    private final DoubleSupplier rightSetpoint;
+    private final DoubleSupplier leftGoal;
+    private final DoubleSupplier rightGoal;
 
-    private double getLeftSetpoint() {
-      return leftSetpoint.getAsDouble();
+    private double getLeftGoal() {
+      return leftGoal.getAsDouble();
     }
 
-    private double getRightSetpoint() {
-      return rightSetpoint.getAsDouble();
+    private double getRightGoal() {
+      return rightGoal.getAsDouble();
     }
   }
 
@@ -69,6 +76,10 @@ public class Flywheels extends SubsystemBase {
 
   public Flywheels(FlywheelsIO io) {
     this.io = io;
+
+    leftProfile = new LinearProfile(maxAcceleration.get(), 0.02);
+    rightProfile = new LinearProfile(maxAcceleration.get(), 0.02);
+
     setDefaultCommand(runOnce(() -> goal = Goal.IDLE).withName("FlywheelsIdle"));
   }
 
@@ -81,26 +92,56 @@ public class Flywheels extends SubsystemBase {
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
+    LoggedTunableNumber.ifChanged(
+        hashCode(),
+        () -> {
+          leftProfile.setMaxAcceleration(maxAcceleration.get());
+          rightProfile.setMaxAcceleration(maxAcceleration.get());
+        },
+        maxAcceleration);
 
+    // Stop when disabled
     if (DriverStation.isDisabled()) {
-      goal = Goal.STOP;
+      setGoal(Goal.STOP);
     }
 
-    switch (goal) {
-      case STOP -> io.stop();
-      case CHARACTERIZING -> {} // Handled by runCharacterizationVolts
-      default -> io.runVelocity(goal.getLeftSetpoint(), goal.getRightSetpoint());
+    // Check if profile needs to be reset
+    if (!closedLoop && wasClosedLoop) {
+      leftProfile.reset();
+      rightProfile.reset();
+      wasClosedLoop = false;
+    }
+
+    // Run to setpoint
+    if (closedLoop) {
+      double leftSetpoint = leftProfile.calculateSetpoint();
+      double rightSetpoint = rightProfile.calculateSetpoint();
+      io.runVelocity(leftSetpoint, rightSetpoint);
+
+      Logger.recordOutput("Flywheels/SetpointLeftRpm", leftSetpoint);
+      Logger.recordOutput("Flywheels/SetpointRightRpm", rightSetpoint);
     }
 
     Logger.recordOutput("Flywheels/Goal", goal);
-    Logger.recordOutput("Flywheels/LeftSetpointRPM", goal.getLeftSetpoint());
-    Logger.recordOutput("Flywheels/RightSetpointRPM", goal.getRightSetpoint());
-    Logger.recordOutput("Flywheels/LeftRPM", inputs.leftVelocityRpm);
-    Logger.recordOutput("Flywheels/RightRPM", inputs.rightVelocityRpm);
+    Logger.recordOutput("Flywheels/GoalLeftRpm", goal.getLeftGoal());
+    Logger.recordOutput("Flywheels/GoalRightRpm", goal.getRightGoal());
+  }
+
+  private void setGoal(Goal goal) {
+    if (goal == Goal.CHARACTERIZING || goal == Goal.STOP) {
+      wasClosedLoop = closedLoop;
+      closedLoop = false;
+      return; // Don't set a goal
+    }
+    // Enable close loop
+    leftProfile.setGoal(goal.getLeftGoal(), inputs.leftVelocityRpm);
+    rightProfile.setGoal(goal.getRightGoal(), inputs.rightVelocityRpm);
+    closedLoop = true;
+    this.goal = goal;
   }
 
   public void runCharacterizationVolts(double volts) {
-    goal = Goal.CHARACTERIZING;
+    setGoal(Goal.CHARACTERIZING);
     io.runCharacterizationLeftVolts(volts);
     io.runCharacterizationRightVolts(volts);
   }
@@ -109,19 +150,20 @@ public class Flywheels extends SubsystemBase {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
-  @AutoLogOutput(key = "Shooter/AtSetpoint")
-  public boolean atSetpoint() {
-    return Math.abs(inputs.leftVelocityRpm - goal.leftSetpoint.getAsDouble())
-            <= shooterTolerance.get()
-        && Math.abs(inputs.rightVelocityRpm - goal.rightSetpoint.getAsDouble())
+  @AutoLogOutput(key = "Shooter/AtGoal")
+  public boolean atGoal() {
+    return Math.abs(leftProfile.getCurrentSetpoint() - goal.getLeftGoal()) <= shooterTolerance.get()
+        && Math.abs(rightProfile.getCurrentSetpoint() - goal.getRightGoal())
             <= shooterTolerance.get();
   }
 
   public Command shootCommand() {
-    return startEnd(() -> goal = Goal.SHOOTING, () -> goal = Goal.IDLE).withName("FlywheelsShoot");
+    return startEnd(() -> setGoal(Goal.SHOOTING), () -> setGoal(Goal.IDLE))
+        .withName("FlywheelsShoot");
   }
 
   public Command intakeCommand() {
-    return startEnd(() -> goal = Goal.INTAKING, () -> goal = Goal.IDLE).withName("FlywheelsIntake");
+    return startEnd(() -> setGoal(Goal.INTAKING), () -> setGoal(Goal.IDLE))
+        .withName("FlywheelsIntake");
   }
 }

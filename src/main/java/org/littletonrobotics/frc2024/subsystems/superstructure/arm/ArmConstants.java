@@ -17,8 +17,7 @@ public class ArmConstants {
   // reduction is 12:62 18:60 12:65
   public static double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
   public static Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
-  public static Translation2d armOrigin =
-      new Translation2d(-Units.inchesToMeters(9.11), Units.inchesToMeters(11.75));
+  public static Translation2d armOrigin = new Translation2d(-0.238, 0.298);
   public static Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
   public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 

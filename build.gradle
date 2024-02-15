@@ -112,7 +112,7 @@ task(generateDriveTrajectories, dependsOn: "classes", type: JavaExec) {
     mainClass = "org.littletonrobotics.frc2024.subsystems.drive.trajectory.GenerateTrajectories"
     classpath = sourceSets.main.runtimeClasspath
 }
-//compileJava.finalizedBy generateDriveTrajectories
+compileJava.finalizedBy generateDriveTrajectories
 
 // Check robot type when deploying
 task(checkRobot, dependsOn: "classes", type: JavaExec) {

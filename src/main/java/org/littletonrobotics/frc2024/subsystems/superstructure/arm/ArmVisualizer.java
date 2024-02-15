@@ -41,7 +41,7 @@ public class ArmVisualizer {
     // Log 3d poses
     Pose3d pivot =
         new Pose3d(
-            armOrigin.getX(), 0.0, armOrigin.getY(), new Rotation3d(0.0, angle.getRadians(), 0.0));
+            armOrigin.getX(), 0.0, armOrigin.getY(), new Rotation3d(0.0, -angle.getRadians(), 0.0));
     Logger.recordOutput("Arm/" + key + "3d", pivot);
   }
 }

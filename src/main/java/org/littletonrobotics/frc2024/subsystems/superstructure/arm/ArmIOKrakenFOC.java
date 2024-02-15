@@ -10,7 +10,6 @@ package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -19,7 +18,6 @@ import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.*;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import java.util.List;
 import org.littletonrobotics.frc2024.util.Alert;
@@ -42,8 +40,6 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   // Control
   private final Slot0Configs controllerConfig;
-  private TrapezoidProfile motionProfile;
-  private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
 
   private final VoltageOut voltageControl =
       new VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0);
@@ -117,9 +113,6 @@ public class ArmIOKrakenFOC implements ArmIO {
         armTorqueCurrent.get(1),
         armTempCelsius.get(0),
         armTempCelsius.get(1));
-
-    // Init profile
-    motionProfile = new TrapezoidProfile(profileConstraints);
   }
 
   public void updateInputs(ArmIOInputs inputs) {
@@ -134,14 +127,19 @@ public class ArmIOKrakenFOC implements ArmIO {
                 armOutputCurrent.get(0),
                 armTorqueCurrent.get(0),
                 armTempCelsius.get(0))
-            == StatusCode.OK);
+            .isOK());
     followerMotorDisconnected.set(
         BaseStatusSignal.refreshAll(
                 armAppliedVoltage.get(1),
                 armOutputCurrent.get(1),
                 armTorqueCurrent.get(1),
                 armTempCelsius.get(1))
-            == StatusCode.OK);
+            .isOK());
+
+    inputs.absoluteEncoderConnected =
+        BaseStatusSignal.refreshAll(armEncoderPositionRotations, armAbsolutePositionRotations)
+            .isOK();
+    absoluteEncoderDisconnected.set(inputs.absoluteEncoderConnected);
 
     inputs.armPositionRads = Units.rotationsToRadians(armInternalPositionRotations.getValue());
     inputs.armEncoderPositionRads =
@@ -157,12 +155,6 @@ public class ArmIOKrakenFOC implements ArmIO {
         armTorqueCurrent.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
     inputs.armTempCelcius =
         armTempCelsius.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
-
-    // Check encoder connected
-    inputs.absoluteEncoderConnected =
-        BaseStatusSignal.refreshAll(armEncoderPositionRotations, armAbsolutePositionRotations)
-            == StatusCode.OK;
-    absoluteEncoderDisconnected.set(inputs.absoluteEncoderConnected);
   }
 
   @Override

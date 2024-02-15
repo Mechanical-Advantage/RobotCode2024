@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 
 import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -32,29 +33,30 @@ public class Arm {
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Arm/kV", gains.ffkV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Arm/kA", gains.ffkA());
   private static final LoggedTunableNumber kG = new LoggedTunableNumber("Arm/kG", gains.ffkG());
-  private static final LoggedTunableNumber armVelocity =
+  private static final LoggedTunableNumber maxVelocity =
       new LoggedTunableNumber("Arm/Velocity", profileConstraints.maxVelocity);
-  private static final LoggedTunableNumber armAcceleration =
+  private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
-  private static final LoggedTunableNumber armToleranceDegreees =
+  private static final LoggedTunableNumber toleranceDegrees =
       new LoggedTunableNumber("Arm/ToleranceDegrees", positionTolerance.getDegrees());
-  private static final LoggedTunableNumber armLowerLimit =
+  private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
-  private static final LoggedTunableNumber armUpperLimit =
+  private static final LoggedTunableNumber upperLimitDegrees =
       new LoggedTunableNumber("Arm/UpperLimitDegrees", maxAngle.getDegrees());
-  private static final LoggedTunableNumber armStowDegrees =
+  private static final LoggedTunableNumber stowDegrees =
       new LoggedTunableNumber("Superstructure/ArmStowDegrees", 20.0);
-  private static final LoggedTunableNumber armStationIntakeDegrees =
+  private static final LoggedTunableNumber stationIntakeDegrees =
       new LoggedTunableNumber("Superstructure/ArmStationIntakeDegrees", 45.0);
-  private static final LoggedTunableNumber armIntakeDegrees =
+  private static final LoggedTunableNumber intakeDegrees =
       new LoggedTunableNumber("Superstructure/ArmIntakeDegrees", 40.0);
 
   @RequiredArgsConstructor
   public enum Goal {
-    FLOOR_INTAKE(() -> Units.degreesToRadians(armIntakeDegrees.get())),
-    STATION_INTAKE(() -> Units.degreesToRadians(armStationIntakeDegrees.get())),
+    FLOOR_INTAKE(() -> Units.degreesToRadians(intakeDegrees.get())),
+    STATION_INTAKE(() -> Units.degreesToRadians(stationIntakeDegrees.get())),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getRadians()),
-    STOW(() -> Units.degreesToRadians(armStowDegrees.get()));
+    STOW(() -> Units.degreesToRadians(stowDegrees.get())),
+    CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
 
@@ -65,7 +67,6 @@ public class Arm {
 
   @Getter @Setter private Goal goal = Goal.STOW;
   private boolean characterizing = false;
-  private boolean homed = false;
 
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
@@ -82,7 +83,7 @@ public class Arm {
 
     motionProfile =
         new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(armVelocity.get(), armAcceleration.get()));
+            new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
     io.setPID(kP.get(), kI.get(), kD.get());
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
@@ -112,8 +113,8 @@ public class Arm {
             motionProfile =
                 new TrapezoidProfile(
                     new TrapezoidProfile.Constraints(constraints[0], constraints[1])),
-        armVelocity,
-        armAcceleration);
+        maxVelocity,
+        maxAcceleration);
 
     if (!characterizing) {
       // Run closed loop
@@ -121,7 +122,12 @@ public class Arm {
           motionProfile.calculate(
               0.02,
               new TrapezoidProfile.State(inputs.armPositionRads, inputs.armVelocityRadsPerSec),
-              new TrapezoidProfile.State(goal.getRads(), 0.0));
+              new TrapezoidProfile.State(
+                  MathUtil.clamp(
+                      goal.getRads(),
+                      Units.degreesToRadians(lowerLimitDegrees.get()),
+                      Units.degreesToRadians(upperLimitDegrees.get())),
+                  0.0));
 
       io.runSetpoint(output.position, ff.calculate(output.position, output.velocity));
 
@@ -152,7 +158,7 @@ public class Arm {
   @AutoLogOutput(key = "Arm/AtSetpoint")
   public boolean atSetpoint() {
     return Math.abs(inputs.armPositionRads - goal.getRads())
-        <= Units.degreesToRadians(armToleranceDegreees.get());
+        <= Units.degreesToRadians(toleranceDegrees.get());
   }
 
   // public Command getStaticCurrent() {

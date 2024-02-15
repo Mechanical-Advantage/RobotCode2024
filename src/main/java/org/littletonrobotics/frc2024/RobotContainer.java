@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
+import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
@@ -179,8 +180,8 @@ public class RobotContainer {
 
   private void configureAutos() {
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
-    //    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
-    //    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
+    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
 
     // Set up feedforward characterization
     autoChooser.addOption(

@@ -63,8 +63,8 @@ public class ModuleIOKrakenFOC implements ModuleIO {
       new VelocityTorqueCurrentFOC(0).withUpdateFreqHz(0);
   private final PositionTorqueCurrentFOC turnPositionControl =
       new PositionTorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final NeutralOut driveBrake = new NeutralOut().withUpdateFreqHz(0);
-  private final NeutralOut turnBrake = new NeutralOut().withUpdateFreqHz(0);
+  private final NeutralOut driveNeutral = new NeutralOut().withUpdateFreqHz(0);
+  private final NeutralOut turnNeutral = new NeutralOut().withUpdateFreqHz(0);
 
   public ModuleIOKrakenFOC(ModuleConfig config) {
     // Init controllers and encoders from config constants
@@ -156,11 +156,11 @@ public class ModuleIOKrakenFOC implements ModuleIO {
                 driveAppliedVolts,
                 driveSupplyCurrent,
                 driveTorqueCurrent)
-            == StatusCode.OK;
+            .isOK();
     inputs.turnMotorConnected =
         BaseStatusSignal.refreshAll(
                 turnPosition, turnVelocity, turnAppliedVolts, turnSupplyCurrent, turnTorqueCurrent)
-            == StatusCode.OK;
+            .isOK();
 
     inputs.drivePositionRad = Units.rotationsToRadians(drivePosition.getValueAsDouble());
     inputs.driveVelocityRadPerSec = Units.rotationsToRadians(driveVelocity.getValueAsDouble());
@@ -247,7 +247,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   @Override
   public void stop() {
-    driveTalon.setControl(driveBrake);
-    turnTalon.setControl(turnBrake);
+    driveTalon.setControl(driveNeutral);
+    turnTalon.setControl(turnNeutral);
   }
 }

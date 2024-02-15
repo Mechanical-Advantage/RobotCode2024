@@ -73,7 +73,7 @@ public class Module {
     LoggedTunableNumber.ifChanged(
         hashCode(), () -> io.setTurnPID(turnkP.get(), 0, turnkD.get()), turnkP, turnkD);
 
-    // Display warnings
+    // Display alerts
     driveMotorDisconnected.set(!inputs.driveMotorConnected);
     turnMotorDisconnected.set(!inputs.turnMotorConnected);
   }

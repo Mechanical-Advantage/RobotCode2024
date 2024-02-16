@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -158,8 +159,7 @@ public class Arm {
 
   @AutoLogOutput(key = "Arm/AtGoal")
   public boolean atGoal() {
-    return Math.abs(setpointState.position - goal.getRads())
-        <= Units.degreesToRadians(toleranceDegrees.get());
+    return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
   }
 
   // public Command getStaticCurrent() {

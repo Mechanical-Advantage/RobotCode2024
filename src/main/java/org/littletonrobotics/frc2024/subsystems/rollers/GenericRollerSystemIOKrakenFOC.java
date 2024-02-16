@@ -25,6 +25,7 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
   private final StatusSignal<Double> velocity;
   private final StatusSignal<Double> appliedVoltage;
   private final StatusSignal<Double> outputCurrent;
+  private final StatusSignal<Double> tempCelsius;
 
   // Single shot for voltage mode, robot loop will call continuously
   private final VoltageOut voltageOut = new VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0);
@@ -49,9 +50,10 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
     velocity = motor.getVelocity();
     appliedVoltage = motor.getMotorVoltage();
     outputCurrent = motor.getTorqueCurrent();
+    tempCelsius = motor.getDeviceTemp();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50.0, position, velocity, appliedVoltage, outputCurrent);
+        50.0, position, velocity, appliedVoltage, outputCurrent, tempCelsius);
   }
 
   @Override
@@ -62,6 +64,7 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
     inputs.velocityRadsPerSec = Units.rotationsToRadians(velocity.getValueAsDouble()) / reduction;
     inputs.appliedVoltage = appliedVoltage.getValueAsDouble();
     inputs.outputCurrent = outputCurrent.getValueAsDouble();
+    inputs.tempCelsius = tempCelsius.getValueAsDouble();
   }
 
   @Override

@@ -1,0 +1,85 @@
+{
+  "name": "MA24B",
+  "rotations": [
+    {
+      "axis": "x",
+      "degrees": 90
+    },
+    {
+      "axis": "z",
+      "degrees": 90
+    }
+  ],
+  "position": [
+    0,
+    0,
+    0
+  ],
+  "cameras": [
+    {
+      "name": "Northstar 0",
+      "rotations": [
+        {
+          "axis": "y",
+          "degrees": -28.125
+        },
+        {
+          "axis": "z",
+          "degrees": 30.0
+        }
+      ],
+      "position": [
+        0.247269,
+        0.24729186,
+        0.2244598
+      ],
+      "resolution": [
+        1600,
+        1200
+      ],
+      "fov": 75
+    },
+    {
+      "name": "Northstar 1",
+      "rotations": [
+        {
+          "axis": "y",
+          "degrees": -28.125
+        },
+        {
+          "axis": "z",
+          "degrees": -30.0
+        }
+      ],
+      "position": [
+        0.247269,
+        -0.24729186,
+        0.2244598
+      ],
+      "resolution": [
+        1600,
+        1200
+      ],
+      "fov": 75
+    }
+  ],
+  "components": [
+    {
+      "zeroedRotations": [
+        {
+          "axis": "x",
+          "degrees": 90
+        },
+        {
+          "axis": "z",
+          "degrees": 90
+        }
+      ],
+      "zeroedPosition": [
+        0.238,
+        0.0,
+        -0.298
+      ]
+    }
+  ]
+}

@@ -16,6 +16,7 @@ public interface GenericRollerSystemIO {
     public double velocityRadsPerSec = 0.0;
     public double appliedVoltage = 0.0;
     public double outputCurrent = 0.0;
+    public double tempCelsius = 0.0;
   }
 
   default void updateInputs(GenericRollerSystemIOInputs inputs) {}

@@ -35,12 +35,15 @@ import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOKrakenFOC;
+import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOSim;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSim;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOKrakenFOC;
+import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
@@ -121,11 +124,18 @@ public class RobotContainer {
                   new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                   new ModuleIOSim(DriveConstants.moduleConfigs[3]));
           flywheels = new Flywheels(new FlywheelsIOSim());
+
+          feeder = new Feeder(new FeederIOSim());
+          indexer = new Indexer(new IndexerIOSim());
+          intake = new Intake(new IntakeIOSim());
+          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
+
           arm = new Arm(new ArmIOSim());
         }
       }
     }
 
+    // No-op implementation for replay
     if (drive == null) {
       drive =
           new Drive(
@@ -200,20 +210,20 @@ public class RobotContainer {
                 () ->
                     drive.setTeleopDriveGoal(
                         -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
-            .withName("DriveTeleop"));
+            .withName("Drive Teleop Input"));
+
+    // Aim and Rev Flywheels
     controller
         .a()
         .whileTrue(
             Commands.startEnd(drive::setAutoAimGoal, drive::clearAutoAimGoal)
-                .alongWith(superstructure.aimCommand(), flywheels.shootCommand()));
-
-    Trigger readyToShootTrigger =
+                .alongWith(superstructure.aim(), flywheels.shoot())
+                .withName("Aim"));
+    // Shoot
+    Trigger readyToShoot =
         new Trigger(
-            () ->
-                drive.isAutoAimGoalCompleted()
-                    && flywheels.atSetpoint()
-                    && superstructure.atArmSetpoint());
-    readyToShootTrigger
+            () -> drive.isAutoAimGoalCompleted() && superstructure.atGoal() && flywheels.atGoal());
+    readyToShoot
         .whileTrue(
             Commands.run(
                 () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
@@ -222,26 +232,29 @@ public class RobotContainer {
                 () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
     controller
         .rightTrigger()
-        .and(readyToShootTrigger)
+        .and(readyToShoot)
         .onTrue(
-            rollers
-                .feedShooterCommand()
-                .withTimeout(1.0)
-                // Take over superstructure and flywheels, cancelling the main aiming command
-                .deadlineWith(superstructure.aimCommand(), flywheels.shootCommand()));
-
+            Commands.parallel(
+                    Commands.waitSeconds(0.5),
+                    Commands.waitUntil(controller.rightTrigger().negate()))
+                .deadlineWith(rollers.feedShooter(), superstructure.aim(), flywheels.shoot()));
+    // Intake Floor
     controller
         .leftTrigger()
         .whileTrue(
             superstructure
-                .floorIntakeCommand()
-                .alongWith(Commands.waitSeconds(0.25).andThen(rollers.floorIntakeCommand())));
+                .intake()
+                .alongWith(
+                    Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
+                .withName("Floor Intake"));
+    // Eject Floor
     controller
         .leftBumper()
         .whileTrue(
             superstructure
-                .floorIntakeCommand()
-                .alongWith(Commands.waitSeconds(0.25).andThen(rollers.ejectFloorCommand())));
+                .intake()
+                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
+                .withName("Eject To Floor"));
 
     controller
         .y()

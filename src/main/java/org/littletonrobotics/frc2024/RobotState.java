@@ -20,6 +20,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import java.util.NoSuchElementException;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
@@ -40,9 +42,7 @@ public class RobotState {
 
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
-
-  private static final LoggedTunableNumber shotHeightCompensation =
-      new LoggedTunableNumber("RobotState/CompensationMeters", 0.05);
+  private static final double poseBufferSizeSeconds = 2.0;
 
   /** Arm angle look up table key: meters, values: radians */
   private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
@@ -53,7 +53,7 @@ public class RobotState {
     armAngleMap.put(Double.MAX_VALUE, Units.degreesToRadians(15.0));
   }
 
-  private static final double poseBufferSizeSeconds = 2.0;
+  @Setter @Getter private double shotCompensationDegrees = 0.0;
 
   private static RobotState instance;
 
@@ -201,7 +201,8 @@ public class RobotState {
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            Rotation2d.fromRadians(armAngleMap.get(targetDistance)),
+            Rotation2d.fromRadians(
+                armAngleMap.get(targetDistance) + Units.degreesToRadians(shotCompensationDegrees)),
             feedVelocity);
     Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading());
     Logger.recordOutput("RobotState/AimingParameters/ArmAngle", latestParameters.armAngle());

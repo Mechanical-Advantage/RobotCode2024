@@ -22,8 +22,7 @@ public class AutoAimController {
       new LoggedTunableNumber("AutoAim/kD", DriveConstants.headingControllerConstants.kD());
   private static final LoggedTunableNumber tolerance =
       new LoggedTunableNumber("AutoAim/ToleranceDegrees", 4.0);
-
-  private PIDController headingController;
+  private final PIDController headingController;
 
   public AutoAimController() {
     headingController = new PIDController(0, 0, 0, 0.02);

@@ -73,6 +73,7 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
+  // Store previous positions and time for filtering odometry data
   private SwerveDriveWheelPositions lastPositions = null;
   private double lastTime = 0.0;
 
@@ -171,9 +172,9 @@ public class Drive extends SubsystemBase {
           double omega =
               wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
                   / dt;
-
-          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 2.0
-              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 2.0) {
+          // Check if delta is too large
+          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 5.0
+              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 5.0) {
             includeMeasurement = false;
             break;
           }
@@ -200,24 +201,15 @@ public class Drive extends SubsystemBase {
     // Disabled, stop modules and coast
     if (DriverStation.isDisabled()) {
       Arrays.stream(modules).forEach(Module::stop);
-      if (Math.hypot(
-                  robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond)
-              <= coastSpeedLimit.get()
-          && brakeModeEnabled) {
-        setBrakeMode(false);
-        coastTimer.stop();
-        coastTimer.reset();
-      } else if (coastTimer.hasElapsed(coastDisableTime.get()) && brakeModeEnabled) {
-        setBrakeMode(false);
-        coastTimer.stop();
-        coastTimer.reset();
-      } else {
-        coastTimer.start();
+      if (brakeModeEnabled) {
+        if (coastTimer.hasElapsed(coastDisableTime.get())) {
+          setBrakeMode(false);
+          coastTimer.stop();
+          coastTimer.reset();
+        } else {
+          coastTimer.start();
+        }
       }
-      return;
-    } else {
-      // Brake mode
-      setBrakeMode(true);
     }
 
     // Run drive based on current mode

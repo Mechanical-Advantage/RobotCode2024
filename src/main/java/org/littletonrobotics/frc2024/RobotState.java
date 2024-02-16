@@ -153,15 +153,21 @@ public class RobotState {
       }
     }
     // difference between estimate and vision pose
-    Twist2d twist = estimateAtTime.log(observation.visionPose());
-    // scale twist by visionK
-    var kTimesTwist = visionK.times(VecBuilder.fill(twist.dx, twist.dy, twist.dtheta));
-    Twist2d scaledTwist =
-        new Twist2d(kTimesTwist.get(0, 0), kTimesTwist.get(1, 0), kTimesTwist.get(2, 0));
+    Transform2d transform = new Transform2d(estimateAtTime, observation.visionPose());
+    // scale transform by visionK
+    var kTimesTransform =
+        visionK.times(
+            VecBuilder.fill(
+                transform.getX(), transform.getY(), transform.getRotation().getRadians()));
+    Transform2d scaledTransform =
+        new Transform2d(
+            kTimesTransform.get(0, 0),
+            kTimesTransform.get(1, 0),
+            Rotation2d.fromRadians(kTimesTransform.get(2, 0)));
 
     // Recalculate current estimate by applying scaled twist to old estimate
     // then replaying odometry data
-    estimatedPose = estimateAtTime.exp(scaledTwist).plus(sampleToOdometryTransform);
+    estimatedPose = estimateAtTime.plus(scaledTransform).plus(sampleToOdometryTransform);
   }
 
   public void addVelocityData(Twist2d robotVelocity) {

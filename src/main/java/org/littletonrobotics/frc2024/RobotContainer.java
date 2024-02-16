@@ -222,10 +222,7 @@ public class RobotContainer {
     // Shoot
     Trigger readyToShoot =
         new Trigger(
-            () ->
-                drive.isAutoAimGoalCompleted()
-                    && superstructure.atShootingSetpoint()
-                    && flywheels.atGoal());
+            () -> drive.isAutoAimGoalCompleted() && superstructure.atGoal() && flywheels.atGoal());
     readyToShoot
         .whileTrue(
             Commands.run(

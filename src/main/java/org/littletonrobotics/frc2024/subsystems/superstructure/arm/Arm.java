@@ -71,6 +71,7 @@ public class Arm {
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
   private TrapezoidProfile motionProfile;
+  private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
   private ArmFeedforward ff;
 
   private final ArmVisualizer measuredVisualizer;
@@ -118,7 +119,7 @@ public class Arm {
 
     if (!characterizing) {
       // Run closed loop
-      var output =
+      setpointState =
           motionProfile.calculate(
               0.02,
               new TrapezoidProfile.State(inputs.armPositionRads, inputs.armVelocityRadsPerSec),
@@ -129,20 +130,20 @@ public class Arm {
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));
 
-      io.runSetpoint(output.position, ff.calculate(output.position, output.velocity));
-
-      // Logs
-      Logger.recordOutput("Arm/SetpointAngle", output.position);
-      Logger.recordOutput("Arm/SetpointVelocity", output.velocity);
-      setpointVisualizer.update(Rotation2d.fromRadians(output.position));
-      goalVisualizer.update(Rotation2d.fromRadians(goal.getRads()));
+      io.runSetpoint(
+          setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
     }
 
     if (DriverStation.isDisabled()) {
       io.stop();
     }
 
-    measuredVisualizer.update(Rotation2d.fromRadians(inputs.armPositionRads));
+    // Logs
+    measuredVisualizer.update(inputs.armPositionRads);
+    setpointVisualizer.update(setpointState.position);
+    goalVisualizer.update(goal.getRads());
+    Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
+    Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
     Logger.recordOutput("Arm/Goal", goal);
   }
 
@@ -155,9 +156,9 @@ public class Arm {
     return Rotation2d.fromRadians(goal.getRads());
   }
 
-  @AutoLogOutput(key = "Arm/AtSetpoint")
-  public boolean atSetpoint() {
-    return Math.abs(inputs.armPositionRads - goal.getRads())
+  @AutoLogOutput(key = "Arm/AtGoal")
+  public boolean atGoal() {
+    return Math.abs(setpointState.position - goal.getRads())
         <= Units.degreesToRadians(toleranceDegrees.get());
   }
 

@@ -62,14 +62,9 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
-  @AutoLogOutput(key = "Superstructure/ReadyToShoot")
-  public boolean atShootingSetpoint() {
-    return currentGoal == Goal.AIM && arm.atSetpoint();
-  }
-
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
-    return currentGoal == desiredGoal && arm.atSetpoint();
+    return currentGoal == desiredGoal && arm.atGoal();
   }
 
   public void stow() {

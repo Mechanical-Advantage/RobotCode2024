@@ -27,6 +27,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignContr
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
+import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
@@ -38,11 +39,8 @@ import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class Drive extends SubsystemBase {
-  private static final LoggedTunableNumber coastSpeedLimit =
-      new LoggedTunableNumber(
-          "Drive/CoastSpeedLimit", DriveConstants.driveConfig.maxLinearVelocity() * 0.6);
-  private static final LoggedTunableNumber coastDisableTime =
-      new LoggedTunableNumber("Drive/CoastDisableTimeSeconds", 0.5);
+  private static final LoggedTunableNumber coastWaitTime =
+      new LoggedTunableNumber("Drive/CoastWaitTimeSeconds", 0.5);
 
   public enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
@@ -109,6 +107,7 @@ public class Drive extends SubsystemBase {
     modules[1] = new Module(fr, 1);
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
+    setBrakeMode(true);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -201,15 +200,19 @@ public class Drive extends SubsystemBase {
     // Disabled, stop modules and coast
     if (DriverStation.isDisabled()) {
       Arrays.stream(modules).forEach(Module::stop);
-      if (brakeModeEnabled) {
-        if (coastTimer.hasElapsed(coastDisableTime.get())) {
-          setBrakeMode(false);
-          coastTimer.stop();
-          coastTimer.reset();
-        } else {
-          coastTimer.start();
-        }
+      if (EqualsUtil.epsilonEquals(
+          Math.hypot(
+              robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond),
+          0.0,
+          0.05)) {
+        coastTimer.start();
+      } else if (coastTimer.hasElapsed(coastWaitTime.get())) {
+        coastTimer.stop();
+        coastTimer.reset();
+        setBrakeMode(false);
       }
+    } else {
+      setBrakeMode(true);
     }
 
     // Run drive based on current mode
@@ -354,8 +357,10 @@ public class Drive extends SubsystemBase {
 
   /** Set brake mode enabled */
   public void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled != enabled) {
+      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
+    }
     brakeModeEnabled = enabled;
-    Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
   }
 
   public Command orientModules(Rotation2d orientation) {

@@ -7,6 +7,7 @@
 #include <trajopt/OptimalTrajectoryGenerator.h>
 #include <trajopt/drivetrain/SwerveDrivetrain.h>
 #include <trajopt/path/SwervePathBuilder.h>
+#include <numbers>
 
 namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 
@@ -74,6 +75,18 @@ void convert_trajectory(vts::Trajectory *trajectory_out, const trajopt::Holonomi
     }
 }
 
+double angle_modulus(double value) {
+  double minInput = -std::numbers::pi;
+  double maxInput = std::numbers::pi;
+  double modulus = maxInput - minInput;
+
+  int numMax = (value - minInput) / modulus;
+  value -= numMax * modulus;
+  int numMin = (value - maxInput) / modulus;
+  value -= numMin * modulus;
+  return value;
+}
+
 class VehicleTrajectoryService final
         : public vts::VehicleTrajectoryService::Service {
 public:
@@ -85,6 +98,8 @@ public:
         std::vector<size_t> control_intervals;
 
         int segment_start_offset = 0;
+        int full_rots = 0;
+        double prev_heading = 0;
         for (int segment_idx = 0; segment_idx < request->segments_size(); segment_idx++) {
             fmt::print("Starting segment {}\n", segment_idx);
             // Add segment waypoints
@@ -105,10 +120,22 @@ public:
                 }
 
                 if (waypoint.has_heading_constraint()) {
+                    if (total_waypoint_idx == 0) {
+                      prev_heading = waypoint.heading_constraint();
+                    }
+                    double prev_heading_mod = angle_modulus(prev_heading);
+                    double heading_mod = angle_modulus(waypoint.heading_constraint());
+                    if (prev_heading_mod < 0 && heading_mod > prev_heading_mod + std::numbers::pi) {
+                      full_rots--;
+                    } else if (prev_heading_mod > 0 && heading_mod < prev_heading_mod - std::numbers::pi) {
+                      full_rots++;
+                    }
+                    double heading = full_rots * 2 * std::numbers::pi + heading_mod;
+                    prev_heading = waypoint.heading_constraint();
+
                     fmt::print("Adding pose waypoint {} ({}, {}, {})\n", total_waypoint_idx,
-                               waypoint.x(), waypoint.y(), waypoint.heading_constraint());
-                    builder.PoseWpt(total_waypoint_idx, waypoint.x(), waypoint.y(),
-                                    waypoint.heading_constraint());
+                               waypoint.x(), waypoint.y(), heading);
+                    builder.PoseWpt(total_waypoint_idx, waypoint.x(), waypoint.y(), heading);
                 } else {
                     fmt::print("Adding translation waypoint {} ({}, {})\n", total_waypoint_idx,
                                waypoint.x(), waypoint.y());

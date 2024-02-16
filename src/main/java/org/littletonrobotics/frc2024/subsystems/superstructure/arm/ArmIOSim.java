@@ -15,6 +15,7 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import org.littletonrobotics.frc2024.Constants;
 
 public class ArmIOSim implements ArmIO {
   private final SingleJointedArmSim sim =
@@ -47,7 +48,7 @@ public class ArmIOSim implements ArmIO {
       controllerNeedsReset = true;
     }
 
-    sim.update(0.02);
+    sim.update(Constants.loopPeriodSecs);
 
     inputs.armPositionRads = sim.getAngleRads() + positionOffset;
     inputs.armVelocityRadsPerSec = sim.getVelocityRadPerSec();

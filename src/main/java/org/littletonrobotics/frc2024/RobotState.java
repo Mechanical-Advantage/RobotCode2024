@@ -144,7 +144,7 @@ public class RobotState {
     }
     // difference between estimate and vision pose
     Transform2d transform = new Transform2d(estimateAtTime, observation.visionPose());
-    // scale twist by visionK
+    // scale transform by visionK
     var kTimesTransform =
         visionK.times(
             VecBuilder.fill(

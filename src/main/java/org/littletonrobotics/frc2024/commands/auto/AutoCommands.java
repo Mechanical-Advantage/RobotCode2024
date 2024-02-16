@@ -55,88 +55,99 @@ public class AutoCommands {
 
   public Command davisEthicalAuto() {
     return sequence(
-            reset("davisEthicalAuto_driveToCenterline4"),
+            // TODO: update to use the new commands
+            reset("davisEthicalAuto_driveToPodium"),
             Commands.waitUntil(
                     () -> true
                     //                () -> superstructure.atArmSetpoint() && flywheels.atSetpoint()
                     )
                 .andThen(rollers.feedShooterCommand().withTimeout(.3))
                 .deadlineWith(superstructure.aimCommand()),
-            path("davisEthicalAuto_driveToCenterline4")
-                .deadlineWith(
-                    superstructure
-                        .floorIntakeCommand()
-                        .alongWith(rollers.floorIntakeCommand())
-                        .withTimeout(3)
-                        .andThen(superstructure.aimCommand())),
-            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
-            path("davisEthicalAuto_driveToCenterline3")
-                .deadlineWith(
-                    superstructure
-                        .floorIntakeCommand()
-                        .alongWith(rollers.floorIntakeCommand())
-                        .withTimeout(3)
-                        .andThen(superstructure.aimCommand())),
-            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
-            path("davisEthicalAuto_driveToCenterline2")
-                .deadlineWith(
-                    superstructure
-                        .floorIntakeCommand()
-                        .alongWith(rollers.floorIntakeCommand())
-                        .withTimeout(3)
-                        .andThen(superstructure.aimCommand())),
-            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
             path("davisEthicalAuto_driveToPodium")
-                .deadlineWith(superstructure.floorIntakeCommand(), rollers.floorIntakeCommand()),
-            Commands.waitUntil(
-                    () -> true
-                    //                superstructure::atArmSetpoint
-                    )
-                .andThen(rollers.feedShooterCommand().withTimeout(.1)))
+                .deadlineWith(
+                    superstructure
+                        .floorIntakeCommand()
+                        .alongWith(rollers.floorIntakeCommand())
+                        .withTimeout(3)
+                        .andThen(superstructure.aimCommand())),
+            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
+            path("davisEthicalAuto_driveToCenterline2"),
+            path("davisEthicalAuto_driveToCenterline1"),
+            path("davisEthicalAuto_driveToCenterline0")
+
+            //                .deadlineWith(
+            //                    superstructure
+            //                        .floorIntakeCommand()
+            //                        .alongWith(rollers.floorIntakeCommand())
+            //                        .withTimeout(3)
+            //                        .andThen(superstructure.aimCommand())),
+            //
+            // rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
+            //            path("davisEthicalAuto_driveToCenterline2")
+            //                .deadlineWith(
+            //                    superstructure
+            //                        .floorIntakeCommand()
+            //                        .alongWith(rollers.floorIntakeCommand())
+            //                        .withTimeout(3)
+            //                        .andThen(superstructure.aimCommand())),
+            //
+            // rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
+            //            path("davisEthicalAuto_driveToPodium")
+            //                .deadlineWith(superstructure.floorIntakeCommand(),
+            // rollers.floorIntakeCommand()),
+            //            Commands.waitUntil(
+            //                    () -> true
+            //                    //                superstructure::atArmSetpoint
+            //                    )
+            //                .andThen(rollers.feedShooterCommand().withTimeout(.1))
+            )
         .deadlineWith(flywheels.shootCommand());
   }
 
   public Command N5_S0_C012() {
     return sequence(
-            reset("N5-S0-C0123_driveToS0"),
-            Commands.waitUntil(
-                    () -> true
-                    //                () -> superstructure.atArmSetpoint() && flywheels.atSetpoint()
-                    )
-                .andThen(rollers.feedShooterCommand().withTimeout(.3))
-                .deadlineWith(superstructure.aimCommand()),
-            path("N5-S0-C0123_driveToS0")
-                .deadlineWith(
-                    superstructure
-                        .floorIntakeCommand()
-                        .alongWith(rollers.floorIntakeCommand())
-                        .withTimeout(3)
-                        .andThen(superstructure.aimCommand())),
-            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
-            path("N5-S0-C0123_driveToC0")
-                .deadlineWith(
-                    superstructure
-                        .floorIntakeCommand()
-                        .alongWith(rollers.floorIntakeCommand())
-                        .withTimeout(3)
-                        .andThen(superstructure.aimCommand())),
-            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
-            path("N5-S0-C0123_driveToC1")
-                .deadlineWith(
-                    superstructure
-                        .floorIntakeCommand()
-                        .alongWith(rollers.floorIntakeCommand())
-                        .withTimeout(3)
-                        .andThen(superstructure.aimCommand())),
-            rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
-            path("N5-S0-C0123_driveToC2")
-                .deadlineWith(superstructure.floorIntakeCommand(), rollers.floorIntakeCommand()),
-            Commands.waitUntil(
-                    () -> true
-                    //                superstructure::atArmSetpoint
-                    )
-                .andThen(rollers.feedShooterCommand().withTimeout(.1)))
-        .deadlineWith(flywheels.shootCommand());
+        reset("N5-S0-C0123_driveToS0"),
+        Commands.waitUntil(
+                () -> true
+                //                () -> superstructure.atArmSetpoint() && flywheels.atSetpoint()
+                )
+            .andThen(rollers.feedShooterCommand().withTimeout(.3))
+            .deadlineWith(superstructure.aimCommand()),
+        path("N5-S0-C0123_driveToS0")
+            .deadlineWith(
+                superstructure
+                    .floorIntakeCommand()
+                    .alongWith(rollers.floorIntakeCommand())
+                    .withTimeout(3)
+                    .andThen(superstructure.aimCommand())),
+        rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
+        path("N5-S0-C0123_driveToC0")
+            .deadlineWith(
+                superstructure
+                    .floorIntakeCommand()
+                    .alongWith(rollers.floorIntakeCommand())
+                    .withTimeout(3)
+                    .andThen(superstructure.aimCommand())),
+        rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand())
+        //        path("N5-S0-C0123_driveToC1")
+        //            .deadlineWith(
+        //                superstructure
+        //                    .floorIntakeCommand()
+        //                    .alongWith(rollers.floorIntakeCommand())
+        //                    .withTimeout(3)
+        //                    .andThen(superstructure.aimCommand())),
+        //
+        // rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand())
+        //            path("N5-S0-C0123_driveToC2")
+        //                .deadlineWith(superstructure.floorIntakeCommand(),
+        // rollers.floorIntakeCommand()),
+        //            Commands.waitUntil(
+        //                    () -> true
+        //                    //                superstructure::atArmSetpoint
+        //                    )
+        //                .andThen(rollers.feedShooterCommand().withTimeout(.1)))
+        //        .deadlineWith(flywheels.shootCommand()
+        );
   }
 
   public Command driveStraight() {

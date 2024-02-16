@@ -18,7 +18,7 @@ public class LinearProfile {
   @Getter @Setter private double goal = 0;
 
   /**
-   * Creates a new LinearProfiler
+   * Creates a new LinearProfile
    *
    * @param maxAcceleration The max ramp rate in velocity in rpm/sec
    * @param period Period of control loop (0.02)

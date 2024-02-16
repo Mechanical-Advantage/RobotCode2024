@@ -24,7 +24,12 @@ public class FlywheelConstants {
         case SIMBOT -> new Gains(0.05, 0.0, 0.0, 0.01, 0.00103, 0.0);
       };
 
-  public record FlywheelConfig(int leftID, int rightID, double reduction, double maxAcclerationRpmPerSec, double toleranceRPM) {}
+  public record FlywheelConfig(
+      int leftID,
+      int rightID,
+      double reduction,
+      double maxAcclerationRpmPerSec,
+      double toleranceRPM) {}
 
   public record Gains(double kP, double kI, double kD, double kS, double kV, double kA) {}
 }

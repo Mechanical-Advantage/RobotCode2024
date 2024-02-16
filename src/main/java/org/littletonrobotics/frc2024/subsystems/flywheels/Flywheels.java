@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -27,22 +28,23 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kS = new LoggedTunableNumber("Flywheels/kS", gains.kS());
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
-  private static LoggedTunableNumber shootingLeftRPM =
+  private static final LoggedTunableNumber shootingLeftRPM =
       new LoggedTunableNumber("Superstructure/ShootingLeftRPM", 6000.0);
-  private static LoggedTunableNumber shootingRightRPM =
+  private static final LoggedTunableNumber shootingRightRPM =
       new LoggedTunableNumber("Superstructure/ShootingRightRPM", 4000.0);
-  private static LoggedTunableNumber idleLeftRPM =
-      new LoggedTunableNumber("Superstructure/IdleLeftRPM", 200.0);
-  private static LoggedTunableNumber idleRightRPM =
-      new LoggedTunableNumber("Superstructure/IdleRightRPM", 200.0);
-  private static LoggedTunableNumber intakingLeftRPM =
+  private static final LoggedTunableNumber idleLeftRPM =
+      new LoggedTunableNumber("Superstructure/IdleLeftRPM", 1500.0);
+  private static final LoggedTunableNumber idleRightRPM =
+      new LoggedTunableNumber("Superstructure/IdleRightRPM", 1000.0);
+  private static final LoggedTunableNumber intakingLeftRPM =
       new LoggedTunableNumber("Superstructure/IntakingLeftRPM", -2000.0);
-  private static LoggedTunableNumber intakingRightRPM =
+  private static final LoggedTunableNumber intakingRightRPM =
       new LoggedTunableNumber("Superstructure/IntakingRightRPM", -2000.0);
   private static final LoggedTunableNumber shooterTolerance =
       new LoggedTunableNumber("Flywheels/ToleranceRPM", flywheelConfig.toleranceRPM());
   private static final LoggedTunableNumber maxAcceleration =
-      new LoggedTunableNumber("Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
+      new LoggedTunableNumber(
+          "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
 
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
@@ -77,10 +79,10 @@ public class Flywheels extends SubsystemBase {
   public Flywheels(FlywheelsIO io) {
     this.io = io;
 
-    leftProfile = new LinearProfile(maxAcceleration.get(), 0.02);
-    rightProfile = new LinearProfile(maxAcceleration.get(), 0.02);
+    leftProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
+    rightProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
 
-    setDefaultCommand(runOnce(() -> goal = Goal.IDLE).withName("FlywheelsIdle"));
+    setDefaultCommand(runOnce(() -> setGoal(Goal.IDLE)).withName("FlywheelsIdle"));
   }
 
   @Override
@@ -114,15 +116,12 @@ public class Flywheels extends SubsystemBase {
 
     // Run to setpoint
     if (closedLoop) {
-      double leftSetpoint = leftProfile.calculateSetpoint();
-      double rightSetpoint = rightProfile.calculateSetpoint();
-      io.runVelocity(leftSetpoint, rightSetpoint);
-
-      Logger.recordOutput("Flywheels/SetpointLeftRpm", leftSetpoint);
-      Logger.recordOutput("Flywheels/SetpointRightRpm", rightSetpoint);
+      io.runVelocity(leftProfile.calculateSetpoint(), rightProfile.calculateSetpoint());
     }
 
     Logger.recordOutput("Flywheels/Goal", goal);
+    Logger.recordOutput("Flywheels/SetpointLeftRpm", leftProfile.getCurrentSetpoint());
+    Logger.recordOutput("Flywheels/SetpointRightRpm", rightProfile.getCurrentSetpoint());
     Logger.recordOutput("Flywheels/GoalLeftRpm", goal.getLeftGoal());
     Logger.recordOutput("Flywheels/GoalRightRpm", goal.getRightGoal());
   }

@@ -104,6 +104,15 @@ public class AutoCommands {
         .deadlineWith(flywheels.shootCommand());
   }
 
+  public Command N5_S1_C234() {
+    return sequence(
+        reset("N5-S1-C234_driveToS1"),
+        path("N5-S1-C234_driveToS1"),
+        path("N5-S1-C234_driveToC2"),
+        path("N5-S1-C234_driveToC3"),
+        path("N5-S1-C234_driveToC4"));
+  }
+
   public Command N5_S0_C012() {
     return sequence(
         reset("N5-S0-C0123_driveToS0"),
@@ -154,5 +163,4 @@ public class AutoCommands {
     return reset("driveToCenterline4")
         .andThen(path("driveToCenterline4"), path("driveToCenterline3"), path("driveToPodium"));
   }
-  ;
 }

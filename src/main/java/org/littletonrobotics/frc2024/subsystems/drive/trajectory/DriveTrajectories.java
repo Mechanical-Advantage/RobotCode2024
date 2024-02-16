@@ -117,6 +117,70 @@ public class DriveTrajectories {
                 .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
                 .build()));
 
+    // N5-S1-C234
+
+    paths.put(
+        "N5-S1-C234_driveToS1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingCenterFace)
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
+                .build()));
+
+    paths.put(
+        "N5-S1-C234_driveToC2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)))
+                .addPoseWaypoint(intakingCenterlinePoses[2])
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(0, .65, new Rotation2d(Math.PI)))
+                            .getTranslation()))
+                .build()));
+
+    paths.put(
+        "N5-S1-C234_driveToC3",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(0, .65, new Rotation2d(Math.PI)))
+                            .getTranslation()))
+                .addPoseWaypoint(
+                    FieldConstants.Stage.ampLeg.transformBy(
+                        new Transform2d(0, -1, new Rotation2d(Math.PI))))
+                .addPoseWaypoint(intakingCenterlinePoses[3])
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(0, 2.1, new Rotation2d(Math.PI)))
+                            .getTranslation()))
+                .build()));
+    paths.put(
+        "N5-S1-C234_driveToC4",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(0, 2.1, new Rotation2d(Math.PI)))
+                            .getTranslation()))
+                .addPoseWaypoint(intakingCenterlinePoses[4])
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(0, 2.1, new Rotation2d(Math.PI)))
+                            .getTranslation()))
+                .build()));
+
     // 5N-S0-C0123
     paths.put(
         "N5-S0-C0123_driveToS0",
@@ -135,8 +199,7 @@ public class DriveTrajectories {
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
                 .addPoseWaypoint(
                     new Pose2d(
-                        intakingCenterlinePoses[4].getTranslation(),
-                        new Rotation2d().fromDegrees(-180)))
+                        intakingCenterlinePoses[4].getTranslation(), Rotation2d.fromDegrees(-180)))
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.center
@@ -156,8 +219,7 @@ public class DriveTrajectories {
                             .getTranslation()))
                 .addPoseWaypoint(
                     new Pose2d(
-                        intakingCenterlinePoses[3].getTranslation(),
-                        new Rotation2d().fromDegrees(-180)))
+                        intakingCenterlinePoses[3].getTranslation(), Rotation2d.fromDegrees(-180)))
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.center
@@ -209,7 +271,7 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     new Pose2d(
                         intakingCenterlinePoses[4].getTranslation(),
-                        new Rotation2d().fromDegrees(-180)))
+                        Rotation2d.fromDegrees(-180)))
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.center

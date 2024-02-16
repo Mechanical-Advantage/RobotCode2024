@@ -64,7 +64,7 @@ public class RobotContainer {
   private AprilTagVision aprilTagVision;
   private Flywheels flywheels;
   private Rollers rollers;
-  private Superstructure superstructure;
+  private final Superstructure superstructure;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -188,6 +188,7 @@ public class RobotContainer {
 
     autoChooser.addOption(("Davis Ethical Auto"), autoCommands.davisEthicalAuto());
     autoChooser.addOption("N5_S0_C0123", autoCommands.N5_S0_C012());
+    autoChooser.addOption("N5_S1_C123", autoCommands.N5_S1_C234());
   }
 
   /**

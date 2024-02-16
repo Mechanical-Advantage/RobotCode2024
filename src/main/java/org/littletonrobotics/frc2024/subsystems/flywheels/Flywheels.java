@@ -16,7 +16,6 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
-import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -81,7 +80,7 @@ public class Flywheels extends SubsystemBase {
     leftProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
     rightProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
 
-    setDefaultCommand(runOnce(() -> setGoal(Goal.IDLE)).withName("FlywheelsIdle"));
+    setDefaultCommand(runOnce(() -> setGoal(Goal.IDLE)).withName("Flywheels Idle"));
   }
 
   @Override
@@ -134,10 +133,15 @@ public class Flywheels extends SubsystemBase {
       closedLoop = false;
       return; // Don't set a goal
     }
+    // If not already controlling to requested goal
+    // set closed loop false
+    closedLoop = this.goal == goal;
     // Enable close loop
-    leftProfile.setGoal(goal.getLeftGoal(), inputs.leftVelocityRpm);
-    rightProfile.setGoal(goal.getRightGoal(), inputs.rightVelocityRpm);
-    closedLoop = true;
+    if (!closedLoop) {
+      leftProfile.setGoal(goal.getLeftGoal(), inputs.leftVelocityRpm);
+      rightProfile.setGoal(goal.getRightGoal(), inputs.rightVelocityRpm);
+      closedLoop = true;
+    }
     this.goal = goal;
   }
 
@@ -153,8 +157,8 @@ public class Flywheels extends SubsystemBase {
 
   @AutoLogOutput(key = "Flywheels/AtGoal")
   public boolean atGoal() {
-    return EqualsUtil.epsilonEquals(leftProfile.getCurrentSetpoint(), goal.getLeftGoal(), 5)
-        && EqualsUtil.epsilonEquals(rightProfile.getCurrentSetpoint(), goal.getRightGoal(), 5);
+    return leftProfile.getCurrentSetpoint() == goal.getLeftGoal()
+        && rightProfile.getCurrentSetpoint() == goal.getRightGoal();
   }
 
   public Command shootCommand() {

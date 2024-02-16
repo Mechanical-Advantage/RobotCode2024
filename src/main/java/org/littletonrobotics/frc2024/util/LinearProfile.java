@@ -56,6 +56,9 @@ public class LinearProfile {
    * @return Setpoint to send to motors
    */
   public double calculateSetpoint() {
+    if (EqualsUtil.epsilonEquals(goal, currentSetpoint)) {
+      return currentSetpoint;
+    }
     if (goal > currentSetpoint) {
       currentSetpoint += dv;
       if (currentSetpoint > goal) {

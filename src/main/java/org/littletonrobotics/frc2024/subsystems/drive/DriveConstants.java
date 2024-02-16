@@ -177,7 +177,7 @@ public final class DriveConstants {
   // Swerve Heading Control
   public static HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
-        default -> new HeadingControllerConstants(5.0, 0.0);
+        default -> new HeadingControllerConstants(5.0, 0.0, 8.0, 20.0);
       };
 
   public record DriveConfig(
@@ -234,7 +234,8 @@ public final class DriveConstants {
       double maxAngularVelocity,
       double maxAngularAcceleration) {}
 
-  public record HeadingControllerConstants(double kP, double kD) {}
+  public record HeadingControllerConstants(
+      double kP, double kD, double maxVelocity, double maxAcceleration) {}
 
   private enum Mk4iReductions {
     L2((50.0 / 14.0) * (17.0 / 27.0) * (45.0 / 15.0)),

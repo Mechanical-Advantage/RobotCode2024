@@ -19,11 +19,12 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.RobotState;
-import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAimController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignController;
+import org.littletonrobotics.frc2024.subsystems.drive.controllers.HeadingController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
@@ -100,7 +101,7 @@ public class Drive extends SubsystemBase {
   private final TeleopDriveController teleopDriveController;
   private TrajectoryController trajectoryController = null;
   private AutoAlignController autoAlignController = null;
-  private AutoAimController autoAimController = null;
+  private HeadingController headingController = null;
 
   public Drive(GyroIO gyroIO, ModuleIO fl, ModuleIO fr, ModuleIO bl, ModuleIO br) {
     this.gyroIO = gyroIO;
@@ -227,8 +228,8 @@ public class Drive extends SubsystemBase {
         // Plain teleop drive
         desiredSpeeds = teleopSpeeds;
         // Add auto aim if present
-        if (autoAimController != null) {
-          desiredSpeeds.omegaRadiansPerSecond = autoAimController.update();
+        if (headingController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = headingController.update();
         }
       }
       case TRAJECTORY -> {
@@ -275,7 +276,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Pass controller input into teleopDriveController in field relative input */
-  public void setTeleopDriveGoal(double controllerX, double controllerY, double controllerOmega) {
+  public void acceptTeleopInput(double controllerX, double controllerY, double controllerOmega) {
     if (DriverStation.isTeleopEnabled()) {
       if (currentDriveMode != DriveMode.AUTO_ALIGN) {
         currentDriveMode = DriveMode.TELEOP;
@@ -285,7 +286,7 @@ public class Drive extends SubsystemBase {
   }
 
   /** Sets the trajectory for the robot to follow. */
-  public void setTrajectoryGoal(HolonomicTrajectory trajectory) {
+  public void setTrajectory(HolonomicTrajectory trajectory) {
     if (DriverStation.isAutonomousEnabled()) {
       currentDriveMode = DriveMode.TRAJECTORY;
       trajectoryController = new TrajectoryController(trajectory);
@@ -293,14 +294,14 @@ public class Drive extends SubsystemBase {
   }
 
   /** Clears the current trajectory goal. */
-  public void clearTrajectoryGoal() {
+  public void clearTrajectory() {
     trajectoryController = null;
     currentDriveMode = DriveMode.TELEOP;
   }
 
   /** Returns true if the robot is done with trajectory. */
   @AutoLogOutput(key = "Drive/TrajectoryCompleted")
-  public boolean isTrajectoryGoalCompleted() {
+  public boolean isTrajectoryCompleted() {
     return trajectoryController != null && trajectoryController.isFinished();
   }
 
@@ -325,19 +326,19 @@ public class Drive extends SubsystemBase {
   }
 
   /** Enable auto aiming on drive */
-  public void setAutoAimGoal() {
-    autoAimController = new AutoAimController();
+  public void setHeadingGoal(Supplier<Rotation2d> goalHeadingSupplier) {
+    headingController = new HeadingController(goalHeadingSupplier);
   }
 
   /** Disable auto aiming on drive */
-  public void clearAutoAimGoal() {
-    autoAimController = null;
+  public void clearHeadingGoal() {
+    headingController = null;
   }
 
   /** Returns true if robot is aimed at speaker */
-  @AutoLogOutput(key = "Drive/AutoAimCompleted")
-  public boolean isAutoAimGoalCompleted() {
-    return autoAimController != null && autoAimController.atSetpoint();
+  @AutoLogOutput(key = "Drive/AtHeadingGoal")
+  public boolean atHeadingGoal() {
+    return headingController != null && headingController.atGoal();
   }
 
   /** Runs forwards at the commanded voltage. */

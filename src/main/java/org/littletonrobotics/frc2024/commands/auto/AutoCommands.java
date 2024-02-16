@@ -30,12 +30,12 @@ public class AutoCommands {
 
     return startEnd(
             () -> {
-              drive.setTrajectoryGoal(trajectory);
+              drive.setTrajectory(trajectory);
             },
             () -> {
-              drive.clearTrajectoryGoal();
+              drive.clearTrajectory();
             })
-        .until(() -> drive.isTrajectoryGoalCompleted());
+        .until(() -> drive.isTrajectoryCompleted());
   }
 
   private Command reset(String path) {

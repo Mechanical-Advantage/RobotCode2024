@@ -16,6 +16,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -29,19 +30,17 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
   private static final LoggedTunableNumber shootingLeftRPM =
-      new LoggedTunableNumber("Superstructure/ShootingLeftRPM", 6000.0);
+      new LoggedTunableNumber("Flywheels/ShootingLeftRPM", 6000.0);
   private static final LoggedTunableNumber shootingRightRPM =
-      new LoggedTunableNumber("Superstructure/ShootingRightRPM", 4000.0);
+      new LoggedTunableNumber("Flywheels/ShootingRightRPM", 4000.0);
   private static final LoggedTunableNumber idleLeftRPM =
-      new LoggedTunableNumber("Superstructure/IdleLeftRPM", 1500.0);
+      new LoggedTunableNumber("Flywheels/IdleLeftRPM", 1500.0);
   private static final LoggedTunableNumber idleRightRPM =
-      new LoggedTunableNumber("Superstructure/IdleRightRPM", 1000.0);
+      new LoggedTunableNumber("Flywheels/IdleRightRPM", 1000.0);
   private static final LoggedTunableNumber intakingLeftRPM =
-      new LoggedTunableNumber("Superstructure/IntakingLeftRPM", -2000.0);
+      new LoggedTunableNumber("Flywheels/IntakingLeftRPM", -2000.0);
   private static final LoggedTunableNumber intakingRightRPM =
-      new LoggedTunableNumber("Superstructure/IntakingRightRPM", -2000.0);
-  private static final LoggedTunableNumber shooterTolerance =
-      new LoggedTunableNumber("Flywheels/ToleranceRPM", flywheelConfig.toleranceRPM());
+      new LoggedTunableNumber("Flywheels/IntakingRightRPM", -2000.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
@@ -116,6 +115,9 @@ public class Flywheels extends SubsystemBase {
 
     // Run to setpoint
     if (closedLoop) {
+      // Update goals
+      leftProfile.setGoal(goal.getLeftGoal());
+      rightProfile.setGoal(goal.getRightGoal());
       io.runVelocity(leftProfile.calculateSetpoint(), rightProfile.calculateSetpoint());
     }
 
@@ -149,11 +151,10 @@ public class Flywheels extends SubsystemBase {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
-  @AutoLogOutput(key = "Shooter/AtGoal")
+  @AutoLogOutput(key = "Flywheels/AtGoal")
   public boolean atGoal() {
-    return Math.abs(leftProfile.getCurrentSetpoint() - goal.getLeftGoal()) <= shooterTolerance.get()
-        && Math.abs(rightProfile.getCurrentSetpoint() - goal.getRightGoal())
-            <= shooterTolerance.get();
+    return EqualsUtil.epsilonEquals(leftProfile.getCurrentSetpoint(), goal.getLeftGoal(), 5)
+        && EqualsUtil.epsilonEquals(rightProfile.getCurrentSetpoint(), goal.getRightGoal(), 5);
   }
 
   public Command shootCommand() {

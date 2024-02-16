@@ -20,6 +20,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
+import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAimController;
@@ -27,7 +28,6 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignContr
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
-import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
@@ -41,6 +41,8 @@ import org.littletonrobotics.junction.Logger;
 public class Drive extends SubsystemBase {
   private static final LoggedTunableNumber coastWaitTime =
       new LoggedTunableNumber("Drive/CoastWaitTimeSeconds", 0.5);
+  private static final LoggedTunableNumber coastMetersPerSecThreshold =
+      new LoggedTunableNumber("Drive/CoastMetersPerSecThreshold", 0.05);
 
   public enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
@@ -80,8 +82,10 @@ public class Drive extends SubsystemBase {
 
   private double characterizationInput = 0.0;
   private boolean modulesOrienting = false;
-  private final Timer coastTimer = new Timer();
-  private boolean brakeModeEnabled = true;
+  private final Timer lastMovementTimer = new Timer();
+
+  @Getter(onMethod_ = @AutoLogOutput(key = "Drive/BrakeModeEnabled"))
+  boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
   private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
@@ -107,6 +111,7 @@ public class Drive extends SubsystemBase {
     modules[1] = new Module(fr, 1);
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
+    lastMovementTimer.start();
     setBrakeMode(true);
 
     setpointGenerator =
@@ -179,6 +184,7 @@ public class Drive extends SubsystemBase {
           }
         }
       }
+      // If delta isn't too large we can include the measurement.
       if (includeMeasurement) {
         lastPositions = wheelPositions;
         RobotState.getInstance()
@@ -189,7 +195,7 @@ public class Drive extends SubsystemBase {
       }
     }
 
-    // update current velocities use gyro when possible
+    // Update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity = getSpeeds();
     robotRelativeVelocity.omegaRadiansPerSecond =
         gyroInputs.connected
@@ -197,22 +203,16 @@ public class Drive extends SubsystemBase {
             : robotRelativeVelocity.omegaRadiansPerSecond;
     RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
 
-    // Disabled, stop modules and coast
-    if (DriverStation.isDisabled()) {
-      Arrays.stream(modules).forEach(Module::stop);
-      if (EqualsUtil.epsilonEquals(
-          Math.hypot(
-              robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond),
-          0.0,
-          0.05)) {
-        coastTimer.start();
-      } else if (coastTimer.hasElapsed(coastWaitTime.get())) {
-        coastTimer.stop();
-        coastTimer.reset();
-        setBrakeMode(false);
-      }
-    } else {
-      setBrakeMode(true);
+    // Update brake mode
+    // Reset movement timer if moved
+    if (Arrays.stream(modules)
+        .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
+      lastMovementTimer.reset();
+    }
+    if (DriverStation.isEnabled()) {
+      setBrakeMode(true); // Always in brake mode during teleop
+    } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
+      setBrakeMode(false);
     }
 
     // Run drive based on current mode
@@ -355,7 +355,7 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  /** Set brake mode enabled */
+  /** Set brake mode to {@code enabled} doesn't change brake mode if already set */
   public void setBrakeMode(boolean enabled) {
     if (brakeModeEnabled != enabled) {
       Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));

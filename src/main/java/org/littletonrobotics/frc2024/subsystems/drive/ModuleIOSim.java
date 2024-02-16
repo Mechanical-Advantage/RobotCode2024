@@ -13,6 +13,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 
 public class ModuleIOSim implements ModuleIO {
@@ -36,6 +37,10 @@ public class ModuleIOSim implements ModuleIO {
 
   @Override
   public void updateInputs(ModuleIOInputs inputs) {
+    if (DriverStation.isDisabled()) {
+      stop();
+    }
+
     driveSim.update(0.02);
     turnSim.update(0.02);
 
@@ -91,7 +96,7 @@ public class ModuleIOSim implements ModuleIO {
 
   @Override
   public void stop() {
-    driveSim.setInputVoltage(0.0);
-    turnSim.setInputVoltage(0.0);
+    runDriveVolts(0.0);
+    runTurnVolts(0.0);
   }
 }

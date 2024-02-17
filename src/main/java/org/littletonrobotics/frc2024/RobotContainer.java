@@ -28,7 +28,6 @@ import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
 import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
@@ -67,7 +66,7 @@ public class RobotContainer {
   private AprilTagVision aprilTagVision;
   private Flywheels flywheels;
   private Rollers rollers;
-  private Superstructure superstructure;
+  private final Superstructure superstructure;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
@@ -106,7 +105,7 @@ public class RobotContainer {
                   new AprilTagVisionIONorthstar(
                       AprilTagVisionConstants.instanceNames[1],
                       AprilTagVisionConstants.cameraIds[1]));
-          flywheels = new Flywheels(new FlywheelsIOSparkFlex());
+          //          flywheels = new Flywheels(new FlywheelsIOSparkFlex());
 
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIOSparkFlex());
@@ -195,6 +194,7 @@ public class RobotContainer {
             flywheels,
             flywheels::runCharacterizationVolts,
             flywheels::getCharacterizationVelocity));
+    autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
   }
 
   /**

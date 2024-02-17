@@ -54,16 +54,15 @@ public class Arm {
 
   @RequiredArgsConstructor
   public enum Goal {
-    FLOOR_INTAKE(() -> Units.degreesToRadians(intakeDegrees.get())),
-    STATION_INTAKE(() -> Units.degreesToRadians(stationIntakeDegrees.get())),
-    AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getRadians()),
-    STOW(() -> Units.degreesToRadians(stowDegrees.get())),
+    FLOOR_INTAKE(intakeDegrees),
+    STATION_INTAKE(stationIntakeDegrees),
+    AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
+    STOW(stowDegrees),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
-
     private double getRads() {
-      return armSetpointSupplier.getAsDouble();
+      return Units.degreesToRadians(armSetpointSupplier.getAsDouble());
     }
   }
 

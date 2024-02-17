@@ -28,22 +28,22 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kS = new LoggedTunableNumber("Flywheels/kS", gains.kS());
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
-  private static final LoggedTunableNumber shootingLeftRPM =
-      new LoggedTunableNumber("Flywheels/ShootingLeftRPM", 6000.0);
-  private static final LoggedTunableNumber shootingRightRPM =
-      new LoggedTunableNumber("Flywheels/ShootingRightRPM", 4000.0);
-  private static final LoggedTunableNumber idleLeftRPM =
-      new LoggedTunableNumber("Flywheels/IdleLeftRPM", 1500.0);
-  private static final LoggedTunableNumber idleRightRPM =
-      new LoggedTunableNumber("Flywheels/IdleRightRPM", 1000.0);
-  private static final LoggedTunableNumber intakingLeftRPM =
-      new LoggedTunableNumber("Flywheels/IntakingLeftRPM", -2000.0);
-  private static final LoggedTunableNumber intakingRightRPM =
-      new LoggedTunableNumber("Flywheels/IntakingRightRPM", -2000.0);
+  private static final LoggedTunableNumber shootingLeftRpm =
+      new LoggedTunableNumber("Flywheels/ShootingLeftRpm", 6000.0);
+  private static final LoggedTunableNumber shootingRightRpm =
+      new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4000.0);
+  private static final LoggedTunableNumber idleLeftRpm =
+      new LoggedTunableNumber("Flywheels/IdleLeftRpm", 1500.0);
+  private static final LoggedTunableNumber idleRightRpm =
+      new LoggedTunableNumber("Flywheels/IdleRightRpm", 1000.0);
+  private static final LoggedTunableNumber intakingRpm =
+      new LoggedTunableNumber("Flywheels/IntakingRpm", -2000.0);
+  private static final LoggedTunableNumber ejectingRpm =
+      new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
-  
+
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
 
@@ -54,6 +54,7 @@ public class Flywheels extends SubsystemBase {
 
   @RequiredArgsConstructor
   public enum Goal {
+    STOP(() -> 0, () -> 0),
     IDLE(idleLeftRpm, idleRightRpm),
     SHOOT(shootingLeftRpm, shootingRightRpm),
     INTAKE(intakingRpm, intakingRpm),
@@ -162,12 +163,11 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command shootCommand() {
-    return startEnd(() -> setGoal(Goal.SHOOTING), () -> setGoal(Goal.IDLE))
-        .withName("FlywheelsShoot");
+    return startEnd(() -> setGoal(Goal.SHOOT), () -> setGoal(Goal.IDLE)).withName("FlywheelsShoot");
   }
 
   public Command intakeCommand() {
-    return startEnd(() -> setGoal(Goal.INTAKING), () -> setGoal(Goal.IDLE))
+    return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE))
         .withName("FlywheelsIntake");
   }
 }

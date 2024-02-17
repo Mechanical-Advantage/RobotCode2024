@@ -14,6 +14,7 @@ import lombok.Getter;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.Logger;
 
 public class Rollers extends SubsystemBase {
@@ -30,6 +31,7 @@ public class Rollers extends SubsystemBase {
     FLOOR_INTAKE,
     STATION_INTAKE,
     EJECT_TO_FLOOR,
+    QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER
   }
 
@@ -80,6 +82,11 @@ public class Rollers extends SubsystemBase {
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.EJECTING);
       }
+      case QUICK_INTAKE_TO_FEED -> {
+        feeder.setGoal(Feeder.Goal.SHOOTING);
+        indexer.setGoal(Indexer.Goal.SHOOTING);
+        intake.setGoal(Intake.Goal.FLOOR_INTAKING);
+      }
       case FEED_TO_SHOOTER -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
@@ -113,8 +120,14 @@ public class Rollers extends SubsystemBase {
     return startEnd(() -> goal = Goal.EJECT_TO_FLOOR, this::goIdle).withName("Rollers Eject Floor");
   }
 
+  public Command quickFeed() {
+    return startEnd(() -> goal = Goal.QUICK_INTAKE_TO_FEED, this::goIdle)
+        .withName("Rollers Quick Feed");
+  }
+
   public Command feedShooter() {
     return startEnd(() -> goal = Goal.FEED_TO_SHOOTER, this::goIdle)
+        .alongWith(NoteVisualizer.shoot())
         .withName("Rollers Feed Shooter");
   }
 }

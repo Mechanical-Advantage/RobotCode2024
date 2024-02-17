@@ -5,7 +5,7 @@
 // license that can be found in the LICENSE file at
 // the root directory of this project.
 
-package org.littletonrobotics.frc2024.subsystems.rollers;
+package org.littletonrobotics.frc2024.util.drivers.rollers;
 
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkFlex;

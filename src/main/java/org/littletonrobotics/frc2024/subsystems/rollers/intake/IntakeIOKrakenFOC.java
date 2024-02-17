@@ -7,7 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers.intake;
 
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOKrakenFOC;
+import org.littletonrobotics.frc2024.util.drivers.rollers.GenericRollerSystemIOKrakenFOC;
 
 public class IntakeIOKrakenFOC extends GenericRollerSystemIOKrakenFOC implements IntakeIO {
   private static final int id = 2;

@@ -7,7 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers.indexer;
 
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSparkFlex;
+import org.littletonrobotics.frc2024.util.drivers.rollers.GenericRollerSystemIOSparkFlex;
 
 public class IndexerIOSparkFlex extends GenericRollerSystemIOSparkFlex implements IndexerIO {
   private static final double reduction = (18.0 / 12.0);

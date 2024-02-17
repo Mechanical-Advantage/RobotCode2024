@@ -15,12 +15,13 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
+import org.littletonrobotics.frc2024.Constants;
 
 public class FlywheelsIOSim implements FlywheelsIO {
   private final FlywheelSim leftSim =
-      new FlywheelSim(DCMotor.getKrakenX60Foc(1), config.reduction(), 0.00363458292);
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), flywheelConfig.reduction(), 0.00363458292);
   private final FlywheelSim rightSim =
-      new FlywheelSim(DCMotor.getKrakenX60Foc(1), config.reduction(), 0.00363458292);
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), flywheelConfig.reduction(), 0.00363458292);
 
   private final PIDController leftController =
       new PIDController(gains.kP(), gains.kI(), gains.kD());
@@ -37,8 +38,8 @@ public class FlywheelsIOSim implements FlywheelsIO {
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
-    leftSim.update(0.02);
-    rightSim.update(0.02);
+    leftSim.update(Constants.loopPeriodSecs);
+    rightSim.update(Constants.loopPeriodSecs);
     // control to setpoint
     if (leftSetpointRPM != null && rightSetpointRPM != null) {
       runVolts(
@@ -49,13 +50,13 @@ public class FlywheelsIOSim implements FlywheelsIO {
     }
 
     inputs.leftPositionRads +=
-        Units.radiansToRotations(leftSim.getAngularVelocityRadPerSec() * 0.02);
+        Units.radiansToRotations(leftSim.getAngularVelocityRadPerSec() * Constants.loopPeriodSecs);
     inputs.leftVelocityRpm = leftSim.getAngularVelocityRPM();
     inputs.leftAppliedVolts = leftAppliedVolts;
     inputs.leftOutputCurrent = leftSim.getCurrentDrawAmps();
 
     inputs.rightPositionRads +=
-        Units.radiansToRotations(rightSim.getAngularVelocityRadPerSec() * 0.02);
+        Units.radiansToRotations(rightSim.getAngularVelocityRadPerSec() * Constants.loopPeriodSecs);
     inputs.rightVelocityRpm = rightSim.getAngularVelocityRPM();
     inputs.rightAppliedVolts = rightAppliedVolts;
     inputs.rightOutputCurrent = rightSim.getCurrentDrawAmps();

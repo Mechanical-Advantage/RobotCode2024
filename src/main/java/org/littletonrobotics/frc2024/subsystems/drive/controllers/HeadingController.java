@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import java.util.function.Supplier;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -42,7 +43,8 @@ public class HeadingController {
             kP.get(),
             0,
             kD.get(),
-            new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
+            new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()),
+            Constants.loopPeriodSecs);
     controller.enableContinuousInput(-Math.PI, Math.PI);
     controller.setTolerance(Units.degreesToRadians(toleranceDegrees.get()));
     this.goalHeadingSupplier = goalHeadingSupplier;

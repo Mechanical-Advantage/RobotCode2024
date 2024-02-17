@@ -221,7 +221,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal)
-                .alongWith(superstructure.aim(), flywheels.shoot())
+                .alongWith(superstructure.aim(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
     // Shoot
     Trigger readyToShoot =
@@ -240,7 +240,8 @@ public class RobotContainer {
             Commands.parallel(
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
-                .deadlineWith(rollers.feedShooter(), superstructure.aim(), flywheels.shoot()));
+                .deadlineWith(
+                    rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
     // Intake Floor
     controller
         .leftTrigger()

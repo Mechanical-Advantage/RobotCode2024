@@ -11,6 +11,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import org.littletonrobotics.frc2024.Constants;
 
 public class GenericRollerSystemIOSim implements GenericRollerSystemIO {
   private final DCMotorSim sim;
@@ -26,7 +27,7 @@ public class GenericRollerSystemIOSim implements GenericRollerSystemIO {
       runVolts(0.0);
     }
 
-    sim.update(0.02);
+    sim.update(Constants.loopPeriodSecs);
     inputs.positionRads = sim.getAngularPositionRad();
     inputs.velocityRadsPerSec = sim.getAngularVelocityRadPerSec();
     inputs.appliedVoltage = appliedVoltage;

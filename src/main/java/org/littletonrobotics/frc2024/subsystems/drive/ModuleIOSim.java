@@ -13,6 +13,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import org.littletonrobotics.frc2024.Constants;
 
@@ -38,6 +39,10 @@ public class ModuleIOSim implements ModuleIO {
 
   @Override
   public void updateInputs(ModuleIOInputs inputs) {
+    if (DriverStation.isDisabled()) {
+      stop();
+    }
+
     driveSim.update(Constants.loopPeriodSecs);
     turnSim.update(Constants.loopPeriodSecs);
 
@@ -59,26 +64,26 @@ public class ModuleIOSim implements ModuleIO {
         new Rotation2d[] {Rotation2d.fromRadians(turnSim.getAngularPositionRad())};
   }
 
-  public void setDriveVoltage(double volts) {
+  public void runDriveVolts(double volts) {
     driveAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
     driveSim.setInputVoltage(driveAppliedVolts);
   }
 
-  public void setTurnVoltage(double volts) {
+  public void runTurnVolts(double volts) {
     turnAppliedVolts = MathUtil.clamp(volts, -12.0, 12.0);
     turnSim.setInputVoltage(turnAppliedVolts);
   }
 
   @Override
-  public void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {
-    setDriveVoltage(
+  public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
+    runDriveVolts(
         driveFeedback.calculate(driveSim.getAngularVelocityRadPerSec(), velocityRadsPerSec)
-            + ffVolts);
+            + feedForward);
   }
 
   @Override
-  public void setTurnPositionSetpoint(double angleRads) {
-    setTurnVoltage(turnFeedback.calculate(turnSim.getAngularPositionRad(), angleRads));
+  public void runTurnPositionSetpoint(double angleRads) {
+    runTurnVolts(turnFeedback.calculate(turnSim.getAngularPositionRad(), angleRads));
   }
 
   @Override
@@ -93,7 +98,7 @@ public class ModuleIOSim implements ModuleIO {
 
   @Override
   public void stop() {
-    driveSim.setInputVoltage(0.0);
-    turnSim.setInputVoltage(0.0);
+    runDriveVolts(0.0);
+    runTurnVolts(0.0);
   }
 }

@@ -9,7 +9,6 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -28,17 +27,21 @@ import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
 import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
+import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSim;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOSim;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIODevbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSim;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOKrakenFOC;
@@ -82,6 +85,7 @@ public class RobotContainer {
     Feeder feeder = null;
     Indexer indexer = null;
     Intake intake = null;
+    Backpack backpack = null;
     Arm arm = null;
 
     // Create subsystems
@@ -106,12 +110,13 @@ public class RobotContainer {
                   new AprilTagVisionIONorthstar(
                       AprilTagVisionConstants.instanceNames[1],
                       AprilTagVisionConstants.cameraIds[1]));
-          //          flywheels = new Flywheels(new FlywheelsIOSparkFlex());
+          flywheels = new Flywheels(new FlywheelsIOSparkFlex());
 
           feeder = new Feeder(new FeederIOKrakenFOC());
-          indexer = new Indexer(new IndexerIOSparkFlex());
+          indexer = new Indexer(new IndexerIODevbot());
           intake = new Intake(new IntakeIOKrakenFOC());
-          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIOReal());
+          backpack = new Backpack(new BackpackIOSparkFlex());
+          rollers = new Rollers(feeder, indexer, intake, backpack, new RollersSensorsIOReal());
 
           arm = new Arm(new ArmIOKrakenFOC());
         }
@@ -128,7 +133,8 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOSim());
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
-          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
+          backpack = new Backpack(new BackpackIOSim());
+          rollers = new Rollers(feeder, indexer, intake, backpack, new RollersSensorsIO() {});
 
           arm = new Arm(new ArmIOSim());
         }
@@ -166,7 +172,7 @@ public class RobotContainer {
       intake = new Intake(new IntakeIO() {});
     }
     if (rollers == null) {
-      rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
+      rollers = new Rollers(feeder, indexer, intake, backpack, new RollersSensorsIO() {});
     }
     if (arm == null) {
       arm = new Arm(new ArmIO() {});
@@ -245,7 +251,6 @@ public class RobotContainer {
                 () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
     controller
         .rightTrigger()
-        .and(readyToShoot)
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5),
@@ -269,21 +274,11 @@ public class RobotContainer {
                 .intake()
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
+    // Test rollers with amp score
+    controller.b().whileTrue(rollers.ampScore());
 
     controller
         .y()
-        .onTrue(
-            Commands.runOnce(
-                    () ->
-                        robotState.resetPose(
-                            AllianceFlipUtil.apply(
-                                new Pose2d(
-                                    Units.inchesToMeters(36.0),
-                                    FieldConstants.Speaker.centerSpeakerOpening.getY(),
-                                    new Rotation2d()))))
-                .ignoringDisable(true));
-    controller
-        .b()
         .onTrue(
             Commands.runOnce(
                     () ->

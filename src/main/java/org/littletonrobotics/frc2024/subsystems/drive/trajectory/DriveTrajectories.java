@@ -255,8 +255,8 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceFace)
-                .addPoseWaypoint(intakingCenterlinePoses[0])
-                .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
+                .addPoseWaypoint(intakingCenterlinePoses[0], 100)
+                .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)), 100)
                 .build()));
 
     paths.put(

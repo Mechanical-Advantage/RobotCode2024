@@ -61,6 +61,7 @@ public class Arm {
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
+
     private double getRads() {
       return Units.degreesToRadians(armSetpointSupplier.getAsDouble());
     }
@@ -123,7 +124,7 @@ public class Arm {
       setpointState =
           motionProfile.calculate(
               Constants.loopPeriodSecs,
-              new TrapezoidProfile.State(inputs.armPositionRads, inputs.armVelocityRadsPerSec),
+              new TrapezoidProfile.State(setpointState.position, setpointState.velocity),
               new TrapezoidProfile.State(
                   MathUtil.clamp(
                       goal.getRads(),

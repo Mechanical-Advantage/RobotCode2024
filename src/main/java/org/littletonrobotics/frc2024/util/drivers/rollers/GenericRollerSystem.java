@@ -9,7 +9,6 @@ package org.littletonrobotics.frc2024.util.drivers.rollers;
 
 import java.util.function.DoubleSupplier;
 import lombok.RequiredArgsConstructor;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOInputsAutoLogged;
 import org.littletonrobotics.junction.Logger;
 
 @RequiredArgsConstructor

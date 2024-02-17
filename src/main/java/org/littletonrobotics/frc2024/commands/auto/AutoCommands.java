@@ -79,7 +79,7 @@ public class AutoCommands {
   public static Command intake(Superstructure superstructure, Rollers rollers) {
     return parallel(
             superstructure.intake(), rollers.floorIntake().beforeStarting(superstructure::atGoal))
-        .until(rollers::hasGamepiece);
+        .until(rollers::gamepieceStaged);
   }
 
   /** Shoots note, ending after rollers have spun */

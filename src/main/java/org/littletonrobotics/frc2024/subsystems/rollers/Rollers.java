@@ -11,6 +11,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
+import lombok.Setter;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
@@ -21,6 +23,7 @@ public class Rollers extends SubsystemBase {
   private final Feeder feeder;
   private final Indexer indexer;
   private final Intake intake;
+  private final Backpack backpack;
 
   private final RollersSensorsIO sensorsIO;
   private final RollersSensorsIOInputsAutoLogged sensorInputs =
@@ -32,15 +35,28 @@ public class Rollers extends SubsystemBase {
     STATION_INTAKE,
     EJECT_TO_FLOOR,
     QUICK_INTAKE_TO_FEED,
-    FEED_TO_SHOOTER
+    FEED_TO_SHOOTER,
+    AMP_SCORE
+  }
+
+  public enum GamepieceState {
+    NONE,
+    SHOOTER_STAGED
   }
 
   @Getter private Goal goal = Goal.IDLE;
+  @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
 
-  public Rollers(Feeder feeder, Indexer indexer, Intake intake, RollersSensorsIO sensorsIO) {
+  public Rollers(
+      Feeder feeder,
+      Indexer indexer,
+      Intake intake,
+      Backpack backpack,
+      RollersSensorsIO sensorsIO) {
     this.feeder = feeder;
     this.indexer = indexer;
     this.intake = intake;
+    this.backpack = backpack;
     this.sensorsIO = sensorsIO;
 
     setDefaultCommand(runOnce(this::goIdle).withName("Rollers Idling"));
@@ -60,27 +76,25 @@ public class Rollers extends SubsystemBase {
         feeder.setGoal(Feeder.Goal.IDLING);
         indexer.setGoal(Indexer.Goal.IDLING);
         intake.setGoal(Intake.Goal.IDLING);
+        backpack.setGoal(Backpack.Goal.IDLING);
       }
       case FLOOR_INTAKE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);
+        backpack.setGoal(Backpack.Goal.IDLING);
         if (sensorInputs.shooterStaged) {
           indexer.setGoal(Indexer.Goal.IDLING);
+          gamepieceState = GamepieceState.SHOOTER_STAGED;
         }
       }
-      case STATION_INTAKE -> {
-        feeder.setGoal(Feeder.Goal.IDLING);
-        indexer.setGoal(Indexer.Goal.STATION_INTAKING);
-        intake.setGoal(Intake.Goal.IDLING);
-        if (sensorInputs.shooterStaged) { // TODO: add this banner sensor
-          indexer.setGoal(Indexer.Goal.IDLING);
-        }
-      }
+      case STATION_INTAKE -> {}
       case EJECT_TO_FLOOR -> {
         feeder.setGoal(Feeder.Goal.EJECTING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.IDLING);
+        gamepieceState = GamepieceState.NONE;
       }
       case QUICK_INTAKE_TO_FEED -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
@@ -91,20 +105,30 @@ public class Rollers extends SubsystemBase {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
         intake.setGoal(Intake.Goal.IDLING);
+        backpack.setGoal(Backpack.Goal.IDLING);
+        gamepieceState = GamepieceState.NONE;
+      }
+      case AMP_SCORE -> {
+        feeder.setGoal(Feeder.Goal.IDLING);
+        indexer.setGoal(Indexer.Goal.EJECTING);
+        intake.setGoal(Intake.Goal.IDLING);
+        backpack.setGoal(Backpack.Goal.AMP_SCORING);
+        gamepieceState = GamepieceState.NONE;
       }
     }
 
     feeder.periodic();
     indexer.periodic();
     intake.periodic();
+    backpack.periodic();
   }
 
   private void goIdle() {
     goal = Goal.IDLE;
   }
 
-  public boolean hasGamepiece() {
-    return sensorInputs.shooterStaged;
+  public boolean gamepieceStaged() {
+    return gamepieceState == GamepieceState.SHOOTER_STAGED;
   }
 
   public Command floorIntake() {
@@ -129,5 +153,9 @@ public class Rollers extends SubsystemBase {
     return startEnd(() -> goal = Goal.FEED_TO_SHOOTER, this::goIdle)
         .alongWith(NoteVisualizer.shoot())
         .withName("Rollers Feed Shooter");
+  }
+
+  public Command ampScore() {
+    return startEnd(() -> goal = Goal.AMP_SCORE, this::goIdle).withName("Rollers Amp Scoring");
   }
 }

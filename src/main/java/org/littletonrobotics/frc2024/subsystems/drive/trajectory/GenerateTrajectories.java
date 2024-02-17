@@ -84,11 +84,13 @@ public class GenerateTrajectories {
       Trajectory trajectory;
       if (generateEmpty) {
         trajectory = Trajectory.newBuilder().build();
+        System.out.println("Generated trajectory " + entry.getKey());
       } else {
         // Use service for generation
         PathRequest request =
             PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
         TrajectoryResponse response = service.generateTrajectory(request);
+        System.out.println("Generated trajectory " + entry.getKey());
         String error = response.getError().getReason();
         if (error.length() > 0) {
           System.err.println("Error response for trajectory \"" + entry.getKey() + "\": " + error);

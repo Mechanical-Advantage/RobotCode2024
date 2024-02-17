@@ -96,6 +96,10 @@ public class Rollers extends SubsystemBase {
     goal = Goal.IDLE;
   }
 
+  public boolean hasGamepiece() {
+    return sensorInputs.shooterStaged;
+  }
+
   public Command floorIntake() {
     return startEnd(() -> goal = Goal.FLOOR_INTAKE, this::goIdle).withName("Rollers Floor Intake");
   }

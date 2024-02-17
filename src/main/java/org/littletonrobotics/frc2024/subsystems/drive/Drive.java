@@ -64,7 +64,6 @@ public class Drive extends SubsystemBase {
   }
 
   public static final Lock odometryLock = new ReentrantLock();
-  // TODO: DO THIS BETTER!
   public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
 
   private final OdometryTimestampInputsAutoLogged odometryTimestampInputs =
@@ -84,8 +83,9 @@ public class Drive extends SubsystemBase {
   private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
-  @Getter(onMethod_ = @AutoLogOutput(key = "Drive/BrakeModeEnabled"))
-  boolean brakeModeEnabled = true;
+  @Getter
+  @AutoLogOutput(key = "Drive/BrakeModeEnabled")
+  private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
   private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;

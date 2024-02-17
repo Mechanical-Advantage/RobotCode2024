@@ -20,15 +20,6 @@ import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
-  // For Kraken
-  public static class KrakenDriveConstants {
-    public static final boolean useTorqueCurrentFOC = false;
-    public static final boolean useMotionMagic = false;
-    public static final double motionMagicCruiseVelocity = 0.0;
-    public static final double motionMagicAcceleration = 0.0;
-  }
-
-  // Drive Constants
   public static DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
@@ -181,7 +172,7 @@ public final class DriveConstants {
   // Swerve Heading Control
   public static HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
-        default -> new HeadingControllerConstants(5.0, 0.0);
+        default -> new HeadingControllerConstants(5.0, 0.0, 8.0, 20.0);
       };
 
   public record DriveConfig(
@@ -240,7 +231,8 @@ public final class DriveConstants {
       double maxAngularVelocity,
       double maxAngularAcceleration) {}
 
-  public record HeadingControllerConstants(double kP, double kD) {}
+  public record HeadingControllerConstants(
+      double kP, double kD, double maxVelocity, double maxAcceleration) {}
 
   private enum Mk4iReductions {
     L2((50.0 / 14.0) * (17.0 / 27.0) * (45.0 / 15.0)),

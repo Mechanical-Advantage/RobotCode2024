@@ -46,15 +46,25 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   private final StatusSignal<Double> turnSupplyCurrent;
   private final StatusSignal<Double> turnTorqueCurrent;
 
-  // Queues
+  // Odometry Queues
   private final Queue<Double> drivePositionQueue;
   private final Queue<Double> turnPositionQueue;
 
-  private static final int shouldResetCounts = 100;
-  private int resetCounter = shouldResetCounts;
+  // Controller Configs
+  private final Slot0Configs driveFeedbackConfig = new Slot0Configs();
+  private final Slot0Configs turnFeedbackConfig = new Slot0Configs();
 
-  private Slot0Configs driveFeedbackConfig = new Slot0Configs();
-  private Slot0Configs turnFeedbackConfig = new Slot0Configs();
+  // Control
+  private final VoltageOut driveVoltage = new VoltageOut(0).withUpdateFreqHz(0);
+  private final VoltageOut turnVoltage = new VoltageOut(0).withUpdateFreqHz(0);
+  private final TorqueCurrentFOC driveCurrent = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
+  private final TorqueCurrentFOC turnCurrent = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
+  private final VelocityTorqueCurrentFOC driveVelocityControl =
+      new VelocityTorqueCurrentFOC(0).withUpdateFreqHz(0);
+  private final PositionTorqueCurrentFOC turnPositionControl =
+      new PositionTorqueCurrentFOC(0).withUpdateFreqHz(0);
+  private final NeutralOut driveNeutral = new NeutralOut().withUpdateFreqHz(0);
+  private final NeutralOut turnNeutral = new NeutralOut().withUpdateFreqHz(0);
 
   public ModuleIOKrakenFOC(ModuleConfig config) {
     // Init controllers and encoders from config constants
@@ -80,18 +90,10 @@ public class ModuleIOKrakenFOC implements ModuleIO {
             ? InvertedValue.Clockwise_Positive
             : InvertedValue.CounterClockwise_Positive;
 
-    // If in motoControl mode, set reference points in rotations convert from radians
-    // Affects getPosition() and getVelocity()
+    // Conversions affect getPosition()/setPosition() and getVelocity()
     driveConfig.Feedback.SensorToMechanismRatio = moduleConstants.driveReduction();
     turnConfig.Feedback.SensorToMechanismRatio = moduleConstants.turnReduction();
     turnConfig.ClosedLoopGeneral.ContinuousWrap = true;
-
-    // Config Motion Magic
-    if (KrakenDriveConstants.useMotionMagic) {
-      turnConfig.MotionMagic.MotionMagicCruiseVelocity =
-          KrakenDriveConstants.motionMagicCruiseVelocity;
-      turnConfig.MotionMagic.MotionMagicAcceleration = KrakenDriveConstants.motionMagicAcceleration;
-    }
 
     // Apply configs
     for (int i = 0; i < 4; i++) {
@@ -139,29 +141,26 @@ public class ModuleIOKrakenFOC implements ModuleIO {
         PhoenixOdometryThread.getInstance().registerSignal(driveTalon, driveTalon.getPosition());
     turnPositionQueue =
         PhoenixOdometryThread.getInstance().registerSignal(turnTalon, turnTalon.getPosition());
+
+    // Reset turn position to absolute encoder position
+    turnTalon.setPosition(turnAbsolutePosition.get().getRotations());
   }
 
   @Override
   public void updateInputs(ModuleIOInputs inputs) {
-    // Reset position of encoder to absolute position every shouldResetCount cycles
-    // Make sure turnMotor is not moving too fast
-    if (++resetCounter >= shouldResetCounts
-        && Units.rotationsToRadians(turnVelocity.getValueAsDouble()) <= 0.1) {
-      turnTalon.setPosition(turnAbsolutePosition.get().getRotations());
-      resetCounter = 0;
-    }
-
-    BaseStatusSignal.refreshAll(
-        drivePosition,
-        driveVelocity,
-        driveAppliedVolts,
-        driveSupplyCurrent,
-        driveTorqueCurrent,
-        turnPosition,
-        turnVelocity,
-        turnAppliedVolts,
-        turnSupplyCurrent,
-        turnTorqueCurrent);
+    inputs.hasCurrentControl = true;
+    inputs.driveMotorConnected =
+        BaseStatusSignal.refreshAll(
+                drivePosition,
+                driveVelocity,
+                driveAppliedVolts,
+                driveSupplyCurrent,
+                driveTorqueCurrent)
+            .isOK();
+    inputs.turnMotorConnected =
+        BaseStatusSignal.refreshAll(
+                turnPosition, turnVelocity, turnAppliedVolts, turnSupplyCurrent, turnTorqueCurrent)
+            .isOK();
 
     inputs.drivePositionRad = Units.rotationsToRadians(drivePosition.getValueAsDouble());
     inputs.driveVelocityRadPerSec = Units.rotationsToRadians(driveVelocity.getValueAsDouble());
@@ -188,44 +187,36 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   }
 
   @Override
-  public void setDriveVoltage(double volts) {
-    driveTalon.setControl(new VoltageOut(volts).withEnableFOC(true));
+  public void runDriveVolts(double volts) {
+    driveTalon.setControl(driveVoltage.withOutput(volts));
   }
 
   @Override
-  public void setTurnVoltage(double volts) {
-    turnTalon.setControl(new VoltageOut(volts).withEnableFOC(true));
+  public void runTurnVolts(double volts) {
+    turnTalon.setControl(turnVoltage.withOutput(volts));
   }
 
   @Override
-  public void setDriveVelocitySetpoint(double velocityRadsPerSec, double ffVolts) {
-    double velocityRotationsPerSec = Units.radiansToRotations(velocityRadsPerSec);
-    if (KrakenDriveConstants.useTorqueCurrentFOC) {
-      driveTalon.setControl(new VelocityTorqueCurrentFOC(velocityRotationsPerSec));
-    } else {
-      driveTalon.setControl(
-          new VelocityVoltage(velocityRotationsPerSec)
-              .withFeedForward(ffVolts)
-              .withEnableFOC(true));
-    }
+  public void runDriveCurrent(double current) {
+    driveTalon.setControl(driveCurrent.withOutput(current));
   }
 
   @Override
-  public void setTurnPositionSetpoint(double angleRads) {
-    double angleRotations = Units.radiansToRotations(angleRads);
-    if (KrakenDriveConstants.useTorqueCurrentFOC) {
-      if (KrakenDriveConstants.useMotionMagic) {
-        turnTalon.setControl(new MotionMagicTorqueCurrentFOC(angleRotations));
-      } else {
-        turnTalon.setControl(new PositionTorqueCurrentFOC(angleRotations));
-      }
-    } else {
-      if (KrakenDriveConstants.useMotionMagic) {
-        turnTalon.setControl(new MotionMagicVoltage(angleRotations).withEnableFOC(true));
-      } else {
-        turnTalon.setControl(new PositionVoltage(angleRotations).withEnableFOC(true));
-      }
-    }
+  public void runTurnCurrent(double current) {
+    turnTalon.setControl(turnCurrent.withOutput(current));
+  }
+
+  @Override
+  public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
+    driveTalon.setControl(
+        driveVelocityControl
+            .withVelocity(Units.radiansToRotations(velocityRadsPerSec))
+            .withFeedForward(feedForward));
+  }
+
+  @Override
+  public void runTurnPositionSetpoint(double angleRads) {
+    turnTalon.setControl(turnPositionControl.withPosition(Units.radiansToRotations(angleRads)));
   }
 
   @Override
@@ -245,14 +236,6 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   }
 
   @Override
-  public void setDriveFF(double kS, double kV, double kA) {
-    driveFeedbackConfig.kS = kS;
-    driveFeedbackConfig.kV = kV;
-    driveFeedbackConfig.kA = kA;
-    driveTalon.getConfigurator().apply(driveFeedbackConfig, 0.01);
-  }
-
-  @Override
   public void setDriveBrakeMode(boolean enable) {
     driveTalon.setNeutralMode(enable ? NeutralModeValue.Brake : NeutralModeValue.Coast);
   }
@@ -264,7 +247,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   @Override
   public void stop() {
-    driveTalon.setControl(new NeutralOut());
-    turnTalon.setControl(new NeutralOut());
+    driveTalon.setControl(driveNeutral);
+    turnTalon.setControl(turnNeutral);
   }
 }

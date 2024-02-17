@@ -20,6 +20,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -122,7 +123,7 @@ public class Arm {
       // Run closed loop
       setpointState =
           motionProfile.calculate(
-              0.02,
+              Constants.loopPeriodSecs,
               new TrapezoidProfile.State(inputs.armPositionRads, inputs.armVelocityRadsPerSec),
               new TrapezoidProfile.State(
                   MathUtil.clamp(

@@ -165,7 +165,7 @@ public class RobotState {
             kTimesTransform.get(1, 0),
             Rotation2d.fromRadians(kTimesTransform.get(2, 0)));
 
-    // Recalculate current estimate by applying scaled twist to old estimate
+    // Recalculate current estimate by applying scaled transform to old estimate
     // then replaying odometry data
     estimatedPose = estimateAtTime.plus(scaledTransform).plus(sampleToOdometryTransform);
   }

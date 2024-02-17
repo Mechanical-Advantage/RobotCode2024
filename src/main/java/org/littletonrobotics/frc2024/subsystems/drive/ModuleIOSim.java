@@ -42,7 +42,7 @@ public class ModuleIOSim implements ModuleIO {
     if (DriverStation.isDisabled()) {
       stop();
     }
-    
+
     driveSim.update(Constants.loopPeriodSecs);
     turnSim.update(Constants.loopPeriodSecs);
 

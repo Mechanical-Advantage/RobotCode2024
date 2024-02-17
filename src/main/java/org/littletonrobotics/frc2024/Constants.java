@@ -20,7 +20,7 @@ import org.littletonrobotics.frc2024.util.Alert.AlertType;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
-  public static final int loopPeriodMs = 20;
+  public static final double loopPeriodSecs = 0.02;
   private static RobotType robotType = RobotType.DEVBOT;
   public static final boolean tuningMode = true;
 

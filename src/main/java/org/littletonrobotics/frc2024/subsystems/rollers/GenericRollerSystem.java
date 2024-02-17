@@ -29,6 +29,6 @@ public abstract class GenericRollerSystem<G extends GenericRollerSystem.VoltageG
     Logger.processInputs(name, inputs);
 
     io.runVolts(getGoal().getVoltageSupplier().getAsDouble());
-    Logger.recordOutput(name + "/Goal", getGoal().toString());
+    Logger.recordOutput("Rollers/" + name + "Goal", getGoal().toString());
   }
 }

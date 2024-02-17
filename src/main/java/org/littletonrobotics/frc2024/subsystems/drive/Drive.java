@@ -22,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAimController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignController;
@@ -250,7 +251,7 @@ public class Drive extends SubsystemBase {
     // Generate feasible next setpoint
     currentSetpoint =
         setpointGenerator.generateSetpoint(
-            currentModuleLimits, currentSetpoint, desiredSpeeds, 0.02);
+            currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
     // run modules
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
     for (int i = 0; i < modules.length; i++) {

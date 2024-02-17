@@ -15,16 +15,18 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import org.littletonrobotics.frc2024.Constants;
 
 public class ModuleIOSim implements ModuleIO {
-
   private final DCMotorSim driveSim =
       new DCMotorSim(DCMotor.getKrakenX60Foc(1), moduleConstants.driveReduction(), 0.025);
   private final DCMotorSim turnSim =
       new DCMotorSim(DCMotor.getKrakenX60Foc(1), moduleConstants.turnReduction(), 0.004);
 
-  private final PIDController driveFeedback = new PIDController(0.0, 0.0, 0.0, 0.02);
-  private final PIDController turnFeedback = new PIDController(0.0, 0.0, 0.0, 0.02);
+  private final PIDController driveFeedback =
+      new PIDController(0.0, 0.0, 0.0, Constants.loopPeriodSecs);
+  private final PIDController turnFeedback =
+      new PIDController(0.0, 0.0, 0.0, Constants.loopPeriodSecs);
 
   private double driveAppliedVolts = 0.0;
   private double turnAppliedVolts = 0.0;
@@ -40,9 +42,9 @@ public class ModuleIOSim implements ModuleIO {
     if (DriverStation.isDisabled()) {
       stop();
     }
-
-    driveSim.update(0.02);
-    turnSim.update(0.02);
+    
+    driveSim.update(Constants.loopPeriodSecs);
+    turnSim.update(Constants.loopPeriodSecs);
 
     inputs.drivePositionRad = driveSim.getAngularPositionRad();
     inputs.driveVelocityRadPerSec = driveSim.getAngularVelocityRadPerSec();

@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.drive.controllers;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -25,7 +26,7 @@ public class AutoAimController {
   private final PIDController headingController;
 
   public AutoAimController() {
-    headingController = new PIDController(0, 0, 0, 0.02);
+    headingController = new PIDController(0, 0, 0, Constants.loopPeriodSecs);
     headingController.enableContinuousInput(-Math.PI, Math.PI);
   }
 

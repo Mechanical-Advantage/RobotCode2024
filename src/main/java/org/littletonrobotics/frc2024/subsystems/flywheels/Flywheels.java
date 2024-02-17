@@ -26,31 +26,30 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kS = new LoggedTunableNumber("Flywheels/kS", gains.kS());
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
-  private static LoggedTunableNumber shootingLeftRPM =
-      new LoggedTunableNumber("Superstructure/ShootingLeftRPM", 6000.0);
-  private static LoggedTunableNumber shootingRightRPM =
-      new LoggedTunableNumber("Superstructure/ShootingRightRPM", 4000.0);
-  private static LoggedTunableNumber idleLeftRPM =
-      new LoggedTunableNumber("Superstructure/IdleLeftRPM", 200.0);
-  private static LoggedTunableNumber idleRightRPM =
-      new LoggedTunableNumber("Superstructure/IdleRightRPM", 200.0);
-
-  private static LoggedTunableNumber intakingLeftRPM =
-      new LoggedTunableNumber("Superstructure/IntakingLeftRPM", -2000.0);
-  private static LoggedTunableNumber intakingRightRPM =
-      new LoggedTunableNumber("Superstructure/IntakingRightRPM", -2000.0);
+  private static final LoggedTunableNumber shootingLeftRpm =
+      new LoggedTunableNumber("Superstructure/ShootingLeftRpm", 6000.0);
+  private static final LoggedTunableNumber shootingRightRpm =
+      new LoggedTunableNumber("Superstructure/ShootingRightRpm", 4000.0);
+  private static final LoggedTunableNumber idleLeftRpm =
+      new LoggedTunableNumber("Superstructure/IdleLeftRpm", 1500.0);
+  private static final LoggedTunableNumber idleRightRpm =
+      new LoggedTunableNumber("Superstructure/IdleRightRpm", 1000.0);
+  private static final LoggedTunableNumber intakingRpm =
+      new LoggedTunableNumber("Superstructure/IntakingRpm", -2000.0);
+  private static final LoggedTunableNumber ejectingRpm =
+      new LoggedTunableNumber("Superstructure/EjectingRpm", 2000.0);
   private static final LoggedTunableNumber shooterTolerance =
-      new LoggedTunableNumber("Flywheels/ToleranceRPM", config.toleranceRPM());
+      new LoggedTunableNumber("Flywheels/ToleranceRpm", config.toleranceRpm());
 
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
 
   @RequiredArgsConstructor
   public enum Goal {
-    STOP(() -> 0.0, () -> 0.0),
-    IDLE(idleLeftRPM, idleRightRPM),
-    SHOOTING(shootingLeftRPM, shootingRightRPM),
-    INTAKING(intakingLeftRPM, intakingRightRPM),
+    IDLE(idleLeftRpm, idleRightRpm),
+    SHOOT(shootingLeftRpm, shootingRightRpm),
+    INTAKE(intakingRpm, intakingRpm),
+    EJECT(ejectingRpm, ejectingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftSetpoint;
@@ -69,7 +68,8 @@ public class Flywheels extends SubsystemBase {
 
   public Flywheels(FlywheelsIO io) {
     this.io = io;
-    setDefaultCommand(runOnce(() -> goal = Goal.IDLE).withName("FlywheelsIdle"));
+
+    setDefaultCommand(runOnce(this::goIdle).withName("Flywheels Idle"));
   }
 
   @Override
@@ -83,20 +83,18 @@ public class Flywheels extends SubsystemBase {
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
 
     if (DriverStation.isDisabled()) {
-      goal = Goal.STOP;
+      io.stop();
     }
 
-    switch (goal) {
-      case STOP -> io.stop();
-      case CHARACTERIZING -> {} // Handled by runCharacterizationVolts
-      default -> io.runVelocity(goal.getLeftSetpoint(), goal.getRightSetpoint());
+    if (goal != Goal.CHARACTERIZING) {
+      io.runVelocity(goal.getLeftSetpoint(), goal.getRightSetpoint());
     }
 
     Logger.recordOutput("Flywheels/Goal", goal);
-    Logger.recordOutput("Flywheels/LeftSetpointRPM", goal.getLeftSetpoint());
-    Logger.recordOutput("Flywheels/RightSetpointRPM", goal.getRightSetpoint());
-    Logger.recordOutput("Flywheels/LeftRPM", inputs.leftVelocityRpm);
-    Logger.recordOutput("Flywheels/RightRPM", inputs.rightVelocityRpm);
+    Logger.recordOutput("Flywheels/LeftSetpointRpm", goal.getLeftSetpoint());
+    Logger.recordOutput("Flywheels/RightSetpointRpm", goal.getRightSetpoint());
+    Logger.recordOutput("Flywheels/LeftRpm", inputs.leftVelocityRpm);
+    Logger.recordOutput("Flywheels/RightRpm", inputs.rightVelocityRpm);
   }
 
   public void runCharacterizationVolts(double volts) {
@@ -109,19 +107,25 @@ public class Flywheels extends SubsystemBase {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
-  @AutoLogOutput(key = "Shooter/AtSetpoint")
-  public boolean atSetpoint() {
-    return Math.abs(inputs.leftVelocityRpm - goal.leftSetpoint.getAsDouble())
-            <= shooterTolerance.get()
-        && Math.abs(inputs.rightVelocityRpm - goal.rightSetpoint.getAsDouble())
-            <= shooterTolerance.get();
+  @AutoLogOutput(key = "Flywheels/AtGoal")
+  public boolean atGoal() {
+    return Math.abs(inputs.leftVelocityRpm - goal.getLeftSetpoint()) <= shooterTolerance.get()
+        && Math.abs(inputs.rightVelocityRpm - goal.getRightSetpoint()) <= shooterTolerance.get();
   }
 
-  public Command shootCommand() {
-    return startEnd(() -> goal = Goal.SHOOTING, () -> goal = Goal.IDLE).withName("FlywheelsShoot");
+  private void goIdle() {
+    goal = Goal.IDLE;
   }
 
-  public Command intakeCommand() {
-    return startEnd(() -> goal = Goal.INTAKING, () -> goal = Goal.IDLE).withName("FlywheelsIntake");
+  public Command shoot() {
+    return startEnd(() -> goal = Goal.SHOOT, this::goIdle).withName("Flywheels Shooting");
+  }
+
+  public Command intake() {
+    return startEnd(() -> goal = Goal.INTAKE, this::goIdle).withName("Flywheels Intaking");
+  }
+
+  public Command eject() {
+    return startEnd(() -> goal = Goal.EJECT, this::goIdle).withName("Flywheels Ejecting");
   }
 }

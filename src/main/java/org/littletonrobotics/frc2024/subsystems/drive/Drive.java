@@ -20,6 +20,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
+import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
@@ -39,11 +40,10 @@ import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class Drive extends SubsystemBase {
-  private static final LoggedTunableNumber coastSpeedLimit =
-      new LoggedTunableNumber(
-          "Drive/CoastSpeedLimit", DriveConstants.driveConfig.maxLinearVelocity() * 0.6);
-  private static final LoggedTunableNumber coastDisableTime =
-      new LoggedTunableNumber("Drive/CoastDisableTimeSeconds", 0.5);
+  private static final LoggedTunableNumber coastWaitTime =
+      new LoggedTunableNumber("Drive/CoastWaitTimeSeconds", 0.5);
+  private static final LoggedTunableNumber coastMetersPerSecThreshold =
+      new LoggedTunableNumber("Drive/CoastMetersPerSecThreshold", 0.05);
 
   public enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
@@ -65,7 +65,6 @@ public class Drive extends SubsystemBase {
   }
 
   public static final Lock odometryLock = new ReentrantLock();
-  // TODO: DO THIS BETTER!
   public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
 
   private final OdometryTimestampInputsAutoLogged odometryTimestampInputs =
@@ -74,15 +73,19 @@ public class Drive extends SubsystemBase {
   private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
   private final Module[] modules = new Module[4];
 
+  // Store previous positions and time for filtering odometry data
   private SwerveDriveWheelPositions lastPositions = null;
   private double lastTime = 0.0;
 
   /** Active drive mode. */
   private DriveMode currentDriveMode = DriveMode.TELEOP;
 
-  private double characterizationVolts = 0.0;
+  private double characterizationInput = 0.0;
   private boolean modulesOrienting = false;
-  private final Timer coastTimer = new Timer();
+  private final Timer lastMovementTimer = new Timer();
+
+  @Getter
+  @AutoLogOutput(key = "Drive/BrakeModeEnabled")
   private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
@@ -96,7 +99,7 @@ public class Drive extends SubsystemBase {
             new SwerveModuleState(),
             new SwerveModuleState()
           });
-  private SwerveSetpointGenerator setpointGenerator;
+  private final SwerveSetpointGenerator setpointGenerator;
 
   private final TeleopDriveController teleopDriveController;
   private TrajectoryController trajectoryController = null;
@@ -109,6 +112,8 @@ public class Drive extends SubsystemBase {
     modules[1] = new Module(fr, 1);
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
+    lastMovementTimer.start();
+    setBrakeMode(true);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -151,7 +156,6 @@ public class Drive extends SubsystemBase {
     }
     // Pass odometry data to robot state
     for (int i = 0; i < minOdometryUpdates; i++) {
-      boolean includeMeasurement = true;
       int odometryIndex = i;
       Rotation2d yaw = gyroInputs.connected ? gyroInputs.odometryYawPositions[i] : null;
       // Get all four swerve module positions at that odometry update
@@ -161,10 +165,11 @@ public class Drive extends SubsystemBase {
               Arrays.stream(modules)
                   .map(module -> module.getModulePositions()[odometryIndex])
                   .toArray(SwerveModulePosition[]::new));
-      // Filtering
+      // Filtering based on delta wheel positions
+      boolean includeMeasurement = true;
       if (lastPositions != null) {
-        double dt = Timer.getFPGATimestamp() - lastTime;
-        for (int j = 0; j < 4; j++) {
+        double dt = odometryTimestampInputs.timestamps[i] - lastTime;
+        for (int j = 0; j < modules.length; j++) {
           double velocity =
               (wheelPositions.positions[j].distanceMeters
                       - lastPositions.positions[j].distanceMeters)
@@ -172,25 +177,26 @@ public class Drive extends SubsystemBase {
           double omega =
               wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
                   / dt;
-
-          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 100.0
-              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 100.0) {
+          // Check if delta is too large
+          if (Math.abs(omega) > currentModuleLimits.maxSteeringVelocity() * 5.0
+              || Math.abs(velocity) > currentModuleLimits.maxDriveVelocity() * 5.0) {
             includeMeasurement = false;
             break;
           }
         }
       }
+      // If delta isn't too large we can include the measurement.
       if (includeMeasurement) {
         lastPositions = wheelPositions;
         RobotState.getInstance()
             .addOdometryObservation(
                 new RobotState.OdometryObservation(
                     wheelPositions, yaw, odometryTimestampInputs.timestamps[i]));
+        lastTime = odometryTimestampInputs.timestamps[i];
       }
     }
-    lastTime = Timer.getFPGATimestamp();
 
-    // update current velocities use gyro when possible
+    // Update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity = getSpeeds();
     robotRelativeVelocity.omegaRadiansPerSecond =
         gyroInputs.connected
@@ -198,27 +204,16 @@ public class Drive extends SubsystemBase {
             : robotRelativeVelocity.omegaRadiansPerSecond;
     RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
 
-    // Disabled, stop modules and coast
-    if (DriverStation.isDisabled()) {
-      Arrays.stream(modules).forEach(Module::stop);
-      if (Math.hypot(
-                  robotRelativeVelocity.vxMetersPerSecond, robotRelativeVelocity.vyMetersPerSecond)
-              <= coastSpeedLimit.get()
-          && brakeModeEnabled) {
-        setBrakeMode(false);
-        coastTimer.stop();
-        coastTimer.reset();
-      } else if (coastTimer.hasElapsed(coastDisableTime.get()) && brakeModeEnabled) {
-        setBrakeMode(false);
-        coastTimer.stop();
-        coastTimer.reset();
-      } else {
-        coastTimer.start();
-      }
-      return;
-    } else {
-      // Brake mode
-      setBrakeMode(true);
+    // Update brake mode
+    // Reset movement timer if moved
+    if (Arrays.stream(modules)
+        .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
+      lastMovementTimer.reset();
+    }
+    if (DriverStation.isEnabled()) {
+      setBrakeMode(true); // Always in brake mode during teleop
+    } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
+      setBrakeMode(false);
     }
 
     // Run drive based on current mode
@@ -246,7 +241,7 @@ public class Drive extends SubsystemBase {
       case CHARACTERIZATION -> {
         // run characterization
         for (Module module : modules) {
-          module.runCharacterization(characterizationVolts);
+          module.runCharacterization(characterizationInput);
         }
       }
       default -> {}
@@ -344,7 +339,7 @@ public class Drive extends SubsystemBase {
   /** Runs forwards at the commanded voltage. */
   public void runCharacterizationVolts(double volts) {
     currentDriveMode = DriveMode.CHARACTERIZATION;
-    characterizationVolts = volts;
+    characterizationInput = volts;
   }
 
   /** Disables the characterization mode. */
@@ -361,10 +356,12 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  /** Set brake mode enabled */
+  /** Set brake mode to {@code enabled} doesn't change brake mode if already set */
   public void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled != enabled) {
+      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
+    }
     brakeModeEnabled = enabled;
-    Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
   }
 
   public Command orientModules(Rotation2d orientation) {

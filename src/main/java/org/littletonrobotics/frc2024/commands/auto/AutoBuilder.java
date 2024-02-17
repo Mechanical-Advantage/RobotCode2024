@@ -51,7 +51,7 @@ public class AutoBuilder {
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         // Shoot preloaded note
         resetPose(driveToPodiumTrajectory),
-        //        shoot(drive, superstructure, flywheels, rollers),
+        shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
 
         // Drive to podium note while intaking and shoot

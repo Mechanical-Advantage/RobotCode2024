@@ -119,6 +119,10 @@ public class Arm {
         maxVelocity,
         maxAcceleration);
 
+    if (DriverStation.isDisabled()) {
+      setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0.0);
+    }
+
     if (!characterizing) {
       // Run closed loop
       setpointState =

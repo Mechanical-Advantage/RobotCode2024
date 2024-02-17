@@ -208,7 +208,7 @@ public class RobotContainer {
         drive
             .run(
                 () ->
-                    drive.setTeleopDriveGoal(
+                    drive.acceptTeleopInput(
                         -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
             .withName("Drive Teleop Input"));
 
@@ -216,13 +216,16 @@ public class RobotContainer {
     controller
         .a()
         .whileTrue(
-            Commands.startEnd(drive::setAutoAimGoal, drive::clearAutoAimGoal)
+            Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                    drive::clearHeadingGoal)
                 .alongWith(superstructure.aim(), flywheels.shootCommand())
-                .withName("Aim"));
+                .withName("Prepare Shot"));
     // Shoot
     Trigger readyToShoot =
-        new Trigger(
-            () -> drive.isAutoAimGoalCompleted() && flywheels.atGoal() && superstructure.atGoal());
+        new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
     readyToShoot
         .whileTrue(
             Commands.run(

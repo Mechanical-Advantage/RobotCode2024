@@ -103,17 +103,73 @@ public class AutoBuilder {
   }
 
   public Command N5_S1_C234() {
+    Timer autoTimer = new Timer();
     HolonomicTrajectory driveToS1 = new HolonomicTrajectory("N5-S1-C234_driveToS1");
+
     HolonomicTrajectory driveToC2 = new HolonomicTrajectory("N5-S1-C234_driveToC2");
     HolonomicTrajectory driveToC3 = new HolonomicTrajectory("N5-S1-C234_driveToC3");
     HolonomicTrajectory driveToC4 = new HolonomicTrajectory("N5-S1-C234_driveToC4");
 
     return sequence(
+        runOnce(autoTimer::restart),
+        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
+        // Shoot preloaded note
+        resetPose(driveToS1),
+        shoot(drive, superstructure, flywheels, rollers),
+        runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
+        followTrajectory(drive, driveToS1)
+            .deadlineWith(intakeIntoShot(drive, superstructure, flywheels, rollers)),
+        runOnce(() -> System.out.printf("Second shot at %.2f seconds.", autoTimer.get())),
+        followTrajectory(drive, driveToC2)
+            .deadlineWith(
+                sequence(
+                    // Check if full length of robot + some has passed wing for arm safety
+                    waitUntilXCrossed(
+                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
+                        true),
+                    intake(superstructure, rollers).withTimeout(0.8),
+                    // Wait until we are close enough to shot to start arm aiming
+                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
+        runOnce(() -> System.out.printf("Third shot at %.2f seconds.", autoTimer.get())),
+        followTrajectory(drive, driveToC3)
+            .deadlineWith(
+                sequence(
+                    waitUntilXCrossed(
+                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
+                        true),
+                    intake(superstructure, rollers).withTimeout(1.0),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
+        runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
+        followTrajectory(drive, driveToC4)
+            .deadlineWith(
+                sequence(
+                    waitUntilXCrossed(
+                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
+                        true),
+                    intake(superstructure, rollers).withTimeout(1.0),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
+        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),
+        // Revert to teleop idle mode
+        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
+  }
+
+  public Command N6_S12_C0123() {
+    HolonomicTrajectory driveToS1 = new HolonomicTrajectory("N6-S12-C0123_driveToS1");
+    HolonomicTrajectory driveToS2 = new HolonomicTrajectory("N6-S12-C0123_driveToS2");
+    HolonomicTrajectory driveToC0 = new HolonomicTrajectory("N6-S12-C0123_driveToC0");
+    HolonomicTrajectory driveToC1 = new HolonomicTrajectory("N6-S12-C0123_driveToC1");
+    HolonomicTrajectory driveToC2 = new HolonomicTrajectory("N6-S12-C0123_driveToC2");
+    return sequence(
         resetPose(driveToS1),
         followTrajectory(drive, driveToS1),
-        followTrajectory(drive, driveToC2),
-        followTrajectory(drive, driveToC3),
-        followTrajectory(drive, driveToC4));
+        followTrajectory(drive, driveToS2),
+        followTrajectory(drive, driveToC0),
+        followTrajectory(drive, driveToC1),
+        followTrajectory(drive, driveToC2));
   }
 
   public Command N5_S0_C012() {
@@ -182,6 +238,6 @@ public class AutoBuilder {
   //        );
 }
 
-  //  public Command driveStraight() {
-  //    return reset("driveToPodium")
-  //        .andThen(path("driveToPodium"));
+//  public Command driveStraight() {
+//    return reset("driveToPodium")
+//        .andThen(path("driveToPodium"));

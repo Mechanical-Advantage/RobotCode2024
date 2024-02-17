@@ -203,6 +203,7 @@ public class RobotContainer {
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("N5_S1_C234", autoBuilder.N5_S1_C234());
     autoChooser.addOption("N5_S0_C012", autoBuilder.N5_S0_C012());
+    autoChooser.addOption("N6_S12-C0123", autoBuilder.N6_S12_C0123());
   }
 
   /**

@@ -39,7 +39,7 @@ public class DriveTrajectories {
               new Rotation2d()));
   private static final Pose2d startingCenterFace =
       FieldConstants.Subwoofer.centerFace.transformBy(
-          new Transform2d(DriveConstants.driveConfig.bumperWidthX() / 2, 0, new Rotation2d(0)));
+          new Transform2d(-DriveConstants.driveConfig.bumperWidthX() / 2, 0, new Rotation2d(0)));
 
   // Center intake locations
   private static final double intakeOffset = 0.5;
@@ -259,6 +259,22 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingAmpFace)
                 .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
+                .build()));
+
+    paths.put(
+        "N6-S12-C0123_driveToS2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
+                .addTranslationWaypoint(
+                    new Translation2d(
+                        FieldConstants.startingLineX,
+                        (FieldConstants.StagingLocations.spikeTranslations[2].getY()
+                                + FieldConstants.StagingLocations.spikeTranslations[1].getY())
+                            / 2))
+                .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
                 .build()));
 
@@ -274,9 +290,46 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.center
-                            .transformBy(new Transform2d(0, 1.3, new Rotation2d()))
+                            .transformBy(new Transform2d(0, 2, new Rotation2d()))
                             .getTranslation()),
                     30)
+                .build()));
+
+    paths.put(
+        "N6-S12-C0123_driveToC1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(0, 2, new Rotation2d()))
+                            .getTranslation()))
+                .addPoseWaypoint(intakingCenterlinePoses[3])
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(-1, 2, new Rotation2d()))
+                            .getTranslation()))
+                .build()));
+
+    paths.put(
+        "N6-S12-C0123_driveToC2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(-1, 2, new Rotation2d()))
+                            .getTranslation()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)))
+                .addPoseWaypoint(intakingCenterlinePoses[2])
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.center
+                            .transformBy(new Transform2d(-.5, .6, new Rotation2d(Math.PI)))
+                            .getTranslation()))
                 .build()));
   }
 

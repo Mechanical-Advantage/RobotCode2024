@@ -26,7 +26,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 public class AutoCommands {
   public static final LoggedTunableNumber shootTimeoutSecs =
-      new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.5);
+      new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.1);
 
   /**
    * Resets pose to beginning of trajectory accounting for alliance color {@link

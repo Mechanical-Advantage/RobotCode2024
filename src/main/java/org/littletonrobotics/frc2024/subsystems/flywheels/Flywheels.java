@@ -43,7 +43,7 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
-
+  
   private final FlywheelsIO io;
   private final FlywheelsIOInputsAutoLogged inputs = new FlywheelsIOInputsAutoLogged();
 
@@ -54,10 +54,10 @@ public class Flywheels extends SubsystemBase {
 
   @RequiredArgsConstructor
   public enum Goal {
-    STOP(() -> 0.0, () -> 0.0),
-    IDLE(idleLeftRPM, idleRightRPM),
-    SHOOTING(shootingLeftRPM, shootingRightRPM),
-    INTAKING(intakingLeftRPM, intakingRightRPM),
+    IDLE(idleLeftRpm, idleRightRpm),
+    SHOOT(shootingLeftRpm, shootingRightRpm),
+    INTAKE(intakingRpm, intakingRpm),
+    EJECT(ejectingRpm, ejectingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftGoal;

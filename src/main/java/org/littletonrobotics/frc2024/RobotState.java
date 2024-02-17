@@ -11,16 +11,19 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.interpolation.TimeInterpolatableBuffer;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import java.util.NoSuchElementException;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
-import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -29,7 +32,6 @@ import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class RobotState {
-  // Pose Estimation
   public record OdometryObservation(
       SwerveDriveWheelPositions wheelPositions, Rotation2d gyroAngle, double timestamp) {}
 
@@ -40,11 +42,18 @@ public class RobotState {
 
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
-
-  private static LoggedTunableNumber shotHeightCompensation =
-      new LoggedTunableNumber("RobotState/CompensationMeters", 0.55);
-
   private static final double poseBufferSizeSeconds = 2.0;
+
+  /** Arm angle look up table key: meters, values: radians */
+  private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
+
+  static {
+    armAngleMap.put(0.0, Units.degreesToRadians(90.0));
+    armAngleMap.put(10.0, Units.degreesToRadians(15.0));
+    armAngleMap.put(Double.MAX_VALUE, Units.degreesToRadians(15.0));
+  }
+
+  @Setter @Getter private double shotCompensationDegrees = 0.0;
 
   private static RobotState instance;
 
@@ -59,7 +68,7 @@ public class RobotState {
   private final TimeInterpolatableBuffer<Pose2d> poseBuffer =
       TimeInterpolatableBuffer.createBuffer(poseBufferSizeSeconds);
   private final Matrix<N3, N1> qStdDevs = new Matrix<>(Nat.N3(), Nat.N1());
-  // odometry
+  // Odometry
   private final SwerveDriveKinematics kinematics;
   private SwerveDriveWheelPositions lastWheelPositions =
       new SwerveDriveWheelPositions(
@@ -72,6 +81,7 @@ public class RobotState {
   private Rotation2d lastGyroAngle = new Rotation2d();
   private Twist2d robotVelocity = new Twist2d();
 
+  /** Cached latest aiming parameters. Calculated in {@code getAimingParameters()} */
   private AimingParameters latestParameters = null;
 
   private RobotState() {
@@ -143,19 +153,25 @@ public class RobotState {
       }
     }
     // difference between estimate and vision pose
-    Twist2d twist = estimateAtTime.log(observation.visionPose());
-    // scale twist by visionK
-    var kTimesTwist = visionK.times(VecBuilder.fill(twist.dx, twist.dy, twist.dtheta));
-    Twist2d scaledTwist =
-        new Twist2d(kTimesTwist.get(0, 0), kTimesTwist.get(1, 0), kTimesTwist.get(2, 0));
+    Transform2d transform = new Transform2d(estimateAtTime, observation.visionPose());
+    // scale transform by visionK
+    var kTimesTransform =
+        visionK.times(
+            VecBuilder.fill(
+                transform.getX(), transform.getY(), transform.getRotation().getRadians()));
+    Transform2d scaledTransform =
+        new Transform2d(
+            kTimesTransform.get(0, 0),
+            kTimesTransform.get(1, 0),
+            Rotation2d.fromRadians(kTimesTransform.get(2, 0)));
 
     // Recalculate current estimate by applying scaled twist to old estimate
     // then replaying odometry data
-    estimatedPose = estimateAtTime.exp(scaledTwist).plus(sampleToOdometryTransform);
+    estimatedPose = estimateAtTime.plus(scaledTransform).plus(sampleToOdometryTransform);
   }
 
   public void addVelocityData(Twist2d robotVelocity) {
-    this.latestParameters = null;
+    latestParameters = null;
     this.robotVelocity = robotVelocity;
   }
 
@@ -191,15 +207,14 @@ public class RobotState {
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            new Rotation2d(
-                targetDistance - ArmConstants.armOrigin.getX(),
-                FieldConstants.Speaker.centerSpeakerOpening.getZ()
-                    - ArmConstants.armOrigin.getY()
-                    + shotHeightCompensation.get()),
+            Rotation2d.fromRadians(
+                armAngleMap.get(targetDistance) + Units.degreesToRadians(shotCompensationDegrees)),
             feedVelocity);
-    Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading);
-    Logger.recordOutput("RobotState/AimingParameters/ArmAngle", latestParameters.armAngle);
-    Logger.recordOutput("RobotState/AimingParameters/DriveFeedVelocityRadPerS", feedVelocity);
+    Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading());
+    Logger.recordOutput("RobotState/AimingParameters/ArmAngle", latestParameters.armAngle());
+    Logger.recordOutput(
+        "RobotState/AimingParameters/DriveFeedVelocityRadPerS",
+        latestParameters.driveFeedVelocity());
     return latestParameters;
   }
 
@@ -213,7 +228,7 @@ public class RobotState {
     poseBuffer.clear();
   }
 
-  @AutoLogOutput(key = "Odometry/FieldVelocity")
+  @AutoLogOutput(key = "RobotState/FieldVelocity")
   public Twist2d fieldVelocity() {
     Translation2d linearFieldVelocity =
         new Translation2d(robotVelocity.dx, robotVelocity.dy).rotateBy(estimatedPose.getRotation());
@@ -221,7 +236,7 @@ public class RobotState {
         linearFieldVelocity.getX(), linearFieldVelocity.getY(), robotVelocity.dtheta);
   }
 
-  @AutoLogOutput(key = "Odometry/EstimatedPose")
+  @AutoLogOutput(key = "RobotState/EstimatedPose")
   public Pose2d getEstimatedPose() {
     return estimatedPose;
   }
@@ -243,7 +258,7 @@ public class RobotState {
                 robotVelocity.dtheta * rotationLookaheadS));
   }
 
-  @AutoLogOutput(key = "Odometry/OdometryPose")
+  @AutoLogOutput(key = "RobotState/OdometryPose")
   public Pose2d getOdometryPose() {
     return odometryPose;
   }

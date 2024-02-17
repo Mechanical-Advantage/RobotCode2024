@@ -15,7 +15,6 @@ public interface ArmIO {
     public double armPositionRads = 0.0;
     public double armEncoderPositionRads = 0.0;
     public double armAbsoluteEncoderPositionRads = 0.0;
-    public double armTrajectorySetpointRads = 0.0;
     public double armVelocityRadsPerSec = 0.0;
     public double[] armAppliedVolts = new double[] {};
     public double[] armCurrentAmps = new double[] {};
@@ -27,7 +26,7 @@ public interface ArmIO {
   default void updateInputs(ArmIOInputs inputs) {}
 
   /** Run to setpoint angle in radians */
-  default void runSetpoint(double setpointRads) {}
+  default void runSetpoint(double setpointRads, double feedforward) {}
 
   /** Run motors at volts */
   default void runVolts(double volts) {}
@@ -38,15 +37,8 @@ public interface ArmIO {
   /** Set brake mode enabled */
   default void setBrakeMode(boolean enabled) {}
 
-  /** Set FF values */
-  default void setFF(double s, double v, double a, double g) {}
-
   /** Set PID values */
   default void setPID(double p, double i, double d) {}
-
-  /** Set MotionMagic constraints */
-  default void setProfileConstraints(
-      double cruiseVelocityRadsPerSec, double accelerationRadsPerSec2) {}
 
   /** Sets position of internal encoder */
   default void setPosition(double positionRads) {}

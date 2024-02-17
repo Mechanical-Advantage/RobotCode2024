@@ -19,6 +19,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajec
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 
 public class AutoBuilder {
   private final Drive drive;
@@ -44,19 +45,20 @@ public class AutoBuilder {
     HolonomicTrajectory driveToCenterline0Trajectory =
         new HolonomicTrajectory("davisEthicalAuto_driveToCenterline0");
 
+    Timer autoTimer = new Timer();
     return sequence(
+        runOnce(autoTimer::restart),
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         // Shoot preloaded note
         resetPose(driveToPodiumTrajectory),
         shoot(drive, superstructure, flywheels, rollers),
-        print("First shot at " + Timer.getFPGATimestamp()),
+        runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
 
         // Drive to podium note while intaking and shoot
         followTrajectory(drive, driveToPodiumTrajectory)
-            .deadlineWith(
-                intake(superstructure, rollers)), // TODO: change back to alongWith for real
-        shoot(drive, superstructure, flywheels, rollers),
-        print("Second shot at " + Timer.getFPGATimestamp()),
+            .deadlineWith(intakeIntoShot(drive, superstructure, flywheels, rollers)), // uh oh 👀
+        NoteVisualizer.shoot(),
+        runOnce(() -> System.out.printf("Second shot at %.2f seconds.", autoTimer.get())),
 
         // Drive to centerline 2 note making sure to only intake after crossed stage
         followTrajectory(drive, driveToCenterline2Trajectory)
@@ -68,10 +70,10 @@ public class AutoBuilder {
                         true),
                     intake(superstructure, rollers).withTimeout(0.8),
                     // Wait until we are close enough to shot to start arm aiming
-                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.2, false),
+                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
-        print("Third shot at " + Timer.getFPGATimestamp()),
+        runOnce(() -> System.out.printf("Third shot at %.2f seconds.", autoTimer.get())),
 
         // Drive back to centerline 1 while intaking
         followTrajectory(drive, driveToCenterline1Trajectory)
@@ -83,7 +85,7 @@ public class AutoBuilder {
                     intake(superstructure, rollers).withTimeout(1.0),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
-        print("Fourth shot at " + Timer.getFPGATimestamp()),
+        runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
 
         // Drive back to centerline 0 and then shoot
         followTrajectory(drive, driveToCenterline0Trajectory)
@@ -95,19 +97,38 @@ public class AutoBuilder {
                     intake(superstructure, rollers).withTimeout(1.0),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
-        print("Fifth shot at " + Timer.getFPGATimestamp()),
+        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),
         // Revert to teleop idle mode
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
   }
 
-  //  public Command N5_S1_C234() {
-  //    return sequence(
-  //        reset("N5-S1-C234_driveToS1"),
-  //        path("N5-S1-C234_driveToS1"),
-  //        path("N5-S1-C234_driveToC2"),
-  //        path("N5-S1-C234_driveToC3"),
-  //        path("N5-S1-C234_driveToC4"));
-  //  }
+  public Command N5_S1_C234() {
+    HolonomicTrajectory driveToS1 = new HolonomicTrajectory("N5-S1-C234_driveToS1");
+    HolonomicTrajectory driveToC2 = new HolonomicTrajectory("N5-S1-C234_driveToC2");
+    HolonomicTrajectory driveToC3 = new HolonomicTrajectory("N5-S1-C234_driveToC3");
+    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("N5-S1-C234_driveToC4");
+
+    return sequence(
+        resetPose(driveToS1),
+        followTrajectory(drive, driveToS1),
+        followTrajectory(drive, driveToC2),
+        followTrajectory(drive, driveToC3),
+        followTrajectory(drive, driveToC4));
+  }
+
+  public Command N5_S0_C012() {
+    HolonomicTrajectory driveToS0 = new HolonomicTrajectory("N5-S0-C0123_driveToS0");
+    HolonomicTrajectory driveToC0 = new HolonomicTrajectory("N5-S0-C0123_driveToC0");
+    HolonomicTrajectory driveToC1 = new HolonomicTrajectory("N5-S0-C0123_driveToC1");
+    HolonomicTrajectory driveToC2 = new HolonomicTrajectory("N5-S0-C0123_driveToC2");
+
+    return sequence(
+        resetPose(driveToS0),
+        followTrajectory(drive, driveToS0),
+        followTrajectory(drive, driveToC0),
+        followTrajectory(drive, driveToC1),
+        followTrajectory(drive, driveToC2));
+  }
 
   //  public Command N5_S0_C012() {
   //    return sequence(

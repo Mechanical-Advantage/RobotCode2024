@@ -50,6 +50,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -173,6 +174,10 @@ public class RobotContainer {
     }
     superstructure = new Superstructure(arm);
 
+    // Configure NoteVisualizer
+    NoteVisualizer.setRobotPoseSupplier(() -> RobotState.getInstance().getEstimatedPose());
+    NoteVisualizer.setArmAngleSupplier(arm::getSetpoint);
+
     // Configure autos and buttons
     configureAutos();
     configureButtonBindings();
@@ -196,6 +201,8 @@ public class RobotContainer {
             flywheels::getCharacterizationVelocity));
 
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
+    autoChooser.addOption("N5_S1_C234", autoBuilder.N5_S1_C234());
+    autoChooser.addOption("N5_S0_C012", autoBuilder.N5_S0_C012());
   }
 
   /**

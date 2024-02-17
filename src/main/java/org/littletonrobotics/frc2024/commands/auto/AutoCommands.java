@@ -10,8 +10,10 @@ package org.littletonrobotics.frc2024.commands.auto;
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
@@ -23,7 +25,7 @@ import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 public class AutoCommands {
-  private static final LoggedTunableNumber shootTimeoutSecs =
+  public static final LoggedTunableNumber shootTimeoutSecs =
       new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.5);
 
   /**
@@ -40,8 +42,8 @@ public class AutoCommands {
 
   /** Creates a command that follows a trajectory, command ends when the trajectory is finished */
   public static Command followTrajectory(Drive drive, HolonomicTrajectory trajectory) {
-    return startEnd(() -> drive.setTrajectoryGoal(trajectory), drive::clearTrajectoryGoal)
-        .until(drive::isTrajectoryGoalCompleted);
+    return startEnd(() -> drive.setTrajectory(trajectory), drive::clearTrajectory)
+        .until(drive::isTrajectoryCompleted);
   }
 
   /**
@@ -83,18 +85,33 @@ public class AutoCommands {
   /** Shoots note, ending after rollers have spun */
   public static Command shoot(
       Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
+    Supplier<Rotation2d> aimHeadingSupplier =
+        () -> RobotState.getInstance().getAimingParameters().driveHeading();
     return parallel(
             // Aim and spin up flywheels
-            startEnd(drive::setAutoAimGoal, drive::clearAutoAimGoal),
+            startEnd(() -> drive.setHeadingGoal(aimHeadingSupplier), drive::clearHeadingGoal),
             superstructure.aim(),
             flywheels.shootCommand())
         // End command when ready to shoot and rollers have spun
         .raceWith(
             Commands.waitUntil(
-                    () ->
-                        drive.isAutoAimGoalCompleted()
-                            && superstructure.atGoal()
-                            && flywheels.atGoal())
+                    () -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal())
                 .andThen(rollers.feedShooter().withTimeout(shootTimeoutSecs.get())));
+  }
+
+  /**
+   * Runs intake and feeder while aiming at speaker essentially shooting immediately after acquiring
+   * game piece. Command does not end.
+   */
+  public static Command intakeIntoShot(
+      Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
+    Supplier<Rotation2d> aimHeadingSupplier =
+        () -> RobotState.getInstance().getAimingParameters().driveHeading();
+    return parallel(
+        // Aim and spin up flywheels
+        startEnd(() -> drive.setHeadingGoal(aimHeadingSupplier), drive::clearHeadingGoal),
+        superstructure.aim(),
+        flywheels.shootCommand(),
+        rollers.quickFeed());
   }
 }

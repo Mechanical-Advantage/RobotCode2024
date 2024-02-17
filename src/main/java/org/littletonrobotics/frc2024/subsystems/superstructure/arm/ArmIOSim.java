@@ -36,6 +36,8 @@ public class ArmIOSim implements ArmIO {
   private boolean controllerNeedsReset = false;
   private boolean closedLoop = true;
 
+  private boolean wasNotAuto = true;
+
   public ArmIOSim() {
     controller = new PIDController(0.0, 0.0, 0.0);
     sim.setState(Math.PI / 2.0, 0.0);
@@ -47,7 +49,14 @@ public class ArmIOSim implements ArmIO {
     if (DriverStation.isDisabled()) {
       controllerNeedsReset = true;
     }
-
+    // Assume starting at ~80 degrees
+    if (wasNotAuto && DriverStation.isAutonomousEnabled()) {
+      sim.setState(0.9 * Math.PI / 2.0, 0.0);
+      wasNotAuto = false;
+    }
+    if (!DriverStation.isAutonomousEnabled()) {
+      wasNotAuto = true;
+    }
     sim.update(Constants.loopPeriodSecs);
 
     inputs.armPositionRads = sim.getAngleRads() + positionOffset;

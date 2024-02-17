@@ -11,8 +11,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystem;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystem.VoltageGoal;
+import org.littletonrobotics.frc2024.util.drivers.rollers.GenericRollerSystem;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 @Setter

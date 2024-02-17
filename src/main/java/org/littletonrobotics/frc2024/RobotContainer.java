@@ -221,12 +221,12 @@ public class RobotContainer {
         .a()
         .whileTrue(
             Commands.startEnd(drive::setAutoAimGoal, drive::clearAutoAimGoal)
-                .alongWith(superstructure.aim(), flywheels.shoot())
+                .alongWith(superstructure.aim(), flywheels.shootCommand())
                 .withName("Aim"));
     // Shoot
     Trigger readyToShoot =
         new Trigger(
-            () -> drive.isAutoAimGoalCompleted() && superstructure.atGoal() && flywheels.atGoal());
+            () -> drive.isAutoAimGoalCompleted() && flywheels.atGoal() && superstructure.atGoal());
     readyToShoot
         .whileTrue(
             Commands.run(
@@ -241,7 +241,8 @@ public class RobotContainer {
             Commands.parallel(
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
-                .deadlineWith(rollers.feedShooter(), superstructure.aim(), flywheels.shoot()));
+                .deadlineWith(
+                    rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
     // Intake Floor
     controller
         .leftTrigger()

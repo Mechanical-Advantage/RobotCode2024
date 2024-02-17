@@ -18,9 +18,9 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 
 public class FlywheelsIOSim implements FlywheelsIO {
   private final FlywheelSim leftSim =
-      new FlywheelSim(DCMotor.getKrakenX60Foc(1), config.reduction(), 0.00363458292);
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), flywheelConfig.reduction(), 0.00363458292);
   private final FlywheelSim rightSim =
-      new FlywheelSim(DCMotor.getKrakenX60Foc(1), config.reduction(), 0.00363458292);
+      new FlywheelSim(DCMotor.getKrakenX60Foc(1), flywheelConfig.reduction(), 0.00363458292);
 
   private final PIDController leftController =
       new PIDController(gains.kP(), gains.kI(), gains.kD());

@@ -270,8 +270,7 @@ public class DriveTrajectories {
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
                 .addPoseWaypoint(
                     new Pose2d(
-                        intakingCenterlinePoses[4].getTranslation(),
-                        Rotation2d.fromDegrees(-180)))
+                        intakingCenterlinePoses[4].getTranslation(), Rotation2d.fromDegrees(-180)))
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.center

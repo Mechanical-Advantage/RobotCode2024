@@ -55,10 +55,10 @@ public class Flywheels extends SubsystemBase {
   @RequiredArgsConstructor
   public enum Goal {
     STOP(() -> 0, () -> 0),
-    IDLE(idleLeftRpm, idleRightRpm),
-    SHOOT(shootingLeftRpm, shootingRightRpm),
-    INTAKE(intakingRpm, intakingRpm),
-    EJECT(ejectingRpm, ejectingRpm),
+    IDLING(idleLeftRpm, idleRightRpm),
+    SHOOTING(shootingLeftRpm, shootingRightRpm),
+    INTAKING(intakingRpm, intakingRpm),
+    EJECTING(ejectingRpm, ejectingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftGoal;
@@ -73,7 +73,18 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  @Getter private Goal goal = Goal.IDLE;
+  public enum IdleMode {
+    TELEOP,
+    AUTO
+  }
+
+  @Getter
+  @AutoLogOutput(key = "Flywheels/Goal")
+  private Goal goal = Goal.IDLING;
+
+  @Getter
+  @AutoLogOutput(key = "Flywheels/IdleMode")
+  private IdleMode idleMode = IdleMode.TELEOP;
 
   public Flywheels(FlywheelsIO io) {
     this.io = io;
@@ -81,7 +92,7 @@ public class Flywheels extends SubsystemBase {
     leftProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
     rightProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
 
-    setDefaultCommand(runOnce(() -> setGoal(Goal.IDLE)).withName("Flywheels Idle"));
+    setDefaultCommand(runOnce(() -> setGoal(Goal.IDLING)).withName("Flywheels Idle"));
   }
 
   @Override
@@ -121,7 +132,6 @@ public class Flywheels extends SubsystemBase {
       io.runVelocity(leftProfile.calculateSetpoint(), rightProfile.calculateSetpoint());
     }
 
-    Logger.recordOutput("Flywheels/Goal", goal);
     Logger.recordOutput("Flywheels/SetpointLeftRpm", leftProfile.getCurrentSetpoint());
     Logger.recordOutput("Flywheels/SetpointRightRpm", rightProfile.getCurrentSetpoint());
     Logger.recordOutput("Flywheels/GoalLeftRpm", goal.getLeftGoal());
@@ -146,6 +156,27 @@ public class Flywheels extends SubsystemBase {
     this.goal = goal;
   }
 
+  /**
+   * Set {@link org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels.IdleMode} behavior of
+   * flywheels and then idle flywheels
+   */
+  public void setIdleMode(IdleMode idleMode) {
+    if (this.idleMode != idleMode) {
+      // Idle after switching IdleMode
+      this.idleMode = idleMode;
+      goIdle();
+    }
+  }
+
+  private void goIdle() {
+    // Change based on current idle mode
+    if (idleMode == IdleMode.TELEOP) {
+      setGoal(Goal.IDLING);
+    } else if (idleMode == IdleMode.AUTO) {
+      setGoal(Goal.SHOOTING);
+    }
+  }
+
   public void runCharacterizationVolts(double volts) {
     setGoal(Goal.CHARACTERIZING);
     io.runCharacterizationLeftVolts(volts);
@@ -163,11 +194,10 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command shootCommand() {
-    return startEnd(() -> setGoal(Goal.SHOOT), () -> setGoal(Goal.IDLE)).withName("FlywheelsShoot");
+    return startEnd(() -> setGoal(Goal.SHOOTING), this::goIdle).withName("FlywheelsShoot");
   }
 
   public Command intakeCommand() {
-    return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE))
-        .withName("FlywheelsIntake");
+    return startEnd(() -> setGoal(Goal.INTAKING), this::goIdle).withName("FlywheelsIntake");
   }
 }

@@ -37,7 +37,7 @@ public class ArmIOSim implements ArmIO {
 
   public ArmIOSim() {
     controller = new PIDController(0.0, 0.0, 0.0);
-    sim.setState(0.0, 0.0);
+    sim.setState(Math.PI / 2.0, 0.0);
     setPosition(0.0);
   }
 

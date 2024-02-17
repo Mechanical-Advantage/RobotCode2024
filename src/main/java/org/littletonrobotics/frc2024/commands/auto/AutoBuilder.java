@@ -10,9 +10,11 @@ package org.littletonrobotics.frc2024.commands.auto;
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
@@ -43,51 +45,59 @@ public class AutoBuilder {
         new HolonomicTrajectory("davisEthicalAuto_driveToCenterline0");
 
     return sequence(
-        // Shoot first note
+        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
+        // Shoot preloaded note
         resetPose(driveToPodiumTrajectory),
-        shoot(superstructure, flywheels, rollers),
+        shoot(drive, superstructure, flywheels, rollers),
+        print("First shot at " + Timer.getFPGATimestamp()),
 
-        // Drive to podium while intaking then shoot
+        // Drive to podium note while intaking and shoot
         followTrajectory(drive, driveToPodiumTrajectory)
-            .deadlineWith(intake(superstructure, rollers).andThen(superstructure.aim())),
-        shoot(superstructure, flywheels, rollers),
+            .deadlineWith(
+                intake(superstructure, rollers)), // TODO: change back to alongWith for real
+        shoot(drive, superstructure, flywheels, rollers),
+        print("Second shot at " + Timer.getFPGATimestamp()),
 
-        // Drive to centerline waiting to intake after we cross the wing
+        // Drive to centerline 2 note making sure to only intake after crossed stage
         followTrajectory(drive, driveToCenterline2Trajectory)
             .deadlineWith(
-                waitUntilXCrossed(FieldConstants.wingX).andThen(intake(superstructure, rollers))),
-        shoot(superstructure, flywheels, rollers),
+                sequence(
+                    // Check if full length of robot + some has passed wing for arm safety
+                    waitUntilXCrossed(
+                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
+                        true),
+                    intake(superstructure, rollers).withTimeout(0.8),
+                    // Wait until we are close enough to shot to start arm aiming
+                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.2, false),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
+        print("Third shot at " + Timer.getFPGATimestamp()),
 
-        // Drive back to centerline 1
+        // Drive back to centerline 1 while intaking
         followTrajectory(drive, driveToCenterline1Trajectory)
-            .deadlineWith(intake(superstructure, rollers)),
-        shoot(superstructure, flywheels, rollers),
+            .deadlineWith(
+                sequence(
+                    waitUntilXCrossed(
+                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
+                        true),
+                    intake(superstructure, rollers).withTimeout(1.0),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
+        print("Fourth shot at " + Timer.getFPGATimestamp()),
 
-        // Drive to centerline 0 and come back for shot
+        // Drive back to centerline 0 and then shoot
         followTrajectory(drive, driveToCenterline0Trajectory)
-            .deadlineWith(intake(superstructure, rollers)),
-        shoot(superstructure, flywheels, rollers)
-
-        //
-
-        //            path("davisEthicalAuto_driveToCenterline2")
-        //                .deadlineWith(
-        //                    superstructure
-        //                        .floorIntakeCommand()
-        //                        .alongWith(rollers.floorIntakeCommand())
-        //                        .withTimeout(3)
-        //                        .andThen(superstructure.aimCommand())),
-        //
-        // rollers.feedShooterCommand().withTimeout(.1).deadlineWith(superstructure.aimCommand()),
-        //            path("davisEthicalAuto_driveToPodium")
-        //                .deadlineWith(superstructure.floorIntakeCommand(),
-        // rollers.floorIntakeCommand()),
-        //            Commands.waitUntil(
-        //                    () -> true
-        //                    //                superstructure::atArmSetpoint
-        //                    )
-        //                .andThen(rollers.feedShooterCommand().withTimeout(.1))
-        );
+            .deadlineWith(
+                sequence(
+                    waitUntilXCrossed(
+                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
+                        true),
+                    intake(superstructure, rollers).withTimeout(1.0),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
+        print("Fifth shot at " + Timer.getFPGATimestamp()),
+        // Revert to teleop idle mode
+        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
   }
 
   //  public Command N5_S1_C234() {

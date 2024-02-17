@@ -90,6 +90,46 @@ public class FieldConstants {
         bottomLeftSpeaker.interpolate(topRightSpeaker, 0.5);
   }
 
+  public static final class Subwoofer {
+    public static Pose2d ampFaceCorner =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(239.366),
+            Rotation2d.fromDegrees(-120));
+
+    public static Pose2d sourceFaceCorner =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(197.466),
+            Rotation2d.fromDegrees(120));
+
+    public static Pose2d centerFace =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(218.416),
+            Rotation2d.fromDegrees(180));
+  }
+
+  public static final class Stage {
+    public static Pose2d podiumLeg =
+        new Pose2d(Units.inchesToMeters(126.75), Units.inchesToMeters(161.638), new Rotation2d());
+
+    public static Pose2d ampLeg =
+        new Pose2d(
+            Units.inchesToMeters(220.873),
+            Units.inchesToMeters(212.425),
+            Rotation2d.fromDegrees(-30));
+
+    public static Pose2d sourceLeg =
+        new Pose2d(
+            Units.inchesToMeters(220.873),
+            Units.inchesToMeters(110.837),
+            Rotation2d.fromDegrees(30));
+
+    public static Pose2d center =
+        new Pose2d(Units.inchesToMeters(192.55), Units.inchesToMeters(161.638), new Rotation2d());
+  }
+
   public static double aprilTagWidth = Units.inchesToMeters(6.50);
   public static AprilTagFieldLayout aprilTags;
 

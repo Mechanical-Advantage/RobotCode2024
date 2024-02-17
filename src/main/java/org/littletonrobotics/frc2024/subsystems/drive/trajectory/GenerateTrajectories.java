@@ -37,10 +37,10 @@ public class GenerateTrajectories {
         VehicleModel.newBuilder()
             .setMass(70)
             .setMoi(6)
-            .setVehicleLength(DriveConstants.driveConfig.trackwidthX())
-            .setVehicleWidth(DriveConstants.driveConfig.trackwidthY())
+            .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
+            .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
-            .setMaxWheelTorque(2)
+            .setMaxWheelTorque(6)
             .setMaxWheelOmega(
                 DriveConstants.moduleLimits.maxDriveVelocity()
                     / DriveConstants.driveConfig.wheelRadius())
@@ -84,15 +84,16 @@ public class GenerateTrajectories {
       Trajectory trajectory;
       if (generateEmpty) {
         trajectory = Trajectory.newBuilder().build();
+        System.out.println("Generated trajectory " + entry.getKey());
       } else {
         // Use service for generation
         PathRequest request =
             PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
         TrajectoryResponse response = service.generateTrajectory(request);
+        System.out.println("Generated trajectory " + entry.getKey());
         String error = response.getError().getReason();
         if (error.length() > 0) {
-          System.err.println(
-              "Got error response for trajectory \"" + entry.getKey() + "\": " + error);
+          System.err.println("Error response for trajectory \"" + entry.getKey() + "\": " + error);
           System.exit(1);
         }
         trajectory =

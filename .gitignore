@@ -178,4 +178,4 @@ networktables.json
 src/main/java/org/littletonrobotics/frc2024/BuildConstants.java
 
 # Generated paths
-src/main/deploy/trajectories/*.pathblob
+#src/main/deploy/trajectories/*.pathblob

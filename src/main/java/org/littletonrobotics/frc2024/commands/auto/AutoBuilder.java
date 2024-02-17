@@ -186,6 +186,20 @@ public class AutoBuilder {
         followTrajectory(drive, driveToC2));
   }
 
+  public Command N5_C432_S2() {
+    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("N5-C432-S2_driveToC4");
+    HolonomicTrajectory driveToC3 = new HolonomicTrajectory("N5-C432-S2_driveToC3");
+    HolonomicTrajectory driveToC2 = new HolonomicTrajectory("N5-C432-S2_driveToC2");
+    HolonomicTrajectory driveToPodium = new HolonomicTrajectory("N5-C432-S2_driveToPodium");
+
+    return sequence(
+        resetPose(driveToC4),
+        followTrajectory(drive, driveToC4),
+        followTrajectory(drive, driveToC3),
+        followTrajectory(drive, driveToC2),
+        followTrajectory(drive, driveToPodium));
+  }
+
   //  public Command N5_S0_C012() {
   //    return sequence(
   //        reset("N5-S0-C0123_driveToS0"),

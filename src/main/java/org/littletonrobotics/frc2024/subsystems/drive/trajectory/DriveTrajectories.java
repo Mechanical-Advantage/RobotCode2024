@@ -76,8 +76,12 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
-                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[0])
-                        .transformBy(new Transform2d(intakeOffset, 0, new Rotation2d())))
+                    getShootingPose(
+                        new Pose2d(
+                                FieldConstants.StagingLocations.spikeTranslations[0],
+                                new Rotation2d(0))
+                            .transformBy(new Transform2d(-intakeOffset, 0, new Rotation2d(0)))
+                            .getTranslation()))
                 .addPoseWaypoint(
                     (FieldConstants.Stage.podiumLeg)
                         .transformBy(new Transform2d(0, -.75, new Rotation2d(Math.PI))))
@@ -99,8 +103,10 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
-                    (FieldConstants.Stage.podiumLeg)
-                        .transformBy(new Transform2d(0, -.75, new Rotation2d(Math.PI))))
+                    getShootingPose(
+                        (FieldConstants.Stage.podiumLeg)
+                            .transformBy(new Transform2d(0, -.75, new Rotation2d(Math.PI)))
+                            .getTranslation()))
                 .addTranslationWaypoint(
                     FieldConstants.Stage.center
                         .transformBy(new Transform2d(0, -2.1, new Rotation2d()))

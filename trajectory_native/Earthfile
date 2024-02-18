@@ -12,6 +12,7 @@ grpc:
     RUN git clone --recurse-submodules -b v1.60.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
     RUN mkdir grpc/build
     WORKDIR grpc/build
+    ARG TARGETARCH
     IF [ "$TARGETARCH" = "arm64" ]
         ENV CC=clang
         ENV CXX=clang++
@@ -32,6 +33,7 @@ trajoptlib:
     RUN git apply --ignore-space-change --ignore-whitespace trajoptlib-aarch64.patch
     RUN mkdir build
     WORKDIR build
+    ARG TARGETARCH
     IF [ "$TARGETARCH" = "arm64" ]
         ENV CC=clang
         ENV CXX=clang++
@@ -49,6 +51,7 @@ dev-image:
     BUILD +trajoptlib
     COPY +grpc/installroot /usr/local/
     COPY +trajoptlib/installroot /usr/local/
+    ARG TARGETARCH
     IF [ "$TARGETARCH" = "arm64" ]
         ENV CC=clang
         ENV CXX=clang++
@@ -62,6 +65,7 @@ vts:
     COPY CMakeLists.txt CMakeLists.txt
     RUN mkdir build
     WORKDIR build
+    ARG TARGETARCH
     IF [ "$TARGETARCH" = "arm64" ]
         ENV CC=clang
         ENV CXX=clang++

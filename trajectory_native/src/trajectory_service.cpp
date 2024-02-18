@@ -76,15 +76,15 @@ void convert_trajectory(vts::Trajectory *trajectory_out, const trajopt::Holonomi
 }
 
 double angle_modulus(double value) {
-  double minInput = -std::numbers::pi;
-  double maxInput = std::numbers::pi;
-  double modulus = maxInput - minInput;
+    double minInput = -std::numbers::pi;
+    double maxInput = std::numbers::pi;
+    double modulus = maxInput - minInput;
 
-  int numMax = (value - minInput) / modulus;
-  value -= numMax * modulus;
-  int numMin = (value - maxInput) / modulus;
-  value -= numMin * modulus;
-  return value;
+    int numMax = (value - minInput) / modulus;
+    value -= numMax * modulus;
+    int numMin = (value - maxInput) / modulus;
+    value -= numMin * modulus;
+    return value;
 }
 
 class VehicleTrajectoryService final
@@ -121,14 +121,14 @@ public:
 
                 if (waypoint.has_heading_constraint()) {
                     if (total_waypoint_idx == 0) {
-                      prev_heading = waypoint.heading_constraint();
+                        prev_heading = waypoint.heading_constraint();
                     }
                     double prev_heading_mod = angle_modulus(prev_heading);
                     double heading_mod = angle_modulus(waypoint.heading_constraint());
                     if (prev_heading_mod < 0 && heading_mod > prev_heading_mod + std::numbers::pi) {
-                      full_rots--;
+                        full_rots--;
                     } else if (prev_heading_mod > 0 && heading_mod < prev_heading_mod - std::numbers::pi) {
-                      full_rots++;
+                        full_rots++;
                     }
                     double heading = full_rots * 2 * std::numbers::pi + heading_mod;
                     prev_heading = waypoint.heading_constraint();
@@ -212,14 +212,29 @@ public:
             }
 
             if (segment.straight_line()) {
-                if (segment.waypoints_size() > 2) {
-                    response->mutable_error()->set_reason("More than two waypoints in a straight segment");
-                    return grpc::Status::OK;
+                vts::Waypoint last_waypoint, current_waypoint;
+
+                if (segment_idx > 0) {
+                    if (segment.waypoints_size() > 1) {
+                        response->mutable_error()->set_reason("More than one waypoint in a straight segment proceeding a previous segment");
+                        return grpc::Status::OK;
+                    }
+                    const auto& last_segment = request->segments(segment_idx - 1);
+                    last_waypoint = last_segment.waypoints(last_segment.waypoints_size() - 1);
+                    current_waypoint = segment.waypoints(0);
+                } else {
+                    if (segment.waypoints_size() > 2) {
+                        response->mutable_error()->set_reason("More than two waypoints in first straight segment of path");
+                        return grpc::Status::OK;
+                    }
+                    last_waypoint = segment.waypoints(0);
+                    current_waypoint = segment.waypoints(1);
                 }
-                double x1 = segment.waypoints(0).x();
-                double x2 = segment.waypoints(1).x();
-                double y1 = segment.waypoints(0).y();
-                double y2 = segment.waypoints(1).y();
+
+                double x1 = last_waypoint.x();
+                double x2 = current_waypoint.x();
+                double y1 = last_waypoint.y();
+                double y2 = current_waypoint.y();
                 double angle = atan2(y2 - y1, x2 - x1);
                 fmt::print("Adding straight line constraint with angle {} to segment {} (waypoints {}-{})\n", angle,
                            segment_idx, segment_start_offset, segment_start_offset + last_waypoint_idx + 1);

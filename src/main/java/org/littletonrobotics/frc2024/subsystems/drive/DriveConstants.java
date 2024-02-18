@@ -24,7 +24,7 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             new DriveConfig(
-                Units.inchesToMeters(2.0),
+                Units.inchesToMeters(2.01834634),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(37),
@@ -35,12 +35,12 @@ public final class DriveConstants {
                 43.97);
         case DEVBOT ->
             new DriveConfig(
-                Units.inchesToMeters(2.0),
+                Units.inchesToMeters(2.01834634),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(37),
                 Units.inchesToMeters(33),
-                Units.feetToMeters(12.16),
+                Units.feetToMeters(14),
                 Units.feetToMeters(21.32),
                 7.93,
                 29.89);
@@ -133,7 +133,7 @@ public final class DriveConstants {
             new TrajectoryConstants(
                 6.0,
                 0.0,
-                5.0,
+                8.0,
                 0.0,
                 Units.inchesToMeters(4.0),
                 Units.degreesToRadians(5.0),

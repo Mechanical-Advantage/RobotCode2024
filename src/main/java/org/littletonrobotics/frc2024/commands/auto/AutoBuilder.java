@@ -10,6 +10,8 @@ package org.littletonrobotics.frc2024.commands.auto;
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import org.littletonrobotics.frc2024.FieldConstants;
@@ -50,7 +52,11 @@ public class AutoBuilder {
         runOnce(autoTimer::restart),
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         // Shoot preloaded note
-        resetPose(driveToPodiumTrajectory),
+        resetPose(
+            new Pose2d(
+                FieldConstants.startingLineX - DriveConstants.driveConfig.bumperWidthX() / 2.0,
+                FieldConstants.StagingLocations.spikeTranslations[0].getY(),
+                new Rotation2d(Math.PI))),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
 

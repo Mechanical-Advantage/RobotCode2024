@@ -29,15 +29,22 @@ public class AutoCommands {
       new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.1);
 
   /**
+   * Resets pose accounting for alliance color.
+   *
+   * @param pose Pose to reset to.
+   */
+  public static Command resetPose(Pose2d pose) {
+    return Commands.runOnce(() -> RobotState.getInstance().resetPose(AllianceFlipUtil.apply(pose)));
+  }
+
+  /**
    * Resets pose to beginning of trajectory accounting for alliance color {@link
    * org.littletonrobotics.frc2024.util.AllianceFlipUtil}.
    *
    * @param trajectory Trajectory to reset to.
    */
   public static Command resetPose(HolonomicTrajectory trajectory) {
-    return Commands.runOnce(
-        () ->
-            RobotState.getInstance().resetPose(AllianceFlipUtil.apply(trajectory.getStartPose())));
+    return resetPose(trajectory.getStartPose());
   }
 
   /** Creates a command that follows a trajectory, command ends when the trajectory is finished */

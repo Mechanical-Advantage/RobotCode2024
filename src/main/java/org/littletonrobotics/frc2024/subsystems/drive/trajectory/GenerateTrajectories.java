@@ -35,15 +35,13 @@ public class GenerateTrajectories {
     // Create vehicle model
     VehicleModel model =
         VehicleModel.newBuilder()
-            .setMass(70)
+            .setMass(59)
             .setMoi(6)
             .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
             .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
-            .setMaxWheelTorque(6)
-            .setMaxWheelOmega(
-                DriveConstants.moduleLimits.maxDriveVelocity()
-                    / DriveConstants.driveConfig.wheelRadius())
+            .setMaxWheelTorque(4)
+            .setMaxWheelOmega(76)
             .build();
 
     // Check hashcodes

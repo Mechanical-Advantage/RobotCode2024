@@ -18,12 +18,18 @@ import java.util.Queue;
 
 /** IO implementation for Pigeon2 */
 public class GyroIOPigeon2 implements GyroIO {
-  private final Pigeon2 pigeon = new Pigeon2(0);
-  private final StatusSignal<Double> yaw = pigeon.getYaw();
+  private static final int id = 0;
+
+  private final Pigeon2 pigeon;
+  private final StatusSignal<Double> yaw;
   private final Queue<Double> yawPositionQueue;
-  private final StatusSignal<Double> yawVelocity = pigeon.getAngularVelocityZWorld();
+  private final StatusSignal<Double> yawVelocity;
 
   public GyroIOPigeon2(boolean phoenixDrive) {
+    pigeon = new Pigeon2(id, "canivore");
+    yaw = pigeon.getYaw();
+    yawVelocity = pigeon.getAngularVelocityZWorld();
+
     pigeon.getConfigurator().apply(new Pigeon2Configuration());
     pigeon.getConfigurator().setYaw(0.0);
     yaw.setUpdateFrequency(DriveConstants.odometryFrequency);

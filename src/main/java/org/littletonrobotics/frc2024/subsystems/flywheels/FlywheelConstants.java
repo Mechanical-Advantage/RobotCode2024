@@ -12,14 +12,14 @@ import org.littletonrobotics.frc2024.Constants;
 public class FlywheelConstants {
   public static FlywheelConfig flywheelConfig =
       switch (Constants.getRobot()) {
-        case COMPBOT -> null;
+        case COMPBOT -> new FlywheelConfig(0, 0, 0, 0, 0);
         case DEVBOT -> new FlywheelConfig(5, 4, (1.0 / 2.0), 6000.0, 100.0);
         case SIMBOT -> new FlywheelConfig(0, 0, (1.0 / 2.0), 6000.0, 50.0);
       };
 
   public static Gains gains =
       switch (Constants.getRobot()) {
-        case COMPBOT -> null;
+        case COMPBOT -> new Gains(0, 0, 0, 0, 0, 0);
         case DEVBOT -> new Gains(0.0006, 0.0, 0.05, 0.33329, 0.00083, 0.0);
         case SIMBOT -> new Gains(0.05, 0.0, 0.0, 0.01, 0.00103, 0.0);
       };

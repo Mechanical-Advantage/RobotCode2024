@@ -88,7 +88,13 @@ public class RobotContainer {
     if (Constants.getMode() != Constants.Mode.REPLAY) {
       switch (Constants.getRobot()) {
         case COMPBOT -> {
-          // No impl yet
+          drive =
+              new Drive(
+                  new GyroIOPigeon2(true),
+                  new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[0]),
+                  new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
+                  new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
+                  new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
         }
         case DEVBOT -> {
           drive =

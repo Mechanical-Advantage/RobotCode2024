@@ -104,6 +104,15 @@ public class ModuleIOKrakenFOC implements ModuleIO {
       if (!error) break;
     }
 
+    // 250hz signals
+    drivePosition = driveTalon.getPosition();
+    turnPosition = turnTalon.getPosition();
+    BaseStatusSignal.setUpdateFrequencyForAll(odometryFrequency, drivePosition, turnPosition);
+
+    drivePositionQueue =
+        PhoenixOdometryThread.getInstance().registerSignal(driveTalon, drivePosition);
+    turnPositionQueue = PhoenixOdometryThread.getInstance().registerSignal(turnTalon, turnPosition);
+
     // Get signals and set update rate
     // 100hz signals
     driveVelocity = driveTalon.getVelocity();
@@ -133,17 +142,11 @@ public class ModuleIOKrakenFOC implements ModuleIO {
         turnSupplyCurrent,
         turnTorqueCurrent);
 
-    // 250hz signals
-    drivePosition = driveTalon.getPosition();
-    turnPosition = turnTalon.getPosition();
-    BaseStatusSignal.setUpdateFrequencyForAll(odometryFrequency, drivePosition, turnPosition);
-    drivePositionQueue =
-        PhoenixOdometryThread.getInstance().registerSignal(driveTalon, driveTalon.getPosition());
-    turnPositionQueue =
-        PhoenixOdometryThread.getInstance().registerSignal(turnTalon, turnTalon.getPosition());
-
     // Reset turn position to absolute encoder position
-    turnTalon.setPosition(turnAbsolutePosition.get().getRotations());
+    turnTalon.setPosition(turnAbsolutePosition.get().getRotations(), 1.0);
+
+    driveTalon.optimizeBusUtilization(1.0);
+    turnTalon.optimizeBusUtilization(1.0);
   }
 
   @Override

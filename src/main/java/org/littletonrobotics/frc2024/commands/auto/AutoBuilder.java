@@ -66,12 +66,11 @@ public class AutoBuilder {
                     waitUntilXCrossed(
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
                         true),
-                    intake(superstructure, rollers).withTimeout(0.8)
+                    intake(superstructure, rollers).withTimeout(0.8),
                     // Wait until we are close enough to shot to start arm aiming
-                    //                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() +
-                    // 0.5, false),
-                    )),
-        //        shoot(drive, superstructure, flywheels, rollers),
+                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Third shot at %.2f seconds.", autoTimer.get())),
 
         // Drive back to centerline 1 while intaking
@@ -81,8 +80,9 @@ public class AutoBuilder {
                     waitUntilXCrossed(
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
                         true),
-                    intake(superstructure, rollers).withTimeout(1.0))),
-        //        shoot(drive, superstructure, flywheels, rollers),
+                    intake(superstructure, rollers).withTimeout(1.0),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
 
         // Drive back to centerline 0 and then shoot
@@ -92,8 +92,9 @@ public class AutoBuilder {
                     waitUntilXCrossed(
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
                         true),
-                    intake(superstructure, rollers).withTimeout(1.0))),
-        //        shoot(drive, superstructure, flywheels, rollers),
+                    intake(superstructure, rollers).withTimeout(1.0),
+                    superstructure.aim())),
+        shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),
         // Revert to teleop idle mode
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));

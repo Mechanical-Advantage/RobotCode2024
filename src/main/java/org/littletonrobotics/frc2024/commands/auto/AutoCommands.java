@@ -114,4 +114,9 @@ public class AutoCommands {
         flywheels.shootCommand(),
         rollers.quickFeed());
   }
+
+  // reset Path and call followTrajectory
+  public static Command pathReset(Drive drive, HolonomicTrajectory trajectory) {
+    return sequence(resetPose(trajectory), followTrajectory(drive, trajectory));
+  }
 }

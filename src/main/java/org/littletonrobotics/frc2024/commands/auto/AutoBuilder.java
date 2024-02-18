@@ -50,13 +50,11 @@ public class AutoBuilder {
         runOnce(autoTimer::restart),
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         // Shoot preloaded note
-        resetPose(driveToPodiumTrajectory),
+        pathReset(drive, driveToPodiumTrajectory)
+            // Drive to podium note while intaking and shoot
+            .deadlineWith(intakeIntoShot(drive, superstructure, flywheels, rollers)), // uh oh 👀
         //        shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
-
-        // Drive to podium note while intaking and shoot
-        followTrajectory(drive, driveToPodiumTrajectory)
-            .deadlineWith(intakeIntoShot(drive, superstructure, flywheels, rollers)), // uh oh 👀
         NoteVisualizer.shoot(),
         runOnce(() -> System.out.printf("Second shot at %.2f seconds.", autoTimer.get())),
 
@@ -113,7 +111,7 @@ public class AutoBuilder {
         runOnce(autoTimer::restart),
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         // Shoot preloaded note
-        resetPose(driveToS1),
+        pathReset(drive, driveToS1),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
         followTrajectory(drive, driveToS1)
@@ -166,7 +164,7 @@ public class AutoBuilder {
     return sequence(
         runOnce(autoTimer::restart),
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
-        resetPose(driveToS1),
+        pathReset(drive, driveToS1),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
         followTrajectory(drive, driveToS1)
@@ -220,7 +218,7 @@ public class AutoBuilder {
     HolonomicTrajectory driveToC2 = new HolonomicTrajectory("N5-S0-C0123_driveToC2");
 
     return sequence(
-        resetPose(driveToS0),
+        pathReset(drive, driveToS0),
         followTrajectory(drive, driveToS0),
         followTrajectory(drive, driveToC0),
         followTrajectory(drive, driveToC1),

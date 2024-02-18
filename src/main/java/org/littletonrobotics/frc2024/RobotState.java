@@ -39,7 +39,10 @@ public class RobotState {
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
 
   public record AimingParameters(
-      Rotation2d driveHeading, Rotation2d armAngle, double driveFeedVelocity) {}
+      Rotation2d driveHeading,
+      Rotation2d armAngle,
+      double effectiveDistance,
+      double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
@@ -50,8 +53,15 @@ public class RobotState {
 
   static {
     armAngleMap.put(0.0, Units.degreesToRadians(90.0));
-    armAngleMap.put(10.0, Units.degreesToRadians(15.0));
-    armAngleMap.put(Double.MAX_VALUE, Units.degreesToRadians(15.0));
+    armAngleMap.put(1.017, .871);
+    armAngleMap.put(1.519, .746);
+    armAngleMap.put(1.956, .663);
+    armAngleMap.put(2.547, .592);
+    armAngleMap.put(3.102, .509);
+    armAngleMap.put(3.242, .488);
+    armAngleMap.put(3.503, .466);
+    armAngleMap.put(3.719, .466);
+    armAngleMap.put(4.145, .454);
   }
 
   @Setter @Getter private double shotCompensationDegrees = 0.0;
@@ -213,16 +223,15 @@ public class RobotState {
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            //            Rotation2d.fromRadians(
-            //                armAngleMap.get(targetDistance) +
-            // Units.degreesToRadians(shotCompensationDegrees)),
-            armAngleToSpeaker,
+            Rotation2d.fromRadians(armAngleMap.get(targetDistance)),
+            targetDistance,
             feedVelocity);
     Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading());
     Logger.recordOutput("RobotState/AimingParameters/ArmAngle", latestParameters.armAngle());
     Logger.recordOutput(
         "RobotState/AimingParameters/DriveFeedVelocityRadPerS",
         latestParameters.driveFeedVelocity());
+    Logger.recordOutput("RobotState/AimingParameters/Distance", targetDistance);
     return latestParameters;
   }
 

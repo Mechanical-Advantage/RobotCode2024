@@ -15,7 +15,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -105,7 +108,7 @@ public class Arm {
         hashCode(), () -> io.setPID(kP.get(), kI.get(), kD.get()), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
         hashCode(),
-        () -> ff = new ArmFeedforward(kS.get(), kV.get(), kA.get(), kG.get()),
+        () -> ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get()),
         kS,
         kV,
         kA,
@@ -157,9 +160,13 @@ public class Arm {
     io.stop();
   }
 
+  public Rotation2d getCurrentArmAngle() {
+    return Rotation2d.fromRadians(inputs.armPositionRads);
+  }
+
   @AutoLogOutput(key = "Arm/GoalAngle")
-  public Rotation2d getSetpoint() {
-    return Rotation2d.fromRadians(goal.getRads());
+  public double getGoalAngleRads() {
+    return goal.getRads();
   }
 
   @AutoLogOutput(key = "Arm/AtGoal")
@@ -167,12 +174,20 @@ public class Arm {
     return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
   }
 
-  // public Command getStaticCurrent() {
-  //   Timer timer = new Timer();
-  //   return run(() -> io.runCurrent(0.5 * timer.get()))
-  //       .beforeStarting(timer::restart)
-  //       .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
-  //       .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
-  //       .andThen(io::stop);
-  // }
+  public Command getStaticCurrent() {
+    Timer timer = new Timer();
+    return Commands.run(() -> io.runCurrent(0.5 * timer.get()))
+        .beforeStarting(
+            () -> {
+              characterizing = true;
+              timer.restart();
+            })
+        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
+        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
+        .finallyDo(
+            () -> {
+              io.stop();
+              characterizing = false;
+            });
+  }
 }

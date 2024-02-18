@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.AutoAlignController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.HeadingController;
@@ -249,13 +250,9 @@ public class Drive extends SubsystemBase {
 
     // Run robot at desiredSpeeds
     // Generate feasible next setpoint
-    //    currentSetpoint =
-    //        setpointGenerator.generateSetpoint(
-    //            currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
-
     currentSetpoint =
-        new SwerveSetpoint(
-            desiredSpeeds, DriveConstants.kinematics.toSwerveModuleStates(desiredSpeeds));
+        setpointGenerator.generateSetpoint(
+            currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
 
     // run modules
     SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];

@@ -16,6 +16,7 @@ import edu.wpi.first.math.util.Units;
 import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -68,12 +69,15 @@ public class HeadingController {
             goalHeadingSupplier.get().getRadians());
 
     Logger.recordOutput("Drive/HeadingController/HeadingError", controller.getPositionError());
-    return output + controller.getSetpoint().velocity;
+    return output;
   }
 
   /** Returns true if within tolerance of aiming at speaker */
   @AutoLogOutput(key = "Drive/HeadingController/AtGoal")
   public boolean atGoal() {
-    return controller.atGoal();
+    return EqualsUtil.epsilonEquals(
+        controller.getSetpoint().position,
+        controller.getGoal().position,
+        Units.degreesToRadians(toleranceDegrees.get()));
   }
 }

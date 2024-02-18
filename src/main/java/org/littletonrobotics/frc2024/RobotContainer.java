@@ -53,6 +53,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFO
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -181,7 +182,7 @@ public class RobotContainer {
 
     // Configure NoteVisualizer
     NoteVisualizer.setRobotPoseSupplier(() -> RobotState.getInstance().getEstimatedPose());
-    NoteVisualizer.setArmAngleSupplier(arm::getSetpoint);
+    NoteVisualizer.setArmAngleSupplier(arm::getCurrentArmAngle);
 
     // Configure autos and buttons
     configureAutos();
@@ -204,6 +205,7 @@ public class RobotContainer {
             flywheels,
             flywheels::runCharacterizationVolts,
             flywheels::getCharacterizationVelocity));
+    autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
 
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
@@ -276,6 +278,33 @@ public class RobotContainer {
                 .withName("Eject To Floor"));
     // Test rollers with amp score
     controller.b().whileTrue(rollers.ampScore());
+
+    // Tune arm look up table
+    controller
+        .x()
+        .whileTrue(
+            Commands.parallel(
+                superstructure.diagnoseArm(),
+                flywheels.shootCommand(),
+                Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                    drive::clearHeadingGoal)))
+        .and(controller.rightBumper())
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.5),
+                    Commands.waitUntil(controller.rightBumper().negate()))
+                .deadlineWith(rollers.feedShooter())
+                .finallyDo(
+                    () -> {
+                      Logger.recordOutput(
+                          "RobotState/ShootingArmAngle", superstructure.getArmAngle().getRadians());
+                      Logger.recordOutput(
+                          "RobotState/ShootingEffectiveDistance",
+                          RobotState.getInstance().getAimingParameters().effectiveDistance());
+                    }));
 
     controller
         .y()

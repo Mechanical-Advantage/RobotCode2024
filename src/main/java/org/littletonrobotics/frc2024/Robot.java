@@ -148,6 +148,7 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    RobotState.getInstance().getAimingParameters();
     Threads.setCurrentThreadPriority(true, 10);
   }
 

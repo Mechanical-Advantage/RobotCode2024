@@ -29,8 +29,7 @@ public class ArmConstants {
   public static boolean followerInverted = false;
 
   /** The offset of the arm encoder in rotations. */
-  public static double armEncoderOffsetRotations =
-      Units.radiansToRotations(1.2747380347329678 + Math.PI / 2.0);
+  public static double armEncoderOffsetRotations = Units.radiansToRotations(1.233 + Math.PI / 2.0);
 
   public static double armLength =
       switch (Constants.getRobot()) {
@@ -41,7 +40,7 @@ public class ArmConstants {
   public static Gains gains =
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        case DEVBOT -> new Gains(1200, 0.0, 120, 6.22, 0.0, 0.0, 8.12);
+        case DEVBOT -> new Gains(4000, 0.0, 120, 5.75, 0.0, 0.0, 15);
         case COMPBOT -> new Gains(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
       };
 

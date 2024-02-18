@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -64,6 +65,10 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
+  public Rotation2d getArmAngle() {
+    return arm.getCurrentArmAngle();
+  }
+
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
     return currentGoal == desiredGoal && arm.atGoal();
@@ -90,5 +95,9 @@ public class Superstructure extends SubsystemBase {
   public Command diagnoseArm() {
     return startEnd(() -> desiredGoal = Goal.DIAGNOSTIC_ARM, this::stow)
         .withName("Arm Custom Goal");
+  }
+
+  public Command runArmCharacterization() {
+    return arm.getStaticCurrent().finallyDo(() -> desiredGoal = Goal.STOW);
   }
 }

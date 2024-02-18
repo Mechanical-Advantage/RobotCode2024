@@ -37,6 +37,7 @@ public abstract class GenericRollerSystemIOSparkFlex implements GenericRollerSys
         Units.rotationsPerMinuteToRadiansPerSecond(encoder.getVelocity()) / reduction;
     inputs.appliedVoltage = motor.getAppliedOutput() * motor.getBusVoltage();
     inputs.outputCurrent = motor.getOutputCurrent();
+    inputs.tempCelsius = motor.getMotorTemperature();
   }
 
   @Override

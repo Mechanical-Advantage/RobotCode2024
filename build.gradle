@@ -2,7 +2,7 @@ plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2024.2.1"
     id "com.peterabeles.gversion" version "1.10"
-    id "com.diffplug.spotless" version "6.24.0"
+    id "com.diffplug.spotless" version "6.25.0"
     id "io.freefair.lombok" version "8.4"
     id "com.google.protobuf" version "0.9.4"
 }
@@ -228,8 +228,8 @@ project.compileJava.dependsOn(spotlessApply)
 spotless {
     java {
         target fileTree(".") {
-            include "**/*.java"
-            exclude "**/build/**", "**/build-*/**"
+            include "src/**/*.java"
+            exclude "**/build/**", "**/build-*/**", "src/main/java/org/littletonrobotics/frc2024/BuildConstants.java"
         }
         toggleOffOn()
         googleJavaFormat()

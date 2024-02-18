@@ -24,7 +24,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
-import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -64,7 +63,10 @@ public class RobotState {
     armAngleMap.put(4.145, .454);
   }
 
-  @Setter @Getter private double shotCompensationDegrees = 0.0;
+  @AutoLogOutput(key = "RobotState/ShotCompensationDegrees")
+  @Setter
+  @Getter
+  private double shotCompensationDegrees = 0.0;
 
   private static RobotState instance;
 
@@ -215,15 +217,11 @@ public class RobotState {
         robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
             - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
-    Rotation2d armAngleToSpeaker =
-        new Rotation2d(
-            targetDistance - ArmConstants.armOrigin.getX(),
-            FieldConstants.Speaker.centerSpeakerOpening.getZ() - ArmConstants.armOrigin.getY());
-
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            Rotation2d.fromRadians(armAngleMap.get(targetDistance)),
+            Rotation2d.fromRadians(
+                armAngleMap.get(targetDistance) + Units.degreesToRadians(shotCompensationDegrees)),
             targetDistance,
             feedVelocity);
     Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading());

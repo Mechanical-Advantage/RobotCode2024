@@ -48,19 +48,14 @@ public class Arm {
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
       new LoggedTunableNumber("Arm/UpperLimitDegrees", maxAngle.getDegrees());
-  private static final LoggedTunableNumber stowDegrees =
-      new LoggedTunableNumber("Superstructure/ArmStowDegrees", 20.0);
-  private static final LoggedTunableNumber stationIntakeDegrees =
-      new LoggedTunableNumber("Superstructure/ArmStationIntakeDegrees", 45.0);
-  private static final LoggedTunableNumber intakeDegrees =
-      new LoggedTunableNumber("Superstructure/ArmIntakeDegrees", 40.0);
 
   @RequiredArgsConstructor
   public enum Goal {
-    FLOOR_INTAKE(intakeDegrees),
-    STATION_INTAKE(stationIntakeDegrees),
+    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 18.0)),
+    STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
-    STOW(stowDegrees),
+    STOW(new LoggedTunableNumber("Arm/StowDegrees", 10.0)),
+    AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;

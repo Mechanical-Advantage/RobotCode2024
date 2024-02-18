@@ -109,7 +109,7 @@ public class Rollers extends SubsystemBase {
         gamepieceState = GamepieceState.NONE;
       }
       case AMP_SCORE -> {
-        feeder.setGoal(Feeder.Goal.IDLING);
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.IDLING);
         backpack.setGoal(Backpack.Goal.AMP_SCORING);

@@ -9,6 +9,8 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -17,6 +19,9 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.auto.AutoBuilder;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
@@ -52,8 +57,10 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -62,6 +69,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
+@ExtensionMethod({GeomUtil.class})
 public class RobotContainer {
   // Load robot state
   private final RobotState robotState = RobotState.getInstance();
@@ -73,8 +81,13 @@ public class RobotContainer {
   private Rollers rollers;
   private final Superstructure superstructure;
 
-  // Controller
-  private final CommandXboxController controller = new CommandXboxController(0);
+  // Controllers
+  private final CommandXboxController driverController = new CommandXboxController(0);
+  private final CommandXboxController operatorController = new CommandXboxController(1);
+  private final LoggedDashboardBoolean shotTuningMode =
+      new LoggedDashboardBoolean("Shot Tuning Mode", false);
+  private final LoggedDashboardBoolean autoAmpScore =
+      new LoggedDashboardBoolean("Allow Auto Amp Score", false);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -227,12 +240,25 @@ public class RobotContainer {
             .run(
                 () ->
                     drive.acceptTeleopInput(
-                        -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
+                        -driverController.getLeftY(),
+                        -driverController.getLeftX(),
+                        -driverController.getRightX()))
             .withName("Drive Teleop Input"));
 
+    // Set up toggles
+    Trigger inShotTuningMode = new Trigger(shotTuningMode::get);
+    Trigger allowingAutoAmpScore = new Trigger(autoAmpScore::get);
+    operatorController
+        .start()
+        .onTrue(Commands.runOnce(() -> shotTuningMode.set(!inShotTuningMode.getAsBoolean())));
+    operatorController
+        .x()
+        .onTrue(Commands.runOnce(() -> autoAmpScore.set(!allowingAutoAmpScore.getAsBoolean())));
+
     // Aim and Rev Flywheels
-    controller
+    driverController
         .a()
+        .and(inShotTuningMode.negate())
         .whileTrue(
             Commands.startEnd(
                     () ->
@@ -241,47 +267,10 @@ public class RobotContainer {
                     drive::clearHeadingGoal)
                 .alongWith(superstructure.aim(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
-    // Shoot
-    Trigger readyToShoot =
-        new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
-    readyToShoot
-        .whileTrue(
-            Commands.run(
-                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
-        .whileFalse(
-            Commands.run(
-                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
-    controller
-        .rightTrigger()
-        .onTrue(
-            Commands.parallel(
-                    Commands.waitSeconds(0.5),
-                    Commands.waitUntil(controller.rightTrigger().negate()))
-                .deadlineWith(
-                    rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
-    // Intake Floor
-    controller
-        .leftTrigger()
-        .whileTrue(
-            superstructure
-                .intake()
-                .alongWith(
-                    Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
-                .withName("Floor Intake"));
-    // Eject Floor
-    controller
-        .leftBumper()
-        .whileTrue(
-            superstructure
-                .intake()
-                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
-                .withName("Eject To Floor"));
-    // Test rollers with amp score
-    controller.b().whileTrue(rollers.ampScore());
-
-    // Tune arm look up table
-    controller
-        .x()
+    // Tuning mode controls
+    driverController
+        .a()
+        .and(inShotTuningMode)
         .whileTrue(
             Commands.parallel(
                 superstructure.diagnoseArm(),
@@ -290,12 +279,25 @@ public class RobotContainer {
                     () ->
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
-                    drive::clearHeadingGoal)))
-        .and(controller.rightBumper())
+                    drive::clearHeadingGoal)));
+    // Shoot
+    Trigger readyToShoot =
+        new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal())
+            .and(inShotTuningMode.negate());
+    readyToShoot
+        .whileTrue(
+            Commands.run(
+                () -> driverController.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
+        .whileFalse(
+            Commands.run(
+                () -> driverController.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
+    // Shoot at current arm and flywheel setpoint
+    driverController
+        .rightTrigger()
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5),
-                    Commands.waitUntil(controller.rightBumper().negate()))
+                    Commands.waitUntil(driverController.rightTrigger().negate()))
                 .deadlineWith(rollers.feedShooter())
                 .finallyDo(
                     () -> {
@@ -304,9 +306,55 @@ public class RobotContainer {
                       Logger.recordOutput(
                           "RobotState/ShootingEffectiveDistance",
                           RobotState.getInstance().getAimingParameters().effectiveDistance());
-                    }));
+                    })
+                .withName("Shoot"));
+    // Intake Floor
+    driverController
+        .leftTrigger()
+        .whileTrue(
+            superstructure
+                .intake()
+                .alongWith(
+                    Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
+                .withName("Floor Intake"));
+    // Eject Floor
+    driverController
+        .leftBumper()
+        .whileTrue(
+            superstructure
+                .intake()
+                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
+                .withName("Eject To Floor"));
 
-    controller
+    // Amp scoring
+    operatorController.a().whileTrue(superstructure.amp());
+    driverController.b().whileTrue(rollers.ampScore());
+
+    // Auto amp scoring
+    Pose2d goalAmpScorePose =
+        new Pose2d(FieldConstants.ampCenter, new Rotation2d(Math.PI / 2.0))
+            .transformBy(
+                new Translation2d(
+                        0.0,
+                        -(DriveConstants.driveConfig.bumperWidthX() / 2.0
+                            + Units.inchesToMeters(3.0)))
+                    .toTransform2d());
+    Supplier<Pose2d> ampScoringPoseSupp = () -> AllianceFlipUtil.apply(goalAmpScorePose);
+
+    // Operator controls
+    Function<Double, Command> changeCompensationDegrees =
+        compensation ->
+            Commands.runOnce(
+                () -> {
+                  double currentCompensation =
+                      RobotState.getInstance().getShotCompensationDegrees();
+                  RobotState.getInstance()
+                      .setShotCompensationDegrees(currentCompensation + compensation);
+                });
+    operatorController.povDown().onTrue(changeCompensationDegrees.apply(-0.1));
+    operatorController.povUp().onTrue(changeCompensationDegrees.apply(0.1));
+
+    driverController
         .y()
         .onTrue(
             Commands.runOnce(

@@ -26,14 +26,14 @@ import java.io.IOException;
  * Width refers to the <i>y</i> direction (as described by wpilib)
  */
 public class FieldConstants {
-  public static double fieldLength = Units.inchesToMeters(651.223);
-  public static double fieldWidth = Units.inchesToMeters(323.277);
-  public static double wingX = Units.inchesToMeters(229.201);
-  public static double podiumX = Units.inchesToMeters(126.75);
-  public static double startingLineX = Units.inchesToMeters(74.111);
+  public static final double fieldLength = Units.inchesToMeters(651.223);
+  public static final double fieldWidth = Units.inchesToMeters(323.277);
+  public static final double wingX = Units.inchesToMeters(229.201);
+  public static final double podiumX = Units.inchesToMeters(126.75);
+  public static final double startingLineX = Units.inchesToMeters(74.111);
 
-  public static Translation2d ampCenter =
-      new Translation2d(Units.inchesToMeters(72.455), Units.inchesToMeters(322.996));
+  public static final Translation2d ampCenter =
+      new Translation2d(Units.inchesToMeters(72.455), fieldWidth);
 
   /** Staging locations for each note */
   public static final class StagingLocations {

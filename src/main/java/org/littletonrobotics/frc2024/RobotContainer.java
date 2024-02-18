@@ -9,7 +9,6 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
@@ -294,6 +293,7 @@ public class RobotContainer {
     // Shoot at current arm and flywheel setpoint
     driverController
         .rightTrigger()
+        .and(driverController.a())
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5),
@@ -327,19 +327,43 @@ public class RobotContainer {
                 .withName("Eject To Floor"));
 
     // Amp scoring
-    operatorController.a().whileTrue(superstructure.amp());
-    driverController.b().whileTrue(rollers.ampScore());
+    driverController.b().and(allowingAutoAmpScore.negate()).whileTrue(superstructure.amp());
+    driverController
+        .b()
+        .and(allowingAutoAmpScore.negate())
+        .and(driverController.rightTrigger())
+        .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
 
     // Auto amp scoring
     Pose2d goalAmpScorePose =
-        new Pose2d(FieldConstants.ampCenter, new Rotation2d(Math.PI / 2.0))
-            .transformBy(
-                new Translation2d(
-                        0.0,
-                        -(DriveConstants.driveConfig.bumperWidthX() / 2.0
-                            + Units.inchesToMeters(3.0)))
-                    .toTransform2d());
+        new Pose2d(
+            FieldConstants.ampCenter.getX(),
+            FieldConstants.ampCenter.getY()
+                - DriveConstants.driveConfig.bumperWidthX() / 2.0
+                - Units.inchesToMeters(5.0),
+            new Rotation2d(-Math.PI / 2.0));
     Supplier<Pose2d> ampScoringPoseSupp = () -> AllianceFlipUtil.apply(goalAmpScorePose);
+    driverController
+        .b()
+        .and(allowingAutoAmpScore)
+        .whileTrue(
+            Commands.startEnd(
+                    () -> drive.setAutoAlignGoal(ampScoringPoseSupp.get()),
+                    drive::clearAutoAlignGoal)
+                .alongWith(
+                    Commands.waitUntil(
+                            () -> {
+                              Pose2d poseError =
+                                  RobotState.getInstance()
+                                      .getEstimatedPose()
+                                      .relativeTo(ampScoringPoseSupp.get());
+                              return poseError.getTranslation().getNorm() < Units.feetToMeters(6.0)
+                                  && poseError.getY() >= -Units.inchesToMeters(5.0);
+                            })
+                        .andThen(superstructure.amp()),
+                    Commands.waitUntil(
+                            () -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted())
+                        .andThen(rollers.ampScore())));
 
     // Operator controls
     Function<Double, Command> changeCompensationDegrees =

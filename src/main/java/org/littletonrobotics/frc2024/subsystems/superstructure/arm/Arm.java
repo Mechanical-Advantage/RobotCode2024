@@ -66,7 +66,7 @@ public class Arm {
   }
 
   @Getter @Setter private Goal goal = Goal.STOW;
-  private final boolean characterizing = false;
+  private boolean characterizing = false;
 
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();

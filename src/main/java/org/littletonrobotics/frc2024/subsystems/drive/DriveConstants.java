@@ -67,7 +67,14 @@ public final class DriveConstants {
   // Module Constants
   public static ModuleConfig[] moduleConfigs =
       switch (Constants.getRobot()) {
-        case COMPBOT, DEVBOT ->
+        case COMPBOT ->
+            new ModuleConfig[] {
+              new ModuleConfig(16, 12, 0, new Rotation2d(-1.93585), true),
+              new ModuleConfig(19, 14, 1, new Rotation2d(0.73053), true),
+              new ModuleConfig(17, 13, 2, new Rotation2d(-0.50507), true),
+              new ModuleConfig(18, 15, 3, new Rotation2d(-1.51666), true)
+            };
+        case DEVBOT ->
             new ModuleConfig[] {
               new ModuleConfig(15, 11, 0, new Rotation2d(-0.036), true),
               new ModuleConfig(12, 9, 1, new Rotation2d(1.0185), true),
@@ -86,12 +93,12 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
-                2.0,
                 0.0,
-                200.0,
                 0.0,
-                200.0,
-                20.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
                 Mk4iReductions.L3.reduction,
                 Mk4iReductions.TURN.reduction);
         case DEVBOT ->
@@ -125,7 +132,8 @@ public final class DriveConstants {
   // Trajectory Following
   public static TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT, DEVBOT ->
+        case COMPBOT -> new TrajectoryConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        case DEVBOT ->
             new TrajectoryConstants(
                 6.0,
                 0.0,

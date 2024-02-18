@@ -60,7 +60,7 @@ public class Module {
   /** Called while blocking odometry thread */
   public void updateInputs() {
     io.updateInputs(inputs);
-    Logger.processInputs("Drive/" + moduleNames[index] + "_Module", inputs);
+    Logger.processInputs("Drive/Module" + index, inputs);
 
     // Update ff and controllers
     LoggedTunableNumber.ifChanged(

@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024;
 
+import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Threads;
@@ -17,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -37,6 +39,9 @@ public class Robot extends LoggedRobot {
 
   private double autoStart;
   private boolean autoMessagePrinted;
+
+  private final Alert canivoreBusUtilizationAlert =
+      new Alert("CANivore utilization too high!", Alert.AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -147,6 +152,17 @@ public class Robot extends LoggedRobot {
         autoMessagePrinted = true;
       }
     }
+
+    // Log CANivore status
+    CANBus.CANBusStatus canivoreStatus = CANBus.getStatus("canivore");
+    Logger.recordOutput("CANivoreStatus/Status", canivoreStatus.Status.getName());
+    Logger.recordOutput("CANivoreStatus/BusUtilization", canivoreStatus.BusUtilization);
+    // Set alert
+    canivoreBusUtilizationAlert.setText(
+        "CANivore bus utilization at "
+            + ((int) (canivoreStatus.BusUtilization * 1e4)) / 100.0
+            + "%!");
+    canivoreBusUtilizationAlert.set(canivoreStatus.BusUtilization > 0.8);
 
     Threads.setCurrentThreadPriority(true, 10);
   }

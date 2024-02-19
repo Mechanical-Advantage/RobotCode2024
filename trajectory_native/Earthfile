@@ -12,8 +12,11 @@ grpc:
     RUN git clone --recurse-submodules -b v1.60.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
     RUN mkdir grpc/build
     WORKDIR grpc/build
-    ENV CC=clang
-    ENV CXX=clang++
+    ARG TARGETARCH
+    IF [ "$TARGETARCH" = "arm64" ]
+        ENV CC=clang
+        ENV CXX=clang++
+    END
     RUN cmake -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF ..
     RUN make -j4
     RUN make DESTDIR=$(pwd)/installroot_top install
@@ -27,11 +30,14 @@ trajoptlib:
     GIT CLONE --branch 95c20be79be7557673d75d631703dc92fe6a191e https://github.com/SleipnirGroup/TrajoptLib TrajoptLib
     WORKDIR TrajoptLib
     COPY trajoptlib-aarch64.patch .
-    RUN git apply trajoptlib-aarch64.patch
+    RUN git apply --ignore-space-change --ignore-whitespace trajoptlib-aarch64.patch
     RUN mkdir build
     WORKDIR build
-    ENV CC=clang
-    ENV CXX=clang++
+    ARG TARGETARCH
+    IF [ "$TARGETARCH" = "arm64" ]
+        ENV CC=clang
+        ENV CXX=clang++
+    END
     RUN cmake -DOPTIMIZER_BACKEND=casadi -DBUILD_TESTING=OFF ..
     RUN make -j4
     RUN make DESTDIR=$(pwd)/installroot_top install
@@ -45,8 +51,11 @@ dev-image:
     BUILD +trajoptlib
     COPY +grpc/installroot /usr/local/
     COPY +trajoptlib/installroot /usr/local/
-    ENV CC=clang
-    ENV CXX=clang++
+    ARG TARGETARCH
+    IF [ "$TARGETARCH" = "arm64" ]
+        ENV CC=clang
+        ENV CXX=clang++
+    END
     SAVE IMAGE littletonrobotics/vts-dev
 
 vts:
@@ -56,6 +65,11 @@ vts:
     COPY CMakeLists.txt CMakeLists.txt
     RUN mkdir build
     WORKDIR build
+    ARG TARGETARCH
+    IF [ "$TARGETARCH" = "arm64" ]
+        ENV CC=clang
+        ENV CXX=clang++
+    END
     RUN cmake ..
     RUN make -j4
     EXPOSE 56328

@@ -54,6 +54,8 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
 
     BaseStatusSignal.setUpdateFrequencyForAll(
         50.0, position, velocity, appliedVoltage, outputCurrent, tempCelsius);
+
+    talon.optimizeBusUtilization(1.0);
   }
 
   @Override

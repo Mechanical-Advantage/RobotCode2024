@@ -55,10 +55,10 @@ public class ArmIOKrakenFOC implements ArmIO {
       new Alert("Arm", "Absolute Encoder Disconnected!", Alert.AlertType.WARNING);
 
   public ArmIOKrakenFOC() {
-    leaderTalon = new TalonFX(leaderID, "canivore");
-    followerTalon = new TalonFX(followerID, "canivore");
+    leaderTalon = new TalonFX(leaderID, "*");
+    followerTalon = new TalonFX(followerID, "*");
     followerTalon.setControl(new Follower(leaderID, true));
-    absoluteEncoder = new CANcoder(armEncoderID, "canivore");
+    absoluteEncoder = new CANcoder(armEncoderID, "*");
 
     // Arm Encoder Configs
     CANcoderConfiguration armEncoderConfig = new CANcoderConfiguration();

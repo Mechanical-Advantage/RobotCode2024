@@ -68,8 +68,8 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   public ModuleIOKrakenFOC(ModuleConfig config) {
     // Init controllers and encoders from config constants
-    driveTalon = new TalonFX(config.driveID(), "canivore");
-    turnTalon = new TalonFX(config.turnID(), "canivore");
+    driveTalon = new TalonFX(config.driveID(), "*");
+    turnTalon = new TalonFX(config.turnID(), "*");
     turnAbsoluteEncoder = new AnalogInput(config.absoluteEncoderChannel());
     absoluteEncoderOffset = config.absoluteEncoderOffset();
 

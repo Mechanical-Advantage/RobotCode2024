@@ -189,7 +189,8 @@ void apply_waypoint_constraints(trajopt::SwervePathBuilder &builder, const std::
     builder.ControlIntervalCounts(std::move(control_intervals));
 }
 
-void apply_segment_constraints(trajopt::SwervePathBuilder &builder, const vts::PathRequest &request) {
+void apply_segment_constraints(trajopt::SwervePathBuilder &builder, const std::vector<vts::Waypoint> &waypoints,
+                               const vts::PathRequest &request) {
     int constraint_start_idx = -1;
     for (int i = 0; i < request.segments_size(); i++) {
         const vts::PathSegment &segment = request.segments(i);
@@ -213,6 +214,17 @@ void apply_segment_constraints(trajopt::SwervePathBuilder &builder, const vts::P
                                    trajopt::AngularVelocityConstraint{segment.max_omega()});
         }
 
+        if (segment.straight_line()) {
+            double x1 = waypoints.at(constraint_start_idx).x();
+            double x2 = waypoints.at(constraint_end_idx).x();
+            double y1 = waypoints.at(constraint_start_idx).y();
+            double y2 = waypoints.at(constraint_end_idx).y();
+            double angle = atan2(y2 - y1, x2 - x1);
+            fmt::print("Adding straight line constraint with angle {} to segment {} (waypoints {}-{})\n", angle,
+                       i, constraint_start_idx, constraint_end_idx);
+            builder.SgmtVelocityDirection(constraint_start_idx, constraint_end_idx, angle);
+        }
+
         constraint_start_idx = constraint_end_idx;
     }
 }
@@ -228,7 +240,7 @@ public:
 
         auto all_waypoints = add_waypoints(builder, *request);
         apply_waypoint_constraints(builder, all_waypoints, request->model());
-        apply_segment_constraints(builder, *request);
+        apply_segment_constraints(builder, all_waypoints, *request);
 
         try {
             fmt::print("Generating trajectory\n");

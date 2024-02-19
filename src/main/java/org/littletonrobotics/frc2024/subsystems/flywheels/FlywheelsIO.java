@@ -44,8 +44,8 @@ public interface FlywheelsIO {
   default void setFF(double kS, double kV, double kA) {}
 
   /** Run left flywheels at voltage */
-  default void runCharacterizationLeftVolts(double volts) {}
+  default void runCharacterizationLeft(double input) {}
 
   /** Run right flywheels at voltage */
-  default void runCharacterizationRightVolts(double volts) {}
+  default void runCharacterizationRight(double input) {}
 }

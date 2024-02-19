@@ -124,13 +124,13 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
   }
 
   @Override
-  public void runCharacterizationLeftVolts(double volts) {
-    leftMotor.setVoltage(volts);
+  public void runCharacterizationLeft(double input) {
+    leftMotor.setVoltage(input);
   }
 
   @Override
-  public void runCharacterizationRightVolts(double volts) {
-    rightMotor.setVoltage(volts);
+  public void runCharacterizationRight(double input) {
+    rightMotor.setVoltage(input);
   }
 
   @Override

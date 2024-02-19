@@ -128,6 +128,7 @@ public class Flywheels extends SubsystemBase {
     Logger.recordOutput("Flywheels/GoalRightRpm", goal.getRightGoal());
   }
 
+  /** Set the current goal of the flywheel */
   private void setGoal(Goal goal) {
     if (goal == Goal.CHARACTERIZING || goal == Goal.STOP) {
       wasClosedLoop = closedLoop;
@@ -146,16 +147,19 @@ public class Flywheels extends SubsystemBase {
     this.goal = goal;
   }
 
-  public void runCharacterizationVolts(double volts) {
+  /** Run characterization with input in either current or amps */
+  public void runCharacterization(double input) {
     setGoal(Goal.CHARACTERIZING);
-    io.runCharacterizationLeftVolts(volts);
-    io.runCharacterizationRightVolts(volts);
+    io.runCharacterizationLeft(input);
+    io.runCharacterizationRight(input);
   }
 
+  /** Get characterization velocity */
   public double getCharacterizationVelocity() {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
+  /** Get if velocity profile has ended */
   @AutoLogOutput(key = "Flywheels/AtGoal")
   public boolean atGoal() {
     return leftProfile.getCurrentSetpoint() == goal.getLeftGoal()

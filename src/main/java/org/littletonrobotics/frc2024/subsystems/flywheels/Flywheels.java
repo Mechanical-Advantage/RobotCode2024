@@ -16,6 +16,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -51,6 +52,12 @@ public class Flywheels extends SubsystemBase {
   private final LinearProfile rightProfile;
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
+
+  // Disconnected alerts
+  private final Alert leftDisconnectedAlert =
+      new Alert("Left Flywheel Disconnected!", Alert.AlertType.WARNING);
+  private final Alert rightDisconnectedAlert =
+      new Alert("Left Flywheel Disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -89,7 +96,11 @@ public class Flywheels extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("Flywheels", inputs);
 
-    // check controllers
+    // Set alerts
+    leftDisconnectedAlert.set(!inputs.leftConnected);
+    rightDisconnectedAlert.set(!inputs.rightConnected);
+
+    // Check controllers
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);

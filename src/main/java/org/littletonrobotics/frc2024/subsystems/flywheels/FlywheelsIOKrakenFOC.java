@@ -21,7 +21,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.util.Units;
-import org.littletonrobotics.frc2024.util.Alert;
 
 public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   // Hardware
@@ -47,12 +46,6 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   private final VelocityTorqueCurrentFOC velocityControl =
       new VelocityTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
   private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0.0);
-
-  // Connected Alerts
-  private final Alert leftDisconnectedAlert =
-      new Alert("Flywheels", "Left disconnected!", Alert.AlertType.WARNING);
-  private final Alert rightDisconnectedAlert =
-      new Alert("Flywheels", "Right disconnected!", Alert.AlertType.WARNING);
 
   public FlywheelsIOKrakenFOC() {
     leftTalon = new TalonFX(flywheelConfig.leftID(), "rio");
@@ -110,18 +103,18 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
-    leftDisconnectedAlert.set(
-        !BaseStatusSignal.refreshAll(
+    inputs.leftConnected =
+        BaseStatusSignal.refreshAll(
                 leftPosition, leftVelocity, leftAppliedVolts, leftTorqueCurrent, leftTempCelsius)
-            .isOK());
-    rightDisconnectedAlert.set(
+            .isOK();
+    inputs.rightConnected =
         !BaseStatusSignal.refreshAll(
                 rightPosition,
                 rightVelocity,
                 rightAppliedVolts,
                 rightTorqueCurrent,
                 rightTempCelsius)
-            .isOK());
+            .isOK();
 
     inputs.leftPositionRads = Units.rotationsToRadians(leftPosition.getValueAsDouble());
     inputs.leftVelocityRpm = leftVelocity.getValueAsDouble() * 60.0;

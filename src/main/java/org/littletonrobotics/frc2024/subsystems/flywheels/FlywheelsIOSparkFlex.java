@@ -9,10 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.flywheels;
 
 import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstants.*;
 
-import com.revrobotics.CANSparkBase;
-import com.revrobotics.CANSparkFlex;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkPIDController;
+import com.revrobotics.*;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.util.Units;
 

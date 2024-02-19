@@ -46,14 +46,6 @@ public class ArmIOKrakenFOC implements ArmIO {
   private final PositionTorqueCurrentFOC positionControl =
       new PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
 
-  // Alerts
-  private final Alert leaderMotorDisconnected =
-      new Alert("Arm", "Leader Motor Disconnected!", Alert.AlertType.WARNING);
-  private final Alert followerMotorDisconnected =
-      new Alert("Arm", "Follower Motor Disconnected!", Alert.AlertType.WARNING);
-  private final Alert absoluteEncoderDisconnected =
-      new Alert("Arm", "Absolute Encoder Disconnected!", Alert.AlertType.WARNING);
-
   public ArmIOKrakenFOC() {
     leaderTalon = new TalonFX(leaderID, "canivore");
     followerTalon = new TalonFX(followerID, "canivore");
@@ -119,30 +111,23 @@ public class ArmIOKrakenFOC implements ArmIO {
   }
 
   public void updateInputs(ArmIOInputs inputs) {
-    inputs.absoluteEncoderConnected = true;
-
-    // Refresh signals & set alerts
-    leaderMotorDisconnected.set(
-        BaseStatusSignal.refreshAll(
-                armInternalPositionRotations,
-                armVelocityRps,
-                armAppliedVoltage.get(0),
-                armOutputCurrent.get(0),
-                armTorqueCurrent.get(0),
-                armTempCelsius.get(0))
-            .isOK());
-    followerMotorDisconnected.set(
-        BaseStatusSignal.refreshAll(
-                armAppliedVoltage.get(1),
-                armOutputCurrent.get(1),
-                armTorqueCurrent.get(1),
-                armTempCelsius.get(1))
-            .isOK());
-
+    inputs.leaderMotorConnected = BaseStatusSignal.refreshAll(
+                    armInternalPositionRotations,
+                    armVelocityRps,
+                    armAppliedVoltage.get(0),
+                    armOutputCurrent.get(0),
+                    armTorqueCurrent.get(0),
+                    armTempCelsius.get(0))
+            .isOK();
+    inputs.followerMotorConnected = BaseStatusSignal.refreshAll(
+                    armAppliedVoltage.get(1),
+                    armOutputCurrent.get(1),
+                    armTorqueCurrent.get(1),
+                    armTempCelsius.get(1))
+            .isOK();
     inputs.absoluteEncoderConnected =
         BaseStatusSignal.refreshAll(armEncoderPositionRotations, armAbsolutePositionRotations)
             .isOK();
-    absoluteEncoderDisconnected.set(!inputs.absoluteEncoderConnected);
 
     inputs.armPositionRads = Units.rotationsToRadians(armInternalPositionRotations.getValue());
     inputs.armEncoderPositionRads =

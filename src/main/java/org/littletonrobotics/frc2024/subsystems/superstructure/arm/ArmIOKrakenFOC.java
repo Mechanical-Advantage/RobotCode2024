@@ -24,8 +24,8 @@ import org.littletonrobotics.frc2024.util.Alert;
 
 public class ArmIOKrakenFOC implements ArmIO {
   // Hardware
-  private final TalonFX leaderMotor;
-  private final TalonFX followerMotor;
+  private final TalonFX leaderTalon;
+  private final TalonFX followerTalon;
   private final CANcoder absoluteEncoder;
 
   // Status Signals
@@ -40,7 +40,6 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   // Control
   private final Slot0Configs controllerConfig;
-
   private final VoltageOut voltageControl =
       new VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0);
   private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
@@ -56,9 +55,9 @@ public class ArmIOKrakenFOC implements ArmIO {
       new Alert("Arm", "Absolute Encoder Disconnected!", Alert.AlertType.WARNING);
 
   public ArmIOKrakenFOC() {
-    leaderMotor = new TalonFX(leaderID, "canivore");
-    followerMotor = new TalonFX(followerID, "canivore");
-    followerMotor.setControl(new Follower(leaderID, true));
+    leaderTalon = new TalonFX(leaderID, "canivore");
+    followerTalon = new TalonFX(followerID, "canivore");
+    followerTalon.setControl(new Follower(leaderID, true));
     absoluteEncoder = new CANcoder(armEncoderID, "canivore");
 
     // Arm Encoder Configs
@@ -90,14 +89,14 @@ public class ArmIOKrakenFOC implements ArmIO {
     followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
     // Status signals
-    armInternalPositionRotations = leaderMotor.getPosition();
+    armInternalPositionRotations = leaderTalon.getPosition();
     armEncoderPositionRotations = absoluteEncoder.getPosition();
     armAbsolutePositionRotations = absoluteEncoder.getAbsolutePosition();
-    armVelocityRps = leaderMotor.getVelocity();
-    armAppliedVoltage = List.of(leaderMotor.getMotorVoltage(), followerMotor.getMotorVoltage());
-    armOutputCurrent = List.of(leaderMotor.getSupplyCurrent(), followerMotor.getSupplyCurrent());
-    armTorqueCurrent = List.of(leaderMotor.getTorqueCurrent(), followerMotor.getTorqueCurrent());
-    armTempCelsius = List.of(leaderMotor.getDeviceTemp(), followerMotor.getDeviceTemp());
+    armVelocityRps = leaderTalon.getVelocity();
+    armAppliedVoltage = List.of(leaderTalon.getMotorVoltage(), followerTalon.getMotorVoltage());
+    armOutputCurrent = List.of(leaderTalon.getSupplyCurrent(), followerTalon.getSupplyCurrent());
+    armTorqueCurrent = List.of(leaderTalon.getTorqueCurrent(), followerTalon.getTorqueCurrent());
+    armTempCelsius = List.of(leaderTalon.getDeviceTemp(), followerTalon.getDeviceTemp());
 
     BaseStatusSignal.setUpdateFrequencyForAll(
         100,
@@ -159,7 +158,7 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   @Override
   public void runSetpoint(double setpointRads, double feedforward) {
-    leaderMotor.setControl(
+    leaderTalon.setControl(
         positionControl
             .withPosition(Units.radiansToRotations(setpointRads))
             .withFeedForward(feedforward));
@@ -167,18 +166,18 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   @Override
   public void runVolts(double volts) {
-    leaderMotor.setControl(voltageControl.withOutput(volts));
+    leaderTalon.setControl(voltageControl.withOutput(volts));
   }
 
   @Override
   public void runCurrent(double amps) {
-    leaderMotor.setControl(currentControl.withOutput(amps));
+    leaderTalon.setControl(currentControl.withOutput(amps));
   }
 
   @Override
   public void setBrakeMode(boolean enabled) {
-    leaderMotor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
-    followerMotor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+    leaderTalon.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+    followerTalon.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
   }
 
   @Override
@@ -186,16 +185,16 @@ public class ArmIOKrakenFOC implements ArmIO {
     controllerConfig.kP = p;
     controllerConfig.kI = i;
     controllerConfig.kD = d;
-    leaderMotor.getConfigurator().apply(controllerConfig);
+    leaderTalon.getConfigurator().apply(controllerConfig);
   }
 
   @Override
   public void setPosition(double positionRads) {
-    leaderMotor.setPosition(Units.radiansToRotations(positionRads));
+    leaderTalon.setPosition(Units.radiansToRotations(positionRads));
   }
 
   @Override
   public void stop() {
-    leaderMotor.setControl(new NeutralOut());
+    leaderTalon.setControl(new NeutralOut());
   }
 }

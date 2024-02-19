@@ -16,6 +16,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Quaternion;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.*;
@@ -82,6 +83,7 @@ public class AprilTagVision extends VirtualSubsystem {
         // Switch based on number of poses
         Pose3d cameraPose = null;
         Pose3d robotPose3d = null;
+        boolean useVisionRotation = false;
         switch ((int) values[0]) {
           case 1:
             // One pose (multi-tag), use directly
@@ -93,6 +95,7 @@ public class AprilTagVision extends VirtualSubsystem {
                     new Rotation3d(new Quaternion(values[5], values[6], values[7], values[8])));
             robotPose3d =
                 cameraPose.transformBy(cameraPoses[instanceIndex].toTransform3d().inverse());
+            useVisionRotation = true;
             break;
           case 2:
             // Two poses (one tag), disambiguate
@@ -115,13 +118,20 @@ public class AprilTagVision extends VirtualSubsystem {
             Pose3d robotPose3d1 =
                 cameraPose1.transformBy(cameraPoses[instanceIndex].toTransform3d().inverse());
 
-            // Select pose using projection errors
-            if (error0 < error1 * ambiguityThreshold) {
-              cameraPose = cameraPose0;
-              robotPose3d = robotPose3d0;
-            } else if (error1 < error0 * ambiguityThreshold) {
-              cameraPose = cameraPose1;
-              robotPose3d = robotPose3d1;
+            // Check for ambiguity and select based on estimated rotation
+            if (error0 < error1 * ambiguityThreshold || error1 < error0 * ambiguityThreshold) {
+              Rotation2d currentRotation =
+                  RobotState.getInstance().getEstimatedPose().getRotation();
+              Rotation2d visionRotation0 = robotPose3d0.toPose2d().getRotation();
+              Rotation2d visionRotation1 = robotPose3d1.toPose2d().getRotation();
+              if (Math.abs(currentRotation.minus(visionRotation0).getRadians())
+                  < Math.abs(currentRotation.minus(visionRotation1).getRadians())) {
+                cameraPose = cameraPose0;
+                robotPose3d = robotPose3d0;
+              } else {
+                cameraPose = cameraPose1;
+                robotPose3d = robotPose3d1;
+              }
             }
             break;
         }
@@ -162,7 +172,10 @@ public class AprilTagVision extends VirtualSubsystem {
 
         // Add observation to list
         double xyStdDev = xyStdDevCoefficient * Math.pow(avgDistance, 2.0) / tagPoses.size();
-        double thetaStdDev = thetaStdDevCoefficient * Math.pow(avgDistance, 2.0) / tagPoses.size();
+        double thetaStdDev =
+            useVisionRotation
+                ? thetaStdDevCoefficient * Math.pow(avgDistance, 2.0) / tagPoses.size()
+                : Double.POSITIVE_INFINITY;
         allVisionObservations.add(
             new VisionObservation(
                 robotPose, timestamp, VecBuilder.fill(xyStdDev, xyStdDev, thetaStdDev)));

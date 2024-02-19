@@ -67,6 +67,7 @@ public class AutoBuilder {
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
                         true),
                     intake(superstructure, rollers).withTimeout(0.8),
+                    runOnce(() -> NoteVisualizer.takeAutoNote(5)),
                     // Wait until we are close enough to shot to start arm aiming
                     waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
                     superstructure.aim())),
@@ -81,6 +82,7 @@ public class AutoBuilder {
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
                         true),
                     intake(superstructure, rollers).withTimeout(1.0),
+                    runOnce(() -> NoteVisualizer.takeAutoNote(6)),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
@@ -93,6 +95,7 @@ public class AutoBuilder {
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
                         true),
                     intake(superstructure, rollers).withTimeout(1.0),
+                    runOnce(() -> NoteVisualizer.takeAutoNote(7)),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),

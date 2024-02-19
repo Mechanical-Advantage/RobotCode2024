@@ -145,6 +145,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     // Reset turn position to absolute encoder position
     turnTalon.setPosition(turnAbsolutePosition.get().getRotations(), 1.0);
 
+    // Optimize bus utilization
     driveTalon.optimizeBusUtilization(1.0);
     turnTalon.optimizeBusUtilization(1.0);
   }

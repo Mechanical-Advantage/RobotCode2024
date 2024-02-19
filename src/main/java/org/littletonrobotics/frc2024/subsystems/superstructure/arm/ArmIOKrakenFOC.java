@@ -112,6 +112,10 @@ public class ArmIOKrakenFOC implements ArmIO {
         armTorqueCurrent.get(1),
         armTempCelsius.get(0),
         armTempCelsius.get(1));
+
+    // Optimize bus utilization
+    leaderTalon.optimizeBusUtilization(1.0);
+    followerTalon.optimizeBusUtilization(1.0);
   }
 
   public void updateInputs(ArmIOInputs inputs) {

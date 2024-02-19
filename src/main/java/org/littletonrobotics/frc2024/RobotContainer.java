@@ -83,6 +83,7 @@ public class RobotContainer {
     Indexer indexer = null;
     Intake intake = null;
     Arm arm = null;
+    RollersSensorsIO rollersSensorsIO = null;
 
     // Create subsystems
     if (Constants.getMode() != Constants.Mode.REPLAY) {
@@ -117,7 +118,7 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIOSparkFlex());
           intake = new Intake(new IntakeIOKrakenFOC());
-          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIOReal());
+          rollersSensorsIO = new RollersSensorsIOReal();
 
           arm = new Arm(new ArmIOKrakenFOC());
         }
@@ -134,7 +135,7 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOSim());
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
-          rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
+          rollersSensorsIO = new RollersSensorsIO() {};
 
           arm = new Arm(new ArmIOSim());
         }
@@ -171,12 +172,13 @@ public class RobotContainer {
     if (intake == null) {
       intake = new Intake(new IntakeIO() {});
     }
-    if (rollers == null) {
-      rollers = new Rollers(feeder, indexer, intake, new RollersSensorsIO() {});
+    if (rollersSensorsIO == null) {
+      rollersSensorsIO = new RollersSensorsIO() {};
     }
     if (arm == null) {
       arm = new Arm(new ArmIO() {});
     }
+    rollers = new Rollers(feeder, indexer, intake, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
     // Configure autos and buttons

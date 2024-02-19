@@ -13,7 +13,7 @@ namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 
 // Scales the Choreo algorithm's estimate of initial guess points, since we've found it to sometimes underestimate.
 // We take the tradeoff of increased computation time since we cache paths anyway.
-static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.5;
+static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.75;
 
 trajopt::SwerveDrivetrain create_drivetrain(const vts::VehicleModel &model) {
     trajopt::SwerveDrivetrain drivetrain{
@@ -184,9 +184,9 @@ void apply_waypoint_constraints(trajopt::SwervePathBuilder &builder, const std::
             fmt::print("Adding sample count {} between waypoints {}-{}\n", sample_count, i - 1, i);
             control_intervals.push_back(sample_count);
         }
-
-        builder.ControlIntervalCounts(std::move(control_intervals));
     }
+
+    builder.ControlIntervalCounts(std::move(control_intervals));
 }
 
 void apply_segment_constraints(trajopt::SwervePathBuilder &builder, const vts::PathRequest &request) {

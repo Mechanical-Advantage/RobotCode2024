@@ -66,8 +66,8 @@ public class RobotContainer {
   private Drive drive;
   private AprilTagVision aprilTagVision;
   private Flywheels flywheels;
-  private Rollers rollers;
-  private Superstructure superstructure;
+  private final Rollers rollers;
+  private final Superstructure superstructure;
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);

@@ -24,6 +24,7 @@ public class NoteVisualizer {
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
   @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
 
+  /** Shoots note from middle of arm to speaker */
   public static Command shoot() {
     return new ScheduleCommand( // Branch off and exit immediately
         Commands.defer(

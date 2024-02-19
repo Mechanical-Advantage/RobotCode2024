@@ -327,9 +327,18 @@ public class RobotContainer {
                 .withName("Eject To Floor"));
 
     // Amp scoring
-    driverController.b().and(allowingAutoAmpScore.negate()).whileTrue(superstructure.amp());
     driverController
-        .b()
+        .rightBumper()
+        .and(allowingAutoAmpScore.negate())
+        .whileTrue(
+            superstructure
+                .amp()
+                .alongWith(
+                    Commands.startEnd(
+                        () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
+                        drive::clearHeadingGoal)));
+    driverController
+        .rightBumper()
         .and(allowingAutoAmpScore.negate())
         .and(driverController.rightTrigger())
         .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
@@ -344,7 +353,7 @@ public class RobotContainer {
             new Rotation2d(-Math.PI / 2.0));
     Supplier<Pose2d> ampScoringPoseSupp = () -> AllianceFlipUtil.apply(goalAmpScorePose);
     driverController
-        .b()
+        .rightBumper()
         .and(allowingAutoAmpScore)
         .whileTrue(
             Commands.startEnd(
@@ -369,12 +378,13 @@ public class RobotContainer {
     Function<Double, Command> changeCompensationDegrees =
         compensation ->
             Commands.runOnce(
-                () -> {
-                  double currentCompensation =
-                      RobotState.getInstance().getShotCompensationDegrees();
-                  RobotState.getInstance()
-                      .setShotCompensationDegrees(currentCompensation + compensation);
-                });
+                    () -> {
+                      double currentCompensation =
+                          RobotState.getInstance().getShotCompensationDegrees();
+                      RobotState.getInstance()
+                          .setShotCompensationDegrees(currentCompensation + compensation);
+                    })
+                .ignoringDisable(true);
     operatorController.povDown().onTrue(changeCompensationDegrees.apply(-0.1));
     operatorController.povUp().onTrue(changeCompensationDegrees.apply(0.1));
 

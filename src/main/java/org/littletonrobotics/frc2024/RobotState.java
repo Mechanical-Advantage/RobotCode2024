@@ -52,15 +52,18 @@ public class RobotState {
 
   static {
     armAngleMap.put(0.0, Units.degreesToRadians(90.0));
-    armAngleMap.put(1.017, .871);
-    armAngleMap.put(1.519, .746);
-    armAngleMap.put(1.956, .663);
-    armAngleMap.put(2.547, .592);
-    armAngleMap.put(3.102, .509);
-    armAngleMap.put(3.242, .488);
-    armAngleMap.put(3.503, .466);
-    armAngleMap.put(3.719, .466);
-    armAngleMap.put(4.145, .454);
+    armAngleMap.put(1.039, .890);
+    armAngleMap.put(1.258, .819);
+    armAngleMap.put(1.511, .749);
+    armAngleMap.put(1.745, .730);
+    armAngleMap.put(2.008, .678);
+    armAngleMap.put(2.266, .663);
+    armAngleMap.put(2.514, .592);
+    armAngleMap.put(2.749, .558);
+    armAngleMap.put(2.994, .528);
+    armAngleMap.put(3.260, .503);
+    armAngleMap.put(5.156, .408);
+    armAngleMap.put(1.229, .838);
   }
 
   @AutoLogOutput(key = "RobotState/ShotCompensationDegrees")

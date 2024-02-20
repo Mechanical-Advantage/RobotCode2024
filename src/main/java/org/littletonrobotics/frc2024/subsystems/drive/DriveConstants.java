@@ -35,7 +35,7 @@ public final class DriveConstants {
                 43.97);
         case DEVBOT ->
             new DriveConfig(
-                Units.inchesToMeters(2.01834634),
+                Units.inchesToMeters(1.98),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(37),

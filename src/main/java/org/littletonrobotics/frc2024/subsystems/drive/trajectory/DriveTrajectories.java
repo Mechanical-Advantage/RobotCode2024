@@ -42,8 +42,11 @@ public class DriveTrajectories {
           new Transform2d(-DriveConstants.driveConfig.bumperWidthX() / 2, 0, new Rotation2d(0)));
 
   // Center intake locations
-  private static final double intakeOffset = 0.5;
+  private static final double intakeOffset = 0.0;
+  private static final double intakeApproachOffset = 1.5;
+  private static final double doNotHitOffset = 0.5;
   private static final Pose2d[] intakingCenterlinePoses = new Pose2d[5];
+  private static final Pose2d[] intakingApproachCenterlinePoses = new Pose2d[5];
 
   static {
     // Find locations for intaking centerline gamepieces
@@ -54,6 +57,10 @@ public class DriveTrajectories {
           new Pose2d(
               centerLineTranslation.minus(new Translation2d(intakeOffset, 0)),
               new Rotation2d(Math.PI));
+      intakingApproachCenterlinePoses[i] =
+          new Pose2d(
+              centerLineTranslation.minus(new Translation2d(intakeApproachOffset, 0)),
+              new Rotation2d(Math.PI));
     }
 
     // Davis Ethical Auto (5 Note)
@@ -63,15 +70,11 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceFace)
                 .addPoseWaypoint(
-                    getShootingPose(
-                        new Pose2d(
-                                FieldConstants.StagingLocations.spikeTranslations[0],
-                                new Rotation2d(0))
-                            .transformBy(new Transform2d(-intakeOffset, 0, new Rotation2d(0)))
-                            .getTranslation()))
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[0])
+                        .transformBy(new Transform2d(doNotHitOffset, 0, new Rotation2d(0))))
                 .build()));
 
-    paths.put(
+    paths.put( 
         "davisEthicalAuto_driveToCenterline2",
         List.of(
             PathSegment.newBuilder()
@@ -82,14 +85,21 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     new Pose2d(
                         FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)))
+                .addPoseWaypoint(intakingApproachCenterlinePoses[2])
+                .build(),
+            PathSegment.newBuilder()
                 .addPoseWaypoint(intakingCenterlinePoses[2])
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder()
                 .addPoseWaypoint(
                     (FieldConstants.Stage.center)
                         .transformBy(new Transform2d(0, -.65, new Rotation2d(Math.PI))))
                 .addPoseWaypoint(
                     getShootingPose(
                         (FieldConstants.Stage.podiumLeg)
-                            .transformBy(new Transform2d(0, -.75, new Rotation2d(Math.PI)))
+                            .transformBy(new Transform2d(0, -1.5, new Rotation2d(Math.PI)))
                             .getTranslation()))
                 .build()));
     paths.put(
@@ -101,7 +111,13 @@ public class DriveTrajectories {
                     FieldConstants.Stage.center
                         .transformBy(new Transform2d(0, -2.1, new Rotation2d()))
                         .getTranslation())
+                .build(),
+            PathSegment.newBuilder()
                 .addPoseWaypoint(intakingCenterlinePoses[1])
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder()
                 .addTranslationWaypoint(
                     FieldConstants.Stage.center
                         .transformBy(new Transform2d(0, -2.1, new Rotation2d()))
@@ -113,7 +129,14 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addWaypoints(getLastWaypoint("davisEthicalAuto_driveToCenterline1"))
-                .addPoseWaypoint(intakingCenterlinePoses[0])
+                .addPoseWaypoint(intakingApproachCenterlinePoses[0])
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(intakingCenterlinePoses[0], 200)
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder()
                 .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
                 .build()));
 

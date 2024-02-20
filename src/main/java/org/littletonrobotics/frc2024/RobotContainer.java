@@ -48,7 +48,6 @@ import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIODevbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSim;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIO;
-import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
@@ -127,7 +126,7 @@ public class RobotContainer {
 
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
-          intake = new Intake(new IntakeIOKrakenFOC());
+          intake = new Intake(new IntakeIO() {});
           backpack = new Backpack(new BackpackIOSparkFlex());
           rollers = new Rollers(feeder, indexer, intake, backpack, new RollersSensorsIOReal());
 

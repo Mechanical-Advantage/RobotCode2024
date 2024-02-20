@@ -69,7 +69,7 @@ public class RobotState {
   @AutoLogOutput(key = "RobotState/ShotCompensationDegrees")
   @Setter
   @Getter
-  private double shotCompensationDegrees = 0.0;
+  private double shotCompensationDegrees = 5.0;
 
   private static RobotState instance;
 

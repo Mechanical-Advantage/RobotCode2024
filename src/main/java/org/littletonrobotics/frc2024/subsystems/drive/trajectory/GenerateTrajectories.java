@@ -40,7 +40,7 @@ public class GenerateTrajectories {
             .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
             .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
-            .setMaxWheelTorque(3)
+            .setMaxWheelTorque(2.5)
             .setMaxWheelOmega(76)
             .build();
 

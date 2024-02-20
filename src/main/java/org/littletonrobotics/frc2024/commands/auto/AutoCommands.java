@@ -26,7 +26,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 public class AutoCommands {
   public static final LoggedTunableNumber shootTimeoutSecs =
-      new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.1);
+      new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.3);
 
   /**
    * Resets pose accounting for alliance color.
@@ -85,8 +85,8 @@ public class AutoCommands {
   /** Runs intake until the gamepiece is collected, does not end in sim */
   public static Command intake(Superstructure superstructure, Rollers rollers) {
     return parallel(
-            superstructure.intake(), rollers.floorIntake().beforeStarting(superstructure::atGoal))
-        .until(rollers::gamepieceStaged);
+        Commands.waitUntil(superstructure::atGoal).andThen(superstructure.intake()),
+        rollers.floorIntake());
   }
 
   /** Shoots note, ending after rollers have spun */
@@ -103,6 +103,17 @@ public class AutoCommands {
         .raceWith(
             Commands.waitUntil(
                     () -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal())
+                .andThen(rollers.feedShooter().withTimeout(shootTimeoutSecs.get())));
+  }
+
+  public static Command shootNoDrive(
+      Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
+    return parallel(
+            // Aim and spin up flywheels
+            superstructure.aim(), flywheels.shootCommand())
+        // End command when ready to shoot and rollers have spun
+        .raceWith(
+            Commands.waitUntil(() -> superstructure.atGoal() && flywheels.atGoal())
                 .andThen(rollers.feedShooter().withTimeout(shootTimeoutSecs.get())));
   }
 
@@ -123,7 +134,7 @@ public class AutoCommands {
   }
 
   // reset Path and call followTrajectory
-  public static Command pathReset(Drive drive, HolonomicTrajectory trajectory) {
+  public static Command resetAndFollow(Drive drive, HolonomicTrajectory trajectory) {
     return sequence(resetPose(trajectory), followTrajectory(drive, trajectory));
   }
 }

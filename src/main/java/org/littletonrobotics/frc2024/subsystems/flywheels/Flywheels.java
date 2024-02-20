@@ -198,7 +198,6 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command intakeCommand() {
-    return startEnd(() -> setGoal(Goal.INTAKE), this::goIdle)
-        .withName("FlywheelsIntake");
+    return startEnd(() -> setGoal(Goal.INTAKE), this::goIdle).withName("FlywheelsIntake");
   }
 }

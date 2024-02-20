@@ -148,6 +148,9 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    // Robot container periodic methods
+    robotContainer.checkControllers();
+
     Threads.setCurrentThreadPriority(true, 10);
   }
 

@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
 import lombok.Setter;
-
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
@@ -43,8 +42,7 @@ public class Rollers extends SubsystemBase {
     SHOOTER_STAGED
   }
 
-  @Getter
-  private Goal goal = Goal.IDLE;
+  @Getter private Goal goal = Goal.IDLE;
   @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
 
   public Rollers(

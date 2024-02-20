@@ -10,6 +10,7 @@ package org.littletonrobotics.frc2024;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -53,7 +54,10 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.OverrideSwitches;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -75,6 +79,12 @@ public class RobotContainer {
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final OverrideSwitches overrides = new OverrideSwitches(5);
+  private final Trigger autoAimDisable = overrides.operatorSwitch(0);
+  private final Alert driverDisconnected =
+      new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
+  private final Alert overrideDisconnected =
+      new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -210,9 +220,7 @@ public class RobotContainer {
     autoChooser.addOption(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
-            flywheels,
-            flywheels::runCharacterizationVolts,
-            flywheels::getCharacterizationVelocity));
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
   }
@@ -241,7 +249,10 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal)
-                .alongWith(superstructure.aim(), flywheels.shootCommand())
+                .alongWith(
+                    Commands.either(
+                        superstructure.subwoofer(), superstructure.aim(), autoAimDisable),
+                    flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
     // Shoot
@@ -321,6 +332,14 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(),
                                 AllianceFlipUtil.apply(new Rotation2d()))))
                 .ignoringDisable(true));
+  }
+
+  /** Updates the alerts for disconnected controllers. */
+  public void checkControllers() {
+    driverDisconnected.set(
+        !DriverStation.isJoystickConnected(controller.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(controller.getHID().getPort()));
+    overrideDisconnected.set(!overrides.isConnected());
   }
 
   /**

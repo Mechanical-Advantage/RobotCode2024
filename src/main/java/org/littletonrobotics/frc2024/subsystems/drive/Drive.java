@@ -254,6 +254,7 @@ public class Drive extends SubsystemBase {
         setpointGenerator.generateSetpoint(
             currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
 
+    // run modules
     if (currentDriveMode != DriveMode.CHARACTERIZATION) {
       SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
       for (int i = 0; i < modules.length; i++) {
@@ -264,7 +265,7 @@ public class Drive extends SubsystemBase {
       }
       Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
     }
-    // run modules
+
     // Log chassis speeds and swerve states
     Logger.recordOutput(
         "Drive/SwerveStates/Desired(b4 Poofs)",

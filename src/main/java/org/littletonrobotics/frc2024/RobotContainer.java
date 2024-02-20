@@ -194,7 +194,7 @@ public class RobotContainer {
 
     // Set supplies for NoteVisualizer
     NoteVisualizer.setRobotPoseSupplier(() -> RobotState.getInstance().getEstimatedPose());
-    NoteVisualizer.setArmAngleSupplier(arm::getSetpoint);
+    arm.setArmAngleConsumer(NoteVisualizer::setCurrentArmAngle);
 
     // Configure autos and buttons
     configureAutos();

@@ -16,6 +16,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
+import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,7 @@ public class Arm {
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
   private ArmFeedforward ff;
 
+  @Setter private Consumer<Rotation2d> armAngleConsumer = rotation -> {};
   private final ArmVisualizer measuredVisualizer;
   private final ArmVisualizer setpointVisualizer;
   private final ArmVisualizer goalVisualizer;
@@ -156,6 +158,7 @@ public class Arm {
     }
 
     // Logs
+    armAngleConsumer.accept(Rotation2d.fromRadians(inputs.armPositionRads));
     measuredVisualizer.update(inputs.armPositionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());

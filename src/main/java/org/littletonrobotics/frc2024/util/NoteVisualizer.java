@@ -27,7 +27,7 @@ import org.littletonrobotics.junction.Logger;
 public class NoteVisualizer {
   private static final double shotSpeed = 9.0; // Meters per sec
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
-  @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
+  @Setter private static Rotation2d currentArmAngle = new Rotation2d();
   private static final List<Translation2d> autoNotes = new ArrayList<>();
   @Setter private static boolean hasNote = false;
 
@@ -124,8 +124,8 @@ public class NoteVisualizer {
                 ArmConstants.armOrigin.getX(),
                 0.0,
                 ArmConstants.armOrigin.getY(),
-                new Rotation3d(0.0, -armAngleSupplier.get().getRadians(), 0.0))
-            .plus(new Transform3d(ArmConstants.armLength / 2.0, 0.0, 0.0, new Rotation3d()));
+                new Rotation3d(0.0, -currentArmAngle.getRadians(), 0.0))
+            .plus(new Transform3d(ArmConstants.armLength * 0.35, 0.0, 0.0, new Rotation3d()));
     return new Pose3d(robotPoseSupplier.get()).transformBy(indexerTransform);
   }
 }

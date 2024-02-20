@@ -26,14 +26,14 @@ import java.io.IOException;
  * Width refers to the <i>y</i> direction (as described by wpilib)
  */
 public class FieldConstants {
-  public static double fieldLength = Units.inchesToMeters(651.223);
-  public static double fieldWidth = Units.inchesToMeters(323.277);
-  public static double wingX = Units.inchesToMeters(229.201);
-  public static double podiumX = Units.inchesToMeters(126.75);
-  public static double startingLineX = Units.inchesToMeters(74.111);
+  public static final double fieldLength = Units.inchesToMeters(651.223);
+  public static final double fieldWidth = Units.inchesToMeters(323.277);
+  public static final double wingX = Units.inchesToMeters(229.201);
+  public static final double podiumX = Units.inchesToMeters(126.75);
+  public static final double startingLineX = Units.inchesToMeters(74.111);
 
-  public static Translation2d ampCenter =
-      new Translation2d(Units.inchesToMeters(72.455), Units.inchesToMeters(322.996));
+  public static final Translation2d ampCenter =
+      new Translation2d(Units.inchesToMeters(72.455), fieldWidth);
 
   /** Staging locations for each note */
   public static final class StagingLocations {
@@ -88,6 +88,46 @@ public class FieldConstants {
     /** Center of the speaker opening (blue alliance) */
     public static Translation3d centerSpeakerOpening =
         bottomLeftSpeaker.interpolate(topRightSpeaker, 0.5);
+  }
+
+  public static final class Subwoofer {
+    public static Pose2d ampFaceCorner =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(239.366),
+            Rotation2d.fromDegrees(-120));
+
+    public static Pose2d sourceFaceCorner =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(197.466),
+            Rotation2d.fromDegrees(120));
+
+    public static Pose2d centerFace =
+        new Pose2d(
+            Units.inchesToMeters(35.775),
+            Units.inchesToMeters(218.416),
+            Rotation2d.fromDegrees(180));
+  }
+
+  public static final class Stage {
+    public static Pose2d podiumLeg =
+        new Pose2d(Units.inchesToMeters(126.75), Units.inchesToMeters(161.638), new Rotation2d());
+
+    public static Pose2d ampLeg =
+        new Pose2d(
+            Units.inchesToMeters(220.873),
+            Units.inchesToMeters(212.425),
+            Rotation2d.fromDegrees(-30));
+
+    public static Pose2d sourceLeg =
+        new Pose2d(
+            Units.inchesToMeters(220.873),
+            Units.inchesToMeters(110.837),
+            Rotation2d.fromDegrees(30));
+
+    public static Pose2d center =
+        new Pose2d(Units.inchesToMeters(192.55), Units.inchesToMeters(161.638), new Rotation2d());
   }
 
   public static double aprilTagWidth = Units.inchesToMeters(6.50);

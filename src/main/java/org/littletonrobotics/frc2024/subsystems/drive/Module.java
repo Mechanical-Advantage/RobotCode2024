@@ -50,11 +50,9 @@ public class Module {
     this.index = index;
 
     driveMotorDisconnected =
-        new Alert(
-            "Drive", moduleNames[index] + " drive motor disconnected!", Alert.AlertType.WARNING);
+        new Alert(moduleNames[index] + " drive motor disconnected!", Alert.AlertType.WARNING);
     turnMotorDisconnected =
-        new Alert(
-            "Drive", moduleNames[index] + " turn motor disconnected!", Alert.AlertType.WARNING);
+        new Alert(moduleNames[index] + " turn motor disconnected!", Alert.AlertType.WARNING);
   }
 
   /** Called while blocking odometry thread */

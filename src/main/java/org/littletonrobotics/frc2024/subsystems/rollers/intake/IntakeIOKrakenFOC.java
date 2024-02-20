@@ -11,7 +11,7 @@ import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOKra
 
 public class IntakeIOKrakenFOC extends GenericRollerSystemIOKrakenFOC implements IntakeIO {
   private static final int id = 2;
-  private static final String bus = "canivore";
+  private static final String bus = "*";
   private static final int currentLimitAmps = 40;
   private static final boolean invert = false;
   private static final boolean brake = false;

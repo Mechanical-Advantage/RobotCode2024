@@ -71,14 +71,14 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
     inputs.leftPositionRads =
         Units.rotationsToRadians(leftEncoder.getPosition()) / flywheelConfig.reduction();
     inputs.leftVelocityRpm = leftEncoder.getVelocity() / flywheelConfig.reduction();
-    inputs.leftAppliedVolts = leftMotor.getAppliedOutput();
+    inputs.leftAppliedVolts = leftMotor.getAppliedOutput() * leftMotor.getBusVoltage();
     inputs.leftOutputCurrent = leftMotor.getOutputCurrent();
     inputs.leftTempCelsius = leftMotor.getMotorTemperature();
 
     inputs.rightPositionRads =
         Units.rotationsToRadians(rightEncoder.getPosition()) / flywheelConfig.reduction();
     inputs.rightVelocityRpm = rightEncoder.getVelocity() / flywheelConfig.reduction();
-    inputs.rightAppliedVolts = rightMotor.getAppliedOutput();
+    inputs.rightAppliedVolts = rightMotor.getAppliedOutput() * rightMotor.getBusVoltage();
     inputs.rightOutputCurrent = rightMotor.getOutputCurrent();
     inputs.rightTempCelsius = rightMotor.getMotorTemperature();
   }

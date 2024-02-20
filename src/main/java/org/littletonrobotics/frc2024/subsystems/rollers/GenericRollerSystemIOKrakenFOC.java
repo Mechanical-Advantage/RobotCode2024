@@ -19,7 +19,7 @@ import edu.wpi.first.math.util.Units;
 
 /** Generic roller IO implementation for a roller or series of rollers using a Kraken. */
 public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSystemIO {
-  private final TalonFX motor;
+  private final TalonFX talon;
 
   private final StatusSignal<Double> position;
   private final StatusSignal<Double> velocity;
@@ -36,7 +36,7 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
   public GenericRollerSystemIOKrakenFOC(
       int id, String bus, int currentLimitAmps, boolean invert, boolean brake, double reduction) {
     this.reduction = reduction;
-    motor = new TalonFX(id, bus);
+    talon = new TalonFX(id, bus);
 
     TalonFXConfiguration config = new TalonFXConfiguration();
     config.MotorOutput.Inverted =
@@ -44,16 +44,18 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
     config.MotorOutput.NeutralMode = brake ? NeutralModeValue.Brake : NeutralModeValue.Coast;
     config.CurrentLimits.SupplyCurrentLimit = currentLimitAmps;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
-    motor.getConfigurator().apply(config);
+    talon.getConfigurator().apply(config);
 
-    position = motor.getPosition();
-    velocity = motor.getVelocity();
-    appliedVoltage = motor.getMotorVoltage();
-    outputCurrent = motor.getTorqueCurrent();
-    tempCelsius = motor.getDeviceTemp();
+    position = talon.getPosition();
+    velocity = talon.getVelocity();
+    appliedVoltage = talon.getMotorVoltage();
+    outputCurrent = talon.getTorqueCurrent();
+    tempCelsius = talon.getDeviceTemp();
 
     BaseStatusSignal.setUpdateFrequencyForAll(
         50.0, position, velocity, appliedVoltage, outputCurrent, tempCelsius);
+
+    talon.optimizeBusUtilization(1.0);
   }
 
   @Override
@@ -69,11 +71,11 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
 
   @Override
   public void runVolts(double volts) {
-    motor.setControl(voltageOut.withOutput(volts));
+    talon.setControl(voltageOut.withOutput(volts));
   }
 
   @Override
   public void stop() {
-    motor.setControl(neutralOut);
+    talon.setControl(neutralOut);
   }
 }

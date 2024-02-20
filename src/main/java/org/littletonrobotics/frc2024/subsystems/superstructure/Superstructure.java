@@ -53,6 +53,7 @@ public class Superstructure extends SubsystemBase {
       case AIM -> arm.setGoal(Arm.Goal.AIM);
       case INTAKE -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
       case STATION_INTAKE -> arm.setGoal(Arm.Goal.STATION_INTAKE);
+      case AMP -> arm.setGoal(Arm.Goal.AMP);
       default -> {} // DO NOTHING ELSE
     }
 
@@ -78,6 +79,10 @@ public class Superstructure extends SubsystemBase {
   public Command intake() {
     return startEnd(() -> desiredGoal = Goal.INTAKE, this::stow)
         .withName("Superstructure Intaking");
+  }
+
+  public Command amp() {
+    return startEnd(() -> desiredGoal = Goal.AMP, this::stow).withName("Superstructure Amping");
   }
 
   public Command stationIntake() {

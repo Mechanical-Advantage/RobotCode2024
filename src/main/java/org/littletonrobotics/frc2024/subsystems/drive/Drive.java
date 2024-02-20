@@ -30,6 +30,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.HeadingControl
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
+import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
@@ -57,7 +58,10 @@ public class Drive extends SubsystemBase {
     AUTO_ALIGN,
 
     /** Characterizing (modules oriented forwards, motor outputs supplied externally). */
-    CHARACTERIZATION
+    CHARACTERIZATION,
+
+    /** Running wheel radius characterization routine (spinning in circle) */
+    WHEEL_RADIUS_CHARACTERIZATION
   }
 
   @AutoLog
@@ -240,10 +244,13 @@ public class Drive extends SubsystemBase {
         desiredSpeeds.omegaRadiansPerSecond += teleopSpeeds.omegaRadiansPerSecond * 0.1;
       }
       case CHARACTERIZATION -> {
-        // run characterization
+        // Run characterization
         for (Module module : modules) {
-          module.runCharacterization(characterizationInput);
+          module.runCharacterization(0.0, characterizationInput);
         }
+      }
+      case WHEEL_RADIUS_CHARACTERIZATION -> {
+        desiredSpeeds = new ChassisSpeeds(0, 0, characterizationInput);
       }
       default -> {}
     }
@@ -255,7 +262,7 @@ public class Drive extends SubsystemBase {
             currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
 
     // run modules
-    if (currentDriveMode != DriveMode.CHARACTERIZATION) {
+    if (currentDriveMode != DriveMode.CHARACTERIZATION && !modulesOrienting) {
       SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
       for (int i = 0; i < modules.length; i++) {
         // Optimize setpoints
@@ -361,7 +368,23 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  /** Set brake mode to {@code enabled} doesn't change brake mode if already set */
+  /** Runs in a circle at omega. */
+  public void runWheelRadiusCharacterization(double omegaSpeed) {
+    currentDriveMode = DriveMode.WHEEL_RADIUS_CHARACTERIZATION;
+    characterizationInput = omegaSpeed;
+  }
+
+  /** Disables the wheel radius characterization mode. */
+  public void endWheelRadiusCharacterization() {
+    currentDriveMode = DriveMode.TELEOP;
+  }
+
+  /** Get the position of all drive wheels in radians. */
+  public double[] getWheelRadiusCharacterizationPosition() {
+    return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();
+  }
+
+  /** Set brake mode to {@code enabled} doesn't change brake mode if already set. */
   public void setBrakeMode(boolean enabled) {
     if (brakeModeEnabled != enabled) {
       Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
@@ -369,10 +392,18 @@ public class Drive extends SubsystemBase {
     brakeModeEnabled = enabled;
   }
 
+  /**
+   * Returns command that orients all modules to {@code orientation}, ending when the modules have
+   * rotated.
+   */
   public Command orientModules(Rotation2d orientation) {
     return orientModules(new Rotation2d[] {orientation, orientation, orientation, orientation});
   }
 
+  /**
+   * Returns command that orients all modules to {@code orientations[]}, ending when the modules
+   * have rotated.
+   */
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
           for (int i = 0; i < orientations.length; i++) {
@@ -384,14 +415,19 @@ public class Drive extends SubsystemBase {
                 Arrays.stream(modules)
                     .allMatch(
                         module ->
-                            Math.abs(
-                                    module.getAngle().getDegrees()
-                                        - module.getSetpointState().angle.getDegrees())
-                                <= 2.0))
+                            EqualsUtil.epsilonEquals(
+                                module.getAngle().getDegrees(),
+                                module.getSetpointState().angle.getDegrees(),
+                                2.0)))
         .beforeStarting(() -> modulesOrienting = true)
-        .finallyDo(() -> modulesOrienting = false);
+        .finallyDo(() -> modulesOrienting = false)
+        .withName("Orient Modules");
   }
 
+  /**
+   * Returns the current gyro yaw defaulting to the estimated pose rotation if the gyro is not
+   * connected.
+   */
   @AutoLogOutput(key = "Drive/GyroYaw")
   public Rotation2d getGyroYaw() {
     return gyroInputs.connected
@@ -418,6 +454,12 @@ public class Drive extends SubsystemBase {
   public static Rotation2d[] getXOrientations() {
     return Arrays.stream(DriveConstants.moduleTranslations)
         .map(Translation2d::getAngle)
+        .toArray(Rotation2d[]::new);
+  }
+
+  public static Rotation2d[] getCircleOrientations() {
+    return Arrays.stream(DriveConstants.moduleTranslations)
+        .map(translation -> translation.getAngle().plus(new Rotation2d(Math.PI / 2.0)))
         .toArray(Rotation2d[]::new);
   }
 }

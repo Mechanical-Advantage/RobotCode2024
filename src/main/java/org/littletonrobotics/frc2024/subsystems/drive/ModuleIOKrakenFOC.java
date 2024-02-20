@@ -166,7 +166,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
                 turnPosition, turnVelocity, turnAppliedVolts, turnSupplyCurrent, turnTorqueCurrent)
             .isOK();
 
-    inputs.drivePositionRad = Units.rotationsToRadians(drivePosition.getValueAsDouble());
+    inputs.drivePositionRads = Units.rotationsToRadians(drivePosition.getValueAsDouble());
     inputs.driveVelocityRadPerSec = Units.rotationsToRadians(driveVelocity.getValueAsDouble());
     inputs.driveAppliedVolts = driveAppliedVolts.getValueAsDouble();
     inputs.driveSupplyCurrentAmps = driveSupplyCurrent.getValueAsDouble();

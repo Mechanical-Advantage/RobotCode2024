@@ -309,6 +309,16 @@ public class RobotContainer {
         .and(controller.rightTrigger())
         .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
 
+    // Shot compensation adjustment
+    controller
+        .povUp()
+        .onTrue(
+            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1)));
+    controller
+        .povDown()
+        .onTrue(
+            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+
     // Reset pose
     controller
         .y()

@@ -225,12 +225,12 @@ tasks.withType(JavaCompile) {
 // Create version file
 project.compileJava.dependsOn(createVersionFile)
 gversion {
-    srcDir = "src/main/java/"
+    srcDir       = "src/main/java/"
     classPackage = "org.littletonrobotics.frc2024"
-    className = "BuildConstants"
-    dateFormat = "yyyy-MM-dd HH:mm:ss z"
-    timeZone = "America/New_York"
-    indent = "  "
+    className    = "BuildConstants"
+    dateFormat   = "yyyy-MM-dd HH:mm:ss z"
+    timeZone     = "America/New_York"
+    indent       = "  "
 }
 
 // Spotless formatting

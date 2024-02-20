@@ -17,6 +17,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -148,6 +150,7 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    NoteVisualizer.showIntakedNotes();
     Threads.setCurrentThreadPriority(true, 10);
   }
 
@@ -168,11 +171,16 @@ public class Robot extends LoggedRobot {
     if (autoCommand != null) {
       autoCommand.schedule();
     }
+
+    NoteVisualizer.resetAutoNotes();
+    NoteVisualizer.setHasNote(true);
   }
 
   /** This function is called periodically during autonomous. */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+    NoteVisualizer.showAutoNotes();
+  }
 
   /** This function is called once when teleop is enabled. */
   @Override

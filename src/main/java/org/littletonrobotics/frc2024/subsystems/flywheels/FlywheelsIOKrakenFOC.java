@@ -103,11 +103,11 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
-    inputs.leftConnected =
+    inputs.leftMotorConnected =
         BaseStatusSignal.refreshAll(
                 leftPosition, leftVelocity, leftAppliedVolts, leftTorqueCurrent, leftTempCelsius)
             .isOK();
-    inputs.rightConnected =
+    inputs.rightMotorConnected =
         !BaseStatusSignal.refreshAll(
                 rightPosition,
                 rightVelocity,

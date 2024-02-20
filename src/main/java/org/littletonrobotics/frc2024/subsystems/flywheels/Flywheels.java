@@ -97,8 +97,8 @@ public class Flywheels extends SubsystemBase {
     Logger.processInputs("Flywheels", inputs);
 
     // Set alerts
-    leftDisconnectedAlert.set(!inputs.leftConnected);
-    rightDisconnectedAlert.set(!inputs.rightConnected);
+    leftDisconnectedAlert.set(!inputs.leftMotorConnected);
+    rightDisconnectedAlert.set(!inputs.rightMotorConnected);
 
     // Check controllers
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);

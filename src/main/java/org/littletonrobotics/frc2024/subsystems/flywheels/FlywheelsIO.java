@@ -12,8 +12,8 @@ import org.littletonrobotics.junction.AutoLog;
 public interface FlywheelsIO {
   @AutoLog
   class FlywheelsIOInputs {
-    public boolean leftConnected = true;
-    public boolean rightConnected = true;
+    public boolean leftMotorConnected = true;
+    public boolean rightMotorConnected = true;
 
     public double leftPositionRads = 0.0;
     public double leftVelocityRpm = 0.0;

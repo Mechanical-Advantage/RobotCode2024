@@ -219,9 +219,7 @@ public class RobotContainer {
     autoChooser.addOption(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
-            flywheels,
-            flywheels::runCharacterizationVolts,
-            flywheels::getCharacterizationVelocity));
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
   }
 
   /**

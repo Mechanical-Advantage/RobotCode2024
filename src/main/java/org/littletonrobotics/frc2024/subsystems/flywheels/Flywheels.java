@@ -54,10 +54,10 @@ public class Flywheels extends SubsystemBase {
   private boolean closedLoop = false;
 
   // Disconnected alerts
-  private final Alert leftDisconnectedAlert =
-      new Alert("Left Flywheel Disconnected!", Alert.AlertType.WARNING);
-  private final Alert rightDisconnectedAlert =
-      new Alert("Left Flywheel Disconnected!", Alert.AlertType.WARNING);
+  private final Alert leftDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+  private final Alert rightDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -97,8 +97,8 @@ public class Flywheels extends SubsystemBase {
     Logger.processInputs("Flywheels", inputs);
 
     // Set alerts
-    leftDisconnectedAlert.set(!inputs.leftMotorConnected);
-    rightDisconnectedAlert.set(!inputs.rightMotorConnected);
+    leftDisconnected.set(!inputs.leftMotorConnected);
+    rightDisconnected.set(!inputs.rightMotorConnected);
 
     // Check controllers
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);

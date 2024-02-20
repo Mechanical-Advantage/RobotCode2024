@@ -11,7 +11,6 @@ import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmCon
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -159,6 +158,7 @@ public class Arm {
     measuredVisualizer.update(inputs.armPositionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());
+    Logger.recordOutput("Arm/GoalAngle", goal.getRads());
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
     Logger.recordOutput("Arm/Goal", goal);
@@ -166,11 +166,6 @@ public class Arm {
 
   public void stop() {
     io.stop();
-  }
-
-  @AutoLogOutput(key = "Arm/GoalAngle")
-  public Rotation2d getSetpoint() {
-    return Rotation2d.fromRadians(goal.getRads());
   }
 
   @AutoLogOutput(key = "Arm/AtGoal")

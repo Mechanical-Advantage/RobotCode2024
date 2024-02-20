@@ -12,6 +12,9 @@ import org.littletonrobotics.junction.AutoLog;
 public interface ArmIO {
   @AutoLog
   class ArmIOInputs {
+    public boolean leaderMotorConnected = true;
+    public boolean followerMotorConnected = true;
+
     public double armPositionRads = 0.0;
     public double armEncoderPositionRads = 0.0;
     public double armAbsoluteEncoderPositionRads = 0.0;

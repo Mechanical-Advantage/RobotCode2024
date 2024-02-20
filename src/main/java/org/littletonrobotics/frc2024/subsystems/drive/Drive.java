@@ -90,7 +90,7 @@ public class Drive extends SubsystemBase {
   private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
+  private final ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
   private SwerveSetpoint currentSetpoint =
       new SwerveSetpoint(
           new ChassisSpeeds(),
@@ -253,19 +253,23 @@ public class Drive extends SubsystemBase {
     currentSetpoint =
         setpointGenerator.generateSetpoint(
             currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
+
     // run modules
-    SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
-    for (int i = 0; i < modules.length; i++) {
-      // Optimize setpoints
-      optimizedSetpointStates[i] =
-          SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
-      modules[i].runSetpoint(optimizedSetpointStates[i]);
+    if (currentDriveMode != DriveMode.CHARACTERIZATION) {
+      SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
+      for (int i = 0; i < modules.length; i++) {
+        // Optimize setpoints
+        optimizedSetpointStates[i] =
+            SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
+        modules[i].runSetpoint(optimizedSetpointStates[i]);
+      }
+      Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
     }
+
     // Log chassis speeds and swerve states
     Logger.recordOutput(
         "Drive/SwerveStates/Desired(b4 Poofs)",
         DriveConstants.kinematics.toSwerveModuleStates(desiredSpeeds));
-    Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
     Logger.recordOutput("Drive/DesiredSpeeds", desiredSpeeds);
     Logger.recordOutput("Drive/SetpointSpeeds", currentSetpoint.chassisSpeeds());
     Logger.recordOutput("Drive/DriveMode", currentDriveMode);

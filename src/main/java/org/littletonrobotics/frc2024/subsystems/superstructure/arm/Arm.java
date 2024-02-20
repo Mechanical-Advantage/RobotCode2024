@@ -100,9 +100,9 @@ public class Arm {
     io.setPID(kP.get(), kI.get(), kD.get());
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
-    measuredVisualizer = new ArmVisualizer("measured", Color.kBlack);
-    setpointVisualizer = new ArmVisualizer("setpoint", Color.kGreen);
-    goalVisualizer = new ArmVisualizer("goal", Color.kBlue);
+    measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
+    setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
+    goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
   }
 
   public void periodic() {

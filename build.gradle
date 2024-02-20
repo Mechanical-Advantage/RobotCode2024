@@ -119,29 +119,37 @@ task(checkRobot, dependsOn: "classes", type: JavaExec) {
     main = "org.littletonrobotics.frc2024.Constants"
     classpath = sourceSets.main.runtimeClasspath
 }
+
 deployroborio.dependsOn(checkRobot)
 
 // Create commit with working changes on event branches
-tasks.register('eventDeploy') {
-    dependsOn('deploy')
-    doFirst {
+task(eventDeploy) {
+    doLast {
         def branchPrefix = "event"
         def branch = 'git branch --show-current'.execute().text.trim()
         def commitMessage = "Update at '${new Date().toString()}'"
 
-        if (!branch.startsWith(branchPrefix)) {
-            throw new GradleException("Current branch '$branch' is not a valid event branch.")
-        }
+        if (branch.startsWith(branchPrefix)) {
+            exec {
+                workingDir(projectDir)
+                executable 'git'
+                args 'add', '-A'
+            }
+            exec {
+                workingDir(projectDir)
+                executable 'git'
+                args 'commit', '-m', commitMessage
+            }
 
-        exec {
-            commandLine 'git', 'add', '-A'
-            commandLine 'git', 'commit', '-m', commitMessage
+            println "Committed to branch: '$branch'"
+            println "Commit message: '$commitMessage'"
+        } else {
+            println "Not on an event branch, skipping commit"
         }
-
-        println "Deployed to branch: '$branch'"
-        println "Commit message: '$commitMessage'"
     }
 }
+
+deployroborio.dependsOn(eventDeploy)
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 4.

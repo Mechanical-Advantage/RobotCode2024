@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
+import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
@@ -32,11 +33,18 @@ public class Rollers extends SubsystemBase {
     FLOOR_INTAKE,
     STATION_INTAKE,
     EJECT_TO_FLOOR,
+    QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER,
     AMP_SCORE
   }
 
+  public enum GamepieceState {
+    NONE,
+    SHOOTER_STAGED
+  }
+
   @Getter private Goal goal = Goal.IDLE;
+  @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
 
   public Rollers(
       Feeder feeder,
@@ -76,6 +84,7 @@ public class Rollers extends SubsystemBase {
         backpack.setGoal(Backpack.Goal.IDLING);
         if (sensorInputs.shooterStaged) {
           indexer.setGoal(Indexer.Goal.IDLING);
+          gamepieceState = GamepieceState.SHOOTER_STAGED;
         }
       }
       case STATION_INTAKE -> {
@@ -85,6 +94,7 @@ public class Rollers extends SubsystemBase {
         backpack.setGoal(Backpack.Goal.IDLING);
         if (sensorInputs.shooterStaged) {
           indexer.setGoal(Indexer.Goal.IDLING);
+          gamepieceState = GamepieceState.SHOOTER_STAGED;
         }
       }
       case EJECT_TO_FLOOR -> {
@@ -92,18 +102,27 @@ public class Rollers extends SubsystemBase {
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.IDLING);
+        gamepieceState = GamepieceState.NONE;
+      }
+      case QUICK_INTAKE_TO_FEED -> {
+        feeder.setGoal(Feeder.Goal.SHOOTING);
+        indexer.setGoal(Indexer.Goal.SHOOTING);
+        intake.setGoal(Intake.Goal.FLOOR_INTAKING);
+        backpack.setGoal(Backpack.Goal.IDLING);
       }
       case FEED_TO_SHOOTER -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
         intake.setGoal(Intake.Goal.IDLING);
         backpack.setGoal(Backpack.Goal.IDLING);
+        gamepieceState = GamepieceState.NONE;
       }
       case AMP_SCORE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.IDLING);
         backpack.setGoal(Backpack.Goal.AMP_SCORING);
+        gamepieceState = GamepieceState.NONE;
       }
     }
 
@@ -117,6 +136,10 @@ public class Rollers extends SubsystemBase {
     goal = Goal.IDLE;
   }
 
+  public boolean isGamepieceStaged() {
+    return gamepieceState == GamepieceState.SHOOTER_STAGED;
+  }
+
   public Command floorIntake() {
     return startEnd(() -> goal = Goal.FLOOR_INTAKE, this::goIdle).withName("Rollers Floor Intake");
   }
@@ -128,6 +151,11 @@ public class Rollers extends SubsystemBase {
 
   public Command ejectFloor() {
     return startEnd(() -> goal = Goal.EJECT_TO_FLOOR, this::goIdle).withName("Rollers Eject Floor");
+  }
+
+  public Command quickFeed() {
+    return startEnd(() -> goal = Goal.QUICK_INTAKE_TO_FEED, this::goIdle)
+        .withName("Rollers Quick Feed");
   }
 
   public Command feedShooter() {

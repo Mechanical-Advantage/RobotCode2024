@@ -16,6 +16,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -51,6 +52,12 @@ public class Flywheels extends SubsystemBase {
   private final LinearProfile rightProfile;
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
+
+  // Disconnected alerts
+  private final Alert leftDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+  private final Alert rightDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -100,7 +107,11 @@ public class Flywheels extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("Flywheels", inputs);
 
-    // check controllers
+    // Set alerts
+    leftDisconnected.set(!inputs.leftMotorConnected);
+    rightDisconnected.set(!inputs.rightMotorConnected);
+
+    // Check controllers
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
@@ -138,6 +149,7 @@ public class Flywheels extends SubsystemBase {
     Logger.recordOutput("Flywheels/GoalRightRpm", goal.getRightGoal());
   }
 
+  /** Set the current goal of the flywheel */
   private void setGoal(Goal goal) {
     if (goal == Goal.CHARACTERIZING || goal == Goal.STOP) {
       wasClosedLoop = closedLoop;
@@ -177,16 +189,19 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  public void runCharacterizationVolts(double volts) {
+  /** Run characterization with input in either current or amps */
+  public void runCharacterization(double input) {
     setGoal(Goal.CHARACTERIZING);
-    io.runCharacterizationLeftVolts(volts);
-    io.runCharacterizationRightVolts(volts);
+    io.runCharacterizationLeft(input);
+    io.runCharacterizationRight(input);
   }
 
+  /** Get characterization velocity */
   public double getCharacterizationVelocity() {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
+  /** Get if velocity profile has ended */
   @AutoLogOutput(key = "Flywheels/AtGoal")
   public boolean atGoal() {
     return leftProfile.getCurrentSetpoint() == goal.getLeftGoal()

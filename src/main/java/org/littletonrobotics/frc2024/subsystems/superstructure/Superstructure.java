@@ -23,9 +23,11 @@ public class Superstructure extends SubsystemBase {
     INTAKE,
     STATION_INTAKE,
     AMP,
+    SUBWOOFER,
     PREPARE_CLIMB,
     CLIMB,
-    TRAP
+    TRAP,
+    DIAGNOSTIC_ARM
   }
 
   @Getter private Goal currentGoal = Goal.STOW;
@@ -53,7 +55,9 @@ public class Superstructure extends SubsystemBase {
       case AIM -> arm.setGoal(Arm.Goal.AIM);
       case INTAKE -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
       case STATION_INTAKE -> arm.setGoal(Arm.Goal.STATION_INTAKE);
+      case DIAGNOSTIC_ARM -> arm.setGoal(Arm.Goal.CUSTOM);
       case AMP -> arm.setGoal(Arm.Goal.AMP);
+      case SUBWOOFER -> arm.setGoal(Arm.Goal.SUBWOOFER);
       default -> {} // DO NOTHING ELSE
     }
 
@@ -76,6 +80,11 @@ public class Superstructure extends SubsystemBase {
     return startEnd(() -> desiredGoal = Goal.AIM, this::stow).withName("Superstructure Aiming");
   }
 
+  public Command subwoofer() {
+    return startEnd(() -> desiredGoal = Goal.SUBWOOFER, this::stow)
+        .withName("Superstructure Subwoofer Aiming");
+  }
+
   public Command intake() {
     return startEnd(() -> desiredGoal = Goal.INTAKE, this::stow)
         .withName("Superstructure Intaking");
@@ -88,5 +97,14 @@ public class Superstructure extends SubsystemBase {
   public Command stationIntake() {
     return startEnd(() -> desiredGoal = Goal.STATION_INTAKE, this::stow)
         .withName("Superstructure Station Intaking");
+  }
+
+  public Command diagnoseArm() {
+    return startEnd(() -> desiredGoal = Goal.DIAGNOSTIC_ARM, this::stow)
+        .withName("Arm Custom Goal");
+  }
+
+  public Command runArmCharacterization() {
+    return arm.getStaticCurrent().finallyDo(() -> desiredGoal = Goal.STOW);
   }
 }

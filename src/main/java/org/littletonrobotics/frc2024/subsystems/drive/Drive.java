@@ -82,7 +82,6 @@ public class Drive extends SubsystemBase {
   private DriveMode currentDriveMode = DriveMode.TELEOP;
 
   private double characterizationInput = 0.0;
-  private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
   @Getter
@@ -387,9 +386,7 @@ public class Drive extends SubsystemBase {
                             Math.abs(
                                     module.getAngle().getDegrees()
                                         - module.getSetpointState().angle.getDegrees())
-                                <= 2.0))
-        .beforeStarting(() -> modulesOrienting = true)
-        .finallyDo(() -> modulesOrienting = false);
+                                <= 2.0));
   }
 
   @AutoLogOutput(key = "Drive/GyroYaw")

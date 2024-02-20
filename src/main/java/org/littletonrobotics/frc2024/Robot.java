@@ -150,6 +150,9 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    // Robot container periodic methods
+    robotContainer.checkControllers();
+
     // Log CANivore status
     if (Constants.getMode() == Mode.REAL) {
       var canivoreStatus = CANBus.getStatus("canivore");

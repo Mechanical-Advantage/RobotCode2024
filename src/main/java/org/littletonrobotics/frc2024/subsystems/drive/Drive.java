@@ -90,15 +90,15 @@ public class Drive extends SubsystemBase {
   private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
+  private final ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
   private SwerveSetpoint currentSetpoint =
       new SwerveSetpoint(
           new ChassisSpeeds(),
           new SwerveModuleState[] {
-            new SwerveModuleState(),
-            new SwerveModuleState(),
-            new SwerveModuleState(),
-            new SwerveModuleState()
+              new SwerveModuleState(),
+              new SwerveModuleState(),
+              new SwerveModuleState(),
+              new SwerveModuleState()
           });
   private final SwerveSetpointGenerator setpointGenerator;
 
@@ -173,7 +173,7 @@ public class Drive extends SubsystemBase {
         for (int j = 0; j < modules.length; j++) {
           double velocity =
               (wheelPositions.positions[j].distanceMeters
-                      - lastPositions.positions[j].distanceMeters)
+                  - lastPositions.positions[j].distanceMeters)
                   / dt;
           double omega =
               wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
@@ -253,19 +253,22 @@ public class Drive extends SubsystemBase {
     currentSetpoint =
         setpointGenerator.generateSetpoint(
             currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
-    // run modules
-    SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
-    for (int i = 0; i < modules.length; i++) {
-      // Optimize setpoints
-      optimizedSetpointStates[i] =
-          SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
-      modules[i].runSetpoint(optimizedSetpointStates[i]);
+
+    if (currentDriveMode != DriveMode.CHARACTERIZATION) {
+      SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
+      for (int i = 0; i < modules.length; i++) {
+        // Optimize setpoints
+        optimizedSetpointStates[i] =
+            SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
+        modules[i].runSetpoint(optimizedSetpointStates[i]);
+      }
+      Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
     }
+    // run modules
     // Log chassis speeds and swerve states
     Logger.recordOutput(
         "Drive/SwerveStates/Desired(b4 Poofs)",
         DriveConstants.kinematics.toSwerveModuleStates(desiredSpeeds));
-    Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
     Logger.recordOutput("Drive/DesiredSpeeds", desiredSpeeds);
     Logger.recordOutput("Drive/SetpointSpeeds", currentSetpoint.chassisSpeeds());
     Logger.recordOutput("Drive/DriveMode", currentDriveMode);
@@ -371,18 +374,18 @@ public class Drive extends SubsystemBase {
 
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
-          for (int i = 0; i < orientations.length; i++) {
-            modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
-          }
-        })
+      for (int i = 0; i < orientations.length; i++) {
+        modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
+      }
+    })
         .until(
             () ->
                 Arrays.stream(modules)
                     .allMatch(
                         module ->
                             Math.abs(
-                                    module.getAngle().getDegrees()
-                                        - module.getSetpointState().angle.getDegrees())
+                                module.getAngle().getDegrees()
+                                    - module.getSetpointState().angle.getDegrees())
                                 <= 2.0))
         .beforeStarting(() -> modulesOrienting = true)
         .finallyDo(() -> modulesOrienting = false);

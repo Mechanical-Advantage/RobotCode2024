@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -39,9 +39,6 @@ public class Robot extends LoggedRobot {
 
   private double autoStart;
   private boolean autoMessagePrinted;
-
-  private final Alert canivoreBusUtilizationAlert =
-      new Alert("CANivore utilization too high!", Alert.AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -154,15 +151,15 @@ public class Robot extends LoggedRobot {
     }
 
     // Log CANivore status
-    CANBus.CANBusStatus canivoreStatus = CANBus.getStatus("canivore");
-    Logger.recordOutput("CANivoreStatus/Status", canivoreStatus.Status.getName());
-    Logger.recordOutput("CANivoreStatus/BusUtilization", canivoreStatus.BusUtilization);
-    // Set alert
-    canivoreBusUtilizationAlert.setText(
-        "CANivore bus utilization at "
-            + ((int) (canivoreStatus.BusUtilization * 1e4)) / 100.0
-            + "%!");
-    canivoreBusUtilizationAlert.set(canivoreStatus.BusUtilization > 0.8);
+    if (Constants.getMode() == Mode.REAL) {
+      var canivoreStatus = CANBus.getStatus("canivore");
+      Logger.recordOutput("CANivoreStatus/Status", canivoreStatus.Status.getName());
+      Logger.recordOutput("CANivoreStatus/Utilization", canivoreStatus.BusUtilization);
+      Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount);
+      Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
+      Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
+      Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
+    }
 
     Threads.setCurrentThreadPriority(true, 10);
   }

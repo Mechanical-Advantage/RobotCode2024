@@ -159,7 +159,7 @@ public class Robot extends LoggedRobot {
         "RobotState/AimingParameters/EffectiveDistance", aimingParameters.effectiveDistance());
     Logger.recordOutput(
         "RobotState/AimingParameters/DriveFeedVelocity", aimingParameters.driveFeedVelocity());
-    
+
     // Robot container periodic methods
     robotContainer.checkControllers();
 

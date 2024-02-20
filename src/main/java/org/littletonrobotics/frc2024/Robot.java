@@ -18,8 +18,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.Constants.Mode;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -153,7 +153,7 @@ public class Robot extends LoggedRobot {
 
     // Robot container periodic methods
     robotContainer.checkControllers();
-    
+
     // Update NoteVisualizer
     NoteVisualizer.showIntakedNotes();
 

@@ -202,7 +202,7 @@ public class RobotContainer {
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
-    // Set supplies for NoteVisualizer
+    // Set suppliers for NoteVisualizer
     NoteVisualizer.setRobotPoseSupplier(() -> RobotState.getInstance().getEstimatedPose());
     arm.setArmAngleConsumer(NoteVisualizer::setCurrentArmAngle);
 

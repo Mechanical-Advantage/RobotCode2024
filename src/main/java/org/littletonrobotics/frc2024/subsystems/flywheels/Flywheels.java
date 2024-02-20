@@ -16,6 +16,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -33,9 +34,9 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber shootingRightRpm =
       new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4000.0);
   private static final LoggedTunableNumber idleLeftRpm =
-      new LoggedTunableNumber("Flywheels/IdleLeftRpm", 1500.0);
+      new LoggedTunableNumber("Flywheels/IdleLeftRpm", 200);
   private static final LoggedTunableNumber idleRightRpm =
-      new LoggedTunableNumber("Flywheels/IdleRightRpm", 1000.0);
+      new LoggedTunableNumber("Flywheels/IdleRightRpm", 200);
   private static final LoggedTunableNumber intakingRpm =
       new LoggedTunableNumber("Flywheels/IntakingRpm", -2000.0);
   private static final LoggedTunableNumber ejectingRpm =
@@ -51,6 +52,12 @@ public class Flywheels extends SubsystemBase {
   private final LinearProfile rightProfile;
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
+
+  // Disconnected alerts
+  private final Alert leftDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+  private final Alert rightDisconnected =
+      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -73,7 +80,18 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  @Getter private Goal goal = Goal.IDLE;
+  public enum IdleMode {
+    TELEOP,
+    AUTO
+  }
+
+  @Getter
+  @AutoLogOutput(key = "Flywheels/Goal")
+  private Goal goal = Goal.IDLE;
+
+  @Getter
+  @AutoLogOutput(key = "Flywheels/IdleMode")
+  private IdleMode idleMode = IdleMode.TELEOP;
 
   public Flywheels(FlywheelsIO io) {
     this.io = io;
@@ -89,7 +107,11 @@ public class Flywheels extends SubsystemBase {
     io.updateInputs(inputs);
     Logger.processInputs("Flywheels", inputs);
 
-    // check controllers
+    // Set alerts
+    leftDisconnected.set(!inputs.leftMotorConnected);
+    rightDisconnected.set(!inputs.rightMotorConnected);
+
+    // Check controllers
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
         hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
@@ -121,13 +143,13 @@ public class Flywheels extends SubsystemBase {
       io.runVelocity(leftProfile.calculateSetpoint(), rightProfile.calculateSetpoint());
     }
 
-    Logger.recordOutput("Flywheels/Goal", goal);
     Logger.recordOutput("Flywheels/SetpointLeftRpm", leftProfile.getCurrentSetpoint());
     Logger.recordOutput("Flywheels/SetpointRightRpm", rightProfile.getCurrentSetpoint());
     Logger.recordOutput("Flywheels/GoalLeftRpm", goal.getLeftGoal());
     Logger.recordOutput("Flywheels/GoalRightRpm", goal.getRightGoal());
   }
 
+  /** Set the current goal of the flywheel */
   private void setGoal(Goal goal) {
     if (goal == Goal.CHARACTERIZING || goal == Goal.STOP) {
       wasClosedLoop = closedLoop;
@@ -146,16 +168,40 @@ public class Flywheels extends SubsystemBase {
     this.goal = goal;
   }
 
-  public void runCharacterizationVolts(double volts) {
-    setGoal(Goal.CHARACTERIZING);
-    io.runCharacterizationLeftVolts(volts);
-    io.runCharacterizationRightVolts(volts);
+  /**
+   * Set {@link org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels.IdleMode} behavior of
+   * flywheels and then idle flywheels
+   */
+  public void setIdleMode(IdleMode idleMode) {
+    if (this.idleMode != idleMode) {
+      // Idle after switching IdleMode
+      this.idleMode = idleMode;
+      goIdle();
+    }
   }
 
+  private void goIdle() {
+    // Change based on current idle mode
+    if (idleMode == IdleMode.TELEOP) {
+      setGoal(Goal.IDLE);
+    } else if (idleMode == IdleMode.AUTO) {
+      setGoal(Goal.SHOOT);
+    }
+  }
+
+  /** Run characterization with input in either current or amps */
+  public void runCharacterization(double input) {
+    setGoal(Goal.CHARACTERIZING);
+    io.runCharacterizationLeft(input);
+    io.runCharacterizationRight(input);
+  }
+
+  /** Get characterization velocity */
   public double getCharacterizationVelocity() {
     return (inputs.leftVelocityRpm + inputs.rightVelocityRpm) / 2.0;
   }
 
+  /** Get if velocity profile has ended */
   @AutoLogOutput(key = "Flywheels/AtGoal")
   public boolean atGoal() {
     return leftProfile.getCurrentSetpoint() == goal.getLeftGoal()
@@ -163,11 +209,10 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command shootCommand() {
-    return startEnd(() -> setGoal(Goal.SHOOT), () -> setGoal(Goal.IDLE)).withName("FlywheelsShoot");
+    return startEnd(() -> setGoal(Goal.SHOOT), this::goIdle).withName("FlywheelsShoot");
   }
 
   public Command intakeCommand() {
-    return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE))
-        .withName("FlywheelsIntake");
+    return startEnd(() -> setGoal(Goal.INTAKE), this::goIdle).withName("FlywheelsIntake");
   }
 }

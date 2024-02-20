@@ -9,10 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.flywheels;
 
 import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstants.*;
 
-import com.revrobotics.CANSparkBase;
-import com.revrobotics.CANSparkFlex;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.SparkPIDController;
+import com.revrobotics.*;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.util.Units;
 
@@ -74,14 +71,14 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
     inputs.leftPositionRads =
         Units.rotationsToRadians(leftEncoder.getPosition()) / flywheelConfig.reduction();
     inputs.leftVelocityRpm = leftEncoder.getVelocity() / flywheelConfig.reduction();
-    inputs.leftAppliedVolts = leftMotor.getAppliedOutput();
+    inputs.leftAppliedVolts = leftMotor.getAppliedOutput() * leftMotor.getBusVoltage();
     inputs.leftOutputCurrent = leftMotor.getOutputCurrent();
     inputs.leftTempCelsius = leftMotor.getMotorTemperature();
 
     inputs.rightPositionRads =
         Units.rotationsToRadians(rightEncoder.getPosition()) / flywheelConfig.reduction();
     inputs.rightVelocityRpm = rightEncoder.getVelocity() / flywheelConfig.reduction();
-    inputs.rightAppliedVolts = rightMotor.getAppliedOutput();
+    inputs.rightAppliedVolts = rightMotor.getAppliedOutput() * rightMotor.getBusVoltage();
     inputs.rightOutputCurrent = rightMotor.getOutputCurrent();
     inputs.rightTempCelsius = rightMotor.getMotorTemperature();
   }
@@ -124,13 +121,13 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
   }
 
   @Override
-  public void runCharacterizationLeftVolts(double volts) {
-    leftMotor.setVoltage(volts);
+  public void runCharacterizationLeft(double input) {
+    leftMotor.setVoltage(input);
   }
 
   @Override
-  public void runCharacterizationRightVolts(double volts) {
-    rightMotor.setVoltage(volts);
+  public void runCharacterizationRight(double input) {
+    rightMotor.setVoltage(input);
   }
 
   @Override

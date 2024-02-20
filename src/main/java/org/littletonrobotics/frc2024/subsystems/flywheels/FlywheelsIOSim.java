@@ -93,16 +93,16 @@ public class FlywheelsIOSim implements FlywheelsIO {
   }
 
   @Override
-  public void runCharacterizationLeftVolts(double volts) {
+  public void runCharacterizationLeft(double input) {
     leftSetpointRPM = null;
     rightSetpointRPM = null;
-    runVolts(volts, 0.0);
+    runVolts(input, 0.0);
   }
 
   @Override
-  public void runCharacterizationRightVolts(double volts) {
+  public void runCharacterizationRight(double input) {
     leftSetpointRPM = null;
     rightSetpointRPM = null;
-    runVolts(0.0, volts);
+    runVolts(0.0, input);
   }
 }

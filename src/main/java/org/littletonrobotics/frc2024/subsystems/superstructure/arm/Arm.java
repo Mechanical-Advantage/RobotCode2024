@@ -166,10 +166,6 @@ public class Arm {
     io.stop();
   }
 
-  public Rotation2d getCurrentArmAngle() {
-    return Rotation2d.fromRadians(inputs.armPositionRads);
-  }
-
   @AutoLogOutput(key = "Arm/GoalAngle")
   public double getGoalAngleRads() {
     return goal.getRads();

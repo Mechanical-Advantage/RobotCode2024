@@ -66,10 +66,6 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
-  public Rotation2d getArmAngle() {
-    return arm.getCurrentArmAngle();
-  }
-
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
     return currentGoal == desiredGoal && arm.atGoal();

@@ -24,8 +24,14 @@ public abstract class GenericRollerSystem<G extends GenericRollerSystem.VoltageG
   private final GenericRollerSystemIO io;
   private final GenericRollerSystemIOInputsAutoLogged inputs =
       new GenericRollerSystemIOInputsAutoLogged();
+  private final Alert disconnected;
 
-  private final Alert disconnected = new Alert(name + " motor disconnected!", Alert.AlertType.WARNING);
+  public GenericRollerSystem(String name, GenericRollerSystemIO io) {
+    this.name = name;
+    this.io = io;
+
+    disconnected = new Alert(name + " motor disconnected!", Alert.AlertType.WARNING);
+  }
 
   public void periodic() {
     io.updateInputs(inputs);

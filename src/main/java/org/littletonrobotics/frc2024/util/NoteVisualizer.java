@@ -26,7 +26,6 @@ import org.littletonrobotics.junction.Logger;
 
 public class NoteVisualizer {
   private static final double shotSpeed = 9.0; // Meters per sec
-  private static final double ampSpeed = 4.0;
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
   @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
   private static final List<Translation2d> autoNotes = new ArrayList<>();
@@ -52,8 +51,13 @@ public class NoteVisualizer {
             .toArray(Pose3d[]::new));
   }
 
+  public static void clearAutoNotes() {
+    autoNotes.clear();
+  }
+
   /** Add all notes to be shown at the beginning of auto */
   public static void resetAutoNotes() {
+    clearAutoNotes();
     for (int i = FieldConstants.StagingLocations.spikeTranslations.length - 1; i >= 0; i--) {
       autoNotes.add(AllianceFlipUtil.apply(FieldConstants.StagingLocations.spikeTranslations[i]));
     }

@@ -191,6 +191,8 @@ public class Robot extends LoggedRobot {
     if (autoCommand != null) {
       autoCommand.cancel();
     }
+    NoteVisualizer.clearAutoNotes();
+    NoteVisualizer.showAutoNotes();
   }
 
   /** This function is called periodically during operator control. */

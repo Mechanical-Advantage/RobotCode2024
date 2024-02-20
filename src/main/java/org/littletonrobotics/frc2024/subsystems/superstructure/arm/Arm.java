@@ -60,6 +60,7 @@ public class Arm {
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getRadians()),
     STOW(() -> Units.degreesToRadians(stowDegrees.get())),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
+    SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;

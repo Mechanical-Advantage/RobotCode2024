@@ -32,6 +32,10 @@ import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSim;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOKrakenFOC;
@@ -82,6 +86,7 @@ public class RobotContainer {
     Feeder feeder = null;
     Indexer indexer = null;
     Intake intake = null;
+    Backpack backpack = null;
     Arm arm = null;
     RollersSensorsIO rollersSensorsIO = null;
 
@@ -118,6 +123,7 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIOSparkFlex());
           intake = new Intake(new IntakeIOKrakenFOC());
+          backpack = new Backpack(new BackpackIOSparkFlex());
           rollersSensorsIO = new RollersSensorsIOReal();
 
           arm = new Arm(new ArmIOKrakenFOC());
@@ -135,6 +141,7 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOSim());
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
+          backpack = new Backpack(new BackpackIOSim());
           rollersSensorsIO = new RollersSensorsIO() {};
 
           arm = new Arm(new ArmIOSim());
@@ -172,13 +179,16 @@ public class RobotContainer {
     if (intake == null) {
       intake = new Intake(new IntakeIO() {});
     }
+    if (backpack == null) {
+      backpack = new Backpack(new BackpackIO() {});
+    }
     if (rollersSensorsIO == null) {
       rollersSensorsIO = new RollersSensorsIO() {};
     }
     if (arm == null) {
       arm = new Arm(new ArmIO() {});
     }
-    rollers = new Rollers(feeder, indexer, intake, rollersSensorsIO);
+    rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
     // Configure autos and buttons
@@ -211,7 +221,7 @@ public class RobotContainer {
    * XboxController}), and then passing it to a {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    // Drive Commands
+    // Drive commands
     drive.setDefaultCommand(
         drive
             .run(
@@ -220,7 +230,7 @@ public class RobotContainer {
                         -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
             .withName("Drive Teleop Input"));
 
-    // Aim and Rev Flywheels
+    // Aim and rev flywheels
     controller
         .a()
         .whileTrue(
@@ -231,6 +241,7 @@ public class RobotContainer {
                     drive::clearHeadingGoal)
                 .alongWith(superstructure.aim(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
+
     // Shoot
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
@@ -250,6 +261,7 @@ public class RobotContainer {
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
                     rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
+
     // Intake Floor
     controller
         .leftTrigger()
@@ -259,6 +271,7 @@ public class RobotContainer {
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
                 .withName("Floor Intake"));
+
     // Eject Floor
     controller
         .leftBumper()
@@ -268,6 +281,22 @@ public class RobotContainer {
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 
+    // Amp scoring
+    controller
+        .rightBumper()
+        .whileTrue(
+            superstructure
+                .amp()
+                .alongWith(
+                    Commands.startEnd(
+                        () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
+                        drive::clearHeadingGoal)));
+    controller
+        .rightBumper()
+        .and(controller.rightTrigger())
+        .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
+
+    // Reset pose
     controller
         .y()
         .onTrue(

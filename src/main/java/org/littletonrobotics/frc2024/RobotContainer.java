@@ -10,6 +10,7 @@ package org.littletonrobotics.frc2024;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -32,6 +33,10 @@ import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSim;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOKrakenFOC;
@@ -49,7 +54,10 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.OverrideSwitches;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -71,6 +79,12 @@ public class RobotContainer {
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final OverrideSwitches overrides = new OverrideSwitches(5);
+  private final Trigger autoAimDisable = overrides.operatorSwitch(0);
+  private final Alert driverDisconnected =
+      new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
+  private final Alert overrideDisconnected =
+      new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -82,6 +96,7 @@ public class RobotContainer {
     Feeder feeder = null;
     Indexer indexer = null;
     Intake intake = null;
+    Backpack backpack = null;
     Arm arm = null;
     RollersSensorsIO rollersSensorsIO = null;
 
@@ -118,6 +133,7 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIOSparkFlex());
           intake = new Intake(new IntakeIOKrakenFOC());
+          backpack = new Backpack(new BackpackIOSparkFlex());
           rollersSensorsIO = new RollersSensorsIOReal();
 
           arm = new Arm(new ArmIOKrakenFOC());
@@ -135,6 +151,7 @@ public class RobotContainer {
           feeder = new Feeder(new FeederIOSim());
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
+          backpack = new Backpack(new BackpackIOSim());
           rollersSensorsIO = new RollersSensorsIO() {};
 
           arm = new Arm(new ArmIOSim());
@@ -172,13 +189,16 @@ public class RobotContainer {
     if (intake == null) {
       intake = new Intake(new IntakeIO() {});
     }
+    if (backpack == null) {
+      backpack = new Backpack(new BackpackIO() {});
+    }
     if (rollersSensorsIO == null) {
       rollersSensorsIO = new RollersSensorsIO() {};
     }
     if (arm == null) {
       arm = new Arm(new ArmIO() {});
     }
-    rollers = new Rollers(feeder, indexer, intake, rollersSensorsIO);
+    rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
     // Configure autos and buttons
@@ -200,9 +220,7 @@ public class RobotContainer {
     autoChooser.addOption(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
-            flywheels,
-            flywheels::runCharacterizationVolts,
-            flywheels::getCharacterizationVelocity));
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
   }
 
   /**
@@ -211,7 +229,7 @@ public class RobotContainer {
    * XboxController}), and then passing it to a {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    // Drive Commands
+    // Drive commands
     drive.setDefaultCommand(
         drive
             .run(
@@ -220,7 +238,7 @@ public class RobotContainer {
                         -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
             .withName("Drive Teleop Input"));
 
-    // Aim and Rev Flywheels
+    // Aim and rev flywheels
     controller
         .a()
         .whileTrue(
@@ -229,8 +247,12 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal)
-                .alongWith(superstructure.aim(), flywheels.shootCommand())
+                .alongWith(
+                    Commands.either(
+                        superstructure.subwoofer(), superstructure.aim(), autoAimDisable),
+                    flywheels.shootCommand())
                 .withName("Prepare Shot"));
+
     // Shoot
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
@@ -250,6 +272,7 @@ public class RobotContainer {
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
                     rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
+
     // Intake Floor
     controller
         .leftTrigger()
@@ -259,6 +282,7 @@ public class RobotContainer {
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
                 .withName("Floor Intake"));
+
     // Eject Floor
     controller
         .leftBumper()
@@ -268,6 +292,22 @@ public class RobotContainer {
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 
+    // Amp scoring
+    controller
+        .rightBumper()
+        .whileTrue(
+            superstructure
+                .amp()
+                .alongWith(
+                    Commands.startEnd(
+                        () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
+                        drive::clearHeadingGoal)));
+    controller
+        .rightBumper()
+        .and(controller.rightTrigger())
+        .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
+
+    // Reset pose
     controller
         .y()
         .onTrue(
@@ -290,6 +330,14 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(),
                                 AllianceFlipUtil.apply(new Rotation2d()))))
                 .ignoringDisable(true));
+  }
+
+  /** Updates the alerts for disconnected controllers. */
+  public void checkControllers() {
+    driverDisconnected.set(
+        !DriverStation.isJoystickConnected(controller.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(controller.getHID().getPort()));
+    overrideDisconnected.set(!overrides.isConnected());
   }
 
   /**

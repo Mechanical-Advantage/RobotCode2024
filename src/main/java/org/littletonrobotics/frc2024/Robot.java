@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024;
 
+import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Threads;
@@ -17,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -157,6 +159,20 @@ public class Robot extends LoggedRobot {
         "RobotState/AimingParameters/EffectiveDistance", aimingParameters.effectiveDistance());
     Logger.recordOutput(
         "RobotState/AimingParameters/DriveFeedVelocity", aimingParameters.driveFeedVelocity());
+    
+    // Robot container periodic methods
+    robotContainer.checkControllers();
+
+    // Log CANivore status
+    if (Constants.getMode() == Mode.REAL) {
+      var canivoreStatus = CANBus.getStatus("canivore");
+      Logger.recordOutput("CANivoreStatus/Status", canivoreStatus.Status.getName());
+      Logger.recordOutput("CANivoreStatus/Utilization", canivoreStatus.BusUtilization);
+      Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount);
+      Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
+      Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
+      Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
+    }
 
     Threads.setCurrentThreadPriority(true, 10);
   }

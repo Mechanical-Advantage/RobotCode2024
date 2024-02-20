@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -58,6 +59,8 @@ public class Arm {
     STATION_INTAKE(() -> Units.degreesToRadians(stationIntakeDegrees.get())),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getRadians()),
     STOW(() -> Units.degreesToRadians(stowDegrees.get())),
+    AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
+    SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
@@ -72,6 +75,7 @@ public class Arm {
 
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
+
   private TrapezoidProfile motionProfile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
   private ArmFeedforward ff;
@@ -79,6 +83,13 @@ public class Arm {
   private final ArmVisualizer measuredVisualizer;
   private final ArmVisualizer setpointVisualizer;
   private final ArmVisualizer goalVisualizer;
+
+  private final Alert leaderMotorDisconnected =
+      new Alert("Arm leader motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert followerMotorDisconnected =
+      new Alert("Arm follower motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert absoluteEncoderDisconnected =
+      new Alert("Arm absolute encoder disconnected!", Alert.AlertType.WARNING);
 
   public Arm(ArmIO io) {
     this.io = io;
@@ -99,6 +110,11 @@ public class Arm {
     // Process inputs
     io.updateInputs(inputs);
     Logger.processInputs("Arm", inputs);
+
+    // Set alerts
+    leaderMotorDisconnected.set(!inputs.leaderMotorConnected);
+    followerMotorDisconnected.set(!inputs.followerMotorConnected);
+    absoluteEncoderDisconnected.set(!inputs.absoluteEncoderConnected);
 
     // Update controllers
     LoggedTunableNumber.ifChanged(

@@ -125,31 +125,33 @@ deployroborio.dependsOn(checkRobot)
 // Create commit with working changes on event branches
 task(eventDeploy) {
     doLast {
-        def branchPrefix = "event"
-        def branch = 'git branch --show-current'.execute().text.trim()
-        def commitMessage = "Update at '${new Date().toString()}'"
+        if (project.gradle.startParameter.taskNames.any({ it.toLowerCase().contains("deploy") })) {
 
-        if (branch.startsWith(branchPrefix)) {
-            exec {
-                workingDir(projectDir)
-                executable 'git'
-                args 'add', '-A'
-            }
-            exec {
-                workingDir(projectDir)
-                executable 'git'
-                args 'commit', '-m', commitMessage
-            }
+            def branchPrefix = "event"
+            def branch = 'git branch --show-current'.execute().text.trim()
+            def commitMessage = "Update at '${new Date().toString()}'"
 
-            println "Committed to branch: '$branch'"
-            println "Commit message: '$commitMessage'"
-        } else {
-            println "Not on an event branch, skipping commit"
+            if (branch.startsWith(branchPrefix)) {
+                exec {
+                    workingDir(projectDir)
+                    executable 'git'
+                    args 'add', '-A'
+                }
+                exec {
+                    workingDir(projectDir)
+                    executable 'git'
+                    args 'commit', '-m', commitMessage
+                }
+
+                println "Committed to branch: '$branch'"
+                println "Commit message: '$commitMessage'"
+            } else {
+                println "Not on an event branch, skipping commit"
+            }
         }
     }
 }
-
-deployroborio.dependsOn(eventDeploy)
+compileJava.dependsOn(eventDeploy)
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 4.
@@ -223,12 +225,12 @@ tasks.withType(JavaCompile) {
 // Create version file
 project.compileJava.dependsOn(createVersionFile)
 gversion {
-    srcDir       = "src/main/java/"
+    srcDir = "src/main/java/"
     classPackage = "org.littletonrobotics.frc2024"
-    className    = "BuildConstants"
-    dateFormat   = "yyyy-MM-dd HH:mm:ss z"
-    timeZone     = "America/New_York"
-    indent       = "  "
+    className = "BuildConstants"
+    dateFormat = "yyyy-MM-dd HH:mm:ss z"
+    timeZone = "America/New_York"
+    indent = "  "
 }
 
 // Spotless formatting

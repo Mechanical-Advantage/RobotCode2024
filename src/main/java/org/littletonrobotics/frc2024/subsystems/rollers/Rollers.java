@@ -33,6 +33,7 @@ public class Rollers extends SubsystemBase {
     FLOOR_INTAKE,
     STATION_INTAKE,
     EJECT_TO_FLOOR,
+    QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER,
     AMP_SCORE
   }
@@ -103,6 +104,12 @@ public class Rollers extends SubsystemBase {
         backpack.setGoal(Backpack.Goal.IDLING);
         gamepieceState = GamepieceState.NONE;
       }
+      case QUICK_INTAKE_TO_FEED -> {
+        feeder.setGoal(Feeder.Goal.SHOOTING);
+        indexer.setGoal(Indexer.Goal.SHOOTING);
+        intake.setGoal(Intake.Goal.FLOOR_INTAKING);
+        backpack.setGoal(Backpack.Goal.IDLING);
+      }
       case FEED_TO_SHOOTER -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
@@ -144,6 +151,11 @@ public class Rollers extends SubsystemBase {
 
   public Command ejectFloor() {
     return startEnd(() -> goal = Goal.EJECT_TO_FLOOR, this::goIdle).withName("Rollers Eject Floor");
+  }
+
+  public Command quickFeed() {
+    return startEnd(() -> goal = Goal.QUICK_INTAKE_TO_FEED, this::goIdle)
+        .withName("Rollers Quick Feed");
   }
 
   public Command feedShooter() {

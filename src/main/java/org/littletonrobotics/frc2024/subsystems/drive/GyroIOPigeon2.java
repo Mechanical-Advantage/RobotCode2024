@@ -41,7 +41,7 @@ public class GyroIOPigeon2 implements GyroIO {
     } else {
       yawPositionQueue =
           SparkMaxOdometryThread.getInstance()
-              .registerSignal(() -> pigeon.getYaw().getValueAsDouble());
+              .registerSignal(yaw::getValueAsDouble);
     }
   }
 

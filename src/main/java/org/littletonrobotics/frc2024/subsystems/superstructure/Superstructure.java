@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -25,7 +26,8 @@ public class Superstructure extends SubsystemBase {
     AMP,
     PREPARE_CLIMB,
     CLIMB,
-    TRAP
+    TRAP,
+    DIAGNOSTIC_ARM
   }
 
   @Getter private Goal currentGoal = Goal.STOW;
@@ -53,6 +55,8 @@ public class Superstructure extends SubsystemBase {
       case AIM -> arm.setGoal(Arm.Goal.AIM);
       case INTAKE -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
       case STATION_INTAKE -> arm.setGoal(Arm.Goal.STATION_INTAKE);
+      case DIAGNOSTIC_ARM -> arm.setGoal(Arm.Goal.CUSTOM);
+      case AMP -> arm.setGoal(Arm.Goal.AMP);
       default -> {} // DO NOTHING ELSE
     }
 
@@ -60,6 +64,10 @@ public class Superstructure extends SubsystemBase {
 
     Logger.recordOutput("Superstructure/GoalState", desiredGoal);
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
+  }
+
+  public Rotation2d getArmAngle() {
+    return arm.getCurrentArmAngle();
   }
 
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
@@ -80,8 +88,21 @@ public class Superstructure extends SubsystemBase {
         .withName("Superstructure Intaking");
   }
 
+  public Command amp() {
+    return startEnd(() -> desiredGoal = Goal.AMP, this::stow).withName("Superstructure Amping");
+  }
+
   public Command stationIntake() {
     return startEnd(() -> desiredGoal = Goal.STATION_INTAKE, this::stow)
         .withName("Superstructure Station Intaking");
+  }
+
+  public Command diagnoseArm() {
+    return startEnd(() -> desiredGoal = Goal.DIAGNOSTIC_ARM, this::stow)
+        .withName("Arm Custom Goal");
+  }
+
+  public Command runArmCharacterization() {
+    return arm.getStaticCurrent().finallyDo(() -> desiredGoal = Goal.STOW);
   }
 }

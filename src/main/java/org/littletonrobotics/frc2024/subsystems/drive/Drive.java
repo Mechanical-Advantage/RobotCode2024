@@ -95,10 +95,10 @@ public class Drive extends SubsystemBase {
       new SwerveSetpoint(
           new ChassisSpeeds(),
           new SwerveModuleState[] {
-              new SwerveModuleState(),
-              new SwerveModuleState(),
-              new SwerveModuleState(),
-              new SwerveModuleState()
+            new SwerveModuleState(),
+            new SwerveModuleState(),
+            new SwerveModuleState(),
+            new SwerveModuleState()
           });
   private final SwerveSetpointGenerator setpointGenerator;
 
@@ -173,7 +173,7 @@ public class Drive extends SubsystemBase {
         for (int j = 0; j < modules.length; j++) {
           double velocity =
               (wheelPositions.positions[j].distanceMeters
-                  - lastPositions.positions[j].distanceMeters)
+                      - lastPositions.positions[j].distanceMeters)
                   / dt;
           double omega =
               wheelPositions.positions[j].angle.minus(lastPositions.positions[j].angle).getRadians()
@@ -374,18 +374,18 @@ public class Drive extends SubsystemBase {
 
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
-      for (int i = 0; i < orientations.length; i++) {
-        modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
-      }
-    })
+          for (int i = 0; i < orientations.length; i++) {
+            modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
+          }
+        })
         .until(
             () ->
                 Arrays.stream(modules)
                     .allMatch(
                         module ->
                             Math.abs(
-                                module.getAngle().getDegrees()
-                                    - module.getSetpointState().angle.getDegrees())
+                                    module.getAngle().getDegrees()
+                                        - module.getSetpointState().angle.getDegrees())
                                 <= 2.0))
         .beforeStarting(() -> modulesOrienting = true)
         .finallyDo(() -> modulesOrienting = false);

@@ -188,7 +188,7 @@ public class Flywheels extends SubsystemBase {
       setGoal(Goal.SHOOT);
     }
   }
-  
+
   /** Run characterization with input in either current or amps */
   public void runCharacterization(double input) {
     setGoal(Goal.CHARACTERIZING);

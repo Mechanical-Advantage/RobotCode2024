@@ -203,6 +203,8 @@ public class RobotContainer {
             flywheels,
             flywheels::runCharacterizationVolts,
             flywheels::getCharacterizationVelocity));
+    autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
+    autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
   }
 
   /**

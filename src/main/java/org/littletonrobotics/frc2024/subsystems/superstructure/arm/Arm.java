@@ -82,9 +82,12 @@ public class Arm {
   private final ArmVisualizer setpointVisualizer;
   private final ArmVisualizer goalVisualizer;
 
-  private final Alert leaderMotorDisconnected = new Alert("Arm leader motor disconnected!", Alert.AlertType.WARNING);
-  private final Alert followerMotorDisconnected = new Alert("Arm follower motor disconnected!", Alert.AlertType.WARNING);
-  private final Alert absoluteEncoderDisconnected = new Alert("Arm absolute encoder disconnected!", Alert.AlertType.WARNING);
+  private final Alert leaderMotorDisconnected =
+      new Alert("Arm leader motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert followerMotorDisconnected =
+      new Alert("Arm follower motor disconnected!", Alert.AlertType.WARNING);
+  private final Alert absoluteEncoderDisconnected =
+      new Alert("Arm absolute encoder disconnected!", Alert.AlertType.WARNING);
 
   public Arm(ArmIO io) {
     this.io = io;

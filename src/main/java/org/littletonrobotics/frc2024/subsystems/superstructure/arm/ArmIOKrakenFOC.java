@@ -20,7 +20,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.*;
 import edu.wpi.first.math.util.Units;
 import java.util.List;
-import org.littletonrobotics.frc2024.util.Alert;
 
 public class ArmIOKrakenFOC implements ArmIO {
   // Hardware
@@ -111,19 +110,21 @@ public class ArmIOKrakenFOC implements ArmIO {
   }
 
   public void updateInputs(ArmIOInputs inputs) {
-    inputs.leaderMotorConnected = BaseStatusSignal.refreshAll(
-                    armInternalPositionRotations,
-                    armVelocityRps,
-                    armAppliedVoltage.get(0),
-                    armOutputCurrent.get(0),
-                    armTorqueCurrent.get(0),
-                    armTempCelsius.get(0))
+    inputs.leaderMotorConnected =
+        BaseStatusSignal.refreshAll(
+                armInternalPositionRotations,
+                armVelocityRps,
+                armAppliedVoltage.get(0),
+                armOutputCurrent.get(0),
+                armTorqueCurrent.get(0),
+                armTempCelsius.get(0))
             .isOK();
-    inputs.followerMotorConnected = BaseStatusSignal.refreshAll(
-                    armAppliedVoltage.get(1),
-                    armOutputCurrent.get(1),
-                    armTorqueCurrent.get(1),
-                    armTempCelsius.get(1))
+    inputs.followerMotorConnected =
+        BaseStatusSignal.refreshAll(
+                armAppliedVoltage.get(1),
+                armOutputCurrent.get(1),
+                armTorqueCurrent.get(1),
+                armTempCelsius.get(1))
             .isOK();
     inputs.absoluteEncoderConnected =
         BaseStatusSignal.refreshAll(armEncoderPositionRotations, armAbsolutePositionRotations)

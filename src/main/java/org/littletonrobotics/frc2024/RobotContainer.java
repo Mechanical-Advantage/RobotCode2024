@@ -54,6 +54,9 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
@@ -98,6 +101,7 @@ public class RobotContainer {
     Intake intake = null;
     Backpack backpack = null;
     Arm arm = null;
+    Climber climber = null;
     RollersSensorsIO rollersSensorsIO = null;
 
     // Create subsystems
@@ -155,6 +159,7 @@ public class RobotContainer {
           rollersSensorsIO = new RollersSensorsIO() {};
 
           arm = new Arm(new ArmIOSim());
+          climber = new Climber(new ClimberIOSim());
         }
       }
     }
@@ -198,8 +203,11 @@ public class RobotContainer {
     if (arm == null) {
       arm = new Arm(new ArmIO() {});
     }
+    if (climber == null) {
+      climber = new Climber(new ClimberIO() {});
+    }
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
-    superstructure = new Superstructure(arm);
+    superstructure = new Superstructure(arm, climber);
 
     // Configure autos and buttons
     configureAutos();
@@ -222,7 +230,7 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
-    autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
+    autoChooser.addOption("Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -251,7 +259,7 @@ public class RobotContainer {
                     drive::clearHeadingGoal)
                 .alongWith(
                     Commands.either(
-                        superstructure.subwoofer(), superstructure.aim(), autoAimDisable),
+                        superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER), superstructure.setGoalCommand(Superstructure.Goal.AIM), autoAimDisable),
                     flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
@@ -273,14 +281,14 @@ public class RobotContainer {
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
-                    rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
+                    rollers.feedShooter(), superstructure.setGoalCommand(Superstructure.Goal.AIM), flywheels.shootCommand()));
 
     // Intake Floor
     controller
         .leftTrigger()
         .whileTrue(
             superstructure
-                .intake()
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
                 .withName("Floor Intake"));
@@ -290,7 +298,7 @@ public class RobotContainer {
         .leftBumper()
         .whileTrue(
             superstructure
-                .intake()
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 

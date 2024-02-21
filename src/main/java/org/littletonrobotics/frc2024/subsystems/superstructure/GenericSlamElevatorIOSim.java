@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.superstructure;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import org.littletonrobotics.frc2024.Constants;
 
@@ -17,11 +18,15 @@ public class GenericSlamElevatorIOSim implements GenericSlamElevatorIO {
   private double appliedVoltage = 0.0;
 
   public GenericSlamElevatorIOSim(DCMotor motorModel, double maxLength) {
-    sim = new ElevatorSim(motorModel, 1.0, 1.0, 1.0, 0.0, maxLength, false, 0.0);
+    sim = new ElevatorSim(motorModel, 1.0, 0.0006328, 1.0, 0.0, maxLength, false, 0.0);
   }
 
   @Override
   public void updateInputs(GenericSlamElevatorIOInputs inputs) {
+    if (DriverStation.isDisabled()) {
+      stop();
+    }
+
     sim.update(Constants.loopPeriodSecs);
     inputs.positionRads = sim.getPositionMeters(); // Radius of 1
     inputs.velocityRadsPerSec = sim.getVelocityMetersPerSecond();

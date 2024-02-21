@@ -30,7 +30,7 @@ public class GenericSlamElevator {
   private final double staticTimeSecs;
   private final double minVelocityThresh;
 
-  private Goal goal;
+  private Goal goal = Goal.RETRACTED;
   private boolean atGoal = false;
   private final Timer staticTimer = new Timer();
 
@@ -60,7 +60,6 @@ public class GenericSlamElevator {
     this.minVelocityThresh = minVelocityThresh;
 
     disconnected = new Alert(name + " disconnected!", Alert.AlertType.WARNING);
-    setGoal(Goal.RETRACTED);
   }
 
   public void periodic() {
@@ -85,15 +84,15 @@ public class GenericSlamElevator {
       } else {
         io.runVolts(goal.direction * slammingVolts);
         atGoal = false;
-        staticTimer.reset();
-        staticTimer.stop();
       }
     } else {
       io.stop();
+      staticTimer.reset();
+      staticTimer.stop();
     }
 
-    Logger.recordOutput("Superstructure/" + name + "Goal", goal);
-    Logger.recordOutput("Superstructure/" + name + "atGoal", atGoal);
+    Logger.recordOutput(name + "/Goal", goal);
+    Logger.recordOutput(name + "/atGoal", atGoal);
   }
 
   public void setGoal(Goal goal) {
@@ -103,6 +102,10 @@ public class GenericSlamElevator {
     atGoal = false;
     staticTimer.reset();
     staticTimer.stop();
+  }
+
+  public boolean atGoal() {
+    return atGoal;
   }
 
   public boolean extended() {

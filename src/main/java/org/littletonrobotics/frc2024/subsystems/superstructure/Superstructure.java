@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -34,11 +35,13 @@ public class Superstructure extends SubsystemBase {
   @Getter private Goal desiredGoal = Goal.STOW;
 
   private final Arm arm;
+  private final Climber climber;
 
-  public Superstructure(Arm arm) {
+  public Superstructure(Arm arm, Climber climber) {
     this.arm = arm;
+    this.climber = climber;
 
-    setDefaultCommand(runOnce(this::stow).withName("Superstructure Stowing"));
+    setDefaultCommand(setGoalCommand(Goal.STOW));
   }
 
   @Override
@@ -48,60 +51,71 @@ public class Superstructure extends SubsystemBase {
       arm.stop();
     }
 
-    currentGoal = desiredGoal; // Will change soon
+    // Handle transitions
+    if (desiredGoal != Goal.PREPARE_CLIMB && !climber.retracted()) {
+      // Wait for retracted before setting
+      climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+    } else if (desiredGoal == Goal.CLIMB && !climber.extended()) {
+      // Finish preparing climb before climbing
+      currentGoal = Goal.PREPARE_CLIMB;
+    } else {
+      currentGoal = desiredGoal;
+    }
 
     switch (currentGoal) {
-      case STOW -> arm.setGoal(Arm.Goal.STOW);
-      case AIM -> arm.setGoal(Arm.Goal.AIM);
-      case INTAKE -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
-      case STATION_INTAKE -> arm.setGoal(Arm.Goal.STATION_INTAKE);
-      case DIAGNOSTIC_ARM -> arm.setGoal(Arm.Goal.CUSTOM);
-      case AMP -> arm.setGoal(Arm.Goal.AMP);
-      case SUBWOOFER -> arm.setGoal(Arm.Goal.SUBWOOFER);
-      default -> {} // DO NOTHING ELSE
+      case STOW -> {
+        arm.setGoal(Arm.Goal.STOW);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case AIM -> {
+        arm.setGoal(Arm.Goal.AIM);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case INTAKE -> {
+        arm.setGoal(Arm.Goal.FLOOR_INTAKE);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case STATION_INTAKE -> {
+        arm.setGoal(Arm.Goal.STATION_INTAKE);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case AMP -> {
+        arm.setGoal(Arm.Goal.AMP);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case SUBWOOFER -> {
+        arm.setGoal(Arm.Goal.SUBWOOFER);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case PREPARE_CLIMB -> {
+        arm.setGoal(Arm.Goal.CLIMB);
+        climber.setGoal(GenericSlamElevator.Goal.EXTENDED);
+      }
+      case CLIMB -> {
+        arm.setGoal(Arm.Goal.CLIMB);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
+      case DIAGNOSTIC_ARM -> {
+        arm.setGoal(Arm.Goal.CUSTOM);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      }
     }
 
     arm.periodic();
+    climber.periodic();
 
     Logger.recordOutput("Superstructure/GoalState", desiredGoal);
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
+  public Command setGoalCommand(Goal goal) {
+    return startEnd(() -> desiredGoal = goal, () -> desiredGoal = Goal.STOW)
+        .withName("Superstructure " + goal);
+  }
+
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
-    return currentGoal == desiredGoal && arm.atGoal();
-  }
-
-  public void stow() {
-    desiredGoal = Goal.STOW;
-  }
-
-  public Command aim() {
-    return startEnd(() -> desiredGoal = Goal.AIM, this::stow).withName("Superstructure Aiming");
-  }
-
-  public Command subwoofer() {
-    return startEnd(() -> desiredGoal = Goal.SUBWOOFER, this::stow)
-        .withName("Superstructure Subwoofer Aiming");
-  }
-
-  public Command intake() {
-    return startEnd(() -> desiredGoal = Goal.INTAKE, this::stow)
-        .withName("Superstructure Intaking");
-  }
-
-  public Command amp() {
-    return startEnd(() -> desiredGoal = Goal.AMP, this::stow).withName("Superstructure Amping");
-  }
-
-  public Command stationIntake() {
-    return startEnd(() -> desiredGoal = Goal.STATION_INTAKE, this::stow)
-        .withName("Superstructure Station Intaking");
-  }
-
-  public Command diagnoseArm() {
-    return startEnd(() -> desiredGoal = Goal.DIAGNOSTIC_ARM, this::stow)
-        .withName("Arm Custom Goal");
+    return currentGoal == desiredGoal && arm.atGoal() & climber.atGoal();
   }
 
   public Command runArmCharacterization() {

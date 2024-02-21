@@ -12,7 +12,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevat
 
 public class ClimberIOSim extends GenericSlamElevatorIOSim implements ClimberIO {
   private static final DCMotor motorModel = DCMotor.getKrakenX60Foc(1);
-  private static final double maxLength = 0.7;
+  private static final double maxLength = 42;
 
   public ClimberIOSim() {
     super(motorModel, maxLength);

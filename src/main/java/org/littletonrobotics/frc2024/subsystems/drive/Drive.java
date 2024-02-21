@@ -374,11 +374,6 @@ public class Drive extends SubsystemBase {
     characterizationInput = omegaSpeed;
   }
 
-  /** Disables the wheel radius characterization mode. */
-  public void endWheelRadiusCharacterization() {
-    currentDriveMode = DriveMode.TELEOP;
-  }
-
   /** Get the position of all drive wheels in radians. */
   public double[] getWheelRadiusCharacterizationPosition() {
     return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();

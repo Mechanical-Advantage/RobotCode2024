@@ -136,7 +136,7 @@ public class Module {
 
   /** Get velocity of wheel in m/s. */
   public double getVelocityMetersPerSec() {
-    return inputs.driveVelocityRadPerSec * driveConfig.wheelRadius();
+    return inputs.driveVelocityRadsPerSec * driveConfig.wheelRadius();
   }
 
   /** Get current {@link SwerveModulePosition} of module. */
@@ -151,6 +151,6 @@ public class Module {
 
   /** Get velocity of drive wheel for characterization */
   public double getCharacterizationVelocity() {
-    return inputs.driveVelocityRadPerSec;
+    return inputs.driveVelocityRadsPerSec;
   }
 }

@@ -27,6 +27,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -89,6 +90,9 @@ public class RobotState {
       qStdDevs.set(i, 0, Math.pow(DriveConstants.odometryStateStdDevs.get(i, 0), 2));
     }
     kinematics = DriveConstants.kinematics;
+
+    // Setup NoteVisualizer
+    NoteVisualizer.setRobotPoseSupplier(this::getEstimatedPose);
   }
 
   /** Add odometry observation */

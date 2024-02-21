@@ -16,7 +16,6 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
-import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +25,7 @@ import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -81,7 +81,6 @@ public class Arm {
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
   private ArmFeedforward ff;
 
-  @Setter private Consumer<Rotation2d> armAngleConsumer = rotation -> {};
   private final ArmVisualizer measuredVisualizer;
   private final ArmVisualizer setpointVisualizer;
   private final ArmVisualizer goalVisualizer;
@@ -103,6 +102,8 @@ public class Arm {
     io.setPID(kP.get(), kI.get(), kD.get());
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
+    // Set up visualizers
+    NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.armPositionRads));
     measuredVisualizer = new ArmVisualizer("measured", Color.kBlack);
     setpointVisualizer = new ArmVisualizer("setpoint", Color.kGreen);
     goalVisualizer = new ArmVisualizer("goal", Color.kBlue);
@@ -159,7 +160,6 @@ public class Arm {
     }
 
     // Logs
-    armAngleConsumer.accept(Rotation2d.fromRadians(inputs.armPositionRads));
     measuredVisualizer.update(inputs.armPositionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());

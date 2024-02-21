@@ -27,19 +27,19 @@ import org.littletonrobotics.junction.Logger;
 public class NoteVisualizer {
   private static final double shotSpeed = 9.0; // Meters per sec
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
-  @Setter private static Rotation2d currentArmAngle = new Rotation2d();
+  @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
   private static final List<Translation2d> autoNotes = new ArrayList<>();
   @Setter private static boolean hasNote = false;
 
   /** Show all staged notes for alliance */
   public static void showAutoNotes() {
     if (autoNotes.isEmpty()) {
-      Logger.recordOutput("NoteVisualizer/Staged", new Pose3d[] {});
+      Logger.recordOutput("NoteVisualizer/StagedNotes", new Pose3d[] {});
     }
     // Show auto notes
     Stream<Translation2d> presentNotes = autoNotes.stream().filter(Objects::nonNull);
     Logger.recordOutput(
-        "NoteVisualizer/Staged",
+        "NoteVisualizer/StagedNotes",
         presentNotes
             .map(
                 translation ->
@@ -81,10 +81,11 @@ public class NoteVisualizer {
 
   /** Shows the currently held note if there is one */
   public static void showIntakedNotes() {
-    if (!hasNote) {
-      return;
+    if (hasNote) {
+      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {getIndexerPose3d()});
+    } else {
+      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {});
     }
-    Logger.recordOutput("NoteVisualizer/HeldNote", getIndexerPose3d());
   }
 
   /** Shoots note from middle of arm to speaker */
@@ -106,13 +107,13 @@ public class NoteVisualizer {
                   return Commands.run(
                           () ->
                               Logger.recordOutput(
-                                  "NoteVisualizer/HeldNote",
+                                  "NoteVisualizer/ShotNotes",
                                   new Pose3d[] {
                                     startPose.interpolate(endPose, timer.get() / duration)
                                   }))
                       .until(() -> timer.hasElapsed(duration))
                       .finallyDo(
-                          () -> Logger.recordOutput("NoteVisualizer/HeldNote", new Pose3d[] {}));
+                          () -> Logger.recordOutput("NoteVisualizer/ShotNotes", new Pose3d[] {}));
                 },
                 Set.of())
             .ignoringDisable(true));
@@ -124,7 +125,7 @@ public class NoteVisualizer {
                 ArmConstants.armOrigin.getX(),
                 0.0,
                 ArmConstants.armOrigin.getY(),
-                new Rotation3d(0.0, -currentArmAngle.getRadians(), 0.0))
+                new Rotation3d(0.0, -armAngleSupplier.get().getRadians(), 0.0))
             .plus(new Transform3d(ArmConstants.armLength * 0.35, 0.0, 0.0, new Rotation3d()));
     return new Pose3d(robotPoseSupplier.get()).transformBy(indexerTransform);
   }

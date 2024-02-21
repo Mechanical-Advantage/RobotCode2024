@@ -57,7 +57,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
-import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.OverrideSwitches;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -201,10 +200,6 @@ public class RobotContainer {
     }
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
-
-    // Set suppliers for NoteVisualizer
-    NoteVisualizer.setRobotPoseSupplier(() -> RobotState.getInstance().getEstimatedPose());
-    arm.setArmAngleConsumer(NoteVisualizer::setCurrentArmAngle);
 
     // Configure autos and buttons
     configureAutos();

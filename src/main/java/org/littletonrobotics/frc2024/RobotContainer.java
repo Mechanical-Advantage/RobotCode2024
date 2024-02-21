@@ -20,7 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
-import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
+import org.littletonrobotics.frc2024.commands.auto.AutoBuilder;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
@@ -208,8 +208,7 @@ public class RobotContainer {
 
   private void configureAutos() {
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
-    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
-    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
 
     // Set up feedforward characterization
     autoChooser.addOption(
@@ -223,6 +222,12 @@ public class RobotContainer {
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
+
+    autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
+    autoChooser.addOption("N5_S1_C234", autoBuilder.N5_S1_C234());
+    autoChooser.addOption("N5_S0_C012", autoBuilder.N5_S0_C012());
+    autoChooser.addOption("N5_C432_S2", autoBuilder.N5_C432_S2());
+    autoChooser.addOption("N6_S12-C0123", autoBuilder.N6_S12_C0123());
   }
 
   /**

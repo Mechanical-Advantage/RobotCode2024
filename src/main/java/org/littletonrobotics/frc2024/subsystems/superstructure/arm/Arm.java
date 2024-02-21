@@ -11,11 +11,13 @@ import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmCon
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -41,25 +43,17 @@ public class Arm {
       new LoggedTunableNumber("Arm/Velocity", profileConstraints.maxVelocity);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
-  private static final LoggedTunableNumber toleranceDegrees =
-      new LoggedTunableNumber("Arm/ToleranceDegrees", positionTolerance.getDegrees());
   private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
       new LoggedTunableNumber("Arm/UpperLimitDegrees", maxAngle.getDegrees());
-  private static final LoggedTunableNumber stowDegrees =
-      new LoggedTunableNumber("Superstructure/ArmStowDegrees", 20.0);
-  private static final LoggedTunableNumber stationIntakeDegrees =
-      new LoggedTunableNumber("Superstructure/ArmStationIntakeDegrees", 45.0);
-  private static final LoggedTunableNumber intakeDegrees =
-      new LoggedTunableNumber("Superstructure/ArmIntakeDegrees", 40.0);
 
   @RequiredArgsConstructor
   public enum Goal {
-    FLOOR_INTAKE(() -> Units.degreesToRadians(intakeDegrees.get())),
-    STATION_INTAKE(() -> Units.degreesToRadians(stationIntakeDegrees.get())),
-    AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getRadians()),
-    STOW(() -> Units.degreesToRadians(stowDegrees.get())),
+    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 18.0)),
+    STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
+    AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
+    STOW(new LoggedTunableNumber("Arm/StowDegrees", 10.0)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
@@ -67,7 +61,7 @@ public class Arm {
     private final DoubleSupplier armSetpointSupplier;
 
     private double getRads() {
-      return armSetpointSupplier.getAsDouble();
+      return Units.degreesToRadians(armSetpointSupplier.getAsDouble());
     }
   }
 
@@ -104,9 +98,9 @@ public class Arm {
 
     // Set up visualizers
     NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.armPositionRads));
-    measuredVisualizer = new ArmVisualizer("measured", Color.kBlack);
-    setpointVisualizer = new ArmVisualizer("setpoint", Color.kGreen);
-    goalVisualizer = new ArmVisualizer("goal", Color.kBlue);
+    measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
+    setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
+    goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
   }
 
   public void periodic() {
@@ -124,11 +118,12 @@ public class Arm {
         hashCode(), () -> io.setPID(kP.get(), kI.get(), kD.get()), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
         hashCode(),
-        () -> ff = new ArmFeedforward(kS.get(), kV.get(), kA.get(), kG.get()),
+        () -> ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get()),
         kS,
+        kG,
         kV,
-        kA,
-        kG);
+        kA);
+
     LoggedTunableNumber.ifChanged(
         hashCode(),
         constraints ->
@@ -143,7 +138,7 @@ public class Arm {
       setpointState =
           motionProfile.calculate(
               Constants.loopPeriodSecs,
-              new TrapezoidProfile.State(inputs.armPositionRads, inputs.armVelocityRadsPerSec),
+              setpointState,
               new TrapezoidProfile.State(
                   MathUtil.clamp(
                       goal.getRads(),
@@ -163,6 +158,7 @@ public class Arm {
     measuredVisualizer.update(inputs.armPositionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());
+    Logger.recordOutput("Arm/GoalAngle", goal.getRads());
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
     Logger.recordOutput("Arm/Goal", goal);
@@ -172,22 +168,25 @@ public class Arm {
     io.stop();
   }
 
-  @AutoLogOutput(key = "Arm/GoalAngle")
-  public Rotation2d getSetpoint() {
-    return Rotation2d.fromRadians(goal.getRads());
-  }
-
   @AutoLogOutput(key = "Arm/AtGoal")
   public boolean atGoal() {
     return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
   }
 
-  // public Command getStaticCurrent() {
-  //   Timer timer = new Timer();
-  //   return run(() -> io.runCurrent(0.5 * timer.get()))
-  //       .beforeStarting(timer::restart)
-  //       .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
-  //       .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
-  //       .andThen(io::stop);
-  // }
+  public Command getStaticCurrent() {
+    Timer timer = new Timer();
+    return Commands.run(() -> io.runCurrent(0.5 * timer.get()))
+        .beforeStarting(
+            () -> {
+              characterizing = true;
+              timer.restart();
+            })
+        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
+        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
+        .finallyDo(
+            () -> {
+              io.stop();
+              characterizing = false;
+            });
+  }
 }

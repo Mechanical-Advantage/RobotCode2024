@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.rollers;
 
 import java.util.function.DoubleSupplier;
 import lombok.RequiredArgsConstructor;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.junction.Logger;
 
 @RequiredArgsConstructor
@@ -23,10 +24,19 @@ public abstract class GenericRollerSystem<G extends GenericRollerSystem.VoltageG
   private final GenericRollerSystemIO io;
   private final GenericRollerSystemIOInputsAutoLogged inputs =
       new GenericRollerSystemIOInputsAutoLogged();
+  private final Alert disconnected;
+
+  public GenericRollerSystem(String name, GenericRollerSystemIO io) {
+    this.name = name;
+    this.io = io;
+
+    disconnected = new Alert(name + " motor disconnected!", Alert.AlertType.WARNING);
+  }
 
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs(name, inputs);
+    disconnected.set(!inputs.connected);
 
     io.runVolts(getGoal().getVoltageSupplier().getAsDouble());
     Logger.recordOutput("Rollers/" + name + "Goal", getGoal().toString());

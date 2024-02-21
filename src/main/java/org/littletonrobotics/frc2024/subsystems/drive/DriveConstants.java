@@ -27,15 +27,19 @@ public final class DriveConstants {
                 Units.inchesToMeters(1.98),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
+                Units.inchesToMeters(37),
+                Units.inchesToMeters(33),
                 Units.feetToMeters(13.05),
                 Units.feetToMeters(30.02),
                 8.86,
                 43.97);
         case DEVBOT ->
             new DriveConfig(
-                Units.inchesToMeters(2.0),
+                Units.inchesToMeters(2.01834634),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
+                Units.inchesToMeters(37),
+                Units.inchesToMeters(33),
                 Units.feetToMeters(12.16),
                 Units.feetToMeters(21.32),
                 7.93,
@@ -43,10 +47,10 @@ public final class DriveConstants {
       };
   public static final Translation2d[] moduleTranslations =
       new Translation2d[] {
-        new Translation2d(driveConfig.trackwidthX() / 2.0, driveConfig.trackwidthY() / 2.0),
-        new Translation2d(driveConfig.trackwidthX() / 2.0, -driveConfig.trackwidthY() / 2.0),
-        new Translation2d(-driveConfig.trackwidthX() / 2.0, driveConfig.trackwidthY() / 2.0),
-        new Translation2d(-driveConfig.trackwidthX() / 2.0, -driveConfig.trackwidthY() / 2.0)
+        new Translation2d(driveConfig.trackWidthX() / 2.0, driveConfig.trackWidthY() / 2.0),
+        new Translation2d(driveConfig.trackWidthX() / 2.0, -driveConfig.trackWidthY() / 2.0),
+        new Translation2d(-driveConfig.trackWidthX() / 2.0, driveConfig.trackWidthY() / 2.0),
+        new Translation2d(-driveConfig.trackWidthX() / 2.0, -driveConfig.trackWidthY() / 2.0)
       };
   public static final SwerveDriveKinematics kinematics =
       new SwerveDriveKinematics(moduleTranslations);
@@ -181,14 +185,16 @@ public final class DriveConstants {
 
   public record DriveConfig(
       double wheelRadius,
-      double trackwidthX,
-      double trackwidthY,
+      double trackWidthX,
+      double trackWidthY,
+      double bumperWidthX,
+      double bumperWidthY,
       double maxLinearVelocity,
       double maxLinearAcceleration,
       double maxAngularVelocity,
       double maxAngularAcceleration) {
     public double driveBaseRadius() {
-      return Math.hypot(trackwidthX / 2.0, trackwidthY / 2.0);
+      return Math.hypot(trackWidthX / 2.0, trackWidthY / 2.0);
     }
   }
 

@@ -155,6 +155,7 @@ public class Arm {
     measuredVisualizer.update(inputs.armPositionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());
+    Logger.recordOutput("Arm/GoalAngle", goal.getRads());
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
     Logger.recordOutput("Arm/Goal", goal);
@@ -162,11 +163,6 @@ public class Arm {
 
   public void stop() {
     io.stop();
-  }
-
-  @AutoLogOutput(key = "Arm/GoalAngle")
-  public double getGoalAngleRads() {
-    return goal.getRads();
   }
 
   @AutoLogOutput(key = "Arm/AtGoal")

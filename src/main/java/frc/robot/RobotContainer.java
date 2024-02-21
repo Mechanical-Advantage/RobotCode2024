@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.commands.*;
 import frc.robot.subsystems.drive.*;
 import frc.robot.subsystems.flywheel.*;
+import frc.robot.util.NoteVisualizer;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -116,6 +117,7 @@ public class RobotContainer {
 
     // Configure the button bindings
     configureButtonBindings();
+    NoteVisualizer.setRobotPoseSupplier(drive::getPose);
   }
 
   /**
@@ -141,10 +143,11 @@ public class RobotContainer {
     controller
         .a()
         .whileTrue(
-            new PrepareLaunch(shooter, hopper)
-                .withTimeout(Constants.SHOOTER_DELAY)
-                .andThen(new LaunchNote(shooter, hopper))
-                .handleInterrupt(() -> shooter.stop()));
+            Commands.sequence(
+                new PrepareLaunch(shooter, hopper)
+                    .withTimeout(Constants.SHOOTER_DELAY)
+                    .andThen(new LaunchNote(shooter, hopper).withTimeout(1)),
+                NoteVisualizer.shoot()));
     controller.b().whileTrue(new IntakeNote(shooter, hopper).handleInterrupt(() -> shooter.stop()));
     controller.x().whileTrue(new TurnToSpeaker(drive));
     controller.y().whileTrue(AutoBuilder.buildAuto("Reset_Odometry"));

@@ -62,11 +62,19 @@ public class HolonomicTrajectory {
   }
 
   public VehicleState getStartState() {
-    return trajectory.getStates(0).getState();
+    if (trajectory.getStatesCount() == 0) {
+      return VehicleState.newBuilder().build();
+    } else {
+      return trajectory.getStates(0).getState();
+    }
   }
 
   public VehicleState getEndState() {
-    return trajectory.getStates(trajectory.getStatesCount() - 1).getState();
+    if (trajectory.getStatesCount() == 0) {
+      return VehicleState.newBuilder().build();
+    } else {
+      return trajectory.getStates(trajectory.getStatesCount() - 1).getState();
+    }
   }
 
   public VehicleState sample(double timeSeconds) {

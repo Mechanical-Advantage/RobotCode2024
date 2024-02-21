@@ -86,7 +86,6 @@ public class Drive extends SubsystemBase {
   private DriveMode currentDriveMode = DriveMode.TELEOP;
 
   private double characterizationInput = 0.0;
-  private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
   @Getter

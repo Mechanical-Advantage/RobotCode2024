@@ -12,6 +12,7 @@ import org.littletonrobotics.junction.AutoLog;
 public interface GenericRollerSystemIO {
   @AutoLog
   abstract class GenericRollerSystemIOInputs {
+    public boolean connected = true;
     public double positionRads = 0.0;
     public double velocityRadsPerSec = 0.0;
     public double appliedVoltage = 0.0;

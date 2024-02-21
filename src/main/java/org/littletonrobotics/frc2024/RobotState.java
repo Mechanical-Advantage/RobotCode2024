@@ -28,7 +28,6 @@ import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class RobotState {
@@ -38,7 +37,10 @@ public class RobotState {
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
 
   public record AimingParameters(
-      Rotation2d driveHeading, Rotation2d armAngle, double driveFeedVelocity) {}
+      Rotation2d driveHeading,
+      Rotation2d armAngle,
+      double effectiveDistance,
+      double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
@@ -48,12 +50,25 @@ public class RobotState {
   private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
 
   static {
-    armAngleMap.put(0.0, Units.degreesToRadians(90.0));
-    armAngleMap.put(10.0, Units.degreesToRadians(15.0));
-    armAngleMap.put(Double.MAX_VALUE, Units.degreesToRadians(15.0));
+    armAngleMap.put(1.039, 0.890);
+    armAngleMap.put(1.258, 0.819);
+    armAngleMap.put(1.511, 0.749);
+    armAngleMap.put(1.745, 0.730);
+    armAngleMap.put(2.008, 0.678);
+    armAngleMap.put(2.266, 0.663);
+    armAngleMap.put(2.514, 0.592);
+    armAngleMap.put(2.749, 0.558);
+    armAngleMap.put(2.994, 0.528);
+    armAngleMap.put(3.260, 0.503);
+    armAngleMap.put(5.156, 0.408);
+    armAngleMap.put(1.229, 0.838);
   }
 
-  @Setter @Getter private double shotCompensationDegrees = 0.0;
+  @AutoLogOutput @Setter @Getter private double shotCompensationDegrees = 0.0;
+
+  public void adjustShotCompensationDegrees(double deltaDegrees) {
+    shotCompensationDegrees += deltaDegrees;
+  }
 
   private static RobotState instance;
 
@@ -165,7 +180,7 @@ public class RobotState {
             kTimesTransform.get(1, 0),
             Rotation2d.fromRadians(kTimesTransform.get(2, 0)));
 
-    // Recalculate current estimate by applying scaled twist to old estimate
+    // Recalculate current estimate by applying scaled transform to old estimate
     // then replaying odometry data
     estimatedPose = estimateAtTime.plus(scaledTransform).plus(sampleToOdometryTransform);
   }
@@ -209,12 +224,8 @@ public class RobotState {
             targetVehicleDirection,
             Rotation2d.fromRadians(
                 armAngleMap.get(targetDistance) + Units.degreesToRadians(shotCompensationDegrees)),
+            targetDistance,
             feedVelocity);
-    Logger.recordOutput("RobotState/AimingParameters/Direction", latestParameters.driveHeading());
-    Logger.recordOutput("RobotState/AimingParameters/ArmAngle", latestParameters.armAngle());
-    Logger.recordOutput(
-        "RobotState/AimingParameters/DriveFeedVelocityRadPerS",
-        latestParameters.driveFeedVelocity());
     return latestParameters;
   }
 

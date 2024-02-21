@@ -150,6 +150,16 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    // Log aiming parameters
+    var aimingParameters = RobotState.getInstance().getAimingParameters();
+    Logger.recordOutput(
+        "RobotState/AimingParameters/DriveHeading", aimingParameters.driveHeading());
+    Logger.recordOutput("RobotState/AimingParameters/ArmAngle", aimingParameters.armAngle());
+    Logger.recordOutput(
+        "RobotState/AimingParameters/EffectiveDistance", aimingParameters.effectiveDistance());
+    Logger.recordOutput(
+        "RobotState/AimingParameters/DriveFeedVelocity", aimingParameters.driveFeedVelocity());
+
     // Robot container periodic methods
     robotContainer.checkControllers();
 

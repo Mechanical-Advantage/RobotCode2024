@@ -12,12 +12,21 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import java.util.Arrays;
+import java.util.function.DoubleSupplier;
 import lombok.RequiredArgsConstructor;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
+import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
 public class WheelRadiusCharacterization extends Command {
+  private static final LoggedTunableNumber characterizationSpeed =
+      new LoggedTunableNumber("WheelRadiusCharacterization/SpeedRadsPerSec", 3.0);
+  private static final double driveRadius = DriveConstants.driveConfig.driveBaseRadius();
+  private static final DoubleSupplier gyroYawRadsSupplier =
+      () -> RobotState.getInstance().getOdometryPose().getRotation().getRadians();
+
   @RequiredArgsConstructor
   public enum Direction {
     CLOCKWISE(-1),
@@ -29,7 +38,6 @@ public class WheelRadiusCharacterization extends Command {
   private final Drive drive;
   private final Direction omegaDirection;
   private final SlewRateLimiter omegaLimiter = new SlewRateLimiter(1.0);
-  private final double driveRadius = DriveConstants.driveConfig.driveBaseRadius();
 
   private double lastGyroYawRads = 0.0;
   private double accumGyroYawRads = 0.0;
@@ -48,7 +56,7 @@ public class WheelRadiusCharacterization extends Command {
   @Override
   public void initialize() {
     // Reset
-    lastGyroYawRads = drive.getGyroYaw().getRadians();
+    lastGyroYawRads = gyroYawRadsSupplier.getAsDouble();
     accumGyroYawRads = 0.0;
 
     averageWheelPosition =
@@ -61,11 +69,12 @@ public class WheelRadiusCharacterization extends Command {
   @Override
   public void execute() {
     // Run drive at velocity
-    drive.runWheelRadiusCharacterization(omegaLimiter.calculate(omegaDirection.value * 3.0));
+    drive.runWheelRadiusCharacterization(
+        omegaLimiter.calculate(omegaDirection.value * characterizationSpeed.get()));
 
     // Get yaw and wheel positions
-    accumGyroYawRads += MathUtil.angleModulus(drive.getGyroYaw().getRadians() - lastGyroYawRads);
-    lastGyroYawRads = drive.getGyroYaw().getRadians();
+    accumGyroYawRads += MathUtil.angleModulus(gyroYawRadsSupplier.getAsDouble() - lastGyroYawRads);
+    lastGyroYawRads = gyroYawRadsSupplier.getAsDouble();
     averageWheelPosition =
         (Arrays.stream(drive.getWheelRadiusCharacterizationPosition()).sum() / 4.0)
             - startWheelPosition;

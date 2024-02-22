@@ -11,6 +11,7 @@ import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmCon
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -27,6 +28,7 @@ import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -95,6 +97,8 @@ public class Arm {
     io.setPID(kP.get(), kI.get(), kD.get());
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
+    // Set up visualizers
+    NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.armPositionRads));
     measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
     setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
     goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);

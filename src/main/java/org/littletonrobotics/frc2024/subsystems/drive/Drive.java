@@ -418,7 +418,7 @@ public class Drive extends SubsystemBase {
         .finallyDo(() -> modulesOrienting = false)
         .withName("Orient Modules");
   }
-  
+
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "Drive/SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {

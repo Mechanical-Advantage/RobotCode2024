@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
@@ -163,6 +164,9 @@ public class Robot extends LoggedRobot {
     // Robot container periodic methods
     robotContainer.checkControllers();
 
+    // Update NoteVisualizer
+    NoteVisualizer.showIntakedNotes();
+
     // Log CANivore status
     if (Constants.getMode() == Mode.REAL) {
       var canivoreStatus = CANBus.getStatus("canivore");
@@ -173,7 +177,6 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
     }
-
     Threads.setCurrentThreadPriority(true, 10);
   }
 
@@ -194,11 +197,16 @@ public class Robot extends LoggedRobot {
     if (autoCommand != null) {
       autoCommand.schedule();
     }
+
+    NoteVisualizer.resetAutoNotes();
+    NoteVisualizer.setHasNote(true);
   }
 
   /** This function is called periodically during autonomous. */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+    NoteVisualizer.showAutoNotes();
+  }
 
   /** This function is called once when teleop is enabled. */
   @Override
@@ -210,6 +218,8 @@ public class Robot extends LoggedRobot {
     if (autoCommand != null) {
       autoCommand.cancel();
     }
+    NoteVisualizer.clearAutoNotes();
+    NoteVisualizer.showAutoNotes();
   }
 
   /** This function is called periodically during operator control. */

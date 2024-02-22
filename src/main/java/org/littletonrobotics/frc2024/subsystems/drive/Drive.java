@@ -389,13 +389,6 @@ public class Drive extends SubsystemBase {
                                 <= 2.0));
   }
 
-  @AutoLogOutput(key = "Drive/GyroYaw")
-  public Rotation2d getGyroYaw() {
-    return gyroInputs.connected
-        ? gyroInputs.yawPosition
-        : RobotState.getInstance().getEstimatedPose().getRotation();
-  }
-
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "Drive/SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {

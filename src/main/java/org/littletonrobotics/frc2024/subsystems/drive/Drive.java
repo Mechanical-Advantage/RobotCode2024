@@ -418,18 +418,7 @@ public class Drive extends SubsystemBase {
         .finallyDo(() -> modulesOrienting = false)
         .withName("Orient Modules");
   }
-
-  /**
-   * Returns the current gyro yaw defaulting to the estimated pose rotation if the gyro is not
-   * connected.
-   */
-  @AutoLogOutput(key = "Drive/GyroYaw")
-  public Rotation2d getGyroYaw() {
-    return gyroInputs.connected
-        ? gyroInputs.yawPosition
-        : RobotState.getInstance().getEstimatedPose().getRotation();
-  }
-
+  
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
   @AutoLogOutput(key = "Drive/SwerveStates/Measured")
   private SwerveModuleState[] getModuleStates() {

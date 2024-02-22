@@ -24,7 +24,7 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             new DriveConfig(
-                Units.inchesToMeters(1.98),
+                Units.inchesToMeters(2.0),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(26.0),
                 Units.inchesToMeters(37),

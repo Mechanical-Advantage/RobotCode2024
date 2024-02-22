@@ -229,7 +229,8 @@ public class RobotContainer {
             .orientModules(Drive.getCircleOrientations())
             .andThen(
                 new WheelRadiusCharacterization(
-                    drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE)));
+                    drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
+            .withName("Drive Wheel Radius Characterization"));
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
   }
 

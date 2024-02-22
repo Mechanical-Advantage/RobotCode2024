@@ -11,6 +11,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -30,7 +31,7 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
   private final StatusSignal<Double> tempCelsius;
 
   // Control
-  private final VoltageOut voltageOut = new VoltageOut(0.0).withUpdateFreqHz(0.0);
+  private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
   private final NeutralOut neutralOut = new NeutralOut();
 
   public GenericSlamElevatorIOKrakenFOC(int id, String bus, int currentLimitAmps, boolean invert) {
@@ -83,8 +84,8 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
   }
 
   @Override
-  public void runVolts(double volts) {
-    talon.setControl(voltageOut.withOutput(volts));
+  public void runCurrent(double amps) {
+    talon.setControl(currentControl.withOutput(amps));
   }
 
   @Override

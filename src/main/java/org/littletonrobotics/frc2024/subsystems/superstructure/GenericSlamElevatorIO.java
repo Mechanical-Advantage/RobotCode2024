@@ -24,8 +24,8 @@ public interface GenericSlamElevatorIO {
   /** Update the inputs. */
   default void updateInputs(GenericSlamElevatorIOInputs inputs) {}
 
-  /** Run slam elevator at volts */
-  default void runVolts(double volts) {}
+  /** Run slam elevator at amps */
+  default void runCurrent(double amps) {}
 
   /** Stop slam elevator */
   default void stop() {}

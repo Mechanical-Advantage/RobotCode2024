@@ -54,7 +54,7 @@ public class Superstructure extends SubsystemBase {
     // Handle transitions
     if (desiredGoal != Goal.PREPARE_CLIMB && !climber.retracted()) {
       // Wait for retracted before setting
-      climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+      climber.setGoal(GenericSlamElevator.Goal.RETRACT);
     } else if (desiredGoal == Goal.CLIMB && !climber.extended()) {
       // Finish preparing climb before climbing
       currentGoal = Goal.PREPARE_CLIMB;
@@ -65,39 +65,39 @@ public class Superstructure extends SubsystemBase {
     switch (currentGoal) {
       case STOW -> {
         arm.setGoal(Arm.Goal.STOW);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case AIM -> {
         arm.setGoal(Arm.Goal.AIM);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case INTAKE -> {
         arm.setGoal(Arm.Goal.FLOOR_INTAKE);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case STATION_INTAKE -> {
         arm.setGoal(Arm.Goal.STATION_INTAKE);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case AMP -> {
         arm.setGoal(Arm.Goal.AMP);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case SUBWOOFER -> {
         arm.setGoal(Arm.Goal.SUBWOOFER);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case PREPARE_CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        climber.setGoal(GenericSlamElevator.Goal.EXTENDED);
+        climber.setGoal(GenericSlamElevator.Goal.EXTEND);
       }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
       case DIAGNOSTIC_ARM -> {
         arm.setGoal(Arm.Goal.CUSTOM);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACTED);
+        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
       }
     }
 

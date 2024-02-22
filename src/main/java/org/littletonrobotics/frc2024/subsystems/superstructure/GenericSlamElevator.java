@@ -15,10 +15,11 @@ import org.littletonrobotics.junction.Logger;
 public class GenericSlamElevator {
   @RequiredArgsConstructor
   public enum Goal {
-    RETRACTED(-1),
-    EXTENDED(1);
+    IDLE(0),
+    RETRACT(-1),
+    EXTEND(1);
 
-    private final int direction;
+    private final int value;
   }
 
   private final GenericSlamElevatorIO io;
@@ -26,11 +27,11 @@ public class GenericSlamElevator {
       new GenericSlamElevatorIOInputsAutoLogged();
 
   private final String name;
-  private final double slammingVolts;
+  private final double slammingCurrent;
   private final double staticTimeSecs;
   private final double minVelocityThresh;
 
-  private Goal goal = Goal.RETRACTED;
+  private Goal goal = Goal.RETRACT;
   private boolean atGoal = false;
   private final Timer staticTimer = new Timer();
 
@@ -41,7 +42,7 @@ public class GenericSlamElevator {
    *
    * @param name Name of elevator.
    * @param io IO implementation of elevator.
-   * @param slammingVolts Volts to run at when slamming.
+   * @param slammingCurrent Amps to run at when slamming.
    * @param staticTimeSecs Time that it takes for elevator to stop running after hitting the end of
    *     the elevator.
    * @param minVelocityThresh Minimum velocity threshold for elevator to start stopping at in motor
@@ -50,12 +51,12 @@ public class GenericSlamElevator {
   public GenericSlamElevator(
       String name,
       GenericSlamElevatorIO io,
-      double slammingVolts,
+      double slammingCurrent,
       double staticTimeSecs,
       double minVelocityThresh) {
     this.name = name;
     this.io = io;
-    this.slammingVolts = slammingVolts;
+    this.slammingCurrent = slammingCurrent;
     this.staticTimeSecs = staticTimeSecs;
     this.minVelocityThresh = minVelocityThresh;
 
@@ -66,9 +67,13 @@ public class GenericSlamElevator {
     io.updateInputs(inputs);
     Logger.processInputs(name, inputs);
 
+    // Set alert
     disconnected.set(!inputs.motorConnected);
 
-    // Run to goal if not at goal.
+    // Run the io at goal
+    io.runCurrent(goal.value * slammingCurrent);
+
+    // Check if at goal.
     if (!atGoal) {
       // Start static timer if within min velocity threshold.
       if (Math.abs(inputs.velocityRadsPerSec) <= minVelocityThresh) {
@@ -78,17 +83,10 @@ public class GenericSlamElevator {
         staticTimer.stop();
       }
       // If we are finished with timer stop and finish goal, otherwise keep on running.
-      if (staticTimer.hasElapsed(staticTimeSecs)) {
-        io.stop();
-        atGoal = true;
-      } else {
-        io.runVolts(goal.direction * slammingVolts);
-        atGoal = false;
-      }
+      atGoal = staticTimer.hasElapsed(staticTimeSecs);
     } else {
-      io.stop();
-      staticTimer.reset();
       staticTimer.stop();
+      staticTimer.reset();
     }
 
     Logger.recordOutput(name + "/Goal", goal);
@@ -109,10 +107,10 @@ public class GenericSlamElevator {
   }
 
   public boolean extended() {
-    return goal == Goal.EXTENDED && atGoal;
+    return goal == Goal.EXTEND && atGoal;
   }
 
   public boolean retracted() {
-    return goal == Goal.RETRACTED && atGoal;
+    return goal == Goal.RETRACT && atGoal;
   }
 }

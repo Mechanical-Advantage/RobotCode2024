@@ -230,7 +230,8 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
-    autoChooser.addOption("Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
+    autoChooser.addOption(
+        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -259,7 +260,9 @@ public class RobotContainer {
                     drive::clearHeadingGoal)
                 .alongWith(
                     Commands.either(
-                        superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER), superstructure.setGoalCommand(Superstructure.Goal.AIM), autoAimDisable),
+                        superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
+                        superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                        autoAimDisable),
                     flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
@@ -281,7 +284,9 @@ public class RobotContainer {
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
-                    rollers.feedShooter(), superstructure.setGoalCommand(Superstructure.Goal.AIM), flywheels.shootCommand()));
+                    rollers.feedShooter(),
+                    superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                    flywheels.shootCommand()));
 
     // Intake Floor
     controller
@@ -307,7 +312,7 @@ public class RobotContainer {
         .rightBumper()
         .whileTrue(
             superstructure
-                .amp()
+                .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.startEnd(
                         () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),

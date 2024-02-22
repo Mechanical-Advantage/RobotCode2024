@@ -17,10 +17,16 @@ import org.littletonrobotics.frc2024.Constants;
 public class GenericSlamElevatorIOSim implements GenericSlamElevatorIO {
   ElevatorSim sim;
   private double appliedVoltage = 0.0;
-  private PIDController currentController = new PIDController((12.0 / 483.0) * 2.0, 0.0, 0.0);
+  private final PIDController currentController = new PIDController((12.0 / 483.0) * 0.5, 0.0, 0.0);
 
-  public GenericSlamElevatorIOSim(DCMotor motorModel, double maxLength) {
-    sim = new ElevatorSim(DCMotor.getKrakenX60Foc(1), 1.0, 0.0006328, 1.0, 0.0, maxLength, false, 0.0);
+  /**
+   * Creates a new GenericSlamElevator Sim implementation
+   *
+   * @param maxLength Position in motor radians from top to bottom of slam elevator
+   */
+  public GenericSlamElevatorIOSim(double maxLength) {
+    sim = new ElevatorSim(DCMotor.getKrakenX60Foc(1), 1.0, 1.0, 1.0, 0.0, maxLength, false, 0.0);
+    sim.setState(maxLength / 2.0, 0);
   }
 
   @Override
@@ -33,7 +39,7 @@ public class GenericSlamElevatorIOSim implements GenericSlamElevatorIO {
     inputs.positionRads = sim.getPositionMeters(); // Radius of 1
     inputs.velocityRadsPerSec = sim.getVelocityMetersPerSecond();
     inputs.appliedVoltage = appliedVoltage;
-    inputs.supplyCurrentAmps = sim.getCurrentDrawAmps();
+    inputs.supplyCurrentAmps = Math.abs(sim.getCurrentDrawAmps());
   }
 
   @Override
@@ -45,6 +51,7 @@ public class GenericSlamElevatorIOSim implements GenericSlamElevatorIO {
 
   @Override
   public void stop() {
-    runCurrent(0.0);
+    appliedVoltage = 0.0;
+    sim.setInputVoltage(appliedVoltage);
   }
 }

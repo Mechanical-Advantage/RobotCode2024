@@ -7,19 +7,18 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.junction.Logger;
 
-public class GenericSlamElevator {
-  @RequiredArgsConstructor
-  public enum Goal {
-    IDLE(0),
-    RETRACT(-1),
-    EXTEND(1);
+public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElevatorGoal> {
 
-    private final int value;
+  public interface SlamElevatorGoal {
+    /** Returns either -1 or 1 based on directino of slamming */
+    int getDirection();
+
+    boolean isStopAtGoal();
   }
 
   private final GenericSlamElevatorIO io;
@@ -31,7 +30,11 @@ public class GenericSlamElevator {
   private final double staticTimeSecs;
   private final double minVelocityThresh;
 
-  private Goal goal = Goal.RETRACT;
+  protected abstract G getGoal();
+
+  private G currentGoal = null;
+  private G lastGoal = null;
+
   private boolean atGoal = false;
   private final Timer staticTimer = new Timer();
 
@@ -67,11 +70,16 @@ public class GenericSlamElevator {
     io.updateInputs(inputs);
     Logger.processInputs(name, inputs);
 
+    currentGoal = getGoal();
+    // Reset if changing goals
+    if (lastGoal != null && currentGoal != lastGoal) {
+      atGoal = false;
+      staticTimer.stop();
+      staticTimer.reset();
+    }
+
     // Set alert
     disconnected.set(!inputs.motorConnected);
-
-    // Run the io at goal
-    io.runCurrent(goal.value * slammingCurrent);
 
     // Check if at goal.
     if (!atGoal) {
@@ -79,27 +87,44 @@ public class GenericSlamElevator {
       if (Math.abs(inputs.velocityRadsPerSec) <= minVelocityThresh) {
         staticTimer.start();
       } else {
-        staticTimer.reset();
         staticTimer.stop();
+        staticTimer.reset();
       }
-      // If we are finished with timer stop and finish goal, otherwise keep on running.
+      // If we are finished with timer, finish goal.
       atGoal = staticTimer.hasElapsed(staticTimeSecs);
     } else {
       staticTimer.stop();
       staticTimer.reset();
     }
 
-    Logger.recordOutput(name + "/Goal", goal);
-    Logger.recordOutput(name + "/atGoal", atGoal);
-  }
+    // Run to goal.
+    if (!atGoal) {
+      io.runCurrent(currentGoal.getDirection() * slammingCurrent);
+    } else {
+      if (currentGoal.isStopAtGoal()) {
+        io.stop();
+      } else {
+        io.runCurrent(currentGoal.getDirection() * slammingCurrent);
+      }
+    }
 
-  public void setGoal(Goal goal) {
-    if (this.goal == goal) return; // Already set as current goal
-    this.goal = goal;
-    // Reset state
-    atGoal = false;
-    staticTimer.reset();
-    staticTimer.stop();
+    // Set last goal
+    lastGoal = currentGoal;
+
+    if (DriverStation.isDisabled()) {
+      // Reset
+      io.stop();
+      currentGoal = null;
+      lastGoal = null;
+      atGoal = false;
+      staticTimer.stop();
+      staticTimer.reset();
+    }
+
+    Logger.recordOutput("Superstructure/" + name + "/Goal", getGoal().toString());
+    Logger.recordOutput("Superstructure/" + name + "/atGoal", atGoal);
+    Logger.recordOutput("Superstructure/" + name + "/Extended", extended());
+    Logger.recordOutput("Superstructure/" + name + "/Retracted", retracted());
   }
 
   public boolean atGoal() {
@@ -107,10 +132,10 @@ public class GenericSlamElevator {
   }
 
   public boolean extended() {
-    return goal == Goal.EXTEND && atGoal;
+    return getGoal().getDirection() == 1 && atGoal;
   }
 
   public boolean retracted() {
-    return goal == Goal.RETRACT && atGoal;
+    return getGoal().getDirection() == -1 && atGoal;
   }
 }

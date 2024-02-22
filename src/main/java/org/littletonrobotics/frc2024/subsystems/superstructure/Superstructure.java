@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -31,15 +32,18 @@ public class Superstructure extends SubsystemBase {
     DIAGNOSTIC_ARM
   }
 
+  private Goal lastGoal = Goal.STOW;
   @Getter private Goal currentGoal = Goal.STOW;
   @Getter private Goal desiredGoal = Goal.STOW;
 
   private final Arm arm;
   private final Climber climber;
+  private final BackpackActuator backpackActuator;
 
-  public Superstructure(Arm arm, Climber climber) {
+  public Superstructure(Arm arm, Climber climber, BackpackActuator backpackActuator) {
     this.arm = arm;
     this.climber = climber;
+    this.backpackActuator = backpackActuator;
 
     setDefaultCommand(setGoalCommand(Goal.STOW));
   }
@@ -51,58 +55,65 @@ public class Superstructure extends SubsystemBase {
       arm.stop();
     }
 
-    // Handle transitions
-    if (desiredGoal != Goal.PREPARE_CLIMB && !climber.retracted()) {
-      // Wait for retracted before setting
-      climber.setGoal(GenericSlamElevator.Goal.RETRACT);
-    } else if (desiredGoal == Goal.CLIMB && !climber.extended()) {
-      // Finish preparing climb before climbing
-      currentGoal = Goal.PREPARE_CLIMB;
-    } else {
-      currentGoal = desiredGoal;
-    }
+    currentGoal = desiredGoal;
 
     switch (currentGoal) {
       case STOW -> {
         arm.setGoal(Arm.Goal.STOW);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case AIM -> {
         arm.setGoal(Arm.Goal.AIM);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case INTAKE -> {
         arm.setGoal(Arm.Goal.FLOOR_INTAKE);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case STATION_INTAKE -> {
         arm.setGoal(Arm.Goal.STATION_INTAKE);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case AMP -> {
         arm.setGoal(Arm.Goal.AMP);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case SUBWOOFER -> {
         arm.setGoal(Arm.Goal.SUBWOOFER);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case PREPARE_CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        climber.setGoal(GenericSlamElevator.Goal.EXTEND);
+        climber.setGoal(Climber.Goal.EXTEND);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case TRAP -> {
+        arm.setGoal(Arm.Goal.CLIMB);
+        climber.setGoal(Climber.Goal.RETRACT);
+        backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
       }
       case DIAGNOSTIC_ARM -> {
         arm.setGoal(Arm.Goal.CUSTOM);
-        climber.setGoal(GenericSlamElevator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
     }
+    lastGoal = currentGoal;
 
     arm.periodic();
     climber.periodic();
+    backpackActuator.periodic();
 
     Logger.recordOutput("Superstructure/GoalState", desiredGoal);
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
@@ -115,7 +126,9 @@ public class Superstructure extends SubsystemBase {
 
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
-    return currentGoal == desiredGoal && arm.atGoal() & climber.atGoal();
+    return currentGoal == desiredGoal
+        && arm.atGoal() & climber.atGoal()
+        && backpackActuator.atGoal();
   }
 
   public Command runArmCharacterization() {

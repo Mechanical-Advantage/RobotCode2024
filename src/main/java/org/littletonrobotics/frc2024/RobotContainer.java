@@ -54,6 +54,9 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
@@ -102,6 +105,7 @@ public class RobotContainer {
     Backpack backpack = null;
     Arm arm = null;
     Climber climber = null;
+    BackpackActuator backpackActuator = null;
     RollersSensorsIO rollersSensorsIO = null;
 
     // Create subsystems
@@ -160,6 +164,7 @@ public class RobotContainer {
 
           arm = new Arm(new ArmIOSim());
           climber = new Climber(new ClimberIOSim());
+          backpackActuator = new BackpackActuator(new BackpackActuatorIOSim());
         }
       }
     }
@@ -206,8 +211,11 @@ public class RobotContainer {
     if (climber == null) {
       climber = new Climber(new ClimberIO() {});
     }
+    if (backpackActuator == null) {
+      backpackActuator = new BackpackActuator(new BackpackActuatorIO() {});
+    }
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
-    superstructure = new Superstructure(arm, climber);
+    superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Configure autos and buttons
     configureAutos();

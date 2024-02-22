@@ -160,7 +160,7 @@ public class Rollers extends SubsystemBase {
 
   public Command quickFeed() {
     return startEnd(() -> goal = Goal.QUICK_INTAKE_TO_FEED, this::goIdle)
-            .alongWith(NoteVisualizer.shoot())
+        .alongWith(NoteVisualizer.shoot())
         .withName("Rollers Quick Feed");
   }
 

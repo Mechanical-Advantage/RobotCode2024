@@ -15,18 +15,31 @@ import edu.wpi.first.wpilibj.simulation.ElevatorSim;
 import org.littletonrobotics.frc2024.Constants;
 
 public class GenericSlamElevatorIOSim implements GenericSlamElevatorIO {
-  ElevatorSim sim;
+  private final ElevatorSim sim;
   private double appliedVoltage = 0.0;
-  private final PIDController currentController = new PIDController((12.0 / 483.0) * 0.5, 0.0, 0.0);
+  private final PIDController currentController = new PIDController((12.0 / 483.0) * 3, 0.0, 0.0);
+
+  private final double drumRadiusMeters;
 
   /**
    * Creates a new GenericSlamElevator Sim implementation
    *
-   * @param maxLength Position in motor radians from top to bottom of slam elevator
+   * @param maxLengthMeters Position in motor radians from top to bottom of slam elevator
    */
-  public GenericSlamElevatorIOSim(double maxLength) {
-    sim = new ElevatorSim(DCMotor.getKrakenX60Foc(1), 1.0, 1.0, 1.0, 0.0, maxLength, false, 0.0);
-    sim.setState(maxLength / 2.0, 0);
+  public GenericSlamElevatorIOSim(
+      double maxLengthMeters, double reduction, double drumRadiusMeters) {
+    sim =
+        new ElevatorSim(
+            DCMotor.getKrakenX60Foc(1),
+            reduction,
+            0.5,
+            drumRadiusMeters,
+            0.0,
+            maxLengthMeters,
+            false,
+            0.0);
+    sim.setState(maxLengthMeters / 2.0, 0);
+    this.drumRadiusMeters = drumRadiusMeters;
   }
 
   @Override
@@ -36,7 +49,7 @@ public class GenericSlamElevatorIOSim implements GenericSlamElevatorIO {
     }
 
     sim.update(Constants.loopPeriodSecs);
-    inputs.positionRads = sim.getPositionMeters(); // Radius of 1
+    inputs.positionRads = sim.getPositionMeters() / drumRadiusMeters;
     inputs.velocityRadsPerSec = sim.getVelocityMetersPerSecond();
     inputs.appliedVoltage = appliedVoltage;
     inputs.supplyCurrentAmps = Math.abs(sim.getCurrentDrawAmps());

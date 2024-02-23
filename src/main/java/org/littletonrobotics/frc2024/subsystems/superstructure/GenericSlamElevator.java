@@ -9,10 +9,10 @@ package org.littletonrobotics.frc2024.subsystems.superstructure;
 
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import org.littletonrobotics.frc2024.util.Alert;
-import org.littletonrobotics.junction.Logger;
-
 import java.util.function.BooleanSupplier;
+import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
 public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElevatorGoal> {
 
@@ -34,7 +34,6 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
   protected abstract G getGoal();
 
-  private G currentGoal = null;
   private G lastGoal = null;
 
   private boolean atGoal = false;
@@ -91,9 +90,8 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       setBrakeMode(true);
     }
 
-    currentGoal = getGoal();
     // Reset if changing goals
-    if (lastGoal != null && currentGoal != lastGoal) {
+    if (lastGoal != null && getGoal() != lastGoal) {
       atGoal = false;
       staticTimer.stop();
       staticTimer.reset();
@@ -120,22 +118,21 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
     // Run to goal.
     if (!atGoal) {
-      io.runCurrent(currentGoal.getDirection() * slammingCurrent);
+      io.runCurrent(getGoal().getDirection() * slammingCurrent);
     } else {
-      if (currentGoal.isStopAtGoal()) {
+      if (getGoal().isStopAtGoal()) {
         io.stop();
       } else {
-        io.runCurrent(currentGoal.getDirection() * slammingCurrent);
+        io.runCurrent(getGoal().getDirection() * slammingCurrent);
       }
     }
 
     // Set last goal
-    lastGoal = currentGoal;
+    lastGoal = getGoal();
 
     if (DriverStation.isDisabled()) {
       // Reset
       io.stop();
-      currentGoal = null;
       lastGoal = null;
       atGoal = false;
       staticTimer.stop();
@@ -145,19 +142,19 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
     }
 
     Logger.recordOutput("Superstructure/" + name + "/Goal", getGoal().toString());
-    Logger.recordOutput("Superstructure/" + name + "/atGoal", atGoal);
-    Logger.recordOutput("Superstructure/" + name + "/Extended", extended());
-    Logger.recordOutput("Superstructure/" + name + "/Retracted", retracted());
   }
 
+  @AutoLogOutput(key = "Superstructure/{name}/AtGoal")
   public boolean atGoal() {
     return atGoal;
   }
 
+  @AutoLogOutput(key = "Superstructure/{name}/Extended")
   public boolean extended() {
     return getGoal().getDirection() == 1 && atGoal;
   }
 
+  @AutoLogOutput(key = "Superstructure/{name}/Retracted")
   public boolean retracted() {
     return getGoal().getDirection() == -1 && atGoal;
   }

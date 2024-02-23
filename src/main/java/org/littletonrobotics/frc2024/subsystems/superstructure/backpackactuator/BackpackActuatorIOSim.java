@@ -7,12 +7,15 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator;
 
+import edu.wpi.first.math.util.Units;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevatorIOSim;
 
 public class BackpackActuatorIOSim extends GenericSlamElevatorIOSim implements BackpackActuatorIO {
-  private static final double maxLength = 10.0;
+  private static final double maxLengthMeters = Units.inchesToMeters(11.872);
+  private static final double reduction = 32.0 / 10.0;
+  private static final double drumRadiusMeters = Units.inchesToMeters(0.5);
 
   public BackpackActuatorIOSim() {
-    super(maxLength);
+    super(maxLengthMeters, reduction, drumRadiusMeters);
   }
 }

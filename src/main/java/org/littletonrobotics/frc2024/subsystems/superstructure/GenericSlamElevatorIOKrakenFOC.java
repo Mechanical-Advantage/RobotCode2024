@@ -33,8 +33,13 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
   private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
   private final NeutralOut neutralOut = new NeutralOut();
 
-  public GenericSlamElevatorIOKrakenFOC(int id, String bus, int currentLimitAmps, boolean invert) {
+  // Reduction to final sprocket
+  private final double reduction;
+
+  public GenericSlamElevatorIOKrakenFOC(
+      int id, String bus, int currentLimitAmps, boolean invert, double reduction) {
     talon = new TalonFX(id, bus);
+    this.reduction = reduction;
 
     TalonFXConfiguration config = new TalonFXConfiguration();
     config.MotorOutput.Inverted =
@@ -74,7 +79,8 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
                 torqueCurrent,
                 tempCelsius)
             .isOK();
-    inputs.positionRads = Units.rotationsToRadians(positionRotations.getValueAsDouble());
+    inputs.positionRads =
+        Units.rotationsToRadians(positionRotations.getValueAsDouble()) * reduction;
     inputs.velocityRadsPerSec = Units.rotationsToRadians(velocityRps.getValueAsDouble());
     inputs.appliedVoltage = appliedVoltage.getValueAsDouble();
     inputs.supplyCurrentAmps = supplyCurrent.getValueAsDouble();

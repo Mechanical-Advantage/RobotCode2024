@@ -12,10 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator;
 
-@Getter
-@Setter
 public class Climber extends GenericSlamElevator<Climber.Goal> {
-
   @RequiredArgsConstructor
   @Getter
   public enum Goal implements SlamElevatorGoal {
@@ -27,9 +24,14 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
     private final boolean stopAtGoal;
   }
 
-  private Goal goal = Goal.RETRACT_AND_IDLE;
+  @Getter @Setter private Goal goal = Goal.RETRACT_AND_IDLE;
 
   public Climber(ClimberIO io) {
-    super("Climber", io, 40.0, 0.4, 0.1);
+    super("Climber", io, 50.0, 0.4, 0.1);
+  }
+
+  @Override
+  public void periodic() {
+    super.periodic();
   }
 }

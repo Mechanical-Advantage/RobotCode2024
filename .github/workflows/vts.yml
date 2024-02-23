@@ -1,0 +1,27 @@
+name: VTS Build
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        if: github.event_name != 'push' || ${GITHUB_REF##*/} != 'main'
+        run: earthly --ci --use-inline-cache ./trajectory_native+vts-all-platforms
+      - name: Build and push
+        if: github.event_name == 'push' && ${GITHUB_REF##*/} == 'main'
+        run: earthly --ci --use-inline-cache --save-inline-cache --push ./trajectory_native+vts-all-platforms

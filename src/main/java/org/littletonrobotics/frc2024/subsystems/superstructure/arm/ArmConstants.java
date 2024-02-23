@@ -21,15 +21,31 @@ public class ArmConstants {
   public static Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
   public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
-  public static int leaderID = 25;
-  public static int followerID = 26;
-  public static int armEncoderID = 42;
+  public static int leaderID =
+      switch (Constants.getRobot()) {
+        default -> 10;
+        case DEVBOT -> 25;
+      };
+  public static int followerID =
+      switch (Constants.getRobot()) {
+        default -> 11;
+        case DEVBOT -> 26;
+      };
+  public static int armEncoderID =
+      switch (Constants.getRobot()) {
+        default -> 0;
+        case DEVBOT -> 42;
+      };
 
   public static boolean leaderInverted = false;
   public static boolean followerInverted = false;
 
   /** The offset of the arm encoder in rotations. */
-  public static double armEncoderOffsetRotations = Units.radiansToRotations(1.233 + Math.PI / 2.0);
+  public static double armEncoderOffsetRotations =
+      switch (Constants.getRobot()) {
+        default -> 0.0;
+        case DEVBOT -> Units.radiansToRotations(1.233 + Math.PI / 2.0);
+      };
 
   public static double armLength =
       switch (Constants.getRobot()) {

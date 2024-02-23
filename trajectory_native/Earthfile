@@ -1,62 +1,98 @@
-VERSION 0.7
-FROM debian:bookworm-20240110
+VERSION 0.8
+FROM alpine:3.19.1
 WORKDIR /RobotCode2024/trajectory_native
 
-apt-deps:
-    ENV DEBIAN_FRONTEND=noninteractive
-    RUN apt update && apt install -y wget build-essential cmake autoconf libtool pkg-config git libblas-dev liblapack-dev clang lld gfortran
-    SAVE IMAGE --cache-hint
-
-grpc:
-    FROM +apt-deps
-    RUN git clone --recurse-submodules -b v1.60.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
-    RUN mkdir grpc/build
-    WORKDIR grpc/build
+APK_ADD:
+    FUNCTION
+    ARG pkgs
     ARG TARGETARCH
-    IF [ "$TARGETARCH" = "arm64" ]
-        ENV CC=clang
-        ENV CXX=clang++
-    END
-    RUN cmake -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF ..
-    RUN make -j4
-    RUN make DESTDIR=$(pwd)/installroot_top install
-    RUN mkdir installroot
-    RUN mv installroot_top/usr/local/* installroot/
+    RUN mkdir -p /var/cache/apk
+    RUN ln -s /var/cache/apk /etc/apk/cache
+    RUN --mount=type=cache,id=apk-cache-$TARGETARCH,sharing=locked,target=/var/cache/apk apk add --update $pkgs
+    RUN rm -rf /var/cache/apk/*
+
+apk-deps:
+    DO +APK_ADD --pkgs="grpc-dev protobuf-dev blas-dev lapack-dev"
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-apk-deps:latest
+
+ipopt:
+    FROM +apk-deps
+    ENV CC=clang
+    ENV CXX=clang++
+    DO +APK_ADD --pkgs="clang make patch gfortran"
+    RUN mkdir ipopt-mumps-build
+    WORKDIR ipopt-mumps-build
+    RUN wget -c https://github.com/coin-or-tools/ThirdParty-Mumps/archive/refs/tags/releases/3.0.5.tar.gz -O - | tar -xz
+    WORKDIR ThirdParty-Mumps-releases-3.0.5
+    RUN ./get.Mumps
+    RUN ./configure
+    RUN make -j8
+    # Install to both system (for subsequent ipopt build) and installroot (to copy out as artifacts)
+    RUN make install
+    RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
+    WORKDIR ..
+
+    RUN wget -c https://github.com/coin-or/Ipopt/archive/refs/tags/releases/3.14.14.tar.gz -O - | tar -xz
+    RUN mkdir Ipopt-releases-3.14.14/build
+    WORKDIR Ipopt-releases-3.14.14/build
+    ENV CC=clang
+    ENV CXX=clang++
+    RUN ../configure
+    RUN make -j8
+    RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-ipopt:latest
+    SAVE ARTIFACT /RobotCode2024/trajectory_native/ipopt-mumps-build/installroot
+
+casadi:
+    FROM +apk-deps
+    BUILD +ipopt
+    COPY +ipopt/installroot/usr/local /usr/local/
+    RUN wget -c https://github.com/casadi/casadi/archive/refs/tags/3.6.4.tar.gz -O - | tar -xz
+    RUN mkdir casadi-3.6.4/build
+    WORKDIR casadi-3.6.4/build
+    DO +APK_ADD --pkgs="clang make cmake tinyxml2-dev"
+    ENV CC=clang
+    ENV CXX=clang++
+    RUN cmake -DWITH_IPOPT=ON -DWITH_DEEPBIND=OFF -DWITH_BUILD_TINYXML=OFF ..
+    RUN make -j8
+    RUN make DESTDIR=$(pwd)/installroot install
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-casadi:latest
     SAVE ARTIFACT installroot
 
 trajoptlib:
-    FROM +apt-deps
-    # Latest commit seems to break casadi at least on arm64
-    GIT CLONE --branch 95c20be79be7557673d75d631703dc92fe6a191e https://github.com/SleipnirGroup/TrajoptLib TrajoptLib
-    WORKDIR TrajoptLib
-    COPY trajoptlib-aarch64.patch .
-    RUN git apply --ignore-space-change --ignore-whitespace trajoptlib-aarch64.patch
-    RUN mkdir build
-    WORKDIR build
-    ARG TARGETARCH
-    IF [ "$TARGETARCH" = "arm64" ]
-        ENV CC=clang
-        ENV CXX=clang++
-    END
-    RUN cmake -DOPTIMIZER_BACKEND=casadi -DBUILD_TESTING=OFF ..
-    RUN make -j4
-    RUN make DESTDIR=$(pwd)/installroot_top install
-    RUN mkdir installroot
-    RUN mv installroot_top/usr/local/* installroot/
+    FROM +apk-deps
+    BUILD +ipopt
+    BUILD +casadi
+    COPY +ipopt/installroot/usr/local /usr/local/
+    COPY +casadi/installroot/usr/local /usr/local/
+    LET TRAJOPT_COMMIT=95c20be79be7557673d75d631703dc92fe6a191e
+    RUN wget -c https://github.com/SleipnirGroup/TrajoptLib/archive/$TRAJOPT_COMMIT.tar.gz -O - | tar -xz
+    RUN mkdir TrajoptLib-$TRAJOPT_COMMIT/build
+    WORKDIR TrajoptLib-$TRAJOPT_COMMIT/build
+    # Use our CMakeLists.txt (uses system casadi install)
+    RUN rm ../CMakeLists.txt
+    COPY trajoptlib-CMakeLists.txt ../CMakeLists.txt
+    DO +APK_ADD --pkgs="clang make cmake git tinyxml2-dev"
+    ENV CC=clang
+    ENV CXX=clang++
+    RUN cmake -DOPTIMIZER_BACKEND=casadi ..
+    RUN make -j8
+    RUN make DESTDIR=$(pwd)/installroot install
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-trajoptlib:latest
     SAVE ARTIFACT installroot
 
 dev-image:
-    FROM +apt-deps
-    BUILD +grpc
+    FROM +apk-deps
+    BUILD +ipopt
+    BUILD +casadi
     BUILD +trajoptlib
-    COPY +grpc/installroot /usr/local/
-    COPY +trajoptlib/installroot /usr/local/
-    ARG TARGETARCH
-    IF [ "$TARGETARCH" = "arm64" ]
-        ENV CC=clang
-        ENV CXX=clang++
-    END
-    SAVE IMAGE littletonrobotics/vts-dev
+    COPY +ipopt/installroot/usr/local /usr/local/
+    COPY +casadi/installroot/usr/local /usr/local/
+    COPY +trajoptlib/installroot/usr/local /usr/local/
+    DO +APK_ADD --pkgs="clang make cmake git gdb tinyxml2-dev"
+    ENV CC=clang
+    ENV CXX=clang++
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-dev-image:latest
 
 vts:
     FROM +dev-image
@@ -65,14 +101,19 @@ vts:
     COPY CMakeLists.txt CMakeLists.txt
     RUN mkdir build
     WORKDIR build
-    ARG TARGETARCH
-    IF [ "$TARGETARCH" = "arm64" ]
-        ENV CC=clang
-        ENV CXX=clang++
-    END
+    ENV CC=clang
+    ENV CXX=clang++
     RUN cmake ..
-    RUN make -j4
+    RUN make -j8
     EXPOSE 56328
     ENV GRPC_VERBOSITY=info
     ENTRYPOINT ["./trajectory_native"]
-    SAVE IMAGE littletonrobotics/vts
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts:latest
+
+vts-all-platforms:
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +apk-deps
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +ipopt
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +casadi
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +trajoptlib
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +dev-image
+    BUILD --platform=linux/amd64 --platform=linux/arm64 +vts

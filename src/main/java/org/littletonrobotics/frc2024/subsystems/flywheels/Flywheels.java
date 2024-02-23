@@ -189,7 +189,7 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  /** Run characterization with input in either current or amps */
+  /** Runs flywheels at the commanded voltage or amps. */
   public void runCharacterization(double input) {
     setGoal(Goal.CHARACTERIZING);
     io.runCharacterizationLeft(input);

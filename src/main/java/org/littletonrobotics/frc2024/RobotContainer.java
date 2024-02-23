@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
+import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
@@ -215,11 +216,19 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
-                drive, drive::runCharacterizationVolts, drive::getCharacterizationVelocity)
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
     autoChooser.addOption(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+            drive, drive::runCharacterization, drive::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Flywheels Static Characterization",
+        new StaticCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());

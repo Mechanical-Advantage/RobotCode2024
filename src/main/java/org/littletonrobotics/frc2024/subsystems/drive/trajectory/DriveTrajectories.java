@@ -206,7 +206,7 @@ public class DriveTrajectories {
 
     // 5N-S0-C0123
     paths.put(
-        "N5-S0-C0123_driveToS0",
+        "N5-S2-C432_driveToS2",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingAmpFace)
@@ -215,7 +215,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N5-S0-C0123_driveToC0",
+        "N5-S2-C432_driveToC4",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
@@ -230,7 +230,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N5-S0-C0123_driveToC1",
+        "N5-S2-C432_driveToC3",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
@@ -248,7 +248,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N5-S0-C0123_driveToC2",
+        "N5-S2-C432_driveToC2",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
@@ -270,7 +270,7 @@ public class DriveTrajectories {
 
     // N5-C012-S0
     paths.put(
-        "N5-C432-S2_driveToC4",
+        "N5-C012-S0_driveToC0",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceFace)
@@ -279,7 +279,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N5-C432-S2_driveToC3",
+        "N5-C012-S0_driveToC1",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
@@ -295,7 +295,7 @@ public class DriveTrajectories {
                 .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
                 .build()));
     paths.put(
-        "N5-C432-S2_driveToC2",
+        "N5-C012-S0_driveToC2",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
@@ -312,7 +312,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N5-C432-S2_driveToPodium",
+        "N5-C012-S0_driveToPodium",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
@@ -331,7 +331,7 @@ public class DriveTrajectories {
 
     // N6-S12-C0123
     paths.put(
-        "N6-S12-C0123_driveToS1",
+        "N6-S21-C432_driveToS2",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingAmpFace)
@@ -340,7 +340,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N6-S12-C0123_driveToS2",
+        "N6-S21-C432_driveToS1",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
@@ -356,7 +356,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N6-S12-C0123_driveToC0",
+        "N6-S21-C432_driveToC4",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
@@ -373,7 +373,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N6-S12-C0123_driveToC1",
+        "N6-S21-C432_driveToC3",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(
@@ -390,7 +390,7 @@ public class DriveTrajectories {
                 .build()));
 
     paths.put(
-        "N6-S12-C0123_driveToC2",
+        "N6-S21-C432_driveToC2",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(

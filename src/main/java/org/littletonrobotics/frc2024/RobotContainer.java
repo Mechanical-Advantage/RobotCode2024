@@ -223,12 +223,13 @@ public class RobotContainer {
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
 
+    autoChooser.addOption("N4_S0_C21", autoBuilder.N4_S0_C21());
+    autoChooser.addOption("N4_S2_C43", autoBuilder.N4_S2_C43());
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
-    autoChooser.addOption("N4_S0_C01", autoBuilder.N4_S0_C01());
     autoChooser.addOption("N5_S1_C234", autoBuilder.N5_S1_C234());
-    autoChooser.addOption("N5_S0_C012", autoBuilder.N5_S0_C012());
-    autoChooser.addOption("N5_C432_S2", autoBuilder.N5_C432_S2());
-    autoChooser.addOption("N6_S12-C0123", autoBuilder.N6_S12_C0123());
+    autoChooser.addOption("N5_S2_C432", autoBuilder.N5_S2_C432());
+    autoChooser.addOption("N5_C012_S0", autoBuilder.N5_C012_S0());
+    autoChooser.addOption("N6_S21-C432", autoBuilder.N6_S21_C432());
   }
 
   /**

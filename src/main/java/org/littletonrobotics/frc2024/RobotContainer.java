@@ -9,7 +9,6 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
@@ -83,7 +82,8 @@ public class RobotContainer {
   private final OverrideSwitches overrides = new OverrideSwitches(5);
   private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
-  private final Trigger autoAimDisable = overrides.operatorSwitch(2);
+  private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
+  private final Trigger autoAimDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
@@ -255,14 +255,19 @@ public class RobotContainer {
                 superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
             superstructure.aim(),
             armPresetModeEnable);
+    Command driveAimCommand =
+        Commands.either(
+            Commands.none(),
+            Commands.startEnd(
+                () ->
+                    drive.setHeadingGoal(
+                        () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                drive::clearHeadingGoal),
+            autoAimDisable);
     controller
         .a()
         .whileTrue(
-            Commands.startEnd(
-                    () ->
-                        drive.setHeadingGoal(
-                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
-                    drive::clearHeadingGoal)
+            driveAimCommand
                 .alongWith(superstructureAimCommand, flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
@@ -312,9 +317,12 @@ public class RobotContainer {
             superstructure
                 .amp()
                 .alongWith(
-                    Commands.startEnd(
-                        () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
-                        drive::clearHeadingGoal)));
+                    Commands.either(
+                        Commands.none(),
+                        Commands.startEnd(
+                            () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
+                            drive::clearHeadingGoal),
+                        autoAlignDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())

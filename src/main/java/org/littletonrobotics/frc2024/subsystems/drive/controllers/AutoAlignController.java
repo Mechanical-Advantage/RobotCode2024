@@ -22,32 +22,32 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class AutoAlignController {
-  private static LoggedTunableNumber linearkP =
+  private static final LoggedTunableNumber linearkP =
       new LoggedTunableNumber("AutoAlign/drivekP", DriveConstants.autoAlignConstants.linearkP());
-  private static LoggedTunableNumber linearkD =
+  private static final LoggedTunableNumber linearkD =
       new LoggedTunableNumber("AutoAlign/drivekD", DriveConstants.autoAlignConstants.linearkD());
-  private static LoggedTunableNumber thetakP =
+  private static final LoggedTunableNumber thetakP =
       new LoggedTunableNumber("AutoAlign/thetakP", DriveConstants.autoAlignConstants.thetakP());
-  private static LoggedTunableNumber thetakD =
+  private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("AutoAlign/thetakD", DriveConstants.autoAlignConstants.thetakD());
-  private static LoggedTunableNumber linearTolerance =
+  private static final LoggedTunableNumber linearTolerance =
       new LoggedTunableNumber(
           "AutoAlign/controllerLinearTolerance",
           DriveConstants.autoAlignConstants.linearTolerance());
-  private static LoggedTunableNumber thetaTolerance =
+  private static final LoggedTunableNumber thetaTolerance =
       new LoggedTunableNumber(
           "AutoAlign/controllerThetaTolerance", DriveConstants.autoAlignConstants.thetaTolerance());
-  private static LoggedTunableNumber maxLinearVelocity =
+  private static final LoggedTunableNumber maxLinearVelocity =
       new LoggedTunableNumber(
           "AutoAlign/maxLinearVelocity", DriveConstants.autoAlignConstants.maxLinearVelocity());
-  private static LoggedTunableNumber maxLinearAcceleration =
+  private static final LoggedTunableNumber maxLinearAcceleration =
       new LoggedTunableNumber(
           "AutoAlign/maxLinearAcceleration",
           DriveConstants.autoAlignConstants.maxLinearAcceleration());
-  private static LoggedTunableNumber maxAngularVelocity =
+  private static final LoggedTunableNumber maxAngularVelocity =
       new LoggedTunableNumber(
           "AutoAlign/maxAngularVelocity", DriveConstants.autoAlignConstants.maxAngularVelocity());
-  private static LoggedTunableNumber maxAngularAcceleration =
+  private static final LoggedTunableNumber maxAngularAcceleration =
       new LoggedTunableNumber(
           "AutoAlign/maxAngularAcceleration",
           DriveConstants.autoAlignConstants.maxAngularAcceleration());

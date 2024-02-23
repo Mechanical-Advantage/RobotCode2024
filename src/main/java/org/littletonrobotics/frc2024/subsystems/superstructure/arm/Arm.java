@@ -19,6 +19,8 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +89,9 @@ public class Arm {
   private final Alert absoluteEncoderDisconnected =
       new Alert("Arm absolute encoder disconnected!", Alert.AlertType.WARNING);
 
+  private BooleanSupplier disableOverride = () -> false;
+  private BooleanSupplier coastOverride = () -> false;
+
   public Arm(ArmIO io) {
     this.io = io;
     io.setBrakeMode(true);
@@ -104,6 +109,11 @@ public class Arm {
     goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
   }
 
+  public void setOverrides(BooleanSupplier disableOverride, BooleanSupplier coastOverride) {
+    this.disableOverride = disableOverride;
+    this.coastOverride = coastOverride;
+  }
+
   public void periodic() {
     // Process inputs
     io.updateInputs(inputs);
@@ -113,6 +123,9 @@ public class Arm {
     leaderMotorDisconnected.set(!inputs.leaderMotorConnected);
     followerMotorDisconnected.set(!inputs.followerMotorConnected);
     absoluteEncoderDisconnected.set(!inputs.absoluteEncoderConnected);
+
+    // Set coast mode
+    io.setBrakeMode(coastOverride.getAsBoolean());
 
     // Update controllers
     LoggedTunableNumber.ifChanged(
@@ -134,7 +147,8 @@ public class Arm {
         maxVelocity,
         maxAcceleration);
 
-    if (!characterizing) {
+    // Don't run profile when characterizing or if coast mode
+    if (!characterizing || !coastOverride.getAsBoolean()) {
       // Run closed loop
       setpointState =
           motionProfile.calculate(
@@ -151,7 +165,8 @@ public class Arm {
           setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
     }
 
-    if (DriverStation.isDisabled()) {
+    // Check if disabled
+    if (DriverStation.isDisabled() || disableOverride.getAsBoolean()) {
       io.stop();
     }
 

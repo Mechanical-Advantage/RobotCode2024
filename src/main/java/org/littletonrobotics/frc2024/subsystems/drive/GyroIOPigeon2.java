@@ -8,7 +8,6 @@
 package org.littletonrobotics.frc2024.subsystems.drive;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.hardware.Pigeon2;
@@ -39,15 +38,13 @@ public class GyroIOPigeon2 implements GyroIO {
       yawPositionQueue =
           PhoenixOdometryThread.getInstance().registerSignal(pigeon, pigeon.getYaw());
     } else {
-      yawPositionQueue =
-          SparkMaxOdometryThread.getInstance()
-              .registerSignal(() -> pigeon.getYaw().getValueAsDouble());
+      yawPositionQueue = SparkMaxOdometryThread.getInstance().registerSignal(yaw::getValueAsDouble);
     }
   }
 
   @Override
   public void updateInputs(GyroIOInputs inputs) {
-    inputs.connected = BaseStatusSignal.refreshAll(yaw, yawVelocity).equals(StatusCode.OK);
+    inputs.connected = BaseStatusSignal.refreshAll(yaw, yawVelocity).isOK();
     inputs.yawPosition = Rotation2d.fromDegrees(yaw.getValueAsDouble());
     inputs.yawVelocityRadPerSec = Units.degreesToRadians(yawVelocity.getValueAsDouble());
 

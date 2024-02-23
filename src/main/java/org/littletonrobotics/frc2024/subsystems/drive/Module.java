@@ -86,8 +86,8 @@ public class Module {
   }
 
   /** Runs characterization volts or amps depending on using voltage or current control. */
-  public void runCharacterization(double input) {
-    io.runTurnPositionSetpoint(0.0);
+  public void runCharacterization(double turnSetpointRads, double input) {
+    io.runTurnPositionSetpoint(turnSetpointRads);
     if (inputs.hasCurrentControl) {
       io.runDriveCurrent(input);
     } else {
@@ -124,14 +124,19 @@ public class Module {
     return inputs.turnAbsolutePosition;
   }
 
+  /** Get position of wheel rotations in radians */
+  public double getPositionRads() {
+    return inputs.drivePositionRads;
+  }
+
   /** Get position of wheel in meters. */
   public double getPositionMeters() {
-    return inputs.drivePositionRad * driveConfig.wheelRadius();
+    return inputs.drivePositionRads * driveConfig.wheelRadius();
   }
 
   /** Get velocity of wheel in m/s. */
   public double getVelocityMetersPerSec() {
-    return inputs.driveVelocityRadPerSec * driveConfig.wheelRadius();
+    return inputs.driveVelocityRadsPerSec * driveConfig.wheelRadius();
   }
 
   /** Get current {@link SwerveModulePosition} of module. */
@@ -146,6 +151,6 @@ public class Module {
 
   /** Get velocity of drive wheel for characterization */
   public double getCharacterizationVelocity() {
-    return inputs.driveVelocityRadPerSec;
+    return inputs.driveVelocityRadsPerSec;
   }
 }

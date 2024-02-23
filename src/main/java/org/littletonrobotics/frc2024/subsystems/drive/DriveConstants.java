@@ -24,9 +24,9 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             new DriveConfig(
-                Units.inchesToMeters(1.98),
-                Units.inchesToMeters(26.0),
-                Units.inchesToMeters(26.0),
+                Units.inchesToMeters(2.026301746625535),
+                Units.inchesToMeters(20.75),
+                Units.inchesToMeters(20.75),
                 Units.inchesToMeters(37),
                 Units.inchesToMeters(33),
                 Units.feetToMeters(13.05),
@@ -36,8 +36,8 @@ public final class DriveConstants {
         case DEVBOT ->
             new DriveConfig(
                 Units.inchesToMeters(2.01834634),
-                Units.inchesToMeters(26.0),
-                Units.inchesToMeters(26.0),
+                Units.inchesToMeters(20.75),
+                Units.inchesToMeters(20.75),
                 Units.inchesToMeters(37),
                 Units.inchesToMeters(33),
                 Units.feetToMeters(12.16),
@@ -73,10 +73,10 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConfig[] {
-              new ModuleConfig(16, 12, 0, new Rotation2d(-1.93585), true),
-              new ModuleConfig(19, 14, 1, new Rotation2d(0.73053), true),
-              new ModuleConfig(17, 13, 2, new Rotation2d(-0.50507), true),
-              new ModuleConfig(18, 15, 3, new Rotation2d(-1.51666), true)
+              new ModuleConfig(16, 12, 0, new Rotation2d(-0.81761), true),
+              new ModuleConfig(19, 14, 1, new Rotation2d(1.80875), true),
+              new ModuleConfig(17, 13, 2, new Rotation2d(-0.48936), true),
+              new ModuleConfig(18, 15, 3, new Rotation2d(-1.52578), true)
             };
         case DEVBOT ->
             new ModuleConfig[] {
@@ -97,12 +97,12 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
+                5.0,
                 0.0,
+                35.0,
                 0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
+                4000.0,
+                50.0,
                 Mk4iReductions.L3.reduction,
                 Mk4iReductions.TURN.reduction);
         case DEVBOT ->

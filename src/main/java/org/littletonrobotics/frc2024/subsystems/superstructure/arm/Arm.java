@@ -15,10 +15,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -177,20 +174,16 @@ public class Arm {
     return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
   }
 
-  public Command getStaticCurrent() {
-    Timer timer = new Timer();
-    return Commands.run(() -> io.runCurrent(0.5 * timer.get()))
-        .beforeStarting(
-            () -> {
-              characterizing = true;
-              timer.restart();
-            })
-        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
-        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
-        .finallyDo(
-            () -> {
-              io.stop();
-              characterizing = false;
-            });
+  public void runCharacterization(double amps) {
+    characterizing = true;
+    io.runCurrent(amps);
+  }
+
+  public double getCharacterizationVelocity() {
+    return inputs.armVelocityRadsPerSec;
+  }
+
+  public void endCharacterization() {
+    characterizing = false;
   }
 }

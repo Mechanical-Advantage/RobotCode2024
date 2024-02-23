@@ -23,12 +23,12 @@ public class ArmConstants {
 
   public static final int leaderID =
       switch (Constants.getRobot()) {
-        default -> 10;
+        default -> 11;
         case DEVBOT -> 25;
       };
   public static final int followerID =
       switch (Constants.getRobot()) {
-        default -> 11;
+        default -> 10;
         case DEVBOT -> 26;
       };
   public static final int armEncoderID =
@@ -38,13 +38,12 @@ public class ArmConstants {
       };
 
   public static final boolean leaderInverted = false;
-  public static boolean followerInverted = false;
 
-  /** The offset of the arm encoder in rotations. */
-  public static final double armEncoderOffsetRotations =
+  /** The offset of the arm encoder in radians. */
+  public static final double armEncoderOffsetRads =
       switch (Constants.getRobot()) {
-        default -> 0.0;
-        case DEVBOT -> Units.radiansToRotations(1.233 + Math.PI / 2.0);
+        default -> 0.35588 - Math.PI / 2.0; // Units.radiansToRotations(-0.348213 + Math.PI / 2.0);
+        case DEVBOT -> 1.233 + Math.PI / 2.0;
       };
 
   public static final double armLength =
@@ -56,12 +55,12 @@ public class ArmConstants {
   public static final Gains gains =
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        case DEVBOT -> new Gains(4000, 0.0, 120, 5.75, 0.0, 0.0, 15);
-        case COMPBOT -> new Gains(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        case DEVBOT -> new Gains(0.0, 0.0, 0.0, 5.75, 0.0, 0.0, 15);
+        case COMPBOT -> new Gains(75.0, 0.0, 2.5, 10.911, 0.0, 0.0, 20.469 - 10.911);
       };
 
-  public static final TrapezoidProfile.Constraints profileConstraints =
-      new TrapezoidProfile.Constraints(2 * Math.PI, 10);
+  public static TrapezoidProfile.Constraints profileConstraints =
+      new TrapezoidProfile.Constraints(2 * Math.PI, 15);
 
   public record Gains(
       double kP, double kI, double kD, double ffkS, double ffkV, double ffkA, double ffkG) {}

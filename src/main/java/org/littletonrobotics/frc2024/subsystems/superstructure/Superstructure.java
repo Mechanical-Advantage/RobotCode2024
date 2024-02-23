@@ -111,7 +111,15 @@ public class Superstructure extends SubsystemBase {
         .withName("Arm Custom Goal");
   }
 
-  public Command runArmCharacterization() {
-    return arm.getStaticCurrent().finallyDo(() -> desiredGoal = Goal.STOW);
+  public void runArmCharacterization(double input) {
+    arm.runCharacterization(input);
+  }
+
+  public double getArmCharacterizationVelocity() {
+    return arm.getCharacterizationVelocity();
+  }
+
+  public void endArmCharacterization() {
+    arm.endCharacterization();
   }
 }

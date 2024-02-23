@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
+import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
 import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
@@ -116,6 +117,8 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
+          arm = new Arm(new ArmIOKrakenFOC());
+          intake = new Intake(new IntakeIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -222,13 +225,27 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
-                drive, drive::runCharacterizationVolts, drive::getCharacterizationVelocity)
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
     autoChooser.addOption(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
+    autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+            drive, drive::runCharacterization, drive::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Flywheels Static Characterization",
+        new StaticCharacterization(
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Arm Static Characterization",
+        new StaticCharacterization(
+                superstructure,
+                superstructure::runArmCharacterization,
+                superstructure::getArmCharacterizationVelocity)
+            .finallyDo(superstructure::endArmCharacterization));
     autoChooser.addOption(
         "Drive Wheel Radius Characterization",
         drive

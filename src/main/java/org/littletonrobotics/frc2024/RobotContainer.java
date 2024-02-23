@@ -80,6 +80,7 @@ public class RobotContainer {
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
+  private final Trigger robotRelativeOverride = overrides.driverSwitch(0);
   private final Trigger autoAimDisable = overrides.operatorSwitch(0);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
@@ -237,7 +238,10 @@ public class RobotContainer {
             .run(
                 () ->
                     drive.acceptTeleopInput(
-                        -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
+                        -controller.getLeftY(),
+                        -controller.getLeftX(),
+                        -controller.getRightX(),
+                        robotRelativeOverride.getAsBoolean()))
             .withName("Drive Teleop Input"));
 
     // Aim and rev flywheels

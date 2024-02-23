@@ -26,6 +26,7 @@ public class TeleopDriveController {
   private double controllerX = 0;
   private double controllerY = 0;
   private double controllerOmega = 0;
+  private boolean robotRelative = false;
 
   /**
    * Accepts new drive input from joysticks.
@@ -34,10 +35,11 @@ public class TeleopDriveController {
    * @param y Desired y velocity scalar, -1..1
    * @param omega Desired omega velocity scalar, -1..1
    */
-  public void acceptDriveInput(double x, double y, double omega) {
+  public void acceptDriveInput(double x, double y, double omega, boolean robotRelative) {
     controllerX = x;
     controllerY = y;
     controllerOmega = omega;
+    this.robotRelative = robotRelative;
   }
 
   /**
@@ -66,10 +68,14 @@ public class TeleopDriveController {
       linearVelocity = linearVelocity.rotateBy(Rotation2d.fromRadians(Math.PI));
     }
 
-    return ChassisSpeeds.fromFieldRelativeSpeeds(
+    // Use field relative velocity
+    if (!robotRelative) {
+      linearVelocity.rotateBy(RobotState.getInstance().getEstimatedPose().getRotation());
+    }
+
+    return new ChassisSpeeds(
         linearVelocity.getX() * DriveConstants.driveConfig.maxLinearVelocity(),
         linearVelocity.getY() * DriveConstants.driveConfig.maxLinearVelocity(),
-        omega * DriveConstants.driveConfig.maxAngularVelocity(),
-        RobotState.getInstance().getEstimatedPose().getRotation());
+        omega * DriveConstants.driveConfig.maxAngularVelocity());
   }
 }

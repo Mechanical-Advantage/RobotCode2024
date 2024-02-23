@@ -29,4 +29,7 @@ public interface GenericSlamElevatorIO {
 
   /** Stop slam elevator */
   default void stop() {}
+
+  /** Enable or disable brake mode on the elevator motor. */
+  default void setBrakeMode(boolean enable) {}
 }

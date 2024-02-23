@@ -12,6 +12,8 @@ import edu.wpi.first.wpilibj.Timer;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.junction.Logger;
 
+import java.util.function.BooleanSupplier;
+
 public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElevatorGoal> {
 
   public interface SlamElevatorGoal {
@@ -38,6 +40,9 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
   private boolean atGoal = false;
   private final Timer staticTimer = new Timer();
 
+  private boolean brakeModeEnabled = false;
+  private BooleanSupplier coastModeSupplier = () -> false;
+
   private final Alert disconnected;
 
   /**
@@ -62,13 +67,29 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
     this.slammingCurrent = slammingCurrent;
     this.staticTimeSecs = staticTimeSecs;
     this.minVelocityThresh = minVelocityThresh;
+    setBrakeMode(true);
 
     disconnected = new Alert(name + " disconnected!", Alert.AlertType.WARNING);
+  }
+
+  public void setCoastOverride(BooleanSupplier coastOverride) {
+    coastModeSupplier = coastOverride;
+  }
+
+  private void setBrakeMode(boolean enable) {
+    if (brakeModeEnabled == enable) return;
+    brakeModeEnabled = enable;
+    io.setBrakeMode(brakeModeEnabled);
   }
 
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs(name, inputs);
+
+    // Ensure brake mode is enabled
+    if (DriverStation.isEnabled()) {
+      setBrakeMode(true);
+    }
 
     currentGoal = getGoal();
     // Reset if changing goals
@@ -119,6 +140,8 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       atGoal = false;
       staticTimer.stop();
       staticTimer.reset();
+      // Set to coast mode
+      setBrakeMode(coastModeSupplier.getAsBoolean());
     }
 
     Logger.recordOutput("Superstructure/" + name + "/Goal", getGoal().toString());

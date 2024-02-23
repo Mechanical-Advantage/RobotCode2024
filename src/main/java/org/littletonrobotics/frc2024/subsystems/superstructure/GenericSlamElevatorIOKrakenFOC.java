@@ -91,4 +91,9 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
   public void stop() {
     talon.setControl(neutralOut);
   }
+
+  @Override
+  public void setBrakeMode(boolean enable) {
+    talon.setNeutralMode(enable ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+  }
 }

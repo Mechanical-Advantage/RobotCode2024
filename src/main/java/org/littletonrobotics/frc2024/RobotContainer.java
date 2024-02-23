@@ -82,6 +82,7 @@ public class RobotContainer {
   private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
   private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
+  private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
   private final Trigger autoAimDisable = overrides.operatorSwitch(2);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
@@ -203,6 +204,8 @@ public class RobotContainer {
     }
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
+
+    RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
 
     // Configure autos and buttons
     configureAutos();

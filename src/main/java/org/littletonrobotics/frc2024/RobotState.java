@@ -20,6 +20,8 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import java.util.NoSuchElementException;
+import java.util.function.BooleanSupplier;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
@@ -99,6 +101,8 @@ public class RobotState {
 
   /** Cached latest aiming parameters. Calculated in {@code getAimingParameters()} */
   private AimingParameters latestParameters = null;
+  @Setter
+  private BooleanSupplier lookaheadDisable = () -> false;
 
   private RobotState() {
     for (int i = 0; i < 3; ++i) {
@@ -205,7 +209,7 @@ public class RobotState {
         AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening)
             .toTranslation2d()
             .toTransform2d();
-    Pose2d fieldToPredictedVehicle = getPredictedPose(lookahead.get(), lookahead.get());
+    Pose2d fieldToPredictedVehicle = lookaheadDisable.getAsBoolean() ? getEstimatedPose() : getPredictedPose(lookahead.get(), lookahead.get());
     Pose2d fieldToPredictedVehicleFixed =
         new Pose2d(fieldToPredictedVehicle.getTranslation(), new Rotation2d());
 

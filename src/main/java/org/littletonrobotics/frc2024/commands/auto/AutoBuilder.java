@@ -93,17 +93,17 @@ public class AutoBuilder {
 
   public Command N4_S2_C43() {
     Timer autoTimer = new Timer();
-    HolonomicTrajectory driveToS0 = new HolonomicTrajectory("N5-S0-C0123_driveToS0");
-    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("N5-S0-C0123_driveToC0");
-    HolonomicTrajectory driveToC3 = new HolonomicTrajectory("N5-S0-C0123_driveToC1");
+    HolonomicTrajectory driveToS2 = new HolonomicTrajectory("N5-S2-C432_driveToS2");
+    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("N5-S2-C432_driveToC4");
+    HolonomicTrajectory driveToC3 = new HolonomicTrajectory("N5-S2-C432_driveToC3");
 
     return sequence(
         runOnce(autoTimer::restart),
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
-        resetPose(driveToS0),
+        resetPose(driveToS2),
         shootNoDrive(superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds. ", autoTimer.get())),
-        followTrajectory(drive, driveToS0).deadlineWith(intake(superstructure, rollers)),
+        followTrajectory(drive, driveToS2).deadlineWith(intake(superstructure, rollers)),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Second shot at %.2f seconds. ", autoTimer.get())),
         followTrajectory(drive, driveToC4)

@@ -204,7 +204,7 @@ public class DriveTrajectories {
                             .getTranslation()))
                 .build()));
 
-    // 5N-S0-C0123
+    // 5N-S0-C432
     paths.put(
         "N5-S2-C432_driveToS2",
         List.of(

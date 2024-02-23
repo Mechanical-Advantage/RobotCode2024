@@ -79,12 +79,15 @@ public class RobotContainer {
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
-  private final Trigger autoAimDisable = overrides.operatorSwitch(0);
+  private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
+  private final Trigger autoAimDisable = overrides.operatorSwitch(2);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
+  private boolean podiumShotMode = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -231,7 +234,8 @@ public class RobotContainer {
    * XboxController}), and then passing it to a {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    // Drive commands
+    // ------------- Driver Controls -------------
+    // Drive command
     drive.setDefaultCommand(
         drive
             .run(
@@ -240,7 +244,14 @@ public class RobotContainer {
                         -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
             .withName("Drive Teleop Input"));
 
+    // ------------- Shooting Controls -------------
     // Aim and rev flywheels
+    Command superstructureAimCommand =
+        Commands.either(
+            Commands.either(
+                superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
+            superstructure.aim(),
+            armPresetModeEnable);
     controller
         .a()
         .whileTrue(
@@ -249,13 +260,9 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal)
-                .alongWith(
-                    Commands.either(
-                        superstructure.subwoofer(), superstructure.aim(), autoAimDisable),
-                    flywheels.shootCommand())
+                .alongWith(superstructureAimCommand, flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
-    // Shoot
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
     readyToShoot
@@ -275,6 +282,7 @@ public class RobotContainer {
                 .deadlineWith(
                     rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
 
+    // ------------- Intake Controls -------------
     // Intake Floor
     controller
         .leftTrigger()
@@ -294,7 +302,7 @@ public class RobotContainer {
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 
-    // Amp scoring
+    // ------------- Amp Scoring Controls -------------
     controller
         .rightBumper()
         .whileTrue(
@@ -309,15 +317,19 @@ public class RobotContainer {
         .and(controller.rightTrigger())
         .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
 
-    // Shot compensation adjustment
-    controller
+    // ------------- Operator Controls -------------
+    // Adjust shot compensation
+    operator
         .povUp()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1)));
-    controller
+    operator
         .povDown()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+
+    // Adjust arm preset
+    operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Reset pose
     controller

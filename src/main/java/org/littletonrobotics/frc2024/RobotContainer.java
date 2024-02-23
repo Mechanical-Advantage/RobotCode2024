@@ -80,9 +80,9 @@ public class RobotContainer {
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
-  private final Trigger robotRelativeOverride = overrides.driverSwitch(0);
-  private final Trigger armDisableOverrde = overrides.driverSwitch(1);
-  private final Trigger armCoastOverride = overrides.driverSwitch(2);
+  private final Trigger robotRelative = overrides.driverSwitch(0);
+  private final Trigger armDisable = overrides.driverSwitch(1);
+  private final Trigger armCoast = overrides.driverSwitch(2);
   private final Trigger autoAimDisable = overrides.operatorSwitch(0);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
@@ -204,7 +204,7 @@ public class RobotContainer {
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
-    arm.setOverrides(armDisableOverrde, armCoastOverride);
+    arm.setOverrides(armDisable, armCoast);
 
     // Configure autos and buttons
     configureAutos();
@@ -245,7 +245,7 @@ public class RobotContainer {
                         -controller.getLeftY(),
                         -controller.getLeftX(),
                         -controller.getRightX(),
-                        robotRelativeOverride.getAsBoolean()))
+                        robotRelative.getAsBoolean()))
             .withName("Drive Teleop Input"));
 
     // Aim and rev flywheels

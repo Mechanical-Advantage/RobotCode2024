@@ -37,18 +37,18 @@ public class FieldConstants {
 
   /** Staging locations for each note */
   public static final class StagingLocations {
-    public static double centerlineX = fieldLength / 2.0;
+    public static final double centerlineX = fieldLength / 2.0;
 
     // need to update
-    public static double centerlineFirstY = Units.inchesToMeters(29.638);
-    public static double centerlineSeparationY = Units.inchesToMeters(66);
-    public static double spikeX = Units.inchesToMeters(114);
+    public static final double centerlineFirstY = Units.inchesToMeters(29.638);
+    public static final double centerlineSeparationY = Units.inchesToMeters(66);
+    public static final double spikeX = Units.inchesToMeters(114);
     // need
-    public static double spikeFirstY = Units.inchesToMeters(161.638);
-    public static double spikeSeparationY = Units.inchesToMeters(57);
+    public static final double spikeFirstY = Units.inchesToMeters(161.638);
+    public static final double spikeSeparationY = Units.inchesToMeters(57);
 
-    public static Translation2d[] centerlineTranslations = new Translation2d[5];
-    public static Translation2d[] spikeTranslations = new Translation2d[3];
+    public static final Translation2d[] centerlineTranslations = new Translation2d[5];
+    public static final Translation2d[] spikeTranslations = new Translation2d[3];
 
     static {
       for (int i = 0; i < centerlineTranslations.length; i++) {
@@ -68,42 +68,42 @@ public class FieldConstants {
   public static final class Speaker {
 
     // corners (blue alliance origin)
-    public static Translation3d topRightSpeaker =
+    public static final Translation3d topRightSpeaker =
         new Translation3d(
             Units.inchesToMeters(18.055),
             Units.inchesToMeters(238.815),
             Units.inchesToMeters(83.091));
 
-    public static Translation3d topLeftSpeaker =
+    public static final Translation3d topLeftSpeaker =
         new Translation3d(
             Units.inchesToMeters(18.055),
             Units.inchesToMeters(197.765),
             Units.inchesToMeters(83.091));
 
-    public static Translation3d bottomRightSpeaker =
+    public static final Translation3d bottomRightSpeaker =
         new Translation3d(0.0, Units.inchesToMeters(238.815), Units.inchesToMeters(78.324));
-    public static Translation3d bottomLeftSpeaker =
+    public static final Translation3d bottomLeftSpeaker =
         new Translation3d(0.0, Units.inchesToMeters(197.765), Units.inchesToMeters(78.324));
 
     /** Center of the speaker opening (blue alliance) */
-    public static Translation3d centerSpeakerOpening =
+    public static final Translation3d centerSpeakerOpening =
         bottomLeftSpeaker.interpolate(topRightSpeaker, 0.5);
   }
 
   public static final class Subwoofer {
-    public static Pose2d ampFaceCorner =
+    public static final Pose2d ampFaceCorner =
         new Pose2d(
             Units.inchesToMeters(35.775),
             Units.inchesToMeters(239.366),
             Rotation2d.fromDegrees(-120));
 
-    public static Pose2d sourceFaceCorner =
+    public static final Pose2d sourceFaceCorner =
         new Pose2d(
             Units.inchesToMeters(35.775),
             Units.inchesToMeters(197.466),
             Rotation2d.fromDegrees(120));
 
-    public static Pose2d centerFace =
+    public static final Pose2d centerFace =
         new Pose2d(
             Units.inchesToMeters(35.775),
             Units.inchesToMeters(218.416),
@@ -111,27 +111,27 @@ public class FieldConstants {
   }
 
   public static final class Stage {
-    public static Pose2d podiumLeg =
+    public static final Pose2d podiumLeg =
         new Pose2d(Units.inchesToMeters(126.75), Units.inchesToMeters(161.638), new Rotation2d());
 
-    public static Pose2d ampLeg =
+    public static final Pose2d ampLeg =
         new Pose2d(
             Units.inchesToMeters(220.873),
             Units.inchesToMeters(212.425),
             Rotation2d.fromDegrees(-30));
 
-    public static Pose2d sourceLeg =
+    public static final Pose2d sourceLeg =
         new Pose2d(
             Units.inchesToMeters(220.873),
             Units.inchesToMeters(110.837),
             Rotation2d.fromDegrees(30));
 
-    public static Pose2d center =
+    public static final Pose2d center =
         new Pose2d(Units.inchesToMeters(192.55), Units.inchesToMeters(161.638), new Rotation2d());
   }
 
-  public static double aprilTagWidth = Units.inchesToMeters(6.50);
-  public static AprilTagFieldLayout aprilTags;
+  public static final double aprilTagWidth = Units.inchesToMeters(6.50);
+  public static final AprilTagFieldLayout aprilTags;
 
   static {
     try {

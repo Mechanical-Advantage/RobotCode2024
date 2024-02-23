@@ -24,6 +24,7 @@ public class Superstructure extends SubsystemBase {
     STATION_INTAKE,
     AMP,
     SUBWOOFER,
+    PODIUM,
     PREPARE_CLIMB,
     CLIMB,
     TRAP,
@@ -58,6 +59,7 @@ public class Superstructure extends SubsystemBase {
       case DIAGNOSTIC_ARM -> arm.setGoal(Arm.Goal.CUSTOM);
       case AMP -> arm.setGoal(Arm.Goal.AMP);
       case SUBWOOFER -> arm.setGoal(Arm.Goal.SUBWOOFER);
+      case PODIUM -> arm.setGoal(Arm.Goal.PODIUM);
       default -> {} // DO NOTHING ELSE
     }
 
@@ -83,6 +85,11 @@ public class Superstructure extends SubsystemBase {
   public Command subwoofer() {
     return startEnd(() -> desiredGoal = Goal.SUBWOOFER, this::stow)
         .withName("Superstructure Subwoofer Aiming");
+  }
+
+  public Command podium() {
+    return startEnd(() -> desiredGoal = Goal.PODIUM, this::stow)
+        .withName("Superstructure Podium Aiming");
   }
 
   public Command intake() {

@@ -15,11 +15,11 @@ import org.littletonrobotics.frc2024.Constants;
 
 public class ArmConstants {
   // reduction is 12:62 18:60 12:65
-  public static double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
-  public static Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
-  public static Translation2d armOrigin = new Translation2d(-0.238, 0.298);
-  public static Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
-  public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
+  public static final double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
+  public static final Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
+  public static final Translation2d armOrigin = new Translation2d(-0.238, 0.298);
+  public static final Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
+  public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
   public static final int leaderID =
       switch (Constants.getRobot()) {
@@ -39,7 +39,7 @@ public class ArmConstants {
 
   public static final boolean leaderInverted = false;
 
-  /** The offset of the arm encoder in rotations. */
+  /** The offset of the arm encoder in radians. */
   public static final double armEncoderOffsetRads =
       switch (Constants.getRobot()) {
         default -> 0.35588 - Math.PI / 2.0; // Units.radiansToRotations(-0.348213 + Math.PI / 2.0);

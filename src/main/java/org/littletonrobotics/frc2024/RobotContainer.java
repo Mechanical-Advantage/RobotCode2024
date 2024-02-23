@@ -113,6 +113,8 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
+          arm = new Arm(new ArmIOKrakenFOC());
+          intake = new Intake(new IntakeIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =

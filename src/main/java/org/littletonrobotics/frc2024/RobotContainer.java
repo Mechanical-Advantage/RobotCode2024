@@ -338,14 +338,7 @@ public class RobotContainer {
     controller
         .y()
         .onTrue(
-            Commands.runOnce(
-                    () ->
-                        robotState.resetPose(
-                            AllianceFlipUtil.apply(
-                                new Pose2d(
-                                    Units.inchesToMeters(36.0),
-                                    FieldConstants.Speaker.centerSpeakerOpening.getY(),
-                                    new Rotation2d()))))
+            Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(new Pose2d())))
                 .ignoringDisable(true));
     controller
         .b()

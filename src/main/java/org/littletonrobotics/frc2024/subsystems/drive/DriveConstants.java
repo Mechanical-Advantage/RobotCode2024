@@ -20,7 +20,7 @@ import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
-  public static DriveConfig driveConfig =
+  public static final DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             new DriveConfig(

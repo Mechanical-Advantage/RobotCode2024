@@ -153,6 +153,9 @@ public class Arm {
 
     if (DriverStation.isDisabled()) {
       io.stop();
+      // Reset profile when disabled
+      setpointState =
+          new TrapezoidProfile.State(inputs.armPositionRads, inputs.armVelocityRadsPerSec);
     }
 
     // Logs

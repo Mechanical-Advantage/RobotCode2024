@@ -230,7 +230,13 @@ public class RobotContainer {
         "Flywheels Static Characterization",
         new StaticCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
+    autoChooser.addOption(
+        "Arm Static Characterization",
+        new StaticCharacterization(
+                superstructure,
+                superstructure::runArmCharacterization,
+                superstructure::getArmCharacterizationVelocity)
+            .finallyDo(superstructure::endArmCharacterization));
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
   }
 

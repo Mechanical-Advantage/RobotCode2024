@@ -167,6 +167,8 @@ public class Arm {
     // Check if disabled
     if (DriverStation.isDisabled() || disableOverride.getAsBoolean()) {
       io.stop();
+      // Reset profile when disabled
+      setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0);
     }
 
     // Logs

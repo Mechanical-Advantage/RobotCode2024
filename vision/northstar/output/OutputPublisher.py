@@ -20,6 +20,7 @@ class NTOutputPublisher(OutputPublisher):
     def send(self, config_store: ConfigStore, timestamp: float, observation: Union[CameraPoseObservation, None], demo_observation: Union[FiducialPoseObservation, None], fps: Union[int, None] = None) -> None:
         # Initialize publishers on first call
         if not self._init_complete:
+            self._init_complete = True
             nt_table = ntcore.NetworkTableInstance.getDefault().getTable(
                 "/" + config_store.local_config.device_id + "/output")
             self._observations_pub = nt_table.getDoubleArrayTopic("observations").publish(

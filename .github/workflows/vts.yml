@@ -18,8 +18,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build
-        if: github.event_name != 'push' || ${GITHUB_REF##*/} != 'main'
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         run: earthly --ci --use-inline-cache ./trajectory_native+vts-all-platforms
       - name: Build and push
-        if: github.event_name == 'push' && ${GITHUB_REF##*/} == 'main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: earthly --ci --use-inline-cache --save-inline-cache --push ./trajectory_native+vts-all-platforms

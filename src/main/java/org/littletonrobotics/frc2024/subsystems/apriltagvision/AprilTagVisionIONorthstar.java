@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024.subsystems.apriltagvision;
 
+import static org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants.*;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
@@ -32,11 +34,11 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private final Alert disconnectedAlert;
   private final Timer disconnectedTimer = new Timer();
 
-  public AprilTagVisionIONorthstar(String instanceId, String cameraId) {
-    var northstarTable = NetworkTableInstance.getDefault().getTable(instanceId);
+  public AprilTagVisionIONorthstar(int index) {
+    var northstarTable = NetworkTableInstance.getDefault().getTable(instanceNames[index]);
 
     var configTable = northstarTable.getSubTable("config");
-    configTable.getStringTopic("camera_id").publish().set(cameraId);
+    configTable.getStringTopic("camera_id").publish().set(cameraIds[index]);
     configTable.getIntegerTopic("camera_resolution_width").publish().set(cameraResolutionWidth);
     configTable.getIntegerTopic("camera_resolution_height").publish().set(cameraResolutionHeight);
     configTable.getIntegerTopic("camera_auto_exposure").publish().set(cameraAutoExposure);
@@ -65,7 +67,8 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
                 new double[] {}, PubSubOption.keepDuplicates(true), PubSubOption.sendAll(true));
     fpsSubscriber = outputTable.getIntegerTopic("fps").subscribe(0);
 
-    disconnectedAlert = new Alert("No data from \"" + instanceId + "\"", Alert.AlertType.ERROR);
+    disconnectedAlert =
+        new Alert("No data from \"" + instanceNames[index] + "\"", Alert.AlertType.ERROR);
     disconnectedTimer.start();
   }
 

@@ -13,7 +13,7 @@ public class ClimberIOKrakenFOC extends GenericSlamElevatorIOKrakenFOC implement
   private static final int id = 5;
   private static final String bus = "rio";
   private static final int currentLimitAmps = 40;
-  private static final boolean invert = false;
+  private static final boolean invert = true;
   private static final double reduction = 60.0 / 1.0;
 
   public ClimberIOKrakenFOC() {

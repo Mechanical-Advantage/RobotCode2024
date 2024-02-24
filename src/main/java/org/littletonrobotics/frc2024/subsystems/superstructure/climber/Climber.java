@@ -21,7 +21,10 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
   @Getter
   public enum Goal implements SlamElevatorGoal {
     IDLE(new LoggedTunableNumber("Climber/IdleCurrent", 0.0), true, SlamElevatorState.IDLING),
-    RETRACT(new LoggedTunableNumber("Climber/Retract", -40.0), false, SlamElevatorState.RETRACTED),
+    RETRACT(
+        new LoggedTunableNumber("Climber/RetractingCurrent", -20.0),
+        false,
+        SlamElevatorState.RETRACTED),
     EXTEND(
         new LoggedTunableNumber("Climber/ExtendingCurrent", 20.0),
         true,

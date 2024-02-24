@@ -91,6 +91,8 @@ public class RobotContainer {
   private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
   private final Trigger robotRelativeEnable = overrides.driverSwitch(0);
+  private final Trigger armDisable = overrides.driverSwitch(1);
+  private final Trigger coastEnable = overrides.driverSwitch(2);
   private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
   private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
@@ -225,6 +227,9 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
+    arm.setOverrides(armDisable, coastEnable);
+    climber.setCoastOverride(coastEnable);
+    backpackActuator.setCoastOverride(coastEnable);
 
     // Configure autos and buttons
     configureAutos();
@@ -390,6 +395,19 @@ public class RobotContainer {
         .povDown()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+
+    // Climbing controls
+    operator
+        .leftBumper()
+        .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
+    operator
+        .rightBumper()
+        .and(
+            () ->
+                (superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
+                        || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB)
+                    && superstructure.atGoal())
+        .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

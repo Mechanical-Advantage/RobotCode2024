@@ -331,13 +331,6 @@ public class RobotContainer {
 
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
-    //    readyToShoot
-    //        .whileTrue(
-    //            Commands.run(
-    //                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
-    //        .whileFalse(
-    //            Commands.run(
-    //                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
     controller
         .rightTrigger()
         .and(readyToShoot)
@@ -405,44 +398,39 @@ public class RobotContainer {
     operator.rightBumper().onTrue(ClimbingCommands.finalClimb(superstructure));
 
     // Climbing controls
-    Command prepareClimbCommand = superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB);
-    Command climbCommand = superstructure.setGoalCommand(Superstructure.Goal.CLIMB);
-    Command trapCommand = superstructure.setGoalCommand(Superstructure.Goal.TRAP);
-    operator
-        .leftBumper()
-        .and(
-            () ->
-                superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
-                    && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP)
-        .onTrue(prepareClimbCommand);
-    operator
-        .rightBumper()
-        .and(
-            () ->
-                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
-                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP)
-        .onTrue(climbCommand);
-    operator
-        .rightTrigger()
-        .and(
-            () ->
-                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
-                    || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB)
-        .onTrue(trapCommand);
-    operator
-        .leftTrigger()
-        .onTrue(
-            Commands.runOnce(
-                () -> {
-                  prepareClimbCommand.cancel();
-                  climbCommand.cancel();
-                  trapCommand.cancel();
-                }));
-
-    operator
-        .y()
-        .toggleOnTrue(
-            superstructure.setGoalCommand(Superstructure.Goal.BACKPACK_ACTUATOR_TEST_EXTEND));
+//    Command prepareClimbCommand = superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB);
+//    Command climbCommand = superstructure.setGoalCommand(Superstructure.Goal.CLIMB);
+//    Command trapCommand = superstructure.setGoalCommand(Superstructure.Goal.TRAP);
+//    operator
+//        .leftBumper()
+//        .and(
+//            () ->
+//                superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
+//                    && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP)
+//        .onTrue(prepareClimbCommand);
+//    operator
+//        .rightBumper()
+//        .and(
+//            () ->
+//                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
+//                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP)
+//        .onTrue(climbCommand);
+//    operator
+//        .rightTrigger()
+//        .and(
+//            () ->
+//                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
+//                    || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB)
+//        .onTrue(trapCommand);
+//    operator
+//        .leftTrigger()
+//        .onTrue(
+//            Commands.runOnce(
+//                () -> {
+//                  prepareClimbCommand.cancel();
+//                  climbCommand.cancel();
+//                  trapCommand.cancel();
+//                }));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

@@ -96,12 +96,20 @@ public class Superstructure extends SubsystemBase {
       }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        climber.setGoal(Climber.Goal.RETRACT);
+        if (climber.isRequestCancelClimb()) {
+          desiredGoal = Goal.PREPARE_CLIMB;
+        } else {
+          climber.setGoal(Climber.Goal.RETRACT);
+        }
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case TRAP -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        climber.setGoal(Climber.Goal.RETRACT);
+        if (climber.isRequestCancelClimb()) {
+          desiredGoal = Goal.PREPARE_CLIMB;
+        } else {
+          climber.setGoal(Climber.Goal.RETRACT);
+        }
         backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
       }
       case DIAGNOSTIC_ARM -> {

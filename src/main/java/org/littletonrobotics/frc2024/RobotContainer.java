@@ -405,9 +405,16 @@ public class RobotContainer {
         .and(
             () ->
                 (superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
-                        || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB)
-                    && superstructure.atGoal())
+                    || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB
+                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP))
         .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
+    operator
+        .rightTrigger()
+        .and(
+            () ->
+                (superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB
+                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP))
+        .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.TRAP));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

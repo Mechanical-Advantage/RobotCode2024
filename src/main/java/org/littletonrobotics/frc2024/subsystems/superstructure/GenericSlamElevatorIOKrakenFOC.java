@@ -80,8 +80,9 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
                 tempCelsius)
             .isOK();
     inputs.positionRads =
-        Units.rotationsToRadians(positionRotations.getValueAsDouble()) * reduction;
-    inputs.velocityRadsPerSec = Units.rotationsToRadians(velocityRps.getValueAsDouble());
+        Units.rotationsToRadians(positionRotations.getValueAsDouble()) / reduction;
+    inputs.velocityRadsPerSec =
+        Units.rotationsToRadians(velocityRps.getValueAsDouble()) / reduction;
     inputs.appliedVoltage = appliedVoltage.getValueAsDouble();
     inputs.supplyCurrentAmps = supplyCurrent.getValueAsDouble();
     inputs.torqueCurrentAmps = torqueCurrent.getValueAsDouble();

@@ -32,7 +32,7 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
   }
 
   private final GenericSlamElevatorIO io;
-  private final GenericSlamElevatorIOInputsAutoLogged inputs =
+  protected final GenericSlamElevatorIOInputsAutoLogged inputs =
       new GenericSlamElevatorIOInputsAutoLogged();
 
   private final String name;

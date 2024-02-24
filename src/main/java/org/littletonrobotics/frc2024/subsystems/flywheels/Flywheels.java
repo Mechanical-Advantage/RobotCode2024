@@ -53,7 +53,7 @@ public class Flywheels extends SubsystemBase {
   private final Alert leftDisconnected =
       new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
   private final Alert rightDisconnected =
-      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+      new Alert("Right flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {

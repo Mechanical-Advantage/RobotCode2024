@@ -5,28 +5,19 @@
 // license that can be found in the LICENSE file at
 // the root directory of this project.
 
-package org.littletonrobotics.frc2024.subsystems.rollers.feeder;
+package org.littletonrobotics.frc2024.subsystems.rollers.backpack;
 
-import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOKrakenFOC;
 
-public class FeederIOKrakenFOC extends GenericRollerSystemIOKrakenFOC implements FeederIO {
-  private static final int id;
+public class BackpackIOKrakenFOC extends GenericRollerSystemIOKrakenFOC implements BackpackIO {
+  private static final int id = 2;
   private static final String bus = "rio";
   private static final int currentLimitAmps = 40;
   private static final boolean invert = false;
-  private static final boolean brake = false;
-  private static final double reduction = 18.0 / 12.0;
+  private static final boolean brake = true;
+  private static final double reduction = (1.0 / 1.0);
 
-  static {
-    if (Constants.getRobot() == Constants.RobotType.COMPBOT) {
-      id = 1;
-    } else {
-      id = 3;
-    }
-  }
-
-  public FeederIOKrakenFOC() {
+  public BackpackIOKrakenFOC() {
     super(id, bus, currentLimitAmps, invert, brake, reduction);
   }
 }

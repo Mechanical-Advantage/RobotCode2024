@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
@@ -26,25 +28,20 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
-import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
+import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSim;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOSim;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIO;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIODevbot;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSim;
+import org.littletonrobotics.frc2024.subsystems.rollers.indexer.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOKrakenFOC;
@@ -125,8 +122,12 @@ public class RobotContainer {
                   new AprilTagVisionIONorthstar(1),
                   new AprilTagVisionIONorthstar(2),
                   new AprilTagVisionIONorthstar(3));
-          arm = new Arm(new ArmIOKrakenFOC());
+          flywheels = new Flywheels(new FlywheelsIOKrakenFOC());
+          feeder = new Feeder(new FeederIOKrakenFOC());
+          indexer = new Indexer(new IndexerIOCompbot());
           intake = new Intake(new IntakeIOKrakenFOC());
+          backpack = new Backpack(new BackpackIOKrakenFOC());
+          arm = new Arm(new ArmIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -140,13 +141,11 @@ public class RobotContainer {
               new AprilTagVision(
                   new AprilTagVisionIONorthstar(0), new AprilTagVisionIONorthstar(1));
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOSparkFlex());
           rollersSensorsIO = new RollersSensorsIOReal();
-
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case SIMBOT -> {
@@ -158,13 +157,11 @@ public class RobotContainer {
                   new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                   new ModuleIOSim(DriveConstants.moduleConfigs[3]));
           flywheels = new Flywheels(new FlywheelsIOSim());
-
           feeder = new Feeder(new FeederIOSim());
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
           backpack = new Backpack(new BackpackIOSim());
           rollersSensorsIO = new RollersSensorsIO() {};
-
           arm = new Arm(new ArmIOSim());
         }
       }
@@ -289,46 +286,55 @@ public class RobotContainer {
 
     // ------------- Shooting Controls -------------
     // Aim and rev flywheels
-    Command superstructureAimCommand =
-        Commands.either(
+    Supplier<Command> superstructureAimCommand =
+        () ->
             Commands.either(
-                superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
-            superstructure.aim(),
-            shootPresets);
-    Command driveAimCommand =
-        Commands.either(
-            Commands.none(),
-            Commands.startEnd(
-                () ->
-                    drive.setHeadingGoal(
-                        () -> RobotState.getInstance().getAimingParameters().driveHeading()),
-                drive::clearHeadingGoal),
-            autoDriveDisable);
+                Commands.either(
+                    superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
+                superstructure.aim(),
+                shootPresets);
+    Supplier<Command> driveAimCommand =
+        () ->
+            Commands.either(
+                Commands.none(),
+                Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                    drive::clearHeadingGoal),
+                autoDriveDisable);
     controller
         .a()
         .whileTrue(
             driveAimCommand
-                .alongWith(superstructureAimCommand, flywheels.shootCommand())
+                .get()
+                .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
-
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
-    readyToShoot
-        .whileTrue(
-            Commands.run(
-                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
-        .whileFalse(
-            Commands.run(
-                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
     controller
         .rightTrigger()
+        .and(controller.a())
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
-                    rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
+                    rollers.feedShooter(),
+                    superstructureAimCommand.get(),
+                    flywheels.shootCommand()));
+    controller
+        .a()
+        .and(readyToShoot)
+        .whileTrue(
+            Commands.startEnd(
+                () -> {
+                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
+                },
+                () -> {
+                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                }));
 
     // ------------- Intake Controls -------------
     // Intake Floor

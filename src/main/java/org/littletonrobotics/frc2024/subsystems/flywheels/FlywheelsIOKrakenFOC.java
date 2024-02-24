@@ -31,11 +31,13 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   private final StatusSignal<Double> leftPosition;
   private final StatusSignal<Double> leftVelocity;
   private final StatusSignal<Double> leftAppliedVolts;
+  private final StatusSignal<Double> leftSupplyCurrent;
   private final StatusSignal<Double> leftTorqueCurrent;
   private final StatusSignal<Double> leftTempCelsius;
   private final StatusSignal<Double> rightPosition;
   private final StatusSignal<Double> rightVelocity;
   private final StatusSignal<Double> rightAppliedVolts;
+  private final StatusSignal<Double> rightSupplyCurrent;
   private final StatusSignal<Double> rightTorqueCurrent;
   private final StatusSignal<Double> rightTempCelsius;
 
@@ -75,15 +77,22 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
     leftTalon.getConfigurator().apply(controllerConfig, 1.0);
     rightTalon.getConfigurator().apply(controllerConfig, 1.0);
 
+    // Set inverts
+    leftTalon.setInverted(true);
+    rightTalon.setInverted(false);
+
     // Set signals
     leftPosition = leftTalon.getPosition();
     leftVelocity = leftTalon.getVelocity();
     leftAppliedVolts = leftTalon.getMotorVoltage();
+    leftSupplyCurrent = leftTalon.getSupplyCurrent();
     leftTorqueCurrent = leftTalon.getTorqueCurrent();
     leftTempCelsius = leftTalon.getDeviceTemp();
+
     rightPosition = rightTalon.getPosition();
     rightVelocity = rightTalon.getVelocity();
     rightAppliedVolts = rightTalon.getMotorVoltage();
+    rightSupplyCurrent = rightTalon.getSupplyCurrent();
     rightTorqueCurrent = rightTalon.getTorqueCurrent();
     rightTempCelsius = rightTalon.getDeviceTemp();
 
@@ -92,11 +101,13 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
         leftPosition,
         leftVelocity,
         leftAppliedVolts,
+        leftSupplyCurrent,
         leftTorqueCurrent,
         leftTempCelsius,
         rightPosition,
         rightVelocity,
         rightAppliedVolts,
+        rightSupplyCurrent,
         rightTorqueCurrent,
         rightTempCelsius);
   }
@@ -105,13 +116,19 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   public void updateInputs(FlywheelsIOInputs inputs) {
     inputs.leftMotorConnected =
         BaseStatusSignal.refreshAll(
-                leftPosition, leftVelocity, leftAppliedVolts, leftTorqueCurrent, leftTempCelsius)
+                leftPosition,
+                leftVelocity,
+                leftAppliedVolts,
+                leftSupplyCurrent,
+                leftTorqueCurrent,
+                leftTempCelsius)
             .isOK();
     inputs.rightMotorConnected =
-        !BaseStatusSignal.refreshAll(
+        BaseStatusSignal.refreshAll(
                 rightPosition,
                 rightVelocity,
                 rightAppliedVolts,
+                rightSupplyCurrent,
                 rightTorqueCurrent,
                 rightTempCelsius)
             .isOK();
@@ -119,13 +136,15 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
     inputs.leftPositionRads = Units.rotationsToRadians(leftPosition.getValueAsDouble());
     inputs.leftVelocityRpm = leftVelocity.getValueAsDouble() * 60.0;
     inputs.leftAppliedVolts = leftAppliedVolts.getValueAsDouble();
-    inputs.leftOutputCurrent = leftTorqueCurrent.getValueAsDouble();
+    inputs.leftSupplyCurrent = leftSupplyCurrent.getValueAsDouble();
+    inputs.leftTorqueCurrent = leftTorqueCurrent.getValueAsDouble();
     inputs.leftTempCelsius = leftTempCelsius.getValueAsDouble();
 
     inputs.rightPositionRads = Units.rotationsToRadians(rightPosition.getValueAsDouble());
     inputs.rightVelocityRpm = rightVelocity.getValueAsDouble() * 60.0;
     inputs.rightAppliedVolts = rightAppliedVolts.getValueAsDouble();
-    inputs.rightOutputCurrent = rightTorqueCurrent.getValueAsDouble();
+    inputs.rightSupplyCurrent = rightSupplyCurrent.getValueAsDouble();
+    inputs.rightTorqueCurrent = rightTorqueCurrent.getValueAsDouble();
     inputs.rightTempCelsius = rightTempCelsius.getValueAsDouble();
   }
 

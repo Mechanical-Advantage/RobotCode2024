@@ -192,8 +192,7 @@ public class AutoBuilder {
         shootNoDrive(superstructure, flywheels, rollers),
         followTrajectory(drive, driveToPodiumTrajectory)
             // Drive to podium note while intaking and shoot
-            .deadlineWith(
-                parallel(intake(superstructure, rollers), flywheels.shootCommand())), // uh oh 👀
+            .deadlineWith(intake(superstructure, rollers)), // uh oh 👀
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
         // NoteVisualizer.shoot(),
@@ -213,7 +212,7 @@ public class AutoBuilder {
                                 false)),
                     // Wait until we are close enough to shot to start arm aiming
                     waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
-                    parallel(intake(superstructure, rollers), flywheels.shootCommand()))),
+                    superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Third shot at %.2f seconds.", autoTimer.get())),
 
@@ -225,7 +224,7 @@ public class AutoBuilder {
                         FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(), true),
                     intake(superstructure, rollers)
                         .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
-                    parallel(intake(superstructure, rollers), flywheels.shootCommand()))),
+                    superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
 
@@ -238,7 +237,7 @@ public class AutoBuilder {
                         true),
                     intake(superstructure, rollers)
                         .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
-                    parallel(intake(superstructure, rollers), flywheels.shootCommand()))),
+                    superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())));
     // Revert to teleop idle mode
@@ -453,15 +452,13 @@ public class AutoBuilder {
   }
 
   public Command unethicalAuto() {
-    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("unethicalAuto_driveToC4");
     HolonomicTrajectory driveToC0 = new HolonomicTrajectory("unethicalAuto_driveToC0");
-    HolonomicTrajectory driveToPodium = new HolonomicTrajectory("unethicalAuto_driveToPodium");
+    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("unethicalAuto_driveToC4");
 
     return sequence(
-        resetPose(driveToC4),
+        resetPose(driveToC0),
         followTrajectory(drive, driveToC4),
-        followTrajectory(drive, driveToC0).deadlineWith(intakeIntoEject(flywheels, rollers)),
-        followTrajectory(drive, driveToPodium));
+        followTrajectory(drive, driveToC0));
   }
 
   //  public Command N5_S0_C012() {

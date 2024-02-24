@@ -11,9 +11,9 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevat
 
 public class BackpackActuatorIOKrakenFOC extends GenericSlamElevatorIOKrakenFOC
     implements BackpackActuatorIO {
-  private static final int id = 0;
+  private static final int id = 6;
   private static final String bus = "rio";
-  private static final int currentLimitAmps = 40;
+  private static final int currentLimitAmps = 30;
   private static final boolean invert = false;
   private static final double reduction = 32.0 / 10.0;
 

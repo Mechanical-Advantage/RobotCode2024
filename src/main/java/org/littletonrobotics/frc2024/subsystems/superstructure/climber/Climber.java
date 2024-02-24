@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator;
+import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator.SlamElevatorGoal;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
@@ -34,7 +35,9 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
         false,
         SlamElevatorState.RETRACTING),
     EXTEND(
-        new LoggedTunableNumber("Climber/ExtendingCurrent", 6.0), true, SlamElevatorState.EXTENDING);
+        new LoggedTunableNumber("Climber/ExtendingCurrent", 8.0),
+        true,
+        SlamElevatorState.EXTENDING);
 
     private final DoubleSupplier slammingCurrent;
     private final boolean stopAtGoal;

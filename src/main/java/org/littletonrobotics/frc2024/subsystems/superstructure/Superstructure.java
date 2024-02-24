@@ -90,7 +90,7 @@ public class Superstructure extends SubsystemBase {
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case PREPARE_CLIMB -> {
-        arm.setGoal(Arm.Goal.CLIMB);
+        arm.setGoal(Arm.Goal.PREPARE_CLIMB);
         climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }

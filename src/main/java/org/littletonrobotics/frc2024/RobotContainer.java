@@ -58,6 +58,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFO
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
@@ -133,6 +134,7 @@ public class RobotContainer {
           intake = new Intake(new IntakeIOKrakenFOC());
           arm = new Arm(new ArmIOKrakenFOC());
           climber = new Climber(new ClimberIOKrakenFOC());
+          backpackActuator = new BackpackActuator(new BackpackActuatorIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -397,24 +399,44 @@ public class RobotContainer {
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
 
     // Climbing controls
+    Command prepareClimbCommand = superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB);
+    Command climbCommand = superstructure.setGoalCommand(Superstructure.Goal.CLIMB);
+    Command trapCommand = superstructure.setGoalCommand(Superstructure.Goal.TRAP);
     operator
         .leftBumper()
-        .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
+        .and(
+            () ->
+                superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
+                    && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP)
+        .onTrue(prepareClimbCommand);
     operator
         .rightBumper()
         .and(
             () ->
-                (superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
-                    || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB
-                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP))
-        .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
+                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
+                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP)
+        .onTrue(climbCommand);
     operator
         .rightTrigger()
         .and(
             () ->
-                (superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB
-                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP))
-        .toggleOnTrue(superstructure.setGoalCommand(Superstructure.Goal.TRAP));
+                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
+                    || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB)
+        .onTrue(trapCommand);
+    operator
+        .leftTrigger()
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  prepareClimbCommand.cancel();
+                  climbCommand.cancel();
+                  trapCommand.cancel();
+                }));
+
+    operator
+        .y()
+        .toggleOnTrue(
+            superstructure.setGoalCommand(Superstructure.Goal.BACKPACK_ACTUATOR_TEST_EXTEND));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

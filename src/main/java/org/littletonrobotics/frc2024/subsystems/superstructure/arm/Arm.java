@@ -56,7 +56,8 @@ public class Arm {
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
-    CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
+    PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 115.0)),
+    CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 88.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;

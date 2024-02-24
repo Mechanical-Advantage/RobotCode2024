@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator;
+import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator.SlamElevatorGoal;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 @Getter

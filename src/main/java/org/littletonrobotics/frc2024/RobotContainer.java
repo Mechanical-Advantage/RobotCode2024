@@ -226,7 +226,6 @@ public class RobotContainer {
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
-    arm.setOverrides(armDisable, armCoast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
     arm.setOverrides(armDisable, coastEnable);
     climber.setCoastOverride(coastEnable);

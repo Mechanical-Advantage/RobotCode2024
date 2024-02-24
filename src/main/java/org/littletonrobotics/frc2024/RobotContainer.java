@@ -85,10 +85,10 @@ public class RobotContainer {
   private final Trigger robotRelative = overrides.driverSwitch(0);
   private final Trigger armDisable = overrides.driverSwitch(1);
   private final Trigger armCoast = overrides.driverSwitch(2);
-  private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
-  private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
-  private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
-  private final Trigger autoAimDisable = overrides.operatorSwitch(3);
+  private final Trigger shootPresets = overrides.operatorSwitch(0);
+  private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
+  private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
+  private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
@@ -287,7 +287,7 @@ public class RobotContainer {
             Commands.either(
                 superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
             superstructure.aim(),
-            armPresetModeEnable);
+            shootPresets);
     Command driveAimCommand =
         Commands.either(
             Commands.none(),
@@ -296,7 +296,7 @@ public class RobotContainer {
                     drive.setHeadingGoal(
                         () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                 drive::clearHeadingGoal),
-            autoAimDisable);
+            autoDriveDisable);
     controller
         .a()
         .whileTrue(
@@ -355,7 +355,7 @@ public class RobotContainer {
                         Commands.startEnd(
                             () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
                             drive::clearHeadingGoal),
-                        autoAlignDisable)));
+                        shootAlignDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())

@@ -121,16 +121,10 @@ public class AutoCommands {
    * Runs intake and feeder while aiming at speaker essentially shooting immediately after acquiring
    * game piece. Command does not end.
    */
-  public static Command intakeIntoShot(
-      Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
-    Supplier<Rotation2d> aimHeadingSupplier =
-        () -> RobotState.getInstance().getAimingParameters().driveHeading();
+  public static Command intakeIntoEject(Flywheels flywheels, Rollers rollers) {
     return parallel(
         // Aim and spin up flywheels
-        startEnd(() -> drive.setHeadingGoal(aimHeadingSupplier), drive::clearHeadingGoal),
-        superstructure.aim(),
-        flywheels.shootCommand(),
-        rollers.quickFeed());
+        flywheels.ejectCommand(), rollers.quickFeed());
   }
 
   // reset Path and call followTrajectory

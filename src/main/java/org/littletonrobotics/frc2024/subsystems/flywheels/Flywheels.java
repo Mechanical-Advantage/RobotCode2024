@@ -189,4 +189,9 @@ public class Flywheels extends SubsystemBase {
     return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE))
         .withName("Flywheels Intake");
   }
+
+  public Command ejectCommand() {
+    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
+        .withName("Flywheels Eject");
+  }
 }

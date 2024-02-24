@@ -113,8 +113,7 @@ public class NoteVisualizer {
                                     startPose.interpolate(endPose, timer.get() / duration)
                                   }))
                       .until(() -> timer.hasElapsed(duration))
-                      .finallyDo(
-                          () -> Logger.recordOutput("NoteVisualizer/ShotNotes"));
+                      .finallyDo(() -> Logger.recordOutput("NoteVisualizer/ShotNotes"));
                 },
                 Set.of())
             .ignoringDisable(true));
@@ -143,8 +142,7 @@ public class NoteVisualizer {
                                     startPose.interpolate(endPose, timer.get() / duration)
                                   }))
                       .until(() -> timer.hasElapsed(duration))
-                      .finallyDo(
-                          () -> Logger.recordOutput("NoteVisualizer/EjectNotes"));
+                      .finallyDo(() -> Logger.recordOutput("NoteVisualizer/EjectNotes"));
                 },
                 Set.of())
             .ignoringDisable(true));

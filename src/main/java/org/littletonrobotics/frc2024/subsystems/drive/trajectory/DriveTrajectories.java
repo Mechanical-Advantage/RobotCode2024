@@ -42,8 +42,8 @@ public class DriveTrajectories {
           new Transform2d(-DriveConstants.driveConfig.bumperWidthX() / 2, 0, new Rotation2d(0)));
 
   // Center intake locations
-  private static final double intakeOffset = 0.0;
-  private static final double intakeApproachOffset = 1.5;
+  private static final double intakeOffset = 0.2;
+  private static final double intakeApproachOffset = 1.0;
   private static final double doNotHitOffset = 0.5;
   private static final Pose2d[] intakingCenterlinePoses = new Pose2d[5];
   private static final Pose2d[] intakingApproachCenterlinePoses = new Pose2d[5];
@@ -68,7 +68,12 @@ public class DriveTrajectories {
         "davisEthicalAuto_driveToPodium",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingSourceFace)
+                .addPoseWaypoint(
+                    getShootingPose(
+                            new Translation2d(
+                                FieldConstants.startingLineX,
+                                FieldConstants.StagingLocations.spikeTranslations[0].getY()))
+                        .transformBy(new Transform2d(doNotHitOffset, 0, new Rotation2d())))
                 .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[0])
                         .transformBy(new Transform2d(doNotHitOffset, 0, new Rotation2d(0))))
@@ -81,26 +86,30 @@ public class DriveTrajectories {
                 .addWaypoints(getLastWaypoint("davisEthicalAuto_driveToPodium"))
                 .addPoseWaypoint(
                     (FieldConstants.Stage.podiumLeg)
-                        .transformBy(new Transform2d(0, -.75, new Rotation2d(Math.PI))))
+                        .transformBy(new Transform2d(0, -.75, new Rotation2d(Math.PI))),
+                    100)
                 .addPoseWaypoint(
                     new Pose2d(
-                        FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)))
-                .addPoseWaypoint(intakingApproachCenterlinePoses[2])
+                        FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)),
+                    100)
+                .addPoseWaypoint(intakingApproachCenterlinePoses[2], 100)
                 .build(),
             PathSegment.newBuilder()
-                .addPoseWaypoint(intakingCenterlinePoses[2])
+                .addPoseWaypoint(intakingCenterlinePoses[2], 100)
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),
             PathSegment.newBuilder()
                 .addPoseWaypoint(
                     (FieldConstants.Stage.center)
-                        .transformBy(new Transform2d(0, -.65, new Rotation2d(Math.PI))))
+                        .transformBy(new Transform2d(0, -.65, new Rotation2d(Math.PI))),
+                    100)
                 .addPoseWaypoint(
                     getShootingPose(
                         (FieldConstants.Stage.podiumLeg)
                             .transformBy(new Transform2d(0, -1.5, new Rotation2d(Math.PI)))
-                            .getTranslation()))
+                            .getTranslation()),
+                    100)
                 .build()));
     paths.put(
         "davisEthicalAuto_driveToCenterline1",

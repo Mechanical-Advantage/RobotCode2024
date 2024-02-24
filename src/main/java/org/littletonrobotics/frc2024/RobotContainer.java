@@ -224,6 +224,7 @@ public class RobotContainer {
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
     AutoCommands autoCommands = new AutoCommands(drive, superstructure);
     autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    autoChooser.addOption("Drive Straight While Shooting", autoCommands.driveStraightShooting());
 
     // Set up feedforward characterization
     autoChooser.addOption(

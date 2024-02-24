@@ -48,4 +48,12 @@ public class AutoCommands {
   public Command driveStraight() {
     return reset("driveStraight").andThen(path("driveStraight"));
   }
+
+  public Command driveStraightShooting() {
+    return reset("driveStraight")
+        .andThen(
+            startEnd(
+                () -> drive.setShootingTrajectory(new HolonomicTrajectory("driveStraight")),
+                drive::clearShootingTrajectory));
+  }
 }

@@ -39,9 +39,16 @@ public class DriveTrajectories {
                         Units.inchesToMeters(318.640),
                         Units.inchesToMeters(29.003),
                         new Rotation2d()))
-                .addPoseWaypoint(
-                    new Pose2d(
-                        Units.inchesToMeters(130), Units.inchesToMeters(70), new Rotation2d()))
+                .addWaypoints(
+                    Waypoint.newBuilder()
+                        .fromPose(new Pose2d(1, 1, new Rotation2d()))
+                        .setVehicleVelocity(
+                            VehicleVelocityConstraint.newBuilder()
+                                .setOmega(1.0)
+                                .setVy(0)
+                                .setVx(0)
+                                .build())
+                        .build())
                 .build()));
   }
 }

@@ -54,10 +54,7 @@ public class HeadingController {
   private VehicleState rejoinState = null;
   private double totalTrajectoryTime = 0.0;
   private final Timer rejoinTimer = new Timer();
-
-  @AutoLogOutput(key = "Drive/HeadingController/CancellingShot")
-  @Getter
-  private boolean cancelShot = false;
+  @Getter private boolean cancelShot = false;
 
   public HeadingController(Supplier<Rotation2d> goalHeadingSupplier) {
     controller =
@@ -150,6 +147,7 @@ public class HeadingController {
     Logger.recordOutput("Drive/HeadingController/Output", output);
     Logger.recordOutput(
         "Drive/HeadingController/SetpointVelocity", controller.getSetpoint().velocity);
+    Logger.recordOutput("Trajectory/CancellingShot", cancelShot);
     return output;
   }
 

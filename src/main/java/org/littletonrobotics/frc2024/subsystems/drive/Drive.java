@@ -315,10 +315,10 @@ public class Drive extends SubsystemBase {
   }
 
   /** Sets the goal pose for the robot to drive to */
-  public void setAutoAlignGoal(Pose2d goalPose) {
+  public void setAutoAlignGoal(Supplier<Pose2d> poseSupplier, boolean slowMode) {
     if (DriverStation.isTeleopEnabled()) {
       currentDriveMode = DriveMode.AUTO_ALIGN;
-      autoAlignController = new AutoAlignController(goalPose);
+      autoAlignController = new AutoAlignController(poseSupplier, slowMode);
     }
   }
 

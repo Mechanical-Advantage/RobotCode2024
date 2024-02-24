@@ -15,7 +15,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -58,6 +57,7 @@ public class Arm {
     STOW(new LoggedTunableNumber("Arm/StowDegrees", 10.0)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
+    PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
@@ -196,20 +196,16 @@ public class Arm {
     io.setBrakeMode(brakeModeEnabled);
   }
 
-  public Command getStaticCurrent() {
-    Timer timer = new Timer();
-    return Commands.run(() -> io.runCurrent(0.5 * timer.get()))
-        .beforeStarting(
-            () -> {
-              characterizing = true;
-              timer.restart();
-            })
-        .until(() -> Math.abs(inputs.armVelocityRadsPerSec) >= Units.degreesToRadians(10))
-        .andThen(() -> Logger.recordOutput("Arm/staticCurrent", inputs.armTorqueCurrentAmps[0]))
-        .finallyDo(
-            () -> {
-              io.stop();
-              characterizing = false;
-            });
+  public void runCharacterization(double amps) {
+    characterizing = true;
+    io.runCurrent(amps);
+  }
+
+  public double getCharacterizationVelocity() {
+    return inputs.armVelocityRadsPerSec;
+  }
+
+  public void endCharacterization() {
+    characterizing = false;
   }
 }

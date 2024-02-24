@@ -69,7 +69,7 @@ public final class DriveConstants {
       };
 
   // Module Constants
-  public static ModuleConfig[] moduleConfigs =
+  public static final ModuleConfig[] moduleConfigs =
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConfig[] {
@@ -93,7 +93,7 @@ public final class DriveConstants {
         }
       };
 
-  public static ModuleConstants moduleConstants =
+  public static final ModuleConstants moduleConstants =
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
@@ -127,14 +127,14 @@ public final class DriveConstants {
                 Mk4iReductions.TURN.reduction);
       };
 
-  public static ModuleLimits moduleLimits =
+  public static final ModuleLimits moduleLimits =
       new ModuleLimits(
           driveConfig.maxLinearVelocity(),
           driveConfig.maxLinearVelocity() * 5,
           Units.degreesToRadians(1080.0));
 
   // Trajectory Following
-  public static TrajectoryConstants trajectoryConstants =
+  public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
         case COMPBOT -> new TrajectoryConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         case DEVBOT ->
@@ -164,7 +164,7 @@ public final class DriveConstants {
       };
 
   // Auto Align
-  public static AutoAlignConstants autoAlignConstants =
+  public static final AutoAlignConstants autoAlignConstants =
       new AutoAlignConstants(
           6.0,
           0.0,
@@ -178,7 +178,7 @@ public final class DriveConstants {
           driveConfig.maxAngularAcceleration() * 0.5);
 
   // Swerve Heading Control
-  public static HeadingControllerConstants headingControllerConstants =
+  public static final HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
         default -> new HeadingControllerConstants(5.0, 0.0, 8.0, 20.0);
       };

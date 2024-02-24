@@ -9,7 +9,6 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
@@ -20,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
+import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
 import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
@@ -80,15 +80,17 @@ public class RobotContainer {
 
   // Controller
   private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
-  private final Trigger robotRelative = overrides.driverSwitch(0);
-  private final Trigger armDisable = overrides.driverSwitch(1);
-  private final Trigger armCoast = overrides.driverSwitch(2);
-  private final Trigger autoAimDisable = overrides.operatorSwitch(0);
+  private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
+  private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
+  private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
+  private final Trigger autoAimDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
+  private boolean podiumShotMode = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -115,6 +117,8 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
+          arm = new Arm(new ArmIOKrakenFOC());
+          intake = new Intake(new IntakeIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -205,7 +209,7 @@ public class RobotContainer {
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
-    arm.setOverrides(armDisable, armCoast);
+    RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
 
     // Configure autos and buttons
     configureAutos();
@@ -221,13 +225,27 @@ public class RobotContainer {
     autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
-                drive, drive::runCharacterizationVolts, drive::getCharacterizationVelocity)
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
     autoChooser.addOption(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
+    autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+            drive, drive::runCharacterization, drive::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Flywheels Static Characterization",
+        new StaticCharacterization(
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
+    autoChooser.addOption(
+        "Arm Static Characterization",
+        new StaticCharacterization(
+                superstructure,
+                superstructure::runArmCharacterization,
+                superstructure::getArmCharacterizationVelocity)
+            .finallyDo(superstructure::endArmCharacterization));
     autoChooser.addOption(
         "Drive Wheel Radius Characterization",
         drive
@@ -245,34 +263,40 @@ public class RobotContainer {
    * XboxController}), and then passing it to a {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    // Drive commands
+    // ------------- Driver Controls -------------
+    // Drive command
     drive.setDefaultCommand(
         drive
             .run(
                 () ->
                     drive.acceptTeleopInput(
-                        -controller.getLeftY(),
-                        -controller.getLeftX(),
-                        -controller.getRightX(),
-                        robotRelative.getAsBoolean()))
+                        -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
             .withName("Drive Teleop Input"));
 
+    // ------------- Shooting Controls -------------
     // Aim and rev flywheels
+    Command superstructureAimCommand =
+        Commands.either(
+            Commands.either(
+                superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
+            superstructure.aim(),
+            armPresetModeEnable);
+    Command driveAimCommand =
+        Commands.either(
+            Commands.none(),
+            Commands.startEnd(
+                () ->
+                    drive.setHeadingGoal(
+                        () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                drive::clearHeadingGoal),
+            autoAimDisable);
     controller
         .a()
         .whileTrue(
-            Commands.startEnd(
-                    () ->
-                        drive.setHeadingGoal(
-                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
-                    drive::clearHeadingGoal)
-                .alongWith(
-                    Commands.either(
-                        superstructure.subwoofer(), superstructure.aim(), autoAimDisable),
-                    flywheels.shootCommand())
+            driveAimCommand
+                .alongWith(superstructureAimCommand, flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
-    // Shoot
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
     readyToShoot
@@ -292,6 +316,7 @@ public class RobotContainer {
                 .deadlineWith(
                     rollers.feedShooter(), superstructure.aim(), flywheels.shootCommand()));
 
+    // ------------- Intake Controls -------------
     // Intake Floor
     controller
         .leftTrigger()
@@ -311,43 +336,43 @@ public class RobotContainer {
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 
-    // Amp scoring
+    // ------------- Amp Scoring Controls -------------
     controller
         .rightBumper()
         .whileTrue(
             superstructure
                 .amp()
                 .alongWith(
-                    Commands.startEnd(
-                        () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
-                        drive::clearHeadingGoal)));
+                    Commands.either(
+                        Commands.none(),
+                        Commands.startEnd(
+                            () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
+                            drive::clearHeadingGoal),
+                        autoAlignDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())
         .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
 
-    // Shot compensation adjustment
-    controller
+    // ------------- Operator Controls -------------
+    // Adjust shot compensation
+    operator
         .povUp()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1)));
-    controller
+    operator
         .povDown()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+
+    // Adjust arm preset
+    operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Reset pose
     controller
         .y()
         .onTrue(
-            Commands.runOnce(
-                    () ->
-                        robotState.resetPose(
-                            AllianceFlipUtil.apply(
-                                new Pose2d(
-                                    Units.inchesToMeters(36.0),
-                                    FieldConstants.Speaker.centerSpeakerOpening.getY(),
-                                    new Rotation2d()))))
+            Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(new Pose2d())))
                 .ignoringDisable(true));
     controller
         .b()

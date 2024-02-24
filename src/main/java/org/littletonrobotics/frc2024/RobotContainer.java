@@ -77,6 +77,9 @@ public class RobotContainer {
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
+  private final Trigger robotRelative = overrides.driverSwitch(0);
+  private final Trigger armDisable = overrides.driverSwitch(1);
+  private final Trigger armCoast = overrides.driverSwitch(2);
   private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
   private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
@@ -203,6 +206,7 @@ public class RobotContainer {
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
+    arm.setOverrides(armDisable, armCoast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
 
     // Configure autos and buttons
@@ -264,7 +268,10 @@ public class RobotContainer {
             .run(
                 () ->
                     drive.acceptTeleopInput(
-                        -controller.getLeftY(), -controller.getLeftX(), -controller.getRightX()))
+                        -controller.getLeftY(),
+                        -controller.getLeftX(),
+                        -controller.getRightX(),
+                        robotRelative.getAsBoolean()))
             .withName("Drive Teleop Input"));
 
     // ------------- Shooting Controls -------------

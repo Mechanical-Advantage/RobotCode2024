@@ -283,12 +283,14 @@ public class Drive extends SubsystemBase {
   }
 
   /** Pass controller input into teleopDriveController in field relative input */
-  public void acceptTeleopInput(double controllerX, double controllerY, double controllerOmega) {
+  public void acceptTeleopInput(
+      double controllerX, double controllerY, double controllerOmega, boolean robotRelative) {
     if (DriverStation.isTeleopEnabled()) {
       if (currentDriveMode != DriveMode.AUTO_ALIGN) {
         currentDriveMode = DriveMode.TELEOP;
       }
-      teleopDriveController.acceptDriveInput(controllerX, controllerY, controllerOmega);
+      teleopDriveController.acceptDriveInput(
+          controllerX, controllerY, controllerOmega, robotRelative);
     }
   }
 

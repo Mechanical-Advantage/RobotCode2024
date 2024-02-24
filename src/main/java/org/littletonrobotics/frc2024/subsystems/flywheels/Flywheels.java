@@ -34,9 +34,9 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber shootingRightRpm =
       new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4000.0);
   private static final LoggedTunableNumber idleLeftRpm =
-      new LoggedTunableNumber("Flywheels/IdleLeftRpm", 200);
+      new LoggedTunableNumber("Flywheels/IdleLeftRpm", 0);
   private static final LoggedTunableNumber idleRightRpm =
-      new LoggedTunableNumber("Flywheels/IdleRightRpm", 200);
+      new LoggedTunableNumber("Flywheels/IdleRightRpm", 0);
   private static final LoggedTunableNumber intakingRpm =
       new LoggedTunableNumber("Flywheels/IntakingRpm", -2000.0);
   private static final LoggedTunableNumber ejectingRpm =
@@ -57,7 +57,7 @@ public class Flywheels extends SubsystemBase {
   private final Alert leftDisconnected =
       new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
   private final Alert rightDisconnected =
-      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+      new Alert("Right flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {

@@ -51,7 +51,7 @@ public class Arm {
     FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 18.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
-    STOW(new LoggedTunableNumber("Arm/StowDegrees", 10.0)),
+    STOW(new LoggedTunableNumber("Arm/StowDegrees", 0.0)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),

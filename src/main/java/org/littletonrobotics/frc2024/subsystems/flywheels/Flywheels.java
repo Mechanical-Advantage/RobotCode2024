@@ -181,7 +181,8 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command shootCommand() {
-    return startEnd(() -> setGoal(Goal.SHOOT), () -> setGoal(Goal.IDLE)).withName("Flywheels Shoot");
+    return startEnd(() -> setGoal(Goal.SHOOT), () -> setGoal(Goal.IDLE))
+        .withName("Flywheels Shoot");
   }
 
   public Command intakeCommand() {

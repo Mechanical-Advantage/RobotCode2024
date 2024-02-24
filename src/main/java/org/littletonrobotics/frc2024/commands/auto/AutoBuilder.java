@@ -418,6 +418,16 @@ public class AutoBuilder {
         runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
   }
 
+  public Command unethicalAuto() {
+    HolonomicTrajectory driveToC0 = new HolonomicTrajectory("unethicalAuto_driveToC0");
+    HolonomicTrajectory driveToC4 = new HolonomicTrajectory("unethicalAuto_driveToC4");
+
+    return sequence(
+        resetPose(driveToC0),
+        followTrajectory(drive, driveToC0),
+        followTrajectory(drive, driveToC4));
+  }
+
   //  public Command N5_S0_C012() {
   //    return sequence(
   //        reset("N5-S0-C0123_driveToS0"),

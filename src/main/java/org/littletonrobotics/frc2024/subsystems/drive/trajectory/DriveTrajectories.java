@@ -408,6 +408,34 @@ public class DriveTrajectories {
                             .transformBy(new Transform2d(-.5, .6, new Rotation2d(Math.PI)))
                             .getTranslation()))
                 .build()));
+
+    // Unethical Auto
+
+    paths.put(
+        "unethicalAuto_driveToC0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingSourceFace)
+                .addTranslationWaypoint(
+                    intakingCenterlinePoses[0]
+                        .transformBy(new Transform2d(1.5, .15, new Rotation2d()))
+                        .getTranslation())
+                .addPoseWaypoint(
+                    new Pose2d(
+                        intakingCenterlinePoses[0].getTranslation(), Rotation2d.fromDegrees(200)))
+                .build()));
+
+    paths.put(
+        "unethicalAuto_driveToC4",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("unethicalAuto_driveToC0"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.StagingLocations.centerlineTranslations[0],
+                        Rotation2d.fromDegrees(201)))
+                .addTranslationWaypoint(intakingCenterlinePoses[4].getTranslation())
+                .build()));
   }
 
   // calculate Pose2d of robot given a translation

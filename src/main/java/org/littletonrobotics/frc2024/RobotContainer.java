@@ -230,6 +230,7 @@ public class RobotContainer {
     autoChooser.addOption("N5_S2_C432", autoBuilder.N5_S2_C432());
     autoChooser.addOption("N5_C012_S0", autoBuilder.N5_C012_S0());
     autoChooser.addOption("N6_S21-C432", autoBuilder.N6_S21_C432());
+    autoChooser.addOption("Unethical Auto", autoBuilder.unethicalAuto());
   }
 
   /**

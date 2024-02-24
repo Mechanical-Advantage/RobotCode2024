@@ -24,6 +24,7 @@ public class Superstructure extends SubsystemBase {
     STATION_INTAKE,
     AMP,
     SUBWOOFER,
+    PODIUM,
     PREPARE_CLIMB,
     CLIMB,
     TRAP,
@@ -58,6 +59,7 @@ public class Superstructure extends SubsystemBase {
       case DIAGNOSTIC_ARM -> arm.setGoal(Arm.Goal.CUSTOM);
       case AMP -> arm.setGoal(Arm.Goal.AMP);
       case SUBWOOFER -> arm.setGoal(Arm.Goal.SUBWOOFER);
+      case PODIUM -> arm.setGoal(Arm.Goal.PODIUM);
       default -> {} // DO NOTHING ELSE
     }
 
@@ -85,6 +87,11 @@ public class Superstructure extends SubsystemBase {
         .withName("Superstructure Subwoofer Aiming");
   }
 
+  public Command podium() {
+    return startEnd(() -> desiredGoal = Goal.PODIUM, this::stow)
+        .withName("Superstructure Podium Aiming");
+  }
+
   public Command intake() {
     return startEnd(() -> desiredGoal = Goal.INTAKE, this::stow)
         .withName("Superstructure Intaking");
@@ -104,7 +111,15 @@ public class Superstructure extends SubsystemBase {
         .withName("Arm Custom Goal");
   }
 
-  public Command runArmCharacterization() {
-    return arm.getStaticCurrent().finallyDo(() -> desiredGoal = Goal.STOW);
+  public void runArmCharacterization(double input) {
+    arm.runCharacterization(input);
+  }
+
+  public double getArmCharacterizationVelocity() {
+    return arm.getCharacterizationVelocity();
+  }
+
+  public void endArmCharacterization() {
+    arm.endCharacterization();
   }
 }

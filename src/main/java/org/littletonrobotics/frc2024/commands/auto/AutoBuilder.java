@@ -246,9 +246,8 @@ public class AutoBuilder {
                         .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),
-        // Revert to teleop idle mode
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
+        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())));
+    // Revert to teleop idle mode
   }
 
   public Command N5_C012_S0() {
@@ -260,7 +259,6 @@ public class AutoBuilder {
 
     return sequence(
         runOnce(autoTimer::restart),
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         resetPose(driveToC0),
         shoot(drive, superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
@@ -300,8 +298,7 @@ public class AutoBuilder {
         runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
         followTrajectory(drive, driveToPodium).deadlineWith(intake(superstructure, rollers)),
         shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
+        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())));
   }
 
   public Command N5_S1_C234() {
@@ -313,7 +310,6 @@ public class AutoBuilder {
 
     return sequence(
         runOnce(autoTimer::restart),
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         // Shoot preloaded note
         resetPose(driveToS1),
         shoot(drive, superstructure, flywheels, rollers),
@@ -353,9 +349,8 @@ public class AutoBuilder {
                     intake(superstructure, rollers).withTimeout(1.0),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())),
-        // Revert to teleop idle mode
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
+        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())));
+    // Revert to teleop idle mode
   }
 
   public Command N5_S2_C432() {
@@ -367,7 +362,6 @@ public class AutoBuilder {
 
     return sequence(
         runOnce(autoTimer::restart),
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.AUTO)),
         resetPose(driveToS2),
         shootNoDrive(superstructure, flywheels, rollers),
         runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
@@ -408,8 +402,7 @@ public class AutoBuilder {
                                 false)),
                     superstructure.aim())),
         shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
-        runOnce(() -> flywheels.setIdleMode(Flywheels.IdleMode.TELEOP)));
+        runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())));
   }
 
   public Command N6_S21_C432() {

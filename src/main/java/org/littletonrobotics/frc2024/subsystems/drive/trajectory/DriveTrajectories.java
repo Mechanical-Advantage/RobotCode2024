@@ -132,7 +132,7 @@ public class DriveTrajectories {
                 .addPoseWaypoint(intakingApproachCenterlinePoses[0])
                 .build(),
             PathSegment.newBuilder()
-                .addPoseWaypoint(intakingCenterlinePoses[0], 200)
+                .addPoseWaypoint(intakingCenterlinePoses[0], 150)
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),
@@ -412,29 +412,50 @@ public class DriveTrajectories {
     // Unethical Auto
 
     paths.put(
-        "unethicalAuto_driveToC0",
+        "unethicalAuto_driveToC4",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceFace)
                 .addTranslationWaypoint(
-                    intakingCenterlinePoses[0]
-                        .transformBy(new Transform2d(1.5, .15, new Rotation2d()))
+                    intakingCenterlinePoses[4]
+                        .transformBy(new Transform2d(1.4, .15, new Rotation2d()))
                         .getTranslation())
                 .addPoseWaypoint(
                     new Pose2d(
-                        intakingCenterlinePoses[0].getTranslation(), Rotation2d.fromDegrees(200)))
+                        intakingCenterlinePoses[4].getTranslation(), Rotation2d.fromDegrees(200)))
                 .build()));
 
     paths.put(
-        "unethicalAuto_driveToC4",
+        "unethicalAuto_driveToC0",
         List.of(
             PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("unethicalAuto_driveToC0"))
+                .addWaypoints(getLastWaypoint("unethicalAuto_driveToC4"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.StagingLocations.centerlineTranslations[3],
+                        Rotation2d.fromDegrees(120)))
                 .addPoseWaypoint(
                     new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[0],
-                        Rotation2d.fromDegrees(201)))
-                .addTranslationWaypoint(intakingCenterlinePoses[4].getTranslation())
+                        Rotation2d.fromDegrees(120)))
+                .build()));
+
+    paths.put(
+        "unethicalAuto_driveToPodium",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("unethicalAuto_driveToC0"))
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.podiumLeg
+                        .transformBy(new Transform2d(-1, 0, new Rotation2d()))
+                        .getTranslation())
+                .addPoseWaypoint(
+                    getShootingPose(
+                        new Pose2d(
+                                FieldConstants.StagingLocations.spikeTranslations[0],
+                                new Rotation2d(0))
+                            .transformBy(new Transform2d(-doNotHitOffset, .1, new Rotation2d()))
+                            .getTranslation()))
                 .build()));
   }
 

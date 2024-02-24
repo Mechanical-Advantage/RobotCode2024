@@ -11,9 +11,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -82,10 +82,10 @@ public class RobotContainer {
   private final Trigger robotRelative = overrides.driverSwitch(0);
   private final Trigger armDisable = overrides.driverSwitch(1);
   private final Trigger armCoast = overrides.driverSwitch(2);
-  private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
-  private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
-  private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
-  private final Trigger autoAimDisable = overrides.operatorSwitch(3);
+  private final Trigger shootPresets = overrides.operatorSwitch(0);
+  private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
+  private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
+  private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
@@ -285,7 +285,7 @@ public class RobotContainer {
                 Commands.either(
                     superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
                 superstructure.aim(),
-                armPresetModeEnable);
+                shootPresets);
     Supplier<Command> driveAimCommand =
         () ->
             Commands.either(
@@ -295,7 +295,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
-                autoAimDisable);
+                autoDriveDisable);
     controller
         .a()
         .whileTrue(
@@ -317,11 +317,17 @@ public class RobotContainer {
                     rollers.feedShooter(),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
-    controller.a().and(readyToShoot).whileTrue(Commands.startEnd(() -> {
-      controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
-    }, () -> {
-      controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-    }));
+    controller
+        .a()
+        .and(readyToShoot)
+        .whileTrue(
+            Commands.startEnd(
+                () -> {
+                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
+                },
+                () -> {
+                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                }));
 
     // ------------- Intake Controls -------------
     // Intake Floor
@@ -355,7 +361,7 @@ public class RobotContainer {
                         Commands.startEnd(
                             () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
                             drive::clearHeadingGoal),
-                        autoAlignDisable)));
+                        shootAlignDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())

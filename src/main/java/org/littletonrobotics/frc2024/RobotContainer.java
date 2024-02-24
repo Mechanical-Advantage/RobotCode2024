@@ -223,6 +223,7 @@ public class RobotContainer {
     autoChooser.addOption("Arm FF Characterization", superstructure.runArmCharacterization());
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
 
+    autoChooser.addOption("N4_C012", autoBuilder.N4_C012());
     autoChooser.addOption("N4_S0_C21", autoBuilder.N4_S0_C21());
     autoChooser.addOption("N4_S2_C43", autoBuilder.N4_S2_C43());
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());

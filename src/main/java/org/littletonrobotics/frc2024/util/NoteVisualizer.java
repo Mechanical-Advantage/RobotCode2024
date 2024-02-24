@@ -81,11 +81,11 @@ public class NoteVisualizer {
   }
 
   /** Shows the currently held note if there is one */
-  public static void showIntakedNotes() {
+  public static void showHeldNotes() {
     if (hasNote) {
       Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {getIndexerPose3d()});
     } else {
-      Logger.recordOutput("NoteVisualizer/HeldNotes");
+      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d());
     }
   }
 

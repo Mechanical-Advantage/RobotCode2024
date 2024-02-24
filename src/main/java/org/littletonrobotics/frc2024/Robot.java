@@ -165,7 +165,7 @@ public class Robot extends LoggedRobot {
     robotContainer.checkControllers();
 
     // Update NoteVisualizer
-    NoteVisualizer.showIntakedNotes();
+    NoteVisualizer.showHeldNotes();
 
     // Log CANivore status
     if (Constants.getMode() == Mode.REAL) {

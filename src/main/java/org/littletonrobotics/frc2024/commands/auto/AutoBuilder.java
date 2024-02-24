@@ -190,6 +190,7 @@ public class AutoBuilder {
         // Shoot preloaded note
         resetPose(driveToPodiumTrajectory),
         shootNoDrive(superstructure, flywheels, rollers),
+        runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
         followTrajectory(drive, driveToPodiumTrajectory)
             // Drive to podium note while intaking and shoot
             .deadlineWith(

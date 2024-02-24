@@ -16,6 +16,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -86,6 +87,10 @@ public class Arm {
   private final Alert absoluteEncoderDisconnected =
       new Alert("Arm absolute encoder disconnected!", Alert.AlertType.WARNING);
 
+  private BooleanSupplier disableSupplier = DriverStation::isDisabled;
+  private BooleanSupplier coastSupplier = () -> false;
+  private boolean brakeModeEnabled = true;
+
   public Arm(ArmIO io) {
     this.io = io;
     io.setBrakeMode(true);
@@ -101,6 +106,11 @@ public class Arm {
     measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
     setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
     goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
+  }
+
+  public void setOverrides(BooleanSupplier disableOverride, BooleanSupplier coastOverride) {
+    disableSupplier = () -> disableOverride.getAsBoolean() || DriverStation.isDisabled();
+    coastSupplier = coastOverride;
   }
 
   public void periodic() {
@@ -123,7 +133,6 @@ public class Arm {
         kG,
         kV,
         kA);
-
     LoggedTunableNumber.ifChanged(
         hashCode(),
         constraints ->
@@ -133,7 +142,18 @@ public class Arm {
         maxVelocity,
         maxAcceleration);
 
-    if (!characterizing) {
+    // Check if disabled
+    if (disableSupplier.getAsBoolean()) {
+      io.stop();
+      // Reset profile when disabled
+      setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0);
+    }
+
+    // Set coast mode with override
+    setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
+
+    // Don't run profile when characterizing, coast mode, or disabled
+    if (!characterizing && brakeModeEnabled && !disableSupplier.getAsBoolean()) {
       // Run closed loop
       setpointState =
           motionProfile.calculate(
@@ -148,12 +168,6 @@ public class Arm {
 
       io.runSetpoint(
           setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
-    }
-
-    if (DriverStation.isDisabled()) {
-      io.stop();
-      // Reset profile when disabled
-      setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0);
     }
 
     // Logs
@@ -173,6 +187,12 @@ public class Arm {
   @AutoLogOutput(key = "Arm/AtGoal")
   public boolean atGoal() {
     return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
+  }
+
+  public void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled == enabled) return;
+    brakeModeEnabled = enabled;
+    io.setBrakeMode(brakeModeEnabled);
   }
 
   public void runCharacterization(double amps) {

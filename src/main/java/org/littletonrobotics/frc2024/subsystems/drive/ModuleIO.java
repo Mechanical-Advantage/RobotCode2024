@@ -17,15 +17,15 @@ public interface ModuleIO {
     public boolean turnMotorConnected = true;
     public boolean hasCurrentControl = false;
 
-    public double drivePositionRad = 0.0;
-    public double driveVelocityRadPerSec = 0.0;
+    public double drivePositionRads = 0.0;
+    public double driveVelocityRadsPerSec = 0.0;
     public double driveAppliedVolts = 0.0;
     public double driveSupplyCurrentAmps = 0.0;
     public double driveTorqueCurrentAmps = 0.0;
 
     public Rotation2d turnAbsolutePosition = new Rotation2d();
     public Rotation2d turnPosition = new Rotation2d();
-    public double turnVelocityRadPerSec = 0.0;
+    public double turnVelocityRadsPerSec = 0.0;
     public double turnAppliedVolts = 0.0;
     public double turnSupplyCurrentAmps = 0.0;
     public double turnTorqueCurrentAmps = 0.0;

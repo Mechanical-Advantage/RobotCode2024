@@ -15,37 +15,52 @@ import org.littletonrobotics.frc2024.Constants;
 
 public class ArmConstants {
   // reduction is 12:62 18:60 12:65
-  public static double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
-  public static Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
-  public static Translation2d armOrigin = new Translation2d(-0.238, 0.298);
-  public static Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
-  public static Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
+  public static final double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
+  public static final Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
+  public static final Translation2d armOrigin = new Translation2d(-0.238, 0.298);
+  public static final Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
+  public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
-  public static int leaderID = 25;
-  public static int followerID = 26;
-  public static int armEncoderID = 42;
+  public static final int leaderID =
+      switch (Constants.getRobot()) {
+        default -> 11;
+        case DEVBOT -> 25;
+      };
+  public static final int followerID =
+      switch (Constants.getRobot()) {
+        default -> 10;
+        case DEVBOT -> 26;
+      };
+  public static final int armEncoderID =
+      switch (Constants.getRobot()) {
+        default -> 0;
+        case DEVBOT -> 42;
+      };
 
-  public static boolean leaderInverted = false;
-  public static boolean followerInverted = false;
+  public static final boolean leaderInverted = false;
 
-  /** The offset of the arm encoder in rotations. */
-  public static double armEncoderOffsetRotations = Units.radiansToRotations(1.233 + Math.PI / 2.0);
+  /** The offset of the arm encoder in radians. */
+  public static final double armEncoderOffsetRads =
+      switch (Constants.getRobot()) {
+        default -> 0.35588 - Math.PI / 2.0; // Units.radiansToRotations(-0.348213 + Math.PI / 2.0);
+        case DEVBOT -> 1.233 + Math.PI / 2.0;
+      };
 
-  public static double armLength =
+  public static final double armLength =
       switch (Constants.getRobot()) {
         case DEVBOT -> Units.inchesToMeters(24.8);
         default -> Units.inchesToMeters(25.866);
       };
 
-  public static Gains gains =
+  public static final Gains gains =
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        case DEVBOT -> new Gains(4000, 0.0, 120, 5.75, 0.0, 0.0, 15);
-        case COMPBOT -> new Gains(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        case DEVBOT -> new Gains(0.0, 0.0, 0.0, 5.75, 0.0, 0.0, 15);
+        case COMPBOT -> new Gains(75.0, 0.0, 2.5, 10.911, 0.0, 0.0, 20.469 - 10.911);
       };
 
   public static TrapezoidProfile.Constraints profileConstraints =
-      new TrapezoidProfile.Constraints(2 * Math.PI, 10);
+      new TrapezoidProfile.Constraints(2 * Math.PI, 15);
 
   public record Gains(
       double kP, double kI, double kD, double ffkS, double ffkV, double ffkA, double ffkG) {}

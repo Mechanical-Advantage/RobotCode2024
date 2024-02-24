@@ -20,6 +20,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import java.util.NoSuchElementException;
+import java.util.function.BooleanSupplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
@@ -27,6 +28,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.AutoLogOutput;
 
 @ExtensionMethod({GeomUtil.class})
@@ -99,11 +101,16 @@ public class RobotState {
   /** Cached latest aiming parameters. Calculated in {@code getAimingParameters()} */
   private AimingParameters latestParameters = null;
 
+  @Setter private BooleanSupplier lookaheadDisable = () -> false;
+
   private RobotState() {
     for (int i = 0; i < 3; ++i) {
       qStdDevs.set(i, 0, Math.pow(DriveConstants.odometryStateStdDevs.get(i, 0), 2));
     }
     kinematics = DriveConstants.kinematics;
+
+    // Setup NoteVisualizer
+    NoteVisualizer.setRobotPoseSupplier(this::getEstimatedPose);
   }
 
   /** Add odometry observation */
@@ -201,7 +208,10 @@ public class RobotState {
         AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening)
             .toTranslation2d()
             .toTransform2d();
-    Pose2d fieldToPredictedVehicle = getPredictedPose(lookahead.get(), lookahead.get());
+    Pose2d fieldToPredictedVehicle =
+        lookaheadDisable.getAsBoolean()
+            ? getEstimatedPose()
+            : getPredictedPose(lookahead.get(), lookahead.get());
     Pose2d fieldToPredictedVehicleFixed =
         new Pose2d(fieldToPredictedVehicle.getTranslation(), new Rotation2d());
 

@@ -98,9 +98,9 @@ public class ModuleIOSparkMax implements ModuleIO {
 
   @Override
   public void updateInputs(ModuleIOInputs inputs) {
-    inputs.drivePositionRad =
+    inputs.drivePositionRads =
         Units.rotationsToRadians(driveEncoder.getPosition() / moduleConstants.driveReduction());
-    inputs.driveVelocityRadPerSec =
+    inputs.driveVelocityRadsPerSec =
         Units.rotationsPerMinuteToRadiansPerSecond(
             driveEncoder.getVelocity() / moduleConstants.driveReduction());
     inputs.driveAppliedVolts = driveMotor.getAppliedOutput() * driveMotor.getBusVoltage();
@@ -111,7 +111,7 @@ public class ModuleIOSparkMax implements ModuleIO {
         Rotation2d.fromRadians(
             Units.rotationsToRadians(
                 turnRelativeEncoder.getPosition() / moduleConstants.turnReduction()));
-    inputs.turnVelocityRadPerSec =
+    inputs.turnVelocityRadsPerSec =
         Units.rotationsPerMinuteToRadiansPerSecond(
             turnRelativeEncoder.getVelocity() / moduleConstants.turnReduction());
     inputs.turnAppliedVolts = turnMotor.getAppliedOutput() * turnMotor.getBusVoltage();

@@ -42,6 +42,8 @@ public class Arm {
       new LoggedTunableNumber("Arm/Velocity", profileConstraints.maxVelocity);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
+  private static final LoggedTunableNumber slowVelocity =
+      new LoggedTunableNumber("Arm/SlowVelocity", Math.PI / 2.0);
   private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
@@ -56,8 +58,8 @@ public class Arm {
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
-    PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 115.0)),
-    CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 88.0)),
+    PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 100.0)),
+    CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
@@ -68,6 +70,7 @@ public class Arm {
   }
 
   @Getter @Setter private Goal goal = Goal.STOW;
+  private Goal lastGoal = goal;
   private boolean characterizing = false;
 
   private final ArmIO io;
@@ -152,6 +155,20 @@ public class Arm {
 
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
+
+    if (lastGoal != goal) {
+      // Update profile constraints when prepare climb
+      if (goal == Goal.PREPARE_CLIMB) {
+        motionProfile =
+            new TrapezoidProfile(
+                new TrapezoidProfile.Constraints(slowVelocity.get(), maxAcceleration.get()));
+      } else {
+        motionProfile =
+            new TrapezoidProfile(
+                new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
+      }
+      lastGoal = goal;
+    }
 
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing && brakeModeEnabled && !disableSupplier.getAsBoolean()) {

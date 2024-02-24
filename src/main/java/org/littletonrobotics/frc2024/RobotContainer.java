@@ -19,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.Supplier;
+import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
@@ -387,6 +388,9 @@ public class RobotContainer {
         .and(controller.rightTrigger())
         .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
 
+    // ------------- Climbing Controls -------------
+    controller.x().whileTrue(ClimbingCommands.driveToBack(drive));
+
     // ------------- Operator Controls -------------
     // Adjust shot compensation
     operator
@@ -397,6 +401,8 @@ public class RobotContainer {
         .povDown()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+    operator.leftBumper().toggleOnTrue(ClimbingCommands.prepareClimbFromBack(drive, superstructure));
+    operator.rightBumper().onTrue(ClimbingCommands.finalClimb(superstructure));
 
     // Climbing controls
     Command prepareClimbCommand = superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB);

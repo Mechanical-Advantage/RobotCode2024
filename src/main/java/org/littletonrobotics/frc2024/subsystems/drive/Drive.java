@@ -347,7 +347,7 @@ public class Drive extends SubsystemBase {
   /** Returns true if robot is aimed at speaker */
   @AutoLogOutput(key = "Drive/AtHeadingGoal")
   public boolean atHeadingGoal() {
-    return headingController != null && headingController.atGoal();
+    return headingController == null || headingController.atGoal();
   }
 
   /** Runs forwards at the commanded voltage or amps. */

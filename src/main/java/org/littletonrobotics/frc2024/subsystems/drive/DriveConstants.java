@@ -170,7 +170,7 @@ public final class DriveConstants {
           0.0,
           5.0,
           0.0,
-          Units.inchesToMeters(2.0),
+          Units.inchesToMeters(4.0),
           Units.degreesToRadians(2.0),
           driveConfig.maxLinearVelocity(),
           driveConfig.maxLinearAcceleration() * 0.5,

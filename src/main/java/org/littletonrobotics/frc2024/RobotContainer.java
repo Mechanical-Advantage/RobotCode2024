@@ -19,10 +19,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-
 import java.util.function.Supplier;
-
-import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
@@ -302,7 +299,9 @@ public class RobotContainer {
         () ->
             Commands.either(
                 Commands.either(
-                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM), superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER), () -> podiumShotMode),
+                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
+                    () -> podiumShotMode),
                 superstructure.setGoalCommand(Superstructure.Goal.AIM),
                 shootPresets);
     Supplier<Command> driveAimCommand =
@@ -353,7 +352,8 @@ public class RobotContainer {
     controller
         .leftTrigger()
         .whileTrue(
-            superstructure.setGoalCommand(Superstructure.Goal.INTAKE)
+            superstructure
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
                 .withName("Floor Intake"));
@@ -362,7 +362,8 @@ public class RobotContainer {
     controller
         .leftBumper()
         .whileTrue(
-            superstructure.setGoalCommand(Superstructure.Goal.INTAKE)
+            superstructure
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 
@@ -370,7 +371,8 @@ public class RobotContainer {
     controller
         .rightBumper()
         .whileTrue(
-            superstructure.setGoalCommand(Superstructure.Goal.AMP)
+            superstructure
+                .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.either(
                         Commands.none(),

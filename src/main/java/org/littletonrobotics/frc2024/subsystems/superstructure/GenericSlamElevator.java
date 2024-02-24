@@ -10,6 +10,7 @@ package org.littletonrobotics.frc2024.subsystems.superstructure;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -17,10 +18,17 @@ import org.littletonrobotics.junction.Logger;
 public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElevatorGoal> {
 
   public interface SlamElevatorGoal {
-    /** Returns either -1 or 1 based on directino of slamming */
-    int getDirection();
+    DoubleSupplier getSlammingCurrent();
 
     boolean isStopAtGoal();
+
+    SlamElevatorState getState();
+  }
+
+  public enum SlamElevatorState {
+    IDLING,
+    RETRACTED,
+    EXTENDED
   }
 
   private final GenericSlamElevatorIO io;
@@ -28,7 +36,6 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       new GenericSlamElevatorIOInputsAutoLogged();
 
   private final String name;
-  private final double slammingCurrent;
   private final double staticTimeSecs;
   private final double minVelocityThresh;
 
@@ -49,21 +56,15 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
    *
    * @param name Name of elevator.
    * @param io IO implementation of elevator.
-   * @param slammingCurrent Amps to run at when slamming.
    * @param staticTimeSecs Time that it takes for elevator to stop running after hitting the end of
    *     the elevator.
-   * @param minVelocityThresh Minimum velocity threshold for elevator to start stopping at in motor
-   *     rads/sec.
+   * @param minVelocityThresh Minimum velocity threshold for elevator to start stopping at in
+   *     rads/sec of the last sprocket.
    */
   public GenericSlamElevator(
-      String name,
-      GenericSlamElevatorIO io,
-      double slammingCurrent,
-      double staticTimeSecs,
-      double minVelocityThresh) {
+      String name, GenericSlamElevatorIO io, double staticTimeSecs, double minVelocityThresh) {
     this.name = name;
     this.io = io;
-    this.slammingCurrent = slammingCurrent;
     this.staticTimeSecs = staticTimeSecs;
     this.minVelocityThresh = minVelocityThresh;
     setBrakeMode(true);
@@ -118,12 +119,12 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
     // Run to goal.
     if (!atGoal) {
-      io.runCurrent(getGoal().getDirection() * slammingCurrent);
+      io.runCurrent(getGoal().getSlammingCurrent().getAsDouble());
     } else {
       if (getGoal().isStopAtGoal()) {
         io.stop();
       } else {
-        io.runCurrent(getGoal().getDirection() * slammingCurrent);
+        io.runCurrent(getGoal().getSlammingCurrent().getAsDouble());
       }
     }
 
@@ -151,11 +152,11 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
   @AutoLogOutput(key = "Superstructure/{name}/Extended")
   public boolean extended() {
-    return getGoal().getDirection() == 1 && atGoal;
+    return getGoal().getState() == SlamElevatorState.EXTENDED && atGoal;
   }
 
   @AutoLogOutput(key = "Superstructure/{name}/Retracted")
   public boolean retracted() {
-    return getGoal().getDirection() == -1 && atGoal;
+    return getGoal().getState() == SlamElevatorState.RETRACTED && atGoal;
   }
 }

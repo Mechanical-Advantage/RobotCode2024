@@ -60,32 +60,32 @@ public class Superstructure extends SubsystemBase {
     switch (currentGoal) {
       case STOW -> {
         arm.setGoal(Arm.Goal.STOW);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case AIM -> {
         arm.setGoal(Arm.Goal.AIM);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case INTAKE -> {
         arm.setGoal(Arm.Goal.FLOOR_INTAKE);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case STATION_INTAKE -> {
         arm.setGoal(Arm.Goal.STATION_INTAKE);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case AMP -> {
         arm.setGoal(Arm.Goal.AMP);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case SUBWOOFER -> {
         arm.setGoal(Arm.Goal.SUBWOOFER);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case PREPARE_CLIMB -> {
@@ -105,7 +105,7 @@ public class Superstructure extends SubsystemBase {
       }
       case DIAGNOSTIC_ARM -> {
         arm.setGoal(Arm.Goal.CUSTOM);
-        climber.setGoal(Climber.Goal.RETRACT_AND_IDLE);
+        climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
     }

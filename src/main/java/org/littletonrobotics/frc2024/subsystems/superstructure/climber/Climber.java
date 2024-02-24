@@ -13,7 +13,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator;
-import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator.SlamElevatorGoal;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
 
@@ -33,9 +32,9 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
     RETRACT(
         new LoggedTunableNumber("Climber/RetractingCurrent", -30.0),
         false,
-        SlamElevatorState.RETRACTED),
+        SlamElevatorState.RETRACTING),
     EXTEND(
-        new LoggedTunableNumber("Climber/ExtendingCurrent", 6.0), true, SlamElevatorState.EXTENDED);
+        new LoggedTunableNumber("Climber/ExtendingCurrent", 6.0), true, SlamElevatorState.EXTENDING);
 
     private final DoubleSupplier slammingCurrent;
     private final boolean stopAtGoal;
@@ -57,7 +56,7 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
   public void periodic() {
     super.periodic();
 
-    if (getGoal().getState() != SlamElevatorState.RETRACTED) {
+    if (getGoal().getState() != SlamElevatorState.RETRACTING) {
       hasCheckedCancel = false;
       requestCancelClimb = false;
     }

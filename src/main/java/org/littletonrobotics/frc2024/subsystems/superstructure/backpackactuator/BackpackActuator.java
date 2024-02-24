@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator;
-import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevator.SlamElevatorGoal;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 @Getter
@@ -24,11 +23,11 @@ public class BackpackActuator extends GenericSlamElevator<BackpackActuator.Goal>
     RETRACT(
         new LoggedTunableNumber("BackpackActuator/RetractingCurrent", -30.0),
         true,
-        SlamElevatorState.RETRACTED),
+        SlamElevatorState.RETRACTING),
     EXTEND(
         new LoggedTunableNumber("BackpackActuator/ExtendingCurrent", 30.0),
         true,
-        SlamElevatorState.EXTENDED);
+        SlamElevatorState.EXTENDING);
 
     private final DoubleSupplier slammingCurrent;
     private final boolean stopAtGoal;

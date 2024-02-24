@@ -27,8 +27,8 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
   public enum SlamElevatorState {
     IDLING,
-    RETRACTED,
-    EXTENDED
+    RETRACTING,
+    EXTENDING
   }
 
   private final GenericSlamElevatorIO io;
@@ -152,11 +152,11 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
   @AutoLogOutput(key = "Superstructure/{name}/Extended")
   public boolean extended() {
-    return getGoal().getState() == SlamElevatorState.EXTENDED && atGoal;
+    return getGoal().getState() == SlamElevatorState.EXTENDING && atGoal;
   }
 
   @AutoLogOutput(key = "Superstructure/{name}/Retracted")
   public boolean retracted() {
-    return getGoal().getState() == SlamElevatorState.RETRACTED && atGoal;
+    return getGoal().getState() == SlamElevatorState.RETRACTING && atGoal;
   }
 }

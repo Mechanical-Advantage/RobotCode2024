@@ -31,8 +31,7 @@ public class ClimbingCommands {
           "ClimbingCommands/ClimbedXOffset",
           -ArmConstants.armOrigin.getX() + Units.inchesToMeters(2.0));
   private static final LoggedTunableNumber chainToBack =
-      new LoggedTunableNumber(
-          "ClimbingCommands/ChainToBackOffset", 0.5);
+      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.5);
 
   private static final List<Pose2d> climbedPosesNoOffset =
       List.of(

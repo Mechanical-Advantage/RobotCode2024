@@ -94,7 +94,7 @@ public class Arm {
 
   public Arm(ArmIO io) {
     this.io = io;
-    setBrakeMode(true);
+    io.setBrakeMode(true);
 
     motionProfile =
         new TrapezoidProfile(

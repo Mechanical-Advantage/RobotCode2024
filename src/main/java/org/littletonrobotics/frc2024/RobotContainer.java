@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -18,21 +19,19 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+
 import java.util.function.Supplier;
+
 import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
 import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
-import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
-import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIO;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSim;
-import org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelsIOSparkFlex;
+import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
@@ -44,10 +43,7 @@ import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.FeederIOSim;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIO;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIODevbot;
-import org.littletonrobotics.frc2024.subsystems.rollers.indexer.IndexerIOSim;
+import org.littletonrobotics.frc2024.subsystems.rollers.indexer.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.IntakeIOKrakenFOC;
@@ -59,11 +55,9 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFO
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIO;
-import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
-import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
@@ -92,13 +86,13 @@ public class RobotContainer {
   private final CommandXboxController controller = new CommandXboxController(0);
   private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
-  private final Trigger robotRelativeEnable = overrides.driverSwitch(0);
+  private final Trigger robotRelative = overrides.driverSwitch(0);
   private final Trigger armDisable = overrides.driverSwitch(1);
-  private final Trigger coastEnable = overrides.driverSwitch(2);
-  private final Trigger armPresetModeEnable = overrides.operatorSwitch(0);
-  private final Trigger lookaheadDisable = overrides.operatorSwitch(1);
-  private final Trigger autoAlignDisable = overrides.operatorSwitch(2);
-  private final Trigger autoAimDisable = overrides.operatorSwitch(3);
+  private final Trigger armCoast = overrides.driverSwitch(2);
+  private final Trigger shootPresets = overrides.operatorSwitch(0);
+  private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
+  private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
+  private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
@@ -132,10 +126,8 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
-          intake = new Intake(new IntakeIOKrakenFOC());
           arm = new Arm(new ArmIOKrakenFOC());
-          climber = new Climber(new ClimberIOKrakenFOC());
-          backpackActuator = new BackpackActuator(new BackpackActuatorIOKrakenFOC());
+          intake = new Intake(new IntakeIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -147,12 +139,7 @@ public class RobotContainer {
                   new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
           aprilTagVision =
               new AprilTagVision(
-                  new AprilTagVisionIONorthstar(
-                      AprilTagVisionConstants.instanceNames[0],
-                      AprilTagVisionConstants.cameraIds[0]),
-                  new AprilTagVisionIONorthstar(
-                      AprilTagVisionConstants.instanceNames[1],
-                      AprilTagVisionConstants.cameraIds[1]));
+                  new AprilTagVisionIONorthstar(0), new AprilTagVisionIONorthstar(1));
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
@@ -174,6 +161,8 @@ public class RobotContainer {
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
           backpack = new Backpack(new BackpackIOSim());
+          rollersSensorsIO = new RollersSensorsIO() {};
+
           arm = new Arm(new ArmIOSim());
           climber = new Climber(new ClimberIOSim());
           backpackActuator = new BackpackActuator(new BackpackActuatorIOSim());
@@ -193,6 +182,13 @@ public class RobotContainer {
     }
     if (aprilTagVision == null) {
       switch (Constants.getRobot()) {
+        case COMPBOT ->
+            aprilTagVision =
+                new AprilTagVision(
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {});
         case DEVBOT ->
             aprilTagVision =
                 new AprilTagVision(new AprilTagVisionIO() {}, new AprilTagVisionIO() {});
@@ -230,9 +226,9 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
-    arm.setOverrides(armDisable, coastEnable);
-    climber.setCoastOverride(coastEnable);
-    backpackActuator.setCoastOverride(coastEnable);
+    arm.setOverrides(armDisable, armCoast);
+    climber.setCoastOverride(armCoast);
+    backpackActuator.setCoastOverride(armCoast);
 
     // Configure autos and buttons
     configureAutos();
@@ -297,7 +293,7 @@ public class RobotContainer {
                         -controller.getLeftY(),
                         -controller.getLeftX(),
                         -controller.getRightX(),
-                        robotRelativeEnable.getAsBoolean()))
+                        robotRelative.getAsBoolean()))
             .withName("Drive Teleop Input"));
 
     // ------------- Shooting Controls -------------
@@ -306,11 +302,9 @@ public class RobotContainer {
         () ->
             Commands.either(
                 Commands.either(
-                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
-                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
-                    () -> podiumShotMode),
+                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM), superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER), () -> podiumShotMode),
                 superstructure.setGoalCommand(Superstructure.Goal.AIM),
-                armPresetModeEnable);
+                shootPresets);
     Supplier<Command> driveAimCommand =
         () ->
             Commands.either(
@@ -320,7 +314,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
-                autoAimDisable);
+                autoDriveDisable);
     controller
         .a()
         .whileTrue(
@@ -328,11 +322,11 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
-
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
     controller
         .rightTrigger()
+        .and(controller.a())
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -342,14 +336,24 @@ public class RobotContainer {
                     rollers.feedShooter(),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
+    controller
+        .a()
+        .and(readyToShoot)
+        .whileTrue(
+            Commands.startEnd(
+                () -> {
+                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
+                },
+                () -> {
+                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                }));
 
     // ------------- Intake Controls -------------
     // Intake Floor
     controller
         .leftTrigger()
         .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.INTAKE)
+            superstructure.setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
                 .withName("Floor Intake"));
@@ -358,8 +362,7 @@ public class RobotContainer {
     controller
         .leftBumper()
         .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.INTAKE)
+            superstructure.setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
                 .withName("Eject To Floor"));
 
@@ -367,22 +370,18 @@ public class RobotContainer {
     controller
         .rightBumper()
         .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.AMP)
+            superstructure.setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.either(
                         Commands.none(),
                         Commands.startEnd(
                             () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
                             drive::clearHeadingGoal),
-                        autoAlignDisable)));
+                        shootAlignDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())
         .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
-
-    // ------------- Climbing Controls -------------
-    controller.x().whileTrue(ClimbingCommands.driveToBack(drive));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -394,43 +393,6 @@ public class RobotContainer {
         .povDown()
         .onTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
-    operator.leftBumper().toggleOnTrue(ClimbingCommands.prepareClimbFromBack(drive, superstructure));
-    operator.rightBumper().onTrue(ClimbingCommands.finalClimb(superstructure));
-
-    // Climbing controls
-//    Command prepareClimbCommand = superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB);
-//    Command climbCommand = superstructure.setGoalCommand(Superstructure.Goal.CLIMB);
-//    Command trapCommand = superstructure.setGoalCommand(Superstructure.Goal.TRAP);
-//    operator
-//        .leftBumper()
-//        .and(
-//            () ->
-//                superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
-//                    && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP)
-//        .onTrue(prepareClimbCommand);
-//    operator
-//        .rightBumper()
-//        .and(
-//            () ->
-//                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
-//                    || superstructure.getCurrentGoal() == Superstructure.Goal.TRAP)
-//        .onTrue(climbCommand);
-//    operator
-//        .rightTrigger()
-//        .and(
-//            () ->
-//                superstructure.getCurrentGoal() == Superstructure.Goal.PREPARE_CLIMB
-//                    || superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB)
-//        .onTrue(trapCommand);
-//    operator
-//        .leftTrigger()
-//        .onTrue(
-//            Commands.runOnce(
-//                () -> {
-//                  prepareClimbCommand.cancel();
-//                  climbCommand.cancel();
-//                  trapCommand.cancel();
-//                }));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

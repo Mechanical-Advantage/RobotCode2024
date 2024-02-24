@@ -18,13 +18,15 @@ public interface FlywheelsIO {
     public double leftPositionRads = 0.0;
     public double leftVelocityRpm = 0.0;
     public double leftAppliedVolts = 0.0;
-    public double leftOutputCurrent = 0.0;
+    public double leftSupplyCurrent = 0.0;
+    public double leftTorqueCurrent = 0.0;
     public double leftTempCelsius = 0.0;
 
     public double rightPositionRads = 0.0;
     public double rightVelocityRpm = 0.0;
     public double rightAppliedVolts = 0.0;
-    public double rightOutputCurrent = 0.0;
+    public double rightSupplyCurrent = 0.0;
+    public double rightTorqueCurrent = 0.0;
     public double rightTempCelsius = 0.0;
   }
 

@@ -18,7 +18,7 @@ public class ArmConstants {
   public static final double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
   public static final Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
   public static final Translation2d armOrigin = new Translation2d(-0.238, 0.298);
-  public static final Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
+  public static final Rotation2d minAngle = Rotation2d.fromDegrees(0.0);
   public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
   public static final int leaderID =

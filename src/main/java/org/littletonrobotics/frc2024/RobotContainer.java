@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -302,7 +303,6 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
-
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
     controller
@@ -317,6 +317,11 @@ public class RobotContainer {
                     rollers.feedShooter(),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
+    controller.a().and(readyToShoot).whileTrue(Commands.startEnd(() -> {
+      controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
+    }, () -> {
+      controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+    }));
 
     // ------------- Intake Controls -------------
     // Intake Floor

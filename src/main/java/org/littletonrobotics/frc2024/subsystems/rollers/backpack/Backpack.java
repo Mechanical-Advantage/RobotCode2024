@@ -22,7 +22,8 @@ public class Backpack extends GenericRollerSystem<Backpack.Goal> {
   @Getter
   public enum Goal implements VoltageGoal {
     IDLING(() -> 0),
-    AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0));
+    AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0)),
+    EJECTING(new LoggedTunableNumber("Backpack/EjectingVoltage", -8.0));
 
     private final DoubleSupplier voltageSupplier;
   }

@@ -24,7 +24,8 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
   private final StatusSignal<Double> position;
   private final StatusSignal<Double> velocity;
   private final StatusSignal<Double> appliedVoltage;
-  private final StatusSignal<Double> outputCurrent;
+  private final StatusSignal<Double> supplyCurrent;
+  private final StatusSignal<Double> torqueCurrent;
   private final StatusSignal<Double> tempCelsius;
 
   // Single shot for voltage mode, robot loop will call continuously
@@ -49,11 +50,11 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
     position = talon.getPosition();
     velocity = talon.getVelocity();
     appliedVoltage = talon.getMotorVoltage();
-    outputCurrent = talon.getTorqueCurrent();
+    supplyCurrent = talon.getSupplyCurrent();
+    torqueCurrent = talon.getTorqueCurrent();
     tempCelsius = talon.getDeviceTemp();
-
     BaseStatusSignal.setUpdateFrequencyForAll(
-        50.0, position, velocity, appliedVoltage, outputCurrent, tempCelsius);
+        50.0, position, velocity, appliedVoltage, supplyCurrent, torqueCurrent, tempCelsius);
 
     talon.optimizeBusUtilization(1.0);
   }
@@ -61,11 +62,12 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
   @Override
   public void updateInputs(GenericRollerSystemIOInputs inputs) {
     inputs.connected =
-        BaseStatusSignal.refreshAll(position, velocity, appliedVoltage, outputCurrent).isOK();
+        BaseStatusSignal.refreshAll(position, velocity, appliedVoltage, supplyCurrent).isOK();
     inputs.positionRads = Units.rotationsToRadians(position.getValueAsDouble()) / reduction;
     inputs.velocityRadsPerSec = Units.rotationsToRadians(velocity.getValueAsDouble()) / reduction;
     inputs.appliedVoltage = appliedVoltage.getValueAsDouble();
-    inputs.outputCurrent = outputCurrent.getValueAsDouble();
+    inputs.supplyCurrentAmps = supplyCurrent.getValueAsDouble();
+    inputs.torqueCurrentAmps = torqueCurrent.getValueAsDouble();
     inputs.tempCelsius = tempCelsius.getValueAsDouble();
   }
 

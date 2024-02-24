@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
@@ -60,6 +61,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
@@ -125,8 +127,9 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
-          arm = new Arm(new ArmIOKrakenFOC());
           intake = new Intake(new IntakeIOKrakenFOC());
+          arm = new Arm(new ArmIOKrakenFOC());
+          climber = new Climber(new ClimberIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -145,13 +148,11 @@ public class RobotContainer {
                       AprilTagVisionConstants.instanceNames[1],
                       AprilTagVisionConstants.cameraIds[1]));
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
-
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOSparkFlex());
           rollersSensorsIO = new RollersSensorsIOReal();
-
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case SIMBOT -> {
@@ -163,13 +164,10 @@ public class RobotContainer {
                   new ModuleIOSim(DriveConstants.moduleConfigs[2]),
                   new ModuleIOSim(DriveConstants.moduleConfigs[3]));
           flywheels = new Flywheels(new FlywheelsIOSim());
-
           feeder = new Feeder(new FeederIOSim());
           indexer = new Indexer(new IndexerIOSim());
           intake = new Intake(new IntakeIOSim());
           backpack = new Backpack(new BackpackIOSim());
-          rollersSensorsIO = new RollersSensorsIO() {};
-
           arm = new Arm(new ArmIOSim());
           climber = new Climber(new ClimberIOSim());
           backpackActuator = new BackpackActuator(new BackpackActuatorIOSim());
@@ -270,7 +268,8 @@ public class RobotContainer {
                 new WheelRadiusCharacterization(
                     drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
-    autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
+    autoChooser.addOption(
+        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -291,37 +290,42 @@ public class RobotContainer {
 
     // ------------- Shooting Controls -------------
     // Aim and rev flywheels
-    Command superstructureAimCommand =
-        Commands.either(
+    Supplier<Command> superstructureAimCommand =
+        () ->
             Commands.either(
-                superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
-            superstructure.aim(),
-            armPresetModeEnable);
-    Command driveAimCommand =
-        Commands.either(
-            Commands.none(),
-            Commands.startEnd(
-                () ->
-                    drive.setHeadingGoal(
-                        () -> RobotState.getInstance().getAimingParameters().driveHeading()),
-                drive::clearHeadingGoal),
-            autoAimDisable);
+                Commands.either(
+                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
+                    () -> podiumShotMode),
+                superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                armPresetModeEnable);
+    Supplier<Command> driveAimCommand =
+        () ->
+            Commands.either(
+                Commands.none(),
+                Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                    drive::clearHeadingGoal),
+                autoAimDisable);
     controller
         .a()
         .whileTrue(
             driveAimCommand
-                .alongWith(superstructureAimCommand, flywheels.shootCommand())
+                .get()
+                .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
 
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
-    readyToShoot
-        .whileTrue(
-            Commands.run(
-                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
-        .whileFalse(
-            Commands.run(
-                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
+    //    readyToShoot
+    //        .whileTrue(
+    //            Commands.run(
+    //                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 1.0)))
+    //        .whileFalse(
+    //            Commands.run(
+    //                () -> controller.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.0)));
     controller
         .rightTrigger()
         .and(readyToShoot)
@@ -331,7 +335,7 @@ public class RobotContainer {
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
                     rollers.feedShooter(),
-                    superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                    superstructureAimCommand.get(),
                     flywheels.shootCommand()));
 
     // ------------- Intake Controls -------------

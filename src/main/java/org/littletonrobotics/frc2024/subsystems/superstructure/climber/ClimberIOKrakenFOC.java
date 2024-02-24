@@ -10,7 +10,7 @@ package org.littletonrobotics.frc2024.subsystems.superstructure.climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.GenericSlamElevatorIOKrakenFOC;
 
 public class ClimberIOKrakenFOC extends GenericSlamElevatorIOKrakenFOC implements ClimberIO {
-  private static final int id = 0;
+  private static final int id = 5;
   private static final String bus = "rio";
   private static final int currentLimitAmps = 40;
   private static final boolean invert = false;

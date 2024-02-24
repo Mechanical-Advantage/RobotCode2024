@@ -225,16 +225,16 @@ public class Drive extends SubsystemBase {
     ChassisSpeeds teleopSpeeds = teleopDriveController.update();
     switch (currentDriveMode) {
       case TELEOP -> {
-        // Plain teleop drive
         desiredSpeeds = teleopSpeeds;
-        // Add auto aim if present
         if (headingController != null) {
           desiredSpeeds.omegaRadiansPerSecond = headingController.update();
         }
       }
       case TRAJECTORY -> {
-        // Run trajectory
         desiredSpeeds = trajectoryController.update();
+        if (headingController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = headingController.update();
+        }
       }
       case AUTO_ALIGN -> {
         // Run auto align with drive input
@@ -292,6 +292,24 @@ public class Drive extends SubsystemBase {
       teleopDriveController.acceptDriveInput(
           controllerX, controllerY, controllerOmega, robotRelative);
     }
+  }
+
+  /** Set shooting trajectory for the robot to follow. */
+  public void setShootingTrajectory(HolonomicTrajectory trajectory) {
+    setTrajectory(trajectory);
+    setHeadingGoal(() -> RobotState.getInstance().getAimingParameters().driveHeading());
+    headingController.setRejoinGoal(trajectory);
+  }
+
+  /** Clears the current shooting trajectory goal. */
+  public void clearShootingTrajectory() {
+    clearTrajectory();
+    clearHeadingGoal();
+  }
+
+  /** Returns true if the robot cannot make shooting trajectory. */
+  public boolean cancelShootingTrajectoryShot() {
+    return headingController == null || headingController.isCancelShot();
   }
 
   /** Sets the trajectory for the robot to follow. */

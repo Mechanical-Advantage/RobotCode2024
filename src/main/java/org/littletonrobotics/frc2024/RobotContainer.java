@@ -25,7 +25,6 @@ import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
 import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
-import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
@@ -117,12 +116,18 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
+          aprilTagVision =
+              new AprilTagVision(
+                  new AprilTagVisionIONorthstar(0),
+                  new AprilTagVisionIONorthstar(1),
+                  new AprilTagVisionIONorthstar(2),
+                  new AprilTagVisionIONorthstar(3));
           flywheels = new Flywheels(new FlywheelsIOKrakenFOC());
-          arm = new Arm(new ArmIOKrakenFOC());
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIOCompbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOKrakenFOC());
+          arm = new Arm(new ArmIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -134,12 +139,7 @@ public class RobotContainer {
                   new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
           aprilTagVision =
               new AprilTagVision(
-                  new AprilTagVisionIONorthstar(
-                      AprilTagVisionConstants.instanceNames[0],
-                      AprilTagVisionConstants.cameraIds[0]),
-                  new AprilTagVisionIONorthstar(
-                      AprilTagVisionConstants.instanceNames[1],
-                      AprilTagVisionConstants.cameraIds[1]));
+                  new AprilTagVisionIONorthstar(0), new AprilTagVisionIONorthstar(1));
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
@@ -179,6 +179,13 @@ public class RobotContainer {
     }
     if (aprilTagVision == null) {
       switch (Constants.getRobot()) {
+        case COMPBOT ->
+            aprilTagVision =
+                new AprilTagVision(
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {});
         case DEVBOT ->
             aprilTagVision =
                 new AprilTagVision(new AprilTagVisionIO() {}, new AprilTagVisionIO() {});

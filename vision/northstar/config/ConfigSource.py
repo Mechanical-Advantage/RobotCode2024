@@ -40,7 +40,7 @@ class FileConfigSource(ConfigSource):
 
 class NTConfigSource(ConfigSource):
     _init_complete: bool = False
-    _camera_id_sub: ntcore.IntegerSubscriber
+    _camera_id_sub: ntcore.StringSubscriber
     _camera_resolution_width_sub: ntcore.IntegerSubscriber
     _camera_resolution_height_sub: ntcore.IntegerSubscriber
     _camera_auto_exposure_sub: ntcore.IntegerSubscriber
@@ -54,7 +54,7 @@ class NTConfigSource(ConfigSource):
         if not self._init_complete:
             nt_table = ntcore.NetworkTableInstance.getDefault().getTable(
                 "/" + config_store.local_config.device_id + "/config")
-            self._camera_id_sub = nt_table.getIntegerTopic("camera_id").subscribe(RemoteConfig.camera_id)
+            self._camera_id_sub = nt_table.getStringTopic("camera_id").subscribe(RemoteConfig.camera_id)
             self._camera_resolution_width_sub = nt_table.getIntegerTopic(
                 "camera_resolution_width").subscribe(RemoteConfig.camera_resolution_width)
             self._camera_resolution_height_sub = nt_table.getIntegerTopic(

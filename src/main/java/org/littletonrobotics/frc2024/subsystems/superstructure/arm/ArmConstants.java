@@ -59,7 +59,7 @@ public class ArmConstants {
   public static final Gains gains =
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        case DEVBOT -> new Gains(50.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0);
+        case DEVBOT -> new Gains(75.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0);
         case COMPBOT -> new Gains(75.0, 0.0, 2.5, 10.911, 0.0, 0.0, 20.469 - 10.911);
       };
 

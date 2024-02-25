@@ -384,11 +384,13 @@ public class RobotContainer {
     operator
         .povUp()
         .onTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1)));
+            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
+                .ignoringDisable(true));
     operator
         .povDown()
         .onTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
+                .ignoringDisable(true));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

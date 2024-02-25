@@ -31,7 +31,8 @@ import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
-import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
+import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOCompbot;
+import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIODevbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOKrakenFOC;
@@ -127,6 +128,7 @@ public class RobotContainer {
           indexer = new Indexer(new IndexerIOCompbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOKrakenFOC());
+          rollersSensorsIO = new RollersSensorsIOCompbot();
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case DEVBOT -> {
@@ -145,7 +147,7 @@ public class RobotContainer {
           indexer = new Indexer(new IndexerIODevbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOSparkFlex());
-          rollersSensorsIO = new RollersSensorsIOReal();
+          rollersSensorsIO = new RollersSensorsIODevbot();
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case SIMBOT -> {
@@ -302,7 +304,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
-                autoDriveDisable);
+                shootAlignDisable);
     controller
         .a()
         .whileTrue(
@@ -321,7 +323,7 @@ public class RobotContainer {
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
-                    rollers.feedShooter(),
+                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
     controller
@@ -344,7 +346,8 @@ public class RobotContainer {
             superstructure
                 .intake()
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
+                    Commands.waitUntil(superstructure::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
 
     // Eject Floor
@@ -353,7 +356,9 @@ public class RobotContainer {
         .whileTrue(
             superstructure
                 .intake()
-                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
+                .alongWith(
+                    Commands.waitUntil(superstructure::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
                 .withName("Eject To Floor"));
 
     // ------------- Amp Scoring Controls -------------
@@ -368,11 +373,13 @@ public class RobotContainer {
                         Commands.startEnd(
                             () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
                             drive::clearHeadingGoal),
-                        shootAlignDisable)));
+                        autoDriveDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())
-        .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
+        .whileTrue(
+            Commands.waitUntil(superstructure::atGoal)
+                .andThen(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -389,6 +396,9 @@ public class RobotContainer {
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+
+    // Shuffle gamepiece
+    operator.b().whileTrue(rollers.shuffle());
 
     // Reset pose
     controller

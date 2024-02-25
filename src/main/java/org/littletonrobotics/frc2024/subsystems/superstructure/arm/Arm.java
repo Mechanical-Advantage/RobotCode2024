@@ -43,7 +43,9 @@ public class Arm {
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
   private static final LoggedTunableNumber slowVelocity =
-      new LoggedTunableNumber("Arm/SlowVelocity", Math.PI / 2.0);
+      new LoggedTunableNumber("Arm/SlowVelocity", profileConstraints.maxVelocity);
+  private static final LoggedTunableNumber slowAcceleration =
+      new LoggedTunableNumber("Arm/SlowAcceleration", 2.0);
   private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
@@ -56,10 +58,10 @@ public class Arm {
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     STOW(new LoggedTunableNumber("Arm/StowDegrees", 0.0)),
-    AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
+    AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
-    PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 100.0)),
+    PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 105.0)),
     CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
@@ -162,7 +164,7 @@ public class Arm {
       if (goal == Goal.PREPARE_CLIMB) {
         motionProfile =
             new TrapezoidProfile(
-                new TrapezoidProfile.Constraints(slowVelocity.get(), maxAcceleration.get()));
+                new TrapezoidProfile.Constraints(slowVelocity.get(), slowAcceleration.get()));
       } else {
         motionProfile =
             new TrapezoidProfile(

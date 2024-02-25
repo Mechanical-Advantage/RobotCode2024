@@ -51,9 +51,9 @@ public class AutoAlignController {
           "AutoAlign/maxAngularAcceleration",
           DriveConstants.driveConfig.maxAngularAcceleration() * 0.5);
   private static final LoggedTunableNumber slowLinearVelocity =
-      new LoggedTunableNumber("AutoAlign/slowLinearVelocity", 1.5);
+      new LoggedTunableNumber("AutoAlign/slowLinearVelocity", 4.0);
   private static final LoggedTunableNumber slowLinearAcceleration =
-      new LoggedTunableNumber("AutoAlign/slowLinearAcceleration", 1.0);
+      new LoggedTunableNumber("AutoAlign/slowLinearAcceleration", 4.0);
   private static final LoggedTunableNumber slowAngularVelocity =
       new LoggedTunableNumber("AutoAlign/slowAngularVelocity", Math.PI / 2.0);
   private static final LoggedTunableNumber slowAngularAcceleration =

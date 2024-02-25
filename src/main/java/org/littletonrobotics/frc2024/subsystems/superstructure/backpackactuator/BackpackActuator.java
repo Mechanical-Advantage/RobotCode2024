@@ -22,11 +22,11 @@ public class BackpackActuator extends GenericSlamElevator<BackpackActuator.Goal>
   @Getter
   public enum Goal implements SlamElevatorGoal {
     RETRACT(
-        new LoggedTunableNumber("BackpackActuator/RetractingCurrent", -5.0),
+        new LoggedTunableNumber("BackpackActuator/RetractingCurrent", -8.0),
         true,
         SlamElevatorState.RETRACTING),
     EXTEND(
-        new LoggedTunableNumber("BackpackActuator/ExtendingCurrent", 15.0),
+        new LoggedTunableNumber("BackpackActuator/ExtendingCurrent", 25.0),
         false,
         SlamElevatorState.EXTENDING);
 
@@ -38,6 +38,6 @@ public class BackpackActuator extends GenericSlamElevator<BackpackActuator.Goal>
   private Goal goal = Goal.RETRACT;
 
   public BackpackActuator(BackpackActuatorIO io) {
-    super("BackpackActuator", io, 0.2, 0.05);
+    super("BackpackActuator", io, 0.5, 0.05);
   }
 }

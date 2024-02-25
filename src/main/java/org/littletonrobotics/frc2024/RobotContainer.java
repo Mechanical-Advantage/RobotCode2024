@@ -56,9 +56,11 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFO
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOSim;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
@@ -141,6 +143,8 @@ public class RobotContainer {
           backpack = new Backpack(new BackpackIOKrakenFOC());
           rollersSensorsIO = new RollersSensorsIOCompbot();
           arm = new Arm(new ArmIOKrakenFOC());
+          climber = new Climber(new ClimberIOKrakenFOC());
+          backpackActuator = new BackpackActuator(new BackpackActuatorIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -393,7 +397,7 @@ public class RobotContainer {
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           return ampCenterRotated.transformBy(
               GeomUtil.toTransform2d(
-                  DriveConstants.driveConfig.bumperWidthX() / 2.0 + Units.inchesToMeters(5.0), 0));
+                  DriveConstants.driveConfig.bumperWidthX() / 2.0 + Units.inchesToMeters(12.0), 0));
         };
     controller
         .rightBumper()
@@ -446,7 +450,12 @@ public class RobotContainer {
         .leftBumper()
         .toggleOnTrue(
             ClimbingCommands.climbSequence(
-                drive, superstructure, rollers, operator.x(), autoDriveDisable));
+                drive,
+                superstructure,
+                rollers,
+                operator.leftTrigger(),
+                operator.x(),
+                autoDriveDisable));
 
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());

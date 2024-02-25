@@ -9,7 +9,6 @@ package org.littletonrobotics.frc2024.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -21,7 +20,6 @@ import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
-import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -29,11 +27,9 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 @ExtensionMethod({GeomUtil.class})
 public class ClimbingCommands {
   private static final LoggedTunableNumber climbedXOffset =
-      new LoggedTunableNumber(
-          "ClimbingCommands/ClimbedXOffset",
-          -ArmConstants.armOrigin.getX() + Units.inchesToMeters(2.0));
+      new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
-      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.5);
+      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", -0.5);
 
   private static final List<Pose2d> climbedPosesNoOffset =
       List.of(
@@ -58,7 +54,7 @@ public class ClimbingCommands {
       () ->
           nearestClimbedPose
               .get()
-              .transformBy(new Translation2d(-chainToBack.get(), 0).toTransform2d());
+              .transformBy(new Translation2d(chainToBack.get(), 0).toTransform2d());
 
   /** Drive to back climber ready pose. */
   public static Command driveToBack(Drive drive) {
@@ -75,18 +71,15 @@ public class ClimbingCommands {
   private static Command prepareClimbFromBack(
       Drive drive, Superstructure superstructure, Trigger autoDriveDisable) {
     return Commands.startEnd(
-            () -> drive.setAutoAlignGoal(nearestClimbedPose, true), drive::clearAutoAlignGoal)
+            () -> {
+              Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
+              Pose2d targetPose =
+                  currentPose.transformBy(new Translation2d(-chainToBack.get(), 0).toTransform2d());
+              drive.setAutoAlignGoal(() -> targetPose, true);
+            },
+            drive::clearAutoAlignGoal)
         .onlyIf(autoDriveDisable.negate())
         .alongWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
-  }
-
-  private static Command trap(Superstructure superstructure, Rollers rollers) {
-    return Commands.sequence(
-        rollers.shuffle(),
-        superstructure
-            .setGoalCommand(Superstructure.Goal.TRAP)
-            .alongWith(
-                rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(superstructure::atGoal)));
   }
 
   /** Runs the climbing sequence and then scores in the trap when the trapScore button is held */
@@ -94,26 +87,39 @@ public class ClimbingCommands {
       Drive drive,
       Superstructure superstructure,
       Rollers rollers,
-      Trigger trapScore,
+      Trigger startClimbTrigger,
+      Trigger trapScoreTrigger,
       Trigger autoDriveDisable) {
-    return prepareClimbFromBack(drive, superstructure, autoDriveDisable)
-        .until(() -> drive.isAutoAlignGoalCompleted() && superstructure.atGoal())
-        .andThen(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
-        .until(() -> trapScore.getAsBoolean() && superstructure.atGoal())
-        .andThen(
+    return Commands.sequence(
+            // Drive forward while raising arm and climber
+            prepareClimbFromBack(drive, superstructure, autoDriveDisable)
+                .until(() -> superstructure.atGoal()),
+
+            // Allow driver to line up
+            superstructure
+                .setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)
+                .until(() -> startClimbTrigger.getAsBoolean()),
+
+            // Climb and wait, continue if trap button pressed
+            superstructure
+                .setGoalCommand(Superstructure.Goal.CLIMB)
+                .until(() -> trapScoreTrigger.getAsBoolean() && superstructure.atGoal()),
+
+            // Shuffle to backpack
             rollers
                 .setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)
                 .alongWith(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
-                .until(() -> rollers.getGamepieceState() == Rollers.GamepieceState.BACKPACK_STAGED)
-                .andThen(
-                    superstructure
-                        .setGoalCommand(Superstructure.Goal.TRAP)
-                        .until(superstructure::atGoal)
-                        .andThen(
-                            rollers
-                                .setGoalCommand(Rollers.Goal.AMP_SCORE)
-                                .alongWith(
-                                    superstructure.setGoalCommand(Superstructure.Goal.TRAP)))))
+                .until(() -> rollers.getGamepieceState() == Rollers.GamepieceState.BACKPACK_STAGED),
+
+            // Extend backpack
+            superstructure.setGoalCommand(Superstructure.Goal.TRAP).until(superstructure::atGoal),
+
+            // Score in trap and wait
+            rollers
+                .setGoalCommand(Rollers.Goal.TRAP_SCORE)
+                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP)))
+
+        // If cancelled, go to safe state
         .finallyDo(
             () -> {
               switch (superstructure.getCurrentGoal()) {

@@ -39,6 +39,7 @@ public class Rollers extends SubsystemBase {
     QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER,
     AMP_SCORE,
+    TRAP_SCORE,
     SHUFFLE_BACKPACK,
     SHUFFLE_SHOOTER
   }
@@ -129,6 +130,11 @@ public class Rollers extends SubsystemBase {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.AMP_SCORING);
+      }
+      case TRAP_SCORE -> {
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        indexer.setGoal(Indexer.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.TRAP_SCORING);
       }
       case SHUFFLE_BACKPACK -> {
         // Shuffle into backpack

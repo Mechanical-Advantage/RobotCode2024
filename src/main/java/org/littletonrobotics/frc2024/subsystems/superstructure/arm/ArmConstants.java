@@ -18,7 +18,11 @@ public class ArmConstants {
   public static final double reduction = (62.0 / 12.0) * (60.0 / 18.0) * (65.0 / 12.0);
   public static final Rotation2d positionTolerance = Rotation2d.fromDegrees(3.0);
   public static final Translation2d armOrigin = new Translation2d(-0.238, 0.298);
-  public static final Rotation2d minAngle = Rotation2d.fromDegrees(10.0);
+  public static final Rotation2d minAngle =
+      switch (Constants.getRobot()) {
+        default -> Rotation2d.fromDegrees(0.0);
+        case DEVBOT -> Rotation2d.fromDegrees(10.0);
+      };
   public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
   public static final int leaderID =
@@ -42,8 +46,8 @@ public class ArmConstants {
   /** The offset of the arm encoder in radians. */
   public static final double armEncoderOffsetRads =
       switch (Constants.getRobot()) {
-        default -> 0.35588 - Math.PI / 2.0; // Units.radiansToRotations(-0.348213 + Math.PI / 2.0);
-        case DEVBOT -> 1.233 + Math.PI / 2.0;
+        default -> 0.35588 - Math.PI / 2.0;
+        case DEVBOT -> -1.233 - Math.PI / 2.0;
       };
 
   public static final double armLength =
@@ -55,7 +59,7 @@ public class ArmConstants {
   public static final Gains gains =
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        case DEVBOT -> new Gains(0.0, 0.0, 0.0, 5.75, 0.0, 0.0, 15);
+        case DEVBOT -> new Gains(50.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0);
         case COMPBOT -> new Gains(75.0, 0.0, 2.5, 10.911, 0.0, 0.0, 20.469 - 10.911);
       };
 

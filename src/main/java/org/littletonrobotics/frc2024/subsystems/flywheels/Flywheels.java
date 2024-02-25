@@ -53,7 +53,7 @@ public class Flywheels extends SubsystemBase {
   private final Alert leftDisconnected =
       new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
   private final Alert rightDisconnected =
-      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+      new Alert("Right flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -147,6 +147,7 @@ public class Flywheels extends SubsystemBase {
     if (goal == Goal.CHARACTERIZING || goal == Goal.IDLE) {
       wasClosedLoop = closedLoop;
       closedLoop = false;
+      this.goal = goal;
       return; // Don't set a goal
     }
     // If not already controlling to requested goal

@@ -400,12 +400,7 @@ public class RobotContainer {
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());
 
-    // Reset pose
-    controller
-        .y()
-        .onTrue(
-            Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(new Pose2d())))
-                .ignoringDisable(true));
+    // Reset heading
     controller
         .b()
         .onTrue(

@@ -80,11 +80,6 @@ public class ClimbingCommands {
         .alongWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
   }
 
-  /** Pulls down with climber while arm moves to climb position (90), never ends. */
-  private static Command finalClimb(Superstructure superstructure) {
-    return superstructure.setGoalCommand(Superstructure.Goal.CLIMB);
-  }
-
   private static Command trap(Superstructure superstructure, Rollers rollers) {
     return Commands.sequence(
         rollers.shuffle(),
@@ -103,26 +98,35 @@ public class ClimbingCommands {
       Trigger autoDriveDisable) {
     return prepareClimbFromBack(drive, superstructure, autoDriveDisable)
         .until(() -> drive.isAutoAlignGoalCompleted() && superstructure.atGoal())
-        .finallyDo(
-            interrupted -> {
-              if (interrupted) {
-                superstructure.setGoal(Superstructure.Goal.CANCEL_PREPARE_CLIMB);
-              }
-            })
-        .andThen(Commands.waitSeconds(0.6))
+        .andThen(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+        .until(() -> trapScore.getAsBoolean() && superstructure.atGoal())
         .andThen(
-            finalClimb(superstructure)
-                .finallyDo(
-                    interrupted -> {
-                      if (interrupted) {
-                        superstructure.setGoal(Superstructure.Goal.CANCEL_CLIMB);
-                      }
-                    }))
-        .alongWith(
-            Commands.waitUntil(
-                    () ->
-                        superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB
-                            && superstructure.atGoal())
-                .andThen(trap(superstructure, rollers).onlyWhile(trapScore)));
+            rollers
+                .setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)
+                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+                .until(() -> rollers.getGamepieceState() == Rollers.GamepieceState.BACKPACK_STAGED)
+                .andThen(
+                    superstructure
+                        .setGoalCommand(Superstructure.Goal.TRAP)
+                        .until(superstructure::atGoal)
+                        .andThen(
+                            rollers
+                                .setGoalCommand(Rollers.Goal.AMP_SCORE)
+                                .alongWith(
+                                    superstructure.setGoalCommand(Superstructure.Goal.TRAP)))))
+        .finallyDo(
+            () -> {
+              switch (superstructure.getCurrentGoal()) {
+                case PREPARE_CLIMB ->
+                    superstructure.setDefaultCommand(
+                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
+                case CLIMB ->
+                    superstructure.setDefaultCommand(
+                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
+                case TRAP ->
+                    superstructure.setDefaultCommand(
+                        superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
+              }
+            });
   }
 }

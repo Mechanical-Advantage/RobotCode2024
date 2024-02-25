@@ -148,7 +148,7 @@ public class Arm {
         maxAcceleration);
 
     // Check if disabled
-    if (disableSupplier.getAsBoolean()) {
+    if (disableSupplier.getAsBoolean() || goal == Goal.STOP) {
       io.stop();
       // Reset profile when disabled
       setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0);
@@ -169,12 +169,13 @@ public class Arm {
                 new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
       }
       lastGoal = goal;
-    } else {
-      io.stop();
     }
 
     // Don't run profile when characterizing, coast mode, or disabled
-    if (!characterizing && brakeModeEnabled && !disableSupplier.getAsBoolean()) {
+    if (!characterizing
+        && brakeModeEnabled
+        && !disableSupplier.getAsBoolean()
+        && goal != Goal.STOP) {
       // Run closed loop
       setpointState =
           motionProfile.calculate(

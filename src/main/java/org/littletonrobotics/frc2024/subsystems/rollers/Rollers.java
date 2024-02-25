@@ -75,7 +75,7 @@ public class Rollers extends SubsystemBase {
     Logger.processInputs("RollersSensors", sensorInputs);
 
     if (DriverStation.isDisabled()) {
-      goal = Goal.IDLE;
+      setDefaultCommand(setGoalCommand(Goal.IDLE));
     }
 
     if (sensorInputs.shooterStaged) {

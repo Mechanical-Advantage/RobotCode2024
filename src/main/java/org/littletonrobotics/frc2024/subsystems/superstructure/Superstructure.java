@@ -54,7 +54,7 @@ public class Superstructure extends SubsystemBase {
   @Override
   public void periodic() {
     if (DriverStation.isDisabled()) {
-      setGoal(Goal.STOW);
+      setDefaultCommand(setGoalCommand(Goal.STOW));
       arm.stop();
     }
 

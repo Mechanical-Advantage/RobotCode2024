@@ -51,6 +51,7 @@ public class Arm {
 
   @RequiredArgsConstructor
   public enum Goal {
+    STOP(() -> 0),
     FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 18.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
@@ -156,7 +157,7 @@ public class Arm {
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
 
-    if (lastGoal != goal) {
+    if (lastGoal != goal && goal != Goal.STOP) {
       // Update profile constraints when prepare climb
       if (goal == Goal.PREPARE_CLIMB) {
         motionProfile =
@@ -168,6 +169,8 @@ public class Arm {
                 new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
       }
       lastGoal = goal;
+    } else {
+      io.stop();
     }
 
     // Don't run profile when characterizing, coast mode, or disabled

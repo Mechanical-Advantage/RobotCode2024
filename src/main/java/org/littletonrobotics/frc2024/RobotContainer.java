@@ -376,7 +376,9 @@ public class RobotContainer {
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
-                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
+                .alongWith(
+                    Commands.waitUntil(superstructure::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
                 .withName("Eject To Floor"));
 
     // ------------- Amp Scoring Controls -------------
@@ -417,7 +419,9 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Climber controls
-    operator.leftBumper().toggleOnTrue(ClimbingCommands.climbSequence(drive, superstructure, operator.x()));
+    operator
+        .leftBumper()
+        .toggleOnTrue(ClimbingCommands.climbSequence(drive, superstructure, rollers, operator.x()));
 
     // Reset pose
     controller

@@ -28,7 +28,9 @@ public class Superstructure extends SubsystemBase {
     SUBWOOFER,
     PODIUM,
     PREPARE_CLIMB,
+    CANCEL_PREPARE_CLIMB,
     CLIMB,
+    CANCEL_CLIMB,
     TRAP,
     DIAGNOSTIC_ARM
   }
@@ -52,7 +54,7 @@ public class Superstructure extends SubsystemBase {
   @Override
   public void periodic() {
     if (DriverStation.isDisabled()) {
-      desiredGoal = Goal.STOW;
+      setGoal(Goal.STOW);
       arm.stop();
     }
 
@@ -94,14 +96,24 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
+      case CANCEL_PREPARE_CLIMB -> {
+        arm.setGoal(Arm.Goal.STOP);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
         if (climber.isRequestCancelClimb()) {
-          desiredGoal = Goal.PREPARE_CLIMB;
+          desiredGoal = Goal.CANCEL_CLIMB;
         } else {
           climber.setGoal(Climber.Goal.RETRACT);
         }
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case CANCEL_CLIMB -> {
+        arm.setGoal(Arm.Goal.CLIMB);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+        climber.setGoal(Climber.Goal.IDLE);
       }
       case TRAP -> {
         arm.setGoal(Arm.Goal.CLIMB);
@@ -128,8 +140,13 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
+  public void setGoal(Goal goal) {
+    if (desiredGoal == goal) return;
+    desiredGoal = goal;
+  }
+
   public Command setGoalCommand(Goal goal) {
-    return startEnd(() -> desiredGoal = goal, () -> desiredGoal = Goal.STOW)
+    return startEnd(() -> setGoal(goal), () -> setGoal(Goal.STOW))
         .withName("Superstructure " + goal);
   }
 

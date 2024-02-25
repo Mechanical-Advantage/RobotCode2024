@@ -331,7 +331,7 @@ public class Drive extends SubsystemBase {
   /** Returns true if the robot is at current goal pose. */
   @AutoLogOutput(key = "Drive/AutoAlignCompleted")
   public boolean isAutoAlignGoalCompleted() {
-    return autoAlignController != null && autoAlignController.atGoal();
+    return autoAlignController == null || autoAlignController.atGoal();
   }
 
   /** Enable auto aiming on drive */

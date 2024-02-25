@@ -13,11 +13,13 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
@@ -61,21 +63,60 @@ public class ClimbingCommands {
   /** Drive to back climber ready pose. */
   public static Command driveToBack(Drive drive) {
     return Commands.startEnd(
-        () -> drive.setAutoAlignGoal(backedPrepareClimberPose, false), drive::clearAutoAlignGoal);
+            () -> drive.setAutoAlignGoal(backedPrepareClimberPose, false),
+            drive::clearAutoAlignGoal)
+        .until(drive::isAutoAlignGoalCompleted);
   }
 
   /**
    * Drives to climbed pose while raising climber up and arm back, ends when at position with drive
    * and superstructure.
    */
-  public static Command prepareClimbFromBack(Drive drive, Superstructure superstructure) {
+  private static Command prepareClimbFromBack(Drive drive, Superstructure superstructure) {
     return Commands.startEnd(
             () -> drive.setAutoAlignGoal(nearestClimbedPose, true), drive::clearAutoAlignGoal)
         .alongWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
   }
 
   /** Pulls down with climber while arm moves to climb position (90), never ends. */
-  public static Command finalClimb(Superstructure superstructure) {
+  private static Command finalClimb(Superstructure superstructure) {
     return superstructure.setGoalCommand(Superstructure.Goal.CLIMB);
+  }
+
+  private static Command trap(Superstructure superstructure, Rollers rollers) {
+    return Commands.sequence(
+        rollers.shuffle(),
+        superstructure
+            .setGoalCommand(Superstructure.Goal.TRAP)
+            .alongWith(
+                rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(superstructure::atGoal)));
+  }
+
+  /** Runs the climbing sequence and then scores in the trap when the trapScore button is held */
+  public static Command climbSequence(
+      Drive drive, Superstructure superstructure, Rollers rollers, BooleanSupplier trapScore) {
+    return prepareClimbFromBack(drive, superstructure)
+        .until(() -> drive.isAutoAlignGoalCompleted() && superstructure.atGoal())
+        .finallyDo(
+            interrupted -> {
+              if (interrupted) {
+                superstructure.setGoal(Superstructure.Goal.CANCEL_PREPARE_CLIMB);
+              }
+            })
+        .andThen(Commands.waitSeconds(0.6))
+        .andThen(
+            finalClimb(superstructure)
+                .finallyDo(
+                    interrupted -> {
+                      if (interrupted) {
+                        superstructure.setGoal(Superstructure.Goal.CANCEL_CLIMB);
+                      }
+                    }))
+        .alongWith(
+            Commands.waitUntil(
+                    () ->
+                        superstructure.getCurrentGoal() == Superstructure.Goal.CLIMB
+                            && superstructure.atGoal())
+                .andThen(trap(superstructure, rollers).onlyWhile(trapScore)));
   }
 }

@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -61,6 +62,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.OverrideSwitches;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
@@ -382,17 +384,34 @@ public class RobotContainer {
                 .withName("Eject To Floor"));
 
     // ------------- Amp Scoring Controls -------------
+    Supplier<Pose2d> ampAlignedPose =
+        () -> {
+          Pose2d ampCenterRotated =
+              AllianceFlipUtil.apply(
+                  new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
+          return ampCenterRotated.transformBy(
+              GeomUtil.toTransform2d(
+                  DriveConstants.driveConfig.bumperWidthX() / 2.0 + Units.inchesToMeters(5.0), 0));
+        };
     controller
         .rightBumper()
         .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.AMP)
+            Commands.waitUntil(
+                    () -> {
+                      double distance =
+                          RobotState.getInstance()
+                              .getEstimatedPose()
+                              .getTranslation()
+                              .getDistance(ampAlignedPose.get().getTranslation());
+                      return distance <= Units.feetToMeters(2.0);
+                    })
+                .andThen(superstructure.setGoalCommand(Superstructure.Goal.AMP))
                 .alongWith(
                     Commands.either(
                         Commands.none(),
                         Commands.startEnd(
-                            () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
-                            drive::clearHeadingGoal),
+                            () -> drive.setAutoAlignGoal(ampAlignedPose, false),
+                            drive::clearAutoAlignGoal),
                         shootAlignDisable)));
     controller
         .rightBumper()

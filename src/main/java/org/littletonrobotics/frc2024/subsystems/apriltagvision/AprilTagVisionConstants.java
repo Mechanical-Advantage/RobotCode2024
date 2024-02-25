@@ -85,7 +85,10 @@ public class AprilTagVisionConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new String[] {
-              "/dev/v4l/by-path/platform-fc800000.usb-usb-0:1:1.0-video-index0", "", "", ""
+              "/dev/v4l/by-path/platform-fc800000.usb-usb-0:1:1.0-video-index0",
+              "/dev/v4l/by-path/platform-fc880000.usb-usb-0:1:1.0-video-index0",
+              "/dev/v4l/by-path/platform-fc800000.usb-usb-0:1:1.0-video-index0",
+              "/dev/v4l/by-path/platform-fc880000.usb-usb-0:1:1.0-video-index0"
             };
         case DEVBOT ->
             new String[] {

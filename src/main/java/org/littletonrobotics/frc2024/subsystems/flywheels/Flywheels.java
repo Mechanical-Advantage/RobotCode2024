@@ -147,6 +147,7 @@ public class Flywheels extends SubsystemBase {
     if (goal == Goal.CHARACTERIZING || goal == Goal.IDLE) {
       wasClosedLoop = closedLoop;
       closedLoop = false;
+      this.goal = goal;
       return; // Don't set a goal
     }
     // If not already controlling to requested goal

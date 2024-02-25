@@ -11,11 +11,11 @@ import edu.wpi.first.wpilibj.DigitalGlitchFilter;
 import edu.wpi.first.wpilibj.DigitalInput;
 import java.time.Duration;
 
-public class RollersSensorsIOReal implements RollersSensorsIO {
+public class RollersSensorsIODevbot implements RollersSensorsIO {
   private final DigitalInput shooterStagedSensor = new DigitalInput(0);
   private final DigitalGlitchFilter glitchFilter = new DigitalGlitchFilter();
 
-  public RollersSensorsIOReal() {
+  public RollersSensorsIODevbot() {
     glitchFilter.setPeriodNanoSeconds(Duration.ofMillis(5).toNanos());
     glitchFilter.add(shooterStagedSensor);
   }

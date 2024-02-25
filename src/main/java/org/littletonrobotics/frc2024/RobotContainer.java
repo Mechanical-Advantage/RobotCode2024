@@ -32,9 +32,10 @@ import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
-import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOReal;
+import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIODevbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSim;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIOSparkFlex;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
@@ -124,8 +125,18 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[1]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[2]),
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
-          arm = new Arm(new ArmIOKrakenFOC());
+          aprilTagVision =
+              new AprilTagVision(
+                  new AprilTagVisionIONorthstar(0),
+                  new AprilTagVisionIONorthstar(1),
+                  new AprilTagVisionIONorthstar(2),
+                  new AprilTagVisionIONorthstar(3));
+          flywheels = new Flywheels(new FlywheelsIOKrakenFOC());
+          feeder = new Feeder(new FeederIOKrakenFOC());
+          indexer = new Indexer(new IndexerIOCompbot());
           intake = new Intake(new IntakeIOKrakenFOC());
+          backpack = new Backpack(new BackpackIOKrakenFOC());
+          arm = new Arm(new ArmIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -143,7 +154,7 @@ public class RobotContainer {
           indexer = new Indexer(new IndexerIODevbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOSparkFlex());
-          rollersSensorsIO = new RollersSensorsIOReal();
+          rollersSensorsIO = new RollersSensorsIODevbot();
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case SIMBOT -> {
@@ -160,7 +171,6 @@ public class RobotContainer {
           intake = new Intake(new IntakeIOSim());
           backpack = new Backpack(new BackpackIOSim());
           rollersSensorsIO = new RollersSensorsIO() {};
-
           arm = new Arm(new ArmIOSim());
           climber = new Climber(new ClimberIOSim());
           backpackActuator = new BackpackActuator(new BackpackActuatorIOSim());
@@ -333,7 +343,7 @@ public class RobotContainer {
                     Commands.waitSeconds(0.5),
                     Commands.waitUntil(controller.rightTrigger().negate()))
                 .deadlineWith(
-                    rollers.feedShooter(),
+                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
     controller
@@ -356,7 +366,8 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal).andThen(rollers.floorIntake()))
+                    Commands.waitUntil(superstructure::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
 
     // Eject Floor
@@ -365,7 +376,7 @@ public class RobotContainer {
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
-                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ejectFloor()))
+                .alongWith(Commands.waitUntil(superstructure::atGoal).andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
                 .withName("Eject To Floor"));
 
     // ------------- Amp Scoring Controls -------------
@@ -384,7 +395,9 @@ public class RobotContainer {
     controller
         .rightBumper()
         .and(controller.rightTrigger())
-        .whileTrue(Commands.waitUntil(superstructure::atGoal).andThen(rollers.ampScore()));
+        .whileTrue(
+            Commands.waitUntil(superstructure::atGoal)
+                .andThen(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
     // Climb controls
     controller.x().whileTrue(ClimbingCommands.driveToBack(drive));

@@ -402,7 +402,7 @@ public class RobotContainer {
                 .andThen(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
     // Climb controls
-    controller.x().whileTrue(ClimbingCommands.driveToBack(drive));
+    controller.x().whileTrue(ClimbingCommands.driveToBack(drive).onlyIf(autoDriveDisable.negate()));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -421,7 +421,9 @@ public class RobotContainer {
     // Climber controls
     operator
         .leftBumper()
-        .toggleOnTrue(ClimbingCommands.climbSequence(drive, superstructure, rollers, operator.x()));
+        .toggleOnTrue(
+            ClimbingCommands.climbSequence(
+                drive, superstructure, rollers, operator.x(), autoDriveDisable));
 
     // Reset pose
     controller

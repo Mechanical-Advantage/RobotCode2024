@@ -12,8 +12,8 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
@@ -72,9 +72,11 @@ public class ClimbingCommands {
    * Drives to climbed pose while raising climber up and arm back, ends when at position with drive
    * and superstructure.
    */
-  private static Command prepareClimbFromBack(Drive drive, Superstructure superstructure) {
+  private static Command prepareClimbFromBack(
+      Drive drive, Superstructure superstructure, Trigger autoDriveDisable) {
     return Commands.startEnd(
             () -> drive.setAutoAlignGoal(nearestClimbedPose, true), drive::clearAutoAlignGoal)
+        .onlyIf(autoDriveDisable.negate())
         .alongWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
   }
 
@@ -94,8 +96,12 @@ public class ClimbingCommands {
 
   /** Runs the climbing sequence and then scores in the trap when the trapScore button is held */
   public static Command climbSequence(
-      Drive drive, Superstructure superstructure, Rollers rollers, BooleanSupplier trapScore) {
-    return prepareClimbFromBack(drive, superstructure)
+      Drive drive,
+      Superstructure superstructure,
+      Rollers rollers,
+      Trigger trapScore,
+      Trigger autoDriveDisable) {
+    return prepareClimbFromBack(drive, superstructure, autoDriveDisable)
         .until(() -> drive.isAutoAlignGoalCompleted() && superstructure.atGoal())
         .finallyDo(
             interrupted -> {

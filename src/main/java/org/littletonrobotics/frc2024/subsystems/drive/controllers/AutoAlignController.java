@@ -119,6 +119,7 @@ public class AutoAlignController {
     linearController.reset(
         currentPose.getTranslation().getDistance(goalPose.getTranslation()), linearVelocity);
     thetaController.reset(currentPose.getRotation().getRadians(), fieldVelocity.dtheta);
+    lastSetpointTranslation = currentPose.getTranslation();
   }
 
   public ChassisSpeeds update() {

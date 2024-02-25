@@ -27,7 +27,7 @@ if __name__ == "__main__":
     calibration_command_source: CalibrationCommandSource = NTCalibrationCommandSource()
 
     capture = GStreamerCapture()
-    fiducial_detector = ArucoFiducialDetector(cv2.aruco.DICT_APRILTAG_16h5)
+    fiducial_detector = ArucoFiducialDetector(cv2.aruco.DICT_APRILTAG_36h11)
     camera_pose_estimator = MultiTargetCameraPoseEstimator()
     tag_pose_estimator = SquareTargetPoseEstimator()
     output_publisher: OutputPublisher = NTOutputPublisher()
@@ -85,4 +85,5 @@ if __name__ == "__main__":
             print("No calibration found")
             time.sleep(0.5)
 
+        # image = cv2.undistort(image, config.local_config.camera_matrix, config.local_config.distortion_coefficients)
         stream_server.set_frame(image)

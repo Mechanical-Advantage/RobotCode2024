@@ -33,6 +33,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOCompbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIODevbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
@@ -138,6 +139,7 @@ public class RobotContainer {
           indexer = new Indexer(new IndexerIOCompbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOKrakenFOC());
+          rollersSensorsIO = new RollersSensorsIOCompbot();
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case DEVBOT -> {
@@ -326,7 +328,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
-                autoDriveDisable);
+                shootAlignDisable);
     controller
         .a()
         .whileTrue(
@@ -412,7 +414,7 @@ public class RobotContainer {
                         Commands.startEnd(
                             () -> drive.setAutoAlignGoal(ampAlignedPose, false),
                             drive::clearAutoAlignGoal),
-                        shootAlignDisable)));
+                        autoDriveDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())
@@ -428,11 +430,13 @@ public class RobotContainer {
     operator
         .povUp()
         .onTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1)));
+            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
+                .ignoringDisable(true));
     operator
         .povDown()
         .onTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)));
+            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
+                .ignoringDisable(true));
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
@@ -443,6 +447,9 @@ public class RobotContainer {
         .toggleOnTrue(
             ClimbingCommands.climbSequence(
                 drive, superstructure, rollers, operator.x(), autoDriveDisable));
+
+    // Shuffle gamepiece
+    operator.b().whileTrue(rollers.shuffle());
 
     // Reset pose
     controller

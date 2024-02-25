@@ -75,7 +75,7 @@ public class Rollers extends SubsystemBase {
     Logger.processInputs("RollersSensors", sensorInputs);
 
     if (DriverStation.isDisabled()) {
-      setDefaultCommand(setGoalCommand(Goal.IDLE));
+      goal = Goal.IDLE;
     }
 
     if (sensorInputs.shooterStaged) {
@@ -132,6 +132,7 @@ public class Rollers extends SubsystemBase {
       }
       case SHUFFLE_BACKPACK -> {
         // Shuffle into backpack
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         if (gamepieceState != GamepieceState.BACKPACK_STAGED) {
           backpack.setGoal(Backpack.Goal.AMP_SCORING);
@@ -141,6 +142,7 @@ public class Rollers extends SubsystemBase {
       }
       case SHUFFLE_SHOOTER -> {
         // Shuffle into shooter
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         backpack.setGoal(Backpack.Goal.EJECTING);
         if (gamepieceState != GamepieceState.SHOOTER_STAGED) {
           indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);

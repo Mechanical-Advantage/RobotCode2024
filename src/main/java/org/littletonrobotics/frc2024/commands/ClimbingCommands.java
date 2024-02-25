@@ -7,8 +7,12 @@
 
 package org.littletonrobotics.frc2024.commands;
 
+import static org.littletonrobotics.frc2024.FieldConstants.*;
+
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -20,6 +24,7 @@ import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
+import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -30,18 +35,36 @@ public class ClimbingCommands {
       new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
       new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", -0.5);
+  private static final LoggedTunableNumber edgeChainMargin =
+          new LoggedTunableNumber("ClimbingCommands/EdgeChainMargin", 0.1);
 
-  private static final List<Pose2d> climbedPosesNoOffset =
+  private static final List<Pose2d> centeredClimbedPosesNoOffset =
       List.of(
-          FieldConstants.Stage.centerPodiumAmpChain,
-          FieldConstants.Stage.centerAmpSourceChain,
-          FieldConstants.Stage.centerSourcePodiumChain);
+          Stage.centerPodiumAmpChain, Stage.centerAmpSourceChain, Stage.centerSourcePodiumChain);
+
+  private static final List<List<Pose2d>> stageLegPosesNoOffset =
+      List.of(
+          List.of(Stage.podiumLeg, Stage.ampLeg), // Podium to Amp
+          List.of(Stage.ampLeg, Stage.sourceLeg), // Amp to source side
+          List.of(Stage.sourceLeg, Stage.podiumLeg));
+
+  static {
+    // Set rotations of edge poses
+    for (int i = 0; i < 3; i++) {
+      Rotation2d climbedHeading = centeredClimbedPosesNoOffset.get(i).getRotation();
+      stageLegPosesNoOffset.set(
+          i,
+          stageLegPosesNoOffset.get(i).stream()
+              .map(pose -> new Pose2d(pose.getTranslation(), climbedHeading))
+              .toList());
+    }
+  }
 
   private static final Supplier<Pose2d> nearestClimbedPose =
       () -> {
         Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
         List<Pose2d> climbedPoses =
-            climbedPosesNoOffset.stream()
+            centeredClimbedPosesNoOffset.stream()
                 .map(
                     pose ->
                         AllianceFlipUtil.apply(
@@ -58,7 +81,8 @@ public class ClimbingCommands {
 
   /** Drive to back climber ready pose. */
   public static Command driveToBack(Drive drive) {
-    return Commands.startEnd(
+    return drive
+        .startEnd(
             () -> drive.setAutoAlignGoal(backedPrepareClimberPose, false),
             drive::clearAutoAlignGoal)
         .until(drive::isAutoAlignGoalCompleted);
@@ -70,7 +94,7 @@ public class ClimbingCommands {
    */
   private static Command prepareClimbFromBack(
       Drive drive, Superstructure superstructure, Trigger autoDriveDisable) {
-    return Commands.startEnd(
+    return drive.startEnd(
             () -> {
               Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
               Pose2d targetPose =

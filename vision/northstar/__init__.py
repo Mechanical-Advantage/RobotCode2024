@@ -85,4 +85,5 @@ if __name__ == "__main__":
             print("No calibration found")
             time.sleep(0.5)
 
+        # image = cv2.undistort(image, config.local_config.camera_matrix, config.local_config.distortion_coefficients)
         stream_server.set_frame(image)

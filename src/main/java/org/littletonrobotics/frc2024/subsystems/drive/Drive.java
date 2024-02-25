@@ -315,10 +315,10 @@ public class Drive extends SubsystemBase {
   }
 
   /** Sets the goal pose for the robot to drive to */
-  public void setAutoAlignGoal(Pose2d goalPose) {
+  public void setAutoAlignGoal(Supplier<Pose2d> poseSupplier, boolean slowMode) {
     if (DriverStation.isTeleopEnabled()) {
       currentDriveMode = DriveMode.AUTO_ALIGN;
-      autoAlignController = new AutoAlignController(goalPose);
+      autoAlignController = new AutoAlignController(poseSupplier, slowMode);
     }
   }
 
@@ -331,7 +331,7 @@ public class Drive extends SubsystemBase {
   /** Returns true if the robot is at current goal pose. */
   @AutoLogOutput(key = "Drive/AutoAlignCompleted")
   public boolean isAutoAlignGoalCompleted() {
-    return autoAlignController != null && autoAlignController.atGoal();
+    return autoAlignController == null || autoAlignController.atGoal();
   }
 
   /** Enable auto aiming on drive */

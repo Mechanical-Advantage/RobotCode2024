@@ -12,8 +12,8 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import java.time.Duration;
 
 public class RollersSensorsIOCompbot implements RollersSensorsIO {
-  private final DigitalInput shooterStagedSensor = new DigitalInput(0);
-  private final DigitalInput backpackStagedSensor = new DigitalInput(1);
+  private final DigitalInput shooterStagedSensor = new DigitalInput(1);
+  private final DigitalInput backpackStagedSensor = new DigitalInput(0);
   private final DigitalGlitchFilter glitchFilter = new DigitalGlitchFilter();
 
   public RollersSensorsIOCompbot() {
@@ -24,7 +24,7 @@ public class RollersSensorsIOCompbot implements RollersSensorsIO {
 
   @Override
   public void updateInputs(RollersSensorsIOInputs inputs) {
-    inputs.shooterStaged = shooterStagedSensor.get();
-    inputs.backbackStaged = backpackStagedSensor.get();
+    inputs.shooterStaged = !shooterStagedSensor.get();
+    inputs.backbackStaged = !backpackStagedSensor.get();
   }
 }

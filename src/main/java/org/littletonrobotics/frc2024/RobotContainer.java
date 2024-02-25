@@ -31,6 +31,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
+import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOCompbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIODevbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.BackpackIO;
@@ -127,6 +128,7 @@ public class RobotContainer {
           indexer = new Indexer(new IndexerIOCompbot());
           intake = new Intake(new IntakeIOKrakenFOC());
           backpack = new Backpack(new BackpackIOKrakenFOC());
+          rollersSensorsIO = new RollersSensorsIOCompbot();
           arm = new Arm(new ArmIOKrakenFOC());
         }
         case DEVBOT -> {
@@ -302,7 +304,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
-                autoDriveDisable);
+                shootAlignDisable);
     controller
         .a()
         .whileTrue(
@@ -371,7 +373,7 @@ public class RobotContainer {
                         Commands.startEnd(
                             () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
                             drive::clearHeadingGoal),
-                        shootAlignDisable)));
+                        autoDriveDisable)));
     controller
         .rightBumper()
         .and(controller.rightTrigger())
@@ -396,7 +398,7 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Shuffle gamepiece
-    operator.b().onTrue(rollers.shuffle());
+    operator.b().whileTrue(rollers.shuffle());
 
     // Reset pose
     controller

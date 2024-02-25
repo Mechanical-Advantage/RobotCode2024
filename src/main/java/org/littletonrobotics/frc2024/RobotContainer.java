@@ -403,11 +403,8 @@ public class RobotContainer {
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
-    // Start climb
-    operator
-        .leftBumper()
-        .toggleOnTrue(ClimbingCommands.prepareClimbFromBack(drive, superstructure));
-    operator.rightBumper().onTrue(ClimbingCommands.finalClimb(superstructure));
+    // Climber controls
+    operator.leftBumper().toggleOnTrue(ClimbingCommands.climbSequence(drive, superstructure, operator.x()));
 
     // Reset pose
     controller

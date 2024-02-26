@@ -19,7 +19,7 @@ public class FlywheelConstants {
 
   public static final Gains gains =
       switch (Constants.getRobot()) {
-        case COMPBOT -> new Gains(6, 0, 0, 35, 0, 0);
+        case COMPBOT -> new Gains(6, 0, 0, 38, 0, 0);
         case DEVBOT -> new Gains(0.0003, 0.0, 0.0, 0.33329, 0.00083, 0.0);
         case SIMBOT -> new Gains(0.05, 0.0, 0.0, 0.01, 0.00103, 0.0);
       };

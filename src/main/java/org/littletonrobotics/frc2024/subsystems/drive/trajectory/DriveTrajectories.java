@@ -85,39 +85,35 @@ public class DriveTrajectories {
         "davisEthicalAuto_driveToCenterline2",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(getShootingPose(startingFacingPodium.getTranslation()), 200)
+                .addPoseWaypoint(getShootingPose(startingFacingPodium.getTranslation()))
                 .addPoseWaypoint(
                     (FieldConstants.Stage.podiumLeg)
-                        .transformBy(new Transform2d(0, -.95, new Rotation2d(Math.PI))),
-                    200)
+                        .transformBy(new Transform2d(0, -.95, new Rotation2d(Math.PI))))
                 .addPoseWaypoint(
                     new Pose2d(
-                        FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)),
-                    200)
-                .addPoseWaypoint(intakingApproachCenterlinePoses[2], 150)
+                        FieldConstants.Stage.center.getTranslation(), new Rotation2d(Math.PI)))
+                .addPoseWaypoint(intakingApproachCenterlinePoses[2])
                 .build(),
             PathSegment.newBuilder()
-                .addPoseWaypoint(intakingCenterlinePoses[2], 150)
+                .addPoseWaypoint(intakingCenterlinePoses[2])
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),
             PathSegment.newBuilder()
                 .addPoseWaypoint(
                     (FieldConstants.Stage.center)
-                        .transformBy(new Transform2d(-.4, -.70, new Rotation2d(Math.PI))),
-                    200)
+                        .transformBy(new Transform2d(-.4, -.70, new Rotation2d(Math.PI))))
                 .addPoseWaypoint(
                     getShootingPose(
                         (FieldConstants.Stage.podiumLeg)
                             .transformBy(new Transform2d(.2, -1.4, new Rotation2d(Math.PI)))
-                            .getTranslation()),
-                    200)
+                            .getTranslation()))
                 .build()));
     paths.put(
         "davisEthicalAuto_driveToCenterline1",
         List.of(
             PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("davisEthicalAuto_driveToCenterline2"))
+                .addPoseWaypoint(getLastWaypointPose("davisEthicalAuto_driveToCenterline2"))
                 .addTranslationWaypoint(
                     FieldConstants.Stage.center
                         .transformBy(new Transform2d(0, -2.1, new Rotation2d()))
@@ -139,16 +135,16 @@ public class DriveTrajectories {
         "davisEthicalAuto_driveToCenterline0",
         List.of(
             PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("davisEthicalAuto_driveToCenterline1"))
-                .addPoseWaypoint(intakingApproachCenterlinePoses[0], 200)
+                .addPoseWaypoint(getLastWaypointPose("davisEthicalAuto_driveToCenterline1"))
+                .addPoseWaypoint(intakingApproachCenterlinePoses[0])
                 .build(),
             PathSegment.newBuilder()
-                .addPoseWaypoint(intakingCenterlinePoses[0], 200)
+                .addPoseWaypoint(intakingCenterlinePoses[0])
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),
             PathSegment.newBuilder()
-                .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)), 200)
+                .addPoseWaypoint(getShootingPose(new Translation2d(3.5, 2.6)))
                 .build()));
 
     // N5-S1-C234
@@ -236,8 +232,7 @@ public class DriveTrajectories {
                     getShootingPose(
                         FieldConstants.Stage.center
                             .transformBy(new Transform2d(0, 2.2, new Rotation2d(Math.PI)))
-                            .getTranslation()),
-                    30)
+                            .getTranslation()))
                 .build()));
 
     paths.put(
@@ -248,8 +243,7 @@ public class DriveTrajectories {
                     getShootingPose(
                         FieldConstants.Stage.center
                             .transformBy(new Transform2d(0, 2.2, new Rotation2d(Math.PI)))
-                            .getTranslation()),
-                    30)
+                            .getTranslation()))
                 .addPoseWaypoint(intakingCenterlinePoses[3])
                 .addPoseWaypoint(
                     getShootingPose(
@@ -379,8 +373,7 @@ public class DriveTrajectories {
                     getShootingPose(
                         FieldConstants.Stage.center
                             .transformBy(new Transform2d(0, 2, new Rotation2d()))
-                            .getTranslation()),
-                    30)
+                            .getTranslation()))
                 .build()));
 
     paths.put(
@@ -440,7 +433,7 @@ public class DriveTrajectories {
         "unethicalAuto_driveToC0",
         List.of(
             PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("unethicalAuto_driveToC4"))
+                .addPoseWaypoint(getLastWaypointPose("unethicalAuto_driveToC4"))
                 .addPoseWaypoint(
                     new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[3],
@@ -455,7 +448,7 @@ public class DriveTrajectories {
         "unethicalAuto_driveToPodium",
         List.of(
             PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("unethicalAuto_driveToC0"))
+                .addPoseWaypoint(getLastWaypointPose("unethicalAuto_driveToC0"))
                 .addTranslationWaypoint(
                     FieldConstants.Stage.podiumLeg
                         .transformBy(new Transform2d(-1, 0, new Rotation2d()))
@@ -480,20 +473,14 @@ public class DriveTrajectories {
             .getAngle());
   }
 
-  //  public static Waypoint getLastWaypoint(String trajectoryName) {
-  //    List<PathSegment> trajectory = paths.get(trajectoryName);
-  //    System.out.println(trajectory);
-  //    System.out.println(trajectory.get(trajectory.size() - 1).getWaypoints(0));
-  //    return trajectory.get(trajectory.size() - 1).getWaypoints(0);
-  //
-  //  }
-
-  public static Waypoint getLastWaypoint(String trajectoryName) {
+  public static Pose2d getLastWaypointPose(String trajectoryName) {
     List<PathSegment> trajectory = paths.get(trajectoryName);
-    System.out.println(trajectoryName);
-    return trajectory
-        .get(trajectory.size() - 1)
-        .getWaypoints(trajectory.get(trajectory.size() - 1).getWaypointsCount() - 1);
+    Waypoint waypoint =
+        trajectory
+            .get(trajectory.size() - 1)
+            .getWaypoints(trajectory.get(trajectory.size() - 1).getWaypointsCount() - 1);
+    return new Pose2d(
+        waypoint.getX(), waypoint.getY(), Rotation2d.fromRadians(waypoint.getHeadingConstraint()));
   }
 
   private DriveTrajectories() {}

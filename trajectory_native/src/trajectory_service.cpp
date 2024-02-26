@@ -7,6 +7,10 @@
 #include <trajopt/OptimalTrajectoryGenerator.h>
 #include <trajopt/drivetrain/SwerveDrivetrain.h>
 #include <trajopt/path/SwervePathBuilder.h>
+#include <trajopt/trajectory/HolonomicTrajectory.h>
+#include <trajopt/trajectory/HolonomicTrajectorySample.h>
+
+#include <fmt/format.h>
 #include <numbers>
 
 namespace vts = org::littletonrobotics::vehicletrajectoryservice;

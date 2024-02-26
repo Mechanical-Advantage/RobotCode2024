@@ -101,7 +101,7 @@ public class Arm {
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
     // Set up visualizers
-    NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.armPositionRads));
+    NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.positionRads));
     measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
     setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
     goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
@@ -145,7 +145,7 @@ public class Arm {
     if (disableSupplier.getAsBoolean()) {
       io.stop();
       // Reset profile when disabled
-      setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0);
+      setpointState = new TrapezoidProfile.State(inputs.positionRads, 0);
     }
 
     // Set coast mode with override
@@ -170,7 +170,7 @@ public class Arm {
     }
 
     // Logs
-    measuredVisualizer.update(inputs.armPositionRads);
+    measuredVisualizer.update(inputs.positionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());
     Logger.recordOutput("Arm/GoalAngle", goal.getRads());
@@ -200,7 +200,7 @@ public class Arm {
   }
 
   public double getCharacterizationVelocity() {
-    return inputs.armVelocityRadsPerSec;
+    return inputs.velocityRadsPerSec;
   }
 
   public void endCharacterization() {

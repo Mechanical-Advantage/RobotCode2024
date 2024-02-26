@@ -75,14 +75,14 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
     // Config Motors
     var driveConfig = new TalonFXConfiguration();
-    driveConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
-    driveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
     driveConfig.Voltage.PeakForwardVoltage = 12.0;
     driveConfig.Voltage.PeakReverseVoltage = -12.0;
+    driveConfig.TorqueCurrent.PeakForwardTorqueCurrent = 90.0;
+    driveConfig.TorqueCurrent.PeakReverseTorqueCurrent = -90.0;
 
     var turnConfig = new TalonFXConfiguration();
-    turnConfig.CurrentLimits.SupplyCurrentLimit = 30.0;
-    turnConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+    turnConfig.TorqueCurrent.PeakForwardTorqueCurrent = 40.0;
+    turnConfig.TorqueCurrent.PeakReverseTorqueCurrent = -40.0;
     turnConfig.Voltage.PeakForwardVoltage = 12.0;
     turnConfig.Voltage.PeakReverseVoltage = -12.0;
     turnConfig.MotorOutput.Inverted =

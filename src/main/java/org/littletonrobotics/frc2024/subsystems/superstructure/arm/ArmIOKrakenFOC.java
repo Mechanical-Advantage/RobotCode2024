@@ -85,9 +85,9 @@ public class ArmIOKrakenFOC implements ArmIO {
 
     BaseStatusSignal.setUpdateFrequencyForAll(
         100,
-            internalPositionRotations,
-            absolutePositionRotations,
-            velocityRps,
+        internalPositionRotations,
+        absolutePositionRotations,
+        velocityRps,
         appliedVoltage.get(0),
         appliedVoltage.get(1),
         supplyCurrent.get(0),
@@ -115,8 +115,8 @@ public class ArmIOKrakenFOC implements ArmIO {
   public void updateInputs(ArmIOInputs inputs) {
     inputs.leaderMotorConnected =
         BaseStatusSignal.refreshAll(
-                        internalPositionRotations,
-                        velocityRps,
+                internalPositionRotations,
+                velocityRps,
                 appliedVoltage.get(0),
                 supplyCurrent.get(0),
                 torqueCurrent.get(0),
@@ -129,8 +129,7 @@ public class ArmIOKrakenFOC implements ArmIO {
                 torqueCurrent.get(1),
                 tempCelsius.get(1))
             .isOK();
-    inputs.absoluteEncoderConnected =
-        BaseStatusSignal.refreshAll(absolutePositionRotations).isOK();
+    inputs.absoluteEncoderConnected = BaseStatusSignal.refreshAll(absolutePositionRotations).isOK();
 
     inputs.positionRads =
         Units.rotationsToRadians(internalPositionRotations.getValueAsDouble() / reduction);
@@ -143,8 +142,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         supplyCurrent.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
     inputs.torqueCurrentAmps =
         torqueCurrent.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
-    inputs.tempCelcius =
-        tempCelsius.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
+    inputs.tempCelcius = tempCelsius.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
   }
 
   @Override

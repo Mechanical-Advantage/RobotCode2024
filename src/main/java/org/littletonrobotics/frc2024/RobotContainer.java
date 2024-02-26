@@ -385,12 +385,12 @@ public class RobotContainer {
     // Adjust shot compensation
     operator
         .povUp()
-        .onTrue(
+        .whileTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1)).andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true).repeatedly());
     operator
         .povDown()
-        .onTrue(
+        .whileTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1)).andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true).repeatedly());
 

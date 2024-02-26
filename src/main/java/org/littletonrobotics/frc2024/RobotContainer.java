@@ -242,10 +242,6 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption(
-        "Drive Static Characterization",
-        new StaticCharacterization(
-            drive, drive::runCharacterization, drive::getCharacterizationVelocity));
-    autoChooser.addOption(
         "Flywheels Static Characterization",
         new StaticCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));

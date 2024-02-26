@@ -86,13 +86,9 @@ public class Module {
   }
 
   /** Runs characterization volts or amps depending on using voltage or current control. */
-  public void runCharacterization(double turnSetpointRads, double input) {
+  public void runCharacterization(double turnSetpointRads, double volts) {
     io.runTurnPositionSetpoint(turnSetpointRads);
-    if (inputs.hasCurrentControl) {
-      io.runDriveCurrent(input);
-    } else {
-      io.runDriveVolts(input);
-    }
+    io.runDriveVolts(volts);
   }
 
   /** Sets brake mode to {@code enabled}. */

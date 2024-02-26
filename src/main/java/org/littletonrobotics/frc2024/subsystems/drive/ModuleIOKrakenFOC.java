@@ -55,16 +55,11 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   private final Slot0Configs turnFeedbackConfig = new Slot0Configs();
 
   // Control
-  private final VoltageOut driveVoltage = new VoltageOut(0).withUpdateFreqHz(0);
-  private final VoltageOut turnVoltage = new VoltageOut(0).withUpdateFreqHz(0);
-  private final TorqueCurrentFOC driveCurrent = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final TorqueCurrentFOC turnCurrent = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final VelocityTorqueCurrentFOC driveVelocityControl =
-      new VelocityTorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final PositionTorqueCurrentFOC turnPositionControl =
+  private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0);
+  private final VelocityVoltage velocityControl = new VelocityVoltage(0).withUpdateFreqHz(0);
+  private final PositionTorqueCurrentFOC positionControl =
       new PositionTorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final NeutralOut driveNeutral = new NeutralOut().withUpdateFreqHz(0);
-  private final NeutralOut turnNeutral = new NeutralOut().withUpdateFreqHz(0);
+  private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0);
 
   public ModuleIOKrakenFOC(ModuleConfig config) {
     // Init controllers and encoders from config constants
@@ -77,14 +72,12 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     var driveConfig = new TalonFXConfiguration();
     driveConfig.Voltage.PeakForwardVoltage = 12.0;
     driveConfig.Voltage.PeakReverseVoltage = -12.0;
-    driveConfig.TorqueCurrent.PeakForwardTorqueCurrent = 90.0;
-    driveConfig.TorqueCurrent.PeakReverseTorqueCurrent = -90.0;
+    driveConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
+    driveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
     var turnConfig = new TalonFXConfiguration();
     turnConfig.TorqueCurrent.PeakForwardTorqueCurrent = 40.0;
     turnConfig.TorqueCurrent.PeakReverseTorqueCurrent = -40.0;
-    turnConfig.Voltage.PeakForwardVoltage = 12.0;
-    turnConfig.Voltage.PeakReverseVoltage = -12.0;
     turnConfig.MotorOutput.Inverted =
         config.turnMotorInverted()
             ? InvertedValue.Clockwise_Positive
@@ -192,35 +185,25 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   @Override
   public void runDriveVolts(double volts) {
-    driveTalon.setControl(driveVoltage.withOutput(volts));
+    driveTalon.setControl(voltageControl.withOutput(volts));
   }
 
   @Override
   public void runTurnVolts(double volts) {
-    turnTalon.setControl(turnVoltage.withOutput(volts));
-  }
-
-  @Override
-  public void runDriveCurrent(double current) {
-    driveTalon.setControl(driveCurrent.withOutput(current));
-  }
-
-  @Override
-  public void runTurnCurrent(double current) {
-    turnTalon.setControl(turnCurrent.withOutput(current));
+    turnTalon.setControl(voltageControl.withOutput(volts));
   }
 
   @Override
   public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
     driveTalon.setControl(
-        driveVelocityControl
+        velocityControl
             .withVelocity(Units.radiansToRotations(velocityRadsPerSec))
             .withFeedForward(feedForward));
   }
 
   @Override
   public void runTurnPositionSetpoint(double angleRads) {
-    turnTalon.setControl(turnPositionControl.withPosition(Units.radiansToRotations(angleRads)));
+    turnTalon.setControl(positionControl.withPosition(Units.radiansToRotations(angleRads)));
   }
 
   @Override
@@ -251,7 +234,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   @Override
   public void stop() {
-    driveTalon.setControl(driveNeutral);
-    turnTalon.setControl(turnNeutral);
+    driveTalon.setControl(neutralControl);
+    turnTalon.setControl(neutralControl);
   }
 }

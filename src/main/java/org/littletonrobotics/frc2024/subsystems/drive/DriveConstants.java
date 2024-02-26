@@ -144,7 +144,7 @@ public final class DriveConstants {
   // Trajectory Following
   public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT -> new TrajectoryConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        case COMPBOT -> new TrajectoryConstants(6.0, 0.0, 8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         case DEVBOT ->
             new TrajectoryConstants(
                 6.0,

@@ -85,8 +85,9 @@ public class AutoCommands {
   /** Runs intake until the gamepiece is collected, does not end in sim */
   public static Command intake(Superstructure superstructure, Rollers rollers) {
     return parallel(
-        Commands.waitUntil(superstructure::atGoal).andThen(superstructure.intake()),
-        rollers.floorIntake());
+        superstructure.intake(),
+        Commands.waitUntil(superstructure::atGoal)
+            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)));
   }
 
   /** Shoots note, ending after rollers have spun */
@@ -97,13 +98,15 @@ public class AutoCommands {
     return parallel(
             // Aim and spin up flywheels
             startEnd(() -> drive.setHeadingGoal(aimHeadingSupplier), drive::clearHeadingGoal),
-            superstructure.aim(),
-            flywheels.shootCommand())
+            superstructure.aim())
         // End command when ready to shoot and rollers have spun
         .raceWith(
             Commands.waitUntil(
                     () -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal())
-                .andThen(rollers.feedShooter().withTimeout(shootTimeoutSecs.get())));
+                .andThen(
+                    rollers
+                        .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                        .withTimeout(shootTimeoutSecs.get())));
   }
 
   public static Command shootNoDrive(
@@ -114,7 +117,10 @@ public class AutoCommands {
         // End command when ready to shoot and rollers have spun
         .raceWith(
             Commands.waitUntil(() -> superstructure.atGoal() && flywheels.atGoal())
-                .andThen(rollers.feedShooter().withTimeout(shootTimeoutSecs.get())));
+                .andThen(
+                    rollers
+                        .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                        .withTimeout(shootTimeoutSecs.get())));
   }
 
   /**
@@ -124,7 +130,7 @@ public class AutoCommands {
   public static Command intakeIntoEject(Flywheels flywheels, Rollers rollers) {
     return parallel(
         // Aim and spin up flywheels
-        flywheels.ejectCommand(), rollers.quickFeed());
+        flywheels.ejectCommand(), rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED));
   }
 
   // reset Path and call followTrajectory

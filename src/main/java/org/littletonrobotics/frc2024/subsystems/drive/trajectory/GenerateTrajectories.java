@@ -35,12 +35,12 @@ public class GenerateTrajectories {
     // Create vehicle model
     VehicleModel model =
         VehicleModel.newBuilder()
-            .setMass(53)
+            .setMass(61)
             .setMoi(6)
             .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
             .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
-            .setMaxWheelTorque(3)
+            .setMaxWheelTorque(2.5)
             .setMaxWheelOmega(
                 DriveConstants.moduleLimitsFree.maxDriveVelocity()
                     / DriveConstants.driveConfig.wheelRadius())

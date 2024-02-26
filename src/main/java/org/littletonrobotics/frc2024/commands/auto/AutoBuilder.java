@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
@@ -186,62 +187,55 @@ public class AutoBuilder {
 
     Timer autoTimer = new Timer();
     return sequence(
-        runOnce(autoTimer::restart),
-        // Shoot preloaded note
-        resetPose(driveToPodiumTrajectory),
-        shootNoDrive(superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
-        followTrajectory(drive, driveToPodiumTrajectory)
-            // Drive to podium note while intaking and shoot
-            .deadlineWith(
-                parallel(intake(superstructure, rollers), flywheels.shootCommand())), // uh oh 👀
-        shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
-        // NoteVisualizer.shoot(),
-        runOnce(() -> System.out.printf("Second shot at %.2f seconds.", autoTimer.get())),
+            runOnce(autoTimer::restart),
+            // Shoot preloaded note
+            resetPose(DriveTrajectories.startingFacingPodium),
+            shoot(drive, superstructure, flywheels, rollers),
+            runOnce(() -> System.out.printf("First shot at %.2f seconds.", autoTimer.get())),
 
-        // Drive to centerline 2 note making sure to only intake after crossed stage
-        followTrajectory(drive, driveToCenterline2Trajectory)
-            .deadlineWith(
-                sequence(
-                    // Check if full length of robot + some has passed wing for arm safety
-                    waitUntilXCrossed(
-                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(), true),
-                    intake(superstructure, rollers)
-                        .raceWith(
-                            waitUntilXCrossed(
-                                FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(),
-                                false)),
-                    // Wait until we are close enough to shot to start arm aiming
-                    waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
-                    parallel(intake(superstructure, rollers), flywheels.shootCommand()))),
-        shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Third shot at %.2f seconds.", autoTimer.get())),
+            // Drive to centerline 2 note making sure to only intake after crossed stage
+            followTrajectory(drive, driveToCenterline2Trajectory)
+                .deadlineWith(
+                    sequence(
+                        // Check if full length of robot + some has passed wing for arm safety
+                        waitUntilXCrossed(
+                            FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(), true),
+                        intake(superstructure, rollers)
+                            .raceWith(
+                                waitUntilXCrossed(
+                                    FieldConstants.wingX
+                                        + DriveConstants.driveConfig.bumperWidthX(),
+                                    false)),
+                        // Wait until we are close enough to shot to start arm aiming
+                        waitUntilXCrossed(FieldConstants.Stage.podiumLeg.getX() + 0.5, false),
+                        parallel(superstructure.aim()))),
+            shoot(drive, superstructure, flywheels, rollers),
+            runOnce(() -> System.out.printf("Third shot at %.2f seconds.", autoTimer.get())),
 
-        // Drive back to centerline 1 while intaking
-        followTrajectory(drive, driveToCenterline1Trajectory)
-            .deadlineWith(
-                sequence(
-                    waitUntilXCrossed(
-                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(), true),
-                    intake(superstructure, rollers)
-                        .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
-                    parallel(intake(superstructure, rollers), flywheels.shootCommand()))),
-        shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
+            // Drive back to centerline 1 while intaking
+            followTrajectory(drive, driveToCenterline1Trajectory)
+                .deadlineWith(
+                    sequence(
+                        waitUntilXCrossed(
+                            FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(), true),
+                        intake(superstructure, rollers)
+                            .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
+                        parallel(superstructure.aim()))),
+            shoot(drive, superstructure, flywheels, rollers),
+            runOnce(() -> System.out.printf("Fourth shot at %.2f seconds.", autoTimer.get())),
 
-        // Drive back to centerline 0 and then shoot
-        followTrajectory(drive, driveToCenterline0Trajectory)
-            .deadlineWith(
-                sequence(
-                    waitUntilXCrossed(
-                        FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX() * 0.7,
-                        true),
-                    intake(superstructure, rollers)
-                        .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
-                    parallel(intake(superstructure, rollers), flywheels.shootCommand()))),
-        shoot(drive, superstructure, flywheels, rollers),
-        runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())));
+            // Drive back to centerline 0 and then shoot
+            followTrajectory(drive, driveToCenterline0Trajectory)
+                .deadlineWith(
+                    sequence(
+                        waitUntilXCrossed(
+                            FieldConstants.wingX + DriveConstants.driveConfig.bumperWidthX(), true),
+                        intake(superstructure, rollers)
+                            .raceWith(waitUntilXCrossed(FieldConstants.wingX, false)),
+                        parallel(superstructure.aim()))),
+            shoot(drive, superstructure, flywheels, rollers),
+            runOnce(() -> System.out.printf("Fifth shot at %.2f seconds.", autoTimer.get())))
+        .deadlineWith(flywheels.shootCommand());
     // Revert to teleop idle mode
   }
 

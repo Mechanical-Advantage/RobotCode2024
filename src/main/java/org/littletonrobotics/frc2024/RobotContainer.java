@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.Supplier;
+import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
@@ -62,11 +63,8 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
-import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
-import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
-import org.littletonrobotics.frc2024.util.GeomUtil;
-import org.littletonrobotics.frc2024.util.OverrideSwitches;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -75,6 +73,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
+@ExtensionMethod({DoublePressTracker.class})
 public class RobotContainer {
   // Load robot state
   private final RobotState robotState = RobotState.getInstance();
@@ -457,8 +456,8 @@ public class RobotContainer {
                 drive,
                 superstructure,
                 rollers,
-                operator.leftTrigger(),
-                operator.x(),
+                operator.leftTrigger().doublePress(),
+                operator.x().doublePress(),
                 autoDriveDisable));
 
     // Shuffle gamepiece

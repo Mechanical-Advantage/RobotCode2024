@@ -332,7 +332,7 @@ public class RobotContainer {
         .whileTrue(
             Commands.startEnd(
                 () -> {
-                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
+                  controller.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
                 },
                 () -> {
                   controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);

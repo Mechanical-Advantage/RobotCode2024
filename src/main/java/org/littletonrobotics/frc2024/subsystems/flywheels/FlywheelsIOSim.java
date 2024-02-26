@@ -11,7 +11,6 @@ import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstan
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.simulation.FlywheelSim;
@@ -27,26 +26,26 @@ public class FlywheelsIOSim implements FlywheelsIO {
       new PIDController(gains.kP(), gains.kI(), gains.kD());
   private final PIDController rightController =
       new PIDController(gains.kP(), gains.kI(), gains.kD());
-  private SimpleMotorFeedforward ff =
-      new SimpleMotorFeedforward(gains.kS(), gains.kV(), gains.kA());
 
   private double leftAppliedVolts = 0.0;
   private double rightAppliedVolts = 0.0;
 
-  private Double leftSetpointRPM = null;
-  private Double rightSetpointRPM = null;
+  private Double leftSetpointRpm = null;
+  private Double rightSetpointRpm = null;
+  private double leftFeedforward = 0.0;
+  private double rightFeedforward = 0.0;
 
   @Override
   public void updateInputs(FlywheelsIOInputs inputs) {
     leftSim.update(Constants.loopPeriodSecs);
     rightSim.update(Constants.loopPeriodSecs);
     // control to setpoint
-    if (leftSetpointRPM != null && rightSetpointRPM != null) {
+    if (leftSetpointRpm != null && rightSetpointRpm != null) {
       runVolts(
-          leftController.calculate(leftSim.getAngularVelocityRPM(), leftSetpointRPM)
-              + ff.calculate(leftSetpointRPM),
-          rightController.calculate(rightSim.getAngularVelocityRPM(), rightSetpointRPM)
-              + ff.calculate(rightSetpointRPM));
+          leftController.calculate(leftSim.getAngularVelocityRPM(), leftSetpointRpm)
+              + leftFeedforward,
+          rightController.calculate(rightSim.getAngularVelocityRPM(), rightSetpointRpm)
+              + rightFeedforward);
     }
 
     inputs.leftPositionRads +=
@@ -71,9 +70,12 @@ public class FlywheelsIOSim implements FlywheelsIO {
   }
 
   @Override
-  public void runVelocity(double leftRpm, double rightRpm) {
-    leftSetpointRPM = leftRpm;
-    rightSetpointRPM = rightRpm;
+  public void runVelocity(
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {
+    leftSetpointRpm = leftRpm;
+    rightSetpointRpm = rightRpm;
+    this.leftFeedforward = leftFeedforward;
+    this.rightFeedforward = rightFeedforward;
   }
 
   @Override
@@ -83,26 +85,21 @@ public class FlywheelsIOSim implements FlywheelsIO {
   }
 
   @Override
-  public void setFF(double kS, double kV, double kA) {
-    ff = new SimpleMotorFeedforward(kS, kV, kA);
-  }
-
-  @Override
   public void stop() {
-    runVelocity(0.0, 0.0);
+    runVolts(0.0, 0.0);
   }
 
   @Override
   public void runCharacterizationLeft(double input) {
-    leftSetpointRPM = null;
-    rightSetpointRPM = null;
+    leftSetpointRpm = null;
+    rightSetpointRpm = null;
     runVolts(input, 0.0);
   }
 
   @Override
   public void runCharacterizationRight(double input) {
-    leftSetpointRPM = null;
-    rightSetpointRPM = null;
+    leftSetpointRpm = null;
+    rightSetpointRpm = null;
     runVolts(0.0, input);
   }
 }

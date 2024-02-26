@@ -10,7 +10,6 @@ package org.littletonrobotics.frc2024.subsystems.flywheels;
 import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstants.*;
 
 import com.revrobotics.*;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.util.Units;
 
 public class FlywheelsIOSparkFlex implements FlywheelsIO {
@@ -23,8 +22,6 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
   // Controllers
   private final SparkPIDController leftController;
   private final SparkPIDController rightController;
-  // Open loop
-  private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
 
   public FlywheelsIOSparkFlex() {
     // Init Hardware
@@ -90,18 +87,19 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
   }
 
   @Override
-  public void runVelocity(double leftRpm, double rightRpm) {
+  public void runVelocity(
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {
     leftController.setReference(
         leftRpm * flywheelConfig.reduction(),
         CANSparkBase.ControlType.kVelocity,
         0,
-        ff.calculate(leftRpm),
+        leftFeedforward,
         SparkPIDController.ArbFFUnits.kVoltage);
     rightController.setReference(
         rightRpm * flywheelConfig.reduction(),
         CANSparkBase.ControlType.kVelocity,
         0,
-        ff.calculate(rightRpm),
+        rightFeedforward,
         SparkPIDController.ArbFFUnits.kVoltage);
   }
 
@@ -113,11 +111,6 @@ public class FlywheelsIOSparkFlex implements FlywheelsIO {
     rightController.setP(kP);
     rightController.setI(kI);
     rightController.setD(kD);
-  }
-
-  @Override
-  public void setFF(double kS, double kV, double kA) {
-    ff = new SimpleMotorFeedforward(kS, kV, kA);
   }
 
   @Override

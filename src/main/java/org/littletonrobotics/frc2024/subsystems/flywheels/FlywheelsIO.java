@@ -40,7 +40,8 @@ public interface FlywheelsIO {
   default void stop() {}
 
   /** Run left and right flywheels at velocity in rpm */
-  default void runVelocity(double leftRpm, double rightRpm) {}
+  default void runVelocity(
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {}
 
   /** Config PID values for both motors */
   default void setPID(double kP, double kI, double kD) {}

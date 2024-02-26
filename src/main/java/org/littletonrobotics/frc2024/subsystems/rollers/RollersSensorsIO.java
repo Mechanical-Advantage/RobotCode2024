@@ -14,7 +14,6 @@ public interface RollersSensorsIO {
   class RollersSensorsIOInputs {
     boolean shooterStaged = false;
     boolean backbackStaged = false;
-    boolean indexerCleared = false;
   }
 
   default void updateInputs(RollersSensorsIOInputs inputs) {}

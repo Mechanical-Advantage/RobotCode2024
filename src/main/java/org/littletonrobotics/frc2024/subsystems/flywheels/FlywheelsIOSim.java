@@ -53,13 +53,13 @@ public class FlywheelsIOSim implements FlywheelsIO {
         Units.radiansToRotations(leftSim.getAngularVelocityRadPerSec() * Constants.loopPeriodSecs);
     inputs.leftVelocityRpm = leftSim.getAngularVelocityRPM();
     inputs.leftAppliedVolts = leftAppliedVolts;
-    inputs.leftOutputCurrent = leftSim.getCurrentDrawAmps();
+    inputs.leftSupplyCurrent = leftSim.getCurrentDrawAmps();
 
     inputs.rightPositionRads +=
         Units.radiansToRotations(rightSim.getAngularVelocityRadPerSec() * Constants.loopPeriodSecs);
     inputs.rightVelocityRpm = rightSim.getAngularVelocityRPM();
     inputs.rightAppliedVolts = rightAppliedVolts;
-    inputs.rightOutputCurrent = rightSim.getCurrentDrawAmps();
+    inputs.rightSupplyCurrent = rightSim.getCurrentDrawAmps();
   }
 
   @Override

@@ -42,7 +42,7 @@ public class GenerateTrajectories {
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
             .setMaxWheelTorque(3)
             .setMaxWheelOmega(
-                DriveConstants.moduleLimits.maxDriveVelocity()
+                DriveConstants.moduleLimitsFree.maxDriveVelocity()
                     / DriveConstants.driveConfig.wheelRadius())
             .build();
 

@@ -16,6 +16,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -53,7 +54,7 @@ public class Flywheels extends SubsystemBase {
   private final Alert leftDisconnected =
       new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
   private final Alert rightDisconnected =
-      new Alert("Left flywheel disconnected!", Alert.AlertType.WARNING);
+      new Alert("Right flywheel disconnected!", Alert.AlertType.WARNING);
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -83,6 +84,10 @@ public class Flywheels extends SubsystemBase {
   @Getter
   @AutoLogOutput(key = "Flywheels/Goal")
   private Goal goal = Goal.IDLE;
+
+  private boolean isDrawingHighCurrent() {
+    return Math.abs(inputs.leftSupplyCurrent) > 50.0 || Math.abs(inputs.rightSupplyCurrent) > 50.0;
+  }
 
   public Flywheels(FlywheelsIO io) {
     this.io = io;
@@ -132,7 +137,9 @@ public class Flywheels extends SubsystemBase {
       leftProfile.setGoal(goal.getLeftGoal());
       rightProfile.setGoal(goal.getRightGoal());
       io.runVelocity(leftProfile.calculateSetpoint(), rightProfile.calculateSetpoint());
+      RobotState.getInstance().setFlywheelAccelerating(!atGoal() || isDrawingHighCurrent());
     } else if (goal == Goal.IDLE) {
+      RobotState.getInstance().setFlywheelAccelerating(false);
       io.stop();
     }
 
@@ -147,6 +154,7 @@ public class Flywheels extends SubsystemBase {
     if (goal == Goal.CHARACTERIZING || goal == Goal.IDLE) {
       wasClosedLoop = closedLoop;
       closedLoop = false;
+      this.goal = goal;
       return; // Don't set a goal
     }
     // If not already controlling to requested goal

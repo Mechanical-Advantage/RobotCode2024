@@ -94,7 +94,7 @@ public class Drive extends SubsystemBase {
   private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private final ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
+
   private SwerveSetpoint currentSetpoint =
       new SwerveSetpoint(
           new ChassisSpeeds(),
@@ -145,6 +145,8 @@ public class Drive extends SubsystemBase {
     // Read inputs from modules
     Arrays.stream(modules).forEach(Module::updateInputs);
     odometryLock.unlock();
+
+    ModuleLimits currentModuleLimits = RobotState.getInstance().getModuleLimits();
 
     // Calculate the min odometry position updates across all modules
     int minOdometryUpdates =
@@ -283,12 +285,14 @@ public class Drive extends SubsystemBase {
   }
 
   /** Pass controller input into teleopDriveController in field relative input */
-  public void acceptTeleopInput(double controllerX, double controllerY, double controllerOmega) {
+  public void acceptTeleopInput(
+      double controllerX, double controllerY, double controllerOmega, boolean robotRelative) {
     if (DriverStation.isTeleopEnabled()) {
       if (currentDriveMode != DriveMode.AUTO_ALIGN) {
         currentDriveMode = DriveMode.TELEOP;
       }
-      teleopDriveController.acceptDriveInput(controllerX, controllerY, controllerOmega);
+      teleopDriveController.acceptDriveInput(
+          controllerX, controllerY, controllerOmega, robotRelative);
     }
   }
 
@@ -345,7 +349,7 @@ public class Drive extends SubsystemBase {
   /** Returns true if robot is aimed at speaker */
   @AutoLogOutput(key = "Drive/AtHeadingGoal")
   public boolean atHeadingGoal() {
-    return headingController != null && headingController.atGoal();
+    return headingController == null || headingController.atGoal();
   }
 
   /** Runs forwards at the commanded voltage or amps. */

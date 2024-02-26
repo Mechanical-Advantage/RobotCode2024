@@ -29,6 +29,7 @@ import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
+import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.junction.AutoLogOutput;
 
 @ExtensionMethod({GeomUtil.class})
@@ -50,6 +51,8 @@ public class RobotState {
 
   /** Arm angle look up table key: meters, values: radians */
   private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
+
+  @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
 
   static {
     armAngleMap.put(1.039, 0.890);
@@ -237,6 +240,12 @@ public class RobotState {
             targetDistance,
             feedVelocity);
     return latestParameters;
+  }
+
+  public ModuleLimits getModuleLimits() {
+    return flywheelAccelerating
+        ? DriveConstants.moduleLimitsFlywheelSpinup
+        : DriveConstants.moduleLimitsFree;
   }
 
   /**

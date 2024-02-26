@@ -60,8 +60,8 @@ public class ArmIOKrakenFOC implements ArmIO {
 
     // Leader motor configs
     TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
-    leaderConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
-    leaderConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+    leaderConfig.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
+    leaderConfig.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
     leaderConfig.MotorOutput.Inverted =
         leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
     leaderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;

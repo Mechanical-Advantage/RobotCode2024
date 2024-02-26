@@ -94,7 +94,7 @@ public class Drive extends SubsystemBase {
   private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private final ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
+
   private SwerveSetpoint currentSetpoint =
       new SwerveSetpoint(
           new ChassisSpeeds(),
@@ -145,6 +145,8 @@ public class Drive extends SubsystemBase {
     // Read inputs from modules
     Arrays.stream(modules).forEach(Module::updateInputs);
     odometryLock.unlock();
+
+    ModuleLimits currentModuleLimits = RobotState.getInstance().getModuleLimits();
 
     // Calculate the min odometry position updates across all modules
     int minOdometryUpdates =

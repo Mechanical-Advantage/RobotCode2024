@@ -16,8 +16,10 @@ import edu.wpi.first.math.util.Units;
 import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
+import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
@@ -60,8 +62,14 @@ public class HeadingController {
     // Update controller
     controller.setPID(kP.get(), 0, kD.get());
     controller.setTolerance(Units.degreesToRadians(toleranceDegrees.get()));
+
+    ModuleLimits moduleLimits = RobotState.getInstance().getModuleLimits();
+    double maxAngularAcceleration =
+        moduleLimits.maxDriveAcceleration() / DriveConstants.driveConfig.driveBaseRadius();
+    double maxAngularVelocity =
+        moduleLimits.maxDriveVelocity() / DriveConstants.driveConfig.driveBaseRadius();
     controller.setConstraints(
-        new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
+        new TrapezoidProfile.Constraints(maxAngularVelocity, maxAngularAcceleration));
 
     var output =
         controller.calculate(

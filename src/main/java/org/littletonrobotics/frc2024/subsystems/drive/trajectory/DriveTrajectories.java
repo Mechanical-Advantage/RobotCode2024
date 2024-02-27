@@ -61,20 +61,21 @@ public class DriveTrajectories {
         getShootingPose(
             FieldConstants.Stage.podiumLeg
                 .getTranslation()
-                .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5));
+                .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
+                .plus(new Translation2d(-0.1, 0.2)));
     Translation2d stageRightAvoidance =
         FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
     Translation2d stageCenterAvoidance =
         FieldConstants.Stage.sourceLeg
             .getTranslation()
-            .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5);
+            .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.55);
     paths.put(
         "davisEthicalAuto_driveToPodium",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingCenterLine)
                 .addPoseWaypoint(
-                    podiumShootingPose.transformBy(new Translation2d(0.4, 0.0).toTransform2d()))
+                    podiumShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
                 .addPoseWaypoint(podiumShootingPose)
                 .build()));
     paths.put(
@@ -117,11 +118,13 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(stageLeftShootingPose)
+                .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[2],
                             Rotation2d.fromDegrees(180.0))
                         .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
 

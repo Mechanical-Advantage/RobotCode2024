@@ -230,6 +230,7 @@ public class RobotContainer {
     AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
 
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
+    autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
 
     // Set up feedforward characterization
     autoChooser.addOption(
@@ -257,16 +258,6 @@ public class RobotContainer {
                     drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
     autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
-
-    autoChooser.addOption("N4_S0_C21", autoBuilder.N4_S0_C21());
-    autoChooser.addOption("N4_S2_C43", autoBuilder.N4_S2_C43());
-    autoChooser.addOption("N4_C012", autoBuilder.N4_C012());
-    autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
-    autoChooser.addOption("N5_S1_C234", autoBuilder.N5_S1_C234());
-    autoChooser.addOption("N5_S2_C432", autoBuilder.N5_S2_C432());
-    autoChooser.addOption("N5_C012_S0", autoBuilder.N5_C012_S0());
-    autoChooser.addOption("N6_S21-C432", autoBuilder.N6_S21_C432());
-    autoChooser.addOption("Unethical Auto", autoBuilder.unethicalAuto());
   }
 
   /**

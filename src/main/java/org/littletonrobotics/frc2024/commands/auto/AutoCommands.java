@@ -111,10 +111,7 @@ public class AutoCommands {
 
   public static Command shootNoDrive(
       Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
-    return parallel(
-            // Aim and spin up flywheels
-            superstructure.aim(), flywheels.shootCommand())
-        // End command when ready to shoot and rollers have spun
+    return parallel(superstructure.aim())
         .raceWith(
             Commands.waitUntil(() -> superstructure.atGoal() && flywheels.atGoal())
                 .andThen(

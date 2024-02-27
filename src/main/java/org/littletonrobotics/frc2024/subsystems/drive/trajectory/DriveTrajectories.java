@@ -11,7 +11,7 @@ import static org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectorySe
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.math.geometry.Translation2d;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,22 +26,10 @@ public class DriveTrajectories {
         "driveStraight",
         List.of(
             PathSegment.newBuilder()
+                .addPoseWaypoint(new Pose2d())
+                .addTranslationWaypoint(new Translation2d(3.0, 0.5))
                 .addPoseWaypoint(
-                    new Pose2d(
-                        Units.inchesToMeters(60.112),
-                        Units.inchesToMeters(161.638),
-                        new Rotation2d()))
-                .addPoseWaypoint(
-                    new Pose2d(
-                        Units.inchesToMeters(130), Units.inchesToMeters(70), new Rotation2d()))
-                .addPoseWaypoint(
-                    new Pose2d(
-                        Units.inchesToMeters(318.640),
-                        Units.inchesToMeters(29.003),
-                        new Rotation2d()))
-                .addPoseWaypoint(
-                    new Pose2d(
-                        Units.inchesToMeters(130), Units.inchesToMeters(70), new Rotation2d()))
+                    new Pose2d(new Translation2d(5.0, 0.0), Rotation2d.fromDegrees(90.0)))
                 .build()));
   }
 }

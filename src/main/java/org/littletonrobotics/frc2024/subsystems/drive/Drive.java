@@ -118,7 +118,6 @@ public class Drive extends SubsystemBase {
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
     lastMovementTimer.start();
-    setBrakeMode(true);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -216,11 +215,6 @@ public class Drive extends SubsystemBase {
     if (Arrays.stream(modules)
         .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
       lastMovementTimer.reset();
-    }
-    if (DriverStation.isEnabled()) {
-      setBrakeMode(true); // Always in brake mode during teleop
-    } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
-      setBrakeMode(false);
     }
 
     // Run drive based on current mode
@@ -381,14 +375,6 @@ public class Drive extends SubsystemBase {
   /** Get the position of all drive wheels in radians. */
   public double[] getWheelRadiusCharacterizationPosition() {
     return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();
-  }
-
-  /** Set brake mode to {@code enabled} doesn't change brake mode if already set. */
-  public void setBrakeMode(boolean enabled) {
-    if (brakeModeEnabled != enabled) {
-      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
-    }
-    brakeModeEnabled = enabled;
   }
 
   /**

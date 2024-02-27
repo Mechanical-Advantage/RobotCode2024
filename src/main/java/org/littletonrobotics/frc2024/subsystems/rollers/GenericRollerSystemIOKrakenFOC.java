@@ -62,7 +62,9 @@ public abstract class GenericRollerSystemIOKrakenFOC implements GenericRollerSys
   @Override
   public void updateInputs(GenericRollerSystemIOInputs inputs) {
     inputs.connected =
-        BaseStatusSignal.refreshAll(position, velocity, appliedVoltage, supplyCurrent).isOK();
+        BaseStatusSignal.refreshAll(
+                position, velocity, appliedVoltage, supplyCurrent, torqueCurrent, tempCelsius)
+            .isOK();
     inputs.positionRads = Units.rotationsToRadians(position.getValueAsDouble()) / reduction;
     inputs.velocityRadsPerSec = Units.rotationsToRadians(velocity.getValueAsDouble()) / reduction;
     inputs.appliedVoltage = appliedVoltage.getValueAsDouble();

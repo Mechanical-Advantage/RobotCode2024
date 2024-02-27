@@ -138,7 +138,7 @@ public final class DriveConstants {
   public static final ModuleLimits moduleLimitsFlywheelSpinup =
       new ModuleLimits(
           driveConfig.maxLinearVelocity(),
-          driveConfig.maxLinearAcceleration() / 4.0,
+          driveConfig.maxLinearAcceleration() / 2.0,
           Units.degreesToRadians(1080.0));
 
   // Trajectory Following

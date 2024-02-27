@@ -50,8 +50,8 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
 
     // General config
     TalonFXConfiguration config = new TalonFXConfiguration();
-    config.TorqueCurrent.PeakForwardTorqueCurrent = 100.0;
-    config.TorqueCurrent.PeakReverseTorqueCurrent = -100.0;
+    config.CurrentLimits.SupplyCurrentLimit = 60.0;
+    config.CurrentLimits.SupplyCurrentLimitEnable = true;
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     config.Feedback.SensorToMechanismRatio = flywheelConfig.reduction();

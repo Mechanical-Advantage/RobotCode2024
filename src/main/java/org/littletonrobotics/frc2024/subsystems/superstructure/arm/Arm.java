@@ -201,14 +201,14 @@ public class Arm {
     Logger.recordOutput("Arm/GoalAngle", goal.getRads());
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
-    Logger.recordOutput("Arm/Goal", goal);
+    Logger.recordOutput("Superstructure/Arm/Goal", goal);
   }
 
   public void stop() {
     io.stop();
   }
 
-  @AutoLogOutput(key = "Arm/AtGoal")
+  @AutoLogOutput(key = "Superstructure/Arm/AtGoal")
   public boolean atGoal() {
     return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
   }

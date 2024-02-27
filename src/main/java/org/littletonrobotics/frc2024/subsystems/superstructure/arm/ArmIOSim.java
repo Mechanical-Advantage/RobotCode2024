@@ -60,12 +60,12 @@ public class ArmIOSim implements ArmIO {
 
     sim.update(Constants.loopPeriodSecs);
 
-    inputs.armPositionRads = sim.getAngleRads() + positionOffset;
-    inputs.armVelocityRadsPerSec = sim.getVelocityRadPerSec();
-    inputs.armAppliedVolts = new double[] {appliedVoltage};
-    inputs.armCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
-    inputs.armTorqueCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
-    inputs.armTempCelcius = new double[] {0.0};
+    inputs.positionRads = sim.getAngleRads() + positionOffset;
+    inputs.velocityRadsPerSec = sim.getVelocityRadPerSec();
+    inputs.appliedVolts = new double[] {appliedVoltage};
+    inputs.supplyCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
+    inputs.torqueCurrentAmps = new double[] {sim.getCurrentDrawAmps()};
+    inputs.tempCelcius = new double[] {0.0};
 
     // Reset input
     sim.setInputVoltage(0.0);

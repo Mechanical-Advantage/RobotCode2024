@@ -131,15 +131,15 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
     inputs.leftPositionRads = Units.rotationsToRadians(leftPosition.getValueAsDouble());
     inputs.leftVelocityRpm = leftVelocity.getValueAsDouble() * 60.0;
     inputs.leftAppliedVolts = leftAppliedVolts.getValueAsDouble();
-    inputs.leftSupplyCurrent = leftSupplyCurrent.getValueAsDouble();
-    inputs.leftTorqueCurrent = leftTorqueCurrent.getValueAsDouble();
+    inputs.leftSupplyCurrentAmps = leftSupplyCurrent.getValueAsDouble();
+    inputs.leftTorqueCurrentAmps = leftTorqueCurrent.getValueAsDouble();
     inputs.leftTempCelsius = leftTempCelsius.getValueAsDouble();
 
     inputs.rightPositionRads = Units.rotationsToRadians(rightPosition.getValueAsDouble());
     inputs.rightVelocityRpm = rightVelocity.getValueAsDouble() * 60.0;
     inputs.rightAppliedVolts = rightAppliedVolts.getValueAsDouble();
-    inputs.rightSupplyCurrent = rightSupplyCurrent.getValueAsDouble();
-    inputs.rightTorqueCurrent = rightTorqueCurrent.getValueAsDouble();
+    inputs.rightSupplyCurrentAmps = rightSupplyCurrent.getValueAsDouble();
+    inputs.rightTorqueCurrentAmps = rightTorqueCurrent.getValueAsDouble();
     inputs.rightTempCelsius = rightTempCelsius.getValueAsDouble();
   }
 

@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import org.littletonrobotics.frc2024.FieldConstants;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
@@ -51,13 +52,13 @@ public class AutoBuilder {
         .andThen(
             // Drive sequence
             Commands.sequence(
-                resetPose(driveToPodium),
-                Commands.waitSeconds(initialWait),
-                followTrajectory(drive, driveToPodium),
-                Commands.waitSeconds(podiumWait),
-                followTrajectory(drive, grabCenterline0),
-                followTrajectory(drive, grabCenterline1),
-                followTrajectory(drive, grabCenterline2))
+                    resetPose(driveToPodium),
+                    Commands.waitSeconds(initialWait),
+                    followTrajectory(drive, driveToPodium),
+                    Commands.waitSeconds(podiumWait),
+                    followTrajectory(drive, grabCenterline0),
+                    followTrajectory(drive, grabCenterline1),
+                    followTrajectory(drive, grabCenterline2))
 
                 // Superstructure & rollers sequence
                 .alongWith(
@@ -68,10 +69,11 @@ public class AutoBuilder {
                                 rollers
                                     .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
                                     .until(
-                                        () -> autoTimer.hasElapsed(
-                                            initialWait
-                                                + driveToPodium.getDuration()
-                                                + podiumWait)))
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                initialWait
+                                                    + driveToPodium.getDuration()
+                                                    + podiumWait)))
                             .deadlineWith(superstructure.aim()),
 
                         // Intake centerline 0
@@ -83,12 +85,13 @@ public class AutoBuilder {
 
                         // Shoot centerline 0
                         Commands.waitUntil(
-                            () -> autoTimer.hasElapsed(
-                                initialWait
-                                    + driveToPodium.getDuration()
-                                    + podiumWait
-                                    + grabCenterline0.getDuration()
-                                    - shootTimeoutSecs.get() / 2.0))
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        initialWait
+                                            + driveToPodium.getDuration()
+                                            + podiumWait
+                                            + grabCenterline0.getDuration()
+                                            - shootTimeoutSecs.get() / 2.0))
                             .andThen(
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
@@ -97,10 +100,10 @@ public class AutoBuilder {
 
                         // Intake centerline 1
                         waitUntilXCrossed(
-                            FieldConstants.wingX
-                                + DriveConstants.driveConfig.bumperWidthX()
-                                + 0.3,
-                            true)
+                                FieldConstants.wingX
+                                    + DriveConstants.driveConfig.bumperWidthX()
+                                    + 0.3,
+                                true)
                             .andThen(
                                 waitUntilXCrossed(
                                     FieldConstants.wingX
@@ -113,13 +116,14 @@ public class AutoBuilder {
 
                         // Shoot centerline 1
                         Commands.waitUntil(
-                            () -> autoTimer.hasElapsed(
-                                initialWait
-                                    + driveToPodium.getDuration()
-                                    + podiumWait
-                                    + grabCenterline0.getDuration()
-                                    + grabCenterline1.getDuration()
-                                    - shootTimeoutSecs.get() / 2.0))
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        initialWait
+                                            + driveToPodium.getDuration()
+                                            + podiumWait
+                                            + grabCenterline0.getDuration()
+                                            + grabCenterline1.getDuration()
+                                            - shootTimeoutSecs.get() / 2.0))
                             .andThen(
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
@@ -130,30 +134,31 @@ public class AutoBuilder {
 
                         // Intake centerline 2
                         waitUntilXCrossed(
-                            FieldConstants.wingX
-                                + DriveConstants.driveConfig.bumperWidthX()
-                                + 0.3,
-                            true)
+                                FieldConstants.wingX
+                                    + DriveConstants.driveConfig.bumperWidthX()
+                                    + 0.3,
+                                true)
                             .andThen(
                                 waitUntilXCrossed(
-                                    FieldConstants.wingX
-                                        + DriveConstants.driveConfig.bumperWidthX()
-                                        + 0.25,
-                                    false)
+                                        FieldConstants.wingX
+                                            + DriveConstants.driveConfig.bumperWidthX()
+                                            + 0.25,
+                                        false)
                                     .deadlineWith(
                                         superstructure.intake(),
                                         rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))),
 
                         // Shoot centerline 2
                         Commands.waitUntil(
-                            () -> autoTimer.hasElapsed(
-                                initialWait
-                                    + driveToPodium.getDuration()
-                                    + podiumWait
-                                    + grabCenterline0.getDuration()
-                                    + grabCenterline1.getDuration()
-                                    + grabCenterline2.getDuration()
-                                    - shootTimeoutSecs.get() / 2.0))
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        initialWait
+                                            + driveToPodium.getDuration()
+                                            + podiumWait
+                                            + grabCenterline0.getDuration()
+                                            + grabCenterline1.getDuration()
+                                            + grabCenterline2.getDuration()
+                                            - shootTimeoutSecs.get() / 2.0))
                             .andThen(
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
@@ -164,5 +169,61 @@ public class AutoBuilder {
 
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
+  }
+
+  public Command unethicalAuto() {
+    var grabAll = new HolonomicTrajectory("unethicalAuto_grabAll");
+    var grabPodium = new HolonomicTrajectory("unethicalAuto_grabPodium");
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            resetPose(grabAll),
+            followTrajectory(drive, grabAll)
+                .deadlineWith(
+                    Commands.sequence(
+                        // Shoot preload
+                        waitUntilXCrossed(FieldConstants.wingX, true)
+                            .deadlineWith(
+                                superstructure.aim(),
+                                flywheels.shootCommand(),
+                                Commands.waitUntil(flywheels::atGoal)
+                                    .andThen(
+                                        rollers
+                                            .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                                            .withTimeout(shootTimeoutSecs.get()))),
+
+                        // Intake and eject
+                        rollers
+                            .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
+                            .alongWith(flywheels.ejectCommand(), superstructure.intake())
+                            .until(
+                                () ->
+                                    RobotState.getInstance().getEstimatedPose().getY()
+                                        < FieldConstants.StagingLocations.centerlineFirstY + 0.5),
+
+                        // Finish intaking
+                        waitUntilXCrossed(FieldConstants.wingX, false)
+                            .deadlineWith(
+                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE),
+                                superstructure.intake(),
+                                flywheels.shootCommand()),
+
+                        // Prepare shot
+                        superstructure.aim().alongWith(flywheels.shootCommand()))),
+
+            // Shoot centerline note
+            rollers
+                .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                .withTimeout(shootTimeoutSecs.get())
+                .deadlineWith(superstructure.aim(), flywheels.shootCommand()),
+
+            // Grab and shoot podium note
+            followTrajectory(drive, grabPodium)
+                .andThen(Commands.waitSeconds(0.5))
+                .deadlineWith(
+                    rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED),
+                    superstructure.aim(),
+                    flywheels.shootCommand()));
   }
 }

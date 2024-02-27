@@ -242,14 +242,6 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption(
-        "Drive Static Characterization",
-        new StaticCharacterization(
-            drive, drive::runCharacterization, drive::getCharacterizationVelocity));
-    autoChooser.addOption(
-        "Flywheels Static Characterization",
-        new StaticCharacterization(
-            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption(
         "Arm Static Characterization",
         new StaticCharacterization(
                 superstructure,
@@ -395,14 +387,18 @@ public class RobotContainer {
     // Adjust shot compensation
     operator
         .povUp()
-        .onTrue(
+        .whileTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
-                .ignoringDisable(true));
+                .andThen(Commands.waitSeconds(0.05))
+                .ignoringDisable(true)
+                .repeatedly());
     operator
         .povDown()
-        .onTrue(
+        .whileTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
-                .ignoringDisable(true));
+                .andThen(Commands.waitSeconds(0.05))
+                .ignoringDisable(true)
+                .repeatedly());
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));

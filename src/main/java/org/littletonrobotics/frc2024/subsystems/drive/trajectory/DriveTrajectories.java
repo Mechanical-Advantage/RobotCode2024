@@ -162,6 +162,8 @@ public class DriveTrajectories {
         "N5-S1-C234_driveToC2",
         List.of(
             PathSegment.newBuilder()
+                .addPoseWaypoint(new Pose2d())
+                .addTranslationWaypoint(new Translation2d(3.0, 0.5))
                 .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
                 .addPoseWaypoint(

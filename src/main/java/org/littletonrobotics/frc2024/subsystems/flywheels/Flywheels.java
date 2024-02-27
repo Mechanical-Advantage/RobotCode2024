@@ -88,7 +88,8 @@ public class Flywheels extends SubsystemBase {
   private Goal goal = Goal.IDLE;
 
   private boolean isDrawingHighCurrent() {
-    return Math.abs(inputs.leftSupplyCurrent) > 50.0 || Math.abs(inputs.rightSupplyCurrent) > 50.0;
+    return Math.abs(inputs.leftSupplyCurrentAmps) > 50.0
+        || Math.abs(inputs.rightSupplyCurrentAmps) > 50.0;
   }
 
   public Flywheels(FlywheelsIO io) {

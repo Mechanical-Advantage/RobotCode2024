@@ -31,7 +31,7 @@ public final class DriveConstants {
                 .bumperWidthX(Units.inchesToMeters(37))
                 .bumperWidthY(Units.inchesToMeters(33))
                 .maxLinearVelocity(Units.feetToMeters(15.0))
-                .maxLinearAcceleration(Units.feetToMeters(15.0 * 3.0))
+                .maxLinearAcceleration(Units.feetToMeters(24.0))
                 .maxAngularVelocity(12.0)
                 .maxAngularAcceleration(6.0)
                 .build();
@@ -99,9 +99,9 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
-                5.0,
-                0.0,
-                35.0,
+                0.23466,
+                0.12025,
+                1.6,
                 0.0,
                 4000.0,
                 50.0,
@@ -138,13 +138,13 @@ public final class DriveConstants {
   public static final ModuleLimits moduleLimitsFlywheelSpinup =
       new ModuleLimits(
           driveConfig.maxLinearVelocity(),
-          driveConfig.maxLinearAcceleration() / 4.0,
+          driveConfig.maxLinearAcceleration() / 2.0,
           Units.degreesToRadians(1080.0));
 
   // Trajectory Following
   public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT -> new TrajectoryConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        case COMPBOT -> TrajectoryConstants.builder().linearkP(15.0).thetakP(12.0).build();
         case DEVBOT ->
             new TrajectoryConstants(
                 6.0,
@@ -224,6 +224,7 @@ public final class DriveConstants {
       double driveReduction,
       double turnReduction) {}
 
+  @Builder
   public record TrajectoryConstants(
       double linearkP,
       double linearkD,

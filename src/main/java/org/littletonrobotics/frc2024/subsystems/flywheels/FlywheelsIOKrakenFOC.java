@@ -40,10 +40,8 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
 
   // Control
   private final Slot0Configs controllerConfig = new Slot0Configs();
-  private final VoltageOut voltageControl = new VoltageOut(0.0).withUpdateFreqHz(0.0);
-  private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-  private final VelocityTorqueCurrentFOC velocityControl =
-      new VelocityTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
+  private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0.0);
+  private final VelocityVoltage velocityControl = new VelocityVoltage(0).withUpdateFreqHz(0.0);
   private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0.0);
 
   public FlywheelsIOKrakenFOC() {
@@ -52,8 +50,8 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
 
     // General config
     TalonFXConfiguration config = new TalonFXConfiguration();
-    config.TorqueCurrent.PeakForwardTorqueCurrent = 100.0;
-    config.TorqueCurrent.PeakReverseTorqueCurrent = -100.0;
+    config.CurrentLimits.SupplyCurrentLimit = 60.0;
+    config.CurrentLimits.SupplyCurrentLimitEnable = true;
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     config.Feedback.SensorToMechanismRatio = flywheelConfig.reduction();
@@ -156,9 +154,12 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   }
 
   @Override
-  public void runVelocity(double leftRpm, double rightRpm) {
-    leftTalon.setControl(velocityControl.withVelocity(leftRpm / 60.0));
-    rightTalon.setControl(velocityControl.withVelocity(rightRpm / 60.0));
+  public void runVelocity(
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {
+    leftTalon.setControl(
+        velocityControl.withVelocity(leftRpm / 60.0).withFeedForward(leftFeedforward));
+    rightTalon.setControl(
+        velocityControl.withVelocity(rightRpm / 60.0).withFeedForward(rightFeedforward));
   }
 
   @Override
@@ -171,21 +172,12 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   }
 
   @Override
-  public void setFF(double kS, double kV, double kA) {
-    controllerConfig.kS = kS;
-    controllerConfig.kV = kV;
-    controllerConfig.kA = kA;
-    leftTalon.getConfigurator().apply(controllerConfig);
-    rightTalon.getConfigurator().apply(controllerConfig);
-  }
-
-  @Override
   public void runCharacterizationLeft(double input) {
-    leftTalon.setControl(currentControl.withOutput(input));
+    leftTalon.setControl(voltageControl.withOutput(input));
   }
 
   @Override
   public void runCharacterizationRight(double input) {
-    rightTalon.setControl(currentControl.withOutput(input));
+    rightTalon.setControl(voltageControl.withOutput(input));
   }
 }

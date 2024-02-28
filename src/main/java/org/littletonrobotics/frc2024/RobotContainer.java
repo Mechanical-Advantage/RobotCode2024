@@ -325,8 +325,7 @@ public class RobotContainer {
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
-                    Commands.waitSeconds(0.5),
-                    Commands.waitUntil(driver.rightTrigger().negate()))
+                    Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
@@ -408,8 +407,7 @@ public class RobotContainer {
             () ->
                 superstructure.getDesiredGoal() == Superstructure.Goal.AMP
                     && superstructure.atGoal())
-        .whileTrue(
-            rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
+        .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -433,6 +431,17 @@ public class RobotContainer {
 
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());
+
+    // Start flywheels
+    operator.x().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
+
+    // Unjam intake
+    operator
+        .y()
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)));
 
     // Reset heading
     driver

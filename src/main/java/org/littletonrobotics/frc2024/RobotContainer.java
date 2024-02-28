@@ -365,6 +365,16 @@ public class RobotContainer {
                         .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
                 .withName("Eject To Floor"));
 
+    // Intake source
+    driver
+        .rightBumper()
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.STATION_INTAKE)
+                .alongWith(
+                    rollers.setGoalCommand(Rollers.Goal.STATION_INTAKE), flywheels.intakeCommand())
+                .withName("Source Intake"));
+
     // ------------- Amp Scoring Controls -------------
     Supplier<Pose2d> ampAlignedPose =
         () -> {

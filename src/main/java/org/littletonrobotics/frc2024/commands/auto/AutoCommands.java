@@ -10,17 +10,12 @@ package org.littletonrobotics.frc2024.commands.auto;
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
-import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
-import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
-import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
@@ -80,54 +75,6 @@ public class AutoCommands {
   /** Command that waits for x boundary to be crossed. See {@link #xCrossed(double, boolean)} */
   public static Command waitUntilXCrossed(double xPosition, boolean towardsCenterline) {
     return Commands.waitUntil(() -> xCrossed(xPosition, towardsCenterline));
-  }
-
-  /** Runs intake until the gamepiece is collected, does not end in sim */
-  public static Command intake(Superstructure superstructure, Rollers rollers) {
-    return parallel(
-        superstructure.intake(),
-        Commands.waitUntil(superstructure::atGoal)
-            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)));
-  }
-
-  /** Shoots note, ending after rollers have spun */
-  public static Command shoot(
-      Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
-    Supplier<Rotation2d> aimHeadingSupplier =
-        () -> RobotState.getInstance().getAimingParameters().driveHeading();
-    return parallel(
-            // Aim and spin up flywheels
-            startEnd(() -> drive.setHeadingGoal(aimHeadingSupplier), drive::clearHeadingGoal),
-            superstructure.aim())
-        // End command when ready to shoot and rollers have spun
-        .raceWith(
-            Commands.waitUntil(
-                    () -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal())
-                .andThen(
-                    rollers
-                        .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                        .withTimeout(shootTimeoutSecs.get())));
-  }
-
-  public static Command shootNoDrive(
-      Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
-    return parallel(superstructure.aim())
-        .raceWith(
-            Commands.waitUntil(() -> superstructure.atGoal() && flywheels.atGoal())
-                .andThen(
-                    rollers
-                        .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                        .withTimeout(shootTimeoutSecs.get())));
-  }
-
-  /**
-   * Runs intake and feeder while aiming at speaker essentially shooting immediately after acquiring
-   * game piece. Command does not end.
-   */
-  public static Command intakeIntoEject(Flywheels flywheels, Rollers rollers) {
-    return parallel(
-        // Aim and spin up flywheels
-        flywheels.ejectCommand(), rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED));
   }
 
   // reset Path and call followTrajectory

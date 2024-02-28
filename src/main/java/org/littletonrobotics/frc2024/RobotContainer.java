@@ -266,7 +266,8 @@ public class RobotContainer {
                 new WheelRadiusCharacterization(
                     drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
-    autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
+    autoChooser.addOption(
+        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -294,8 +295,10 @@ public class RobotContainer {
         () ->
             Commands.either(
                 Commands.either(
-                    superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
-                superstructure.aim(),
+                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
+                    () -> podiumShotMode),
+                superstructure.setGoalCommand(Superstructure.Goal.AIM),
                 shootPresets);
     Supplier<Command> driveAimCommand =
         () ->
@@ -346,7 +349,7 @@ public class RobotContainer {
         .leftTrigger()
         .whileTrue(
             superstructure
-                .intake()
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
@@ -357,7 +360,7 @@ public class RobotContainer {
         .leftBumper()
         .whileTrue(
             superstructure
-                .intake()
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
@@ -368,7 +371,7 @@ public class RobotContainer {
         .rightBumper()
         .whileTrue(
             superstructure
-                .amp()
+                .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.either(
                         Commands.none(),

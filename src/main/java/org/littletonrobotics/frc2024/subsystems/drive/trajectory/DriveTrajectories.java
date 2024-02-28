@@ -47,47 +47,35 @@ public class DriveTrajectories {
   public static final Pose2d startingCenterLine =
       new Pose2d(
           FieldConstants.startingLineX - 0.5,
-          FieldConstants.Stage.podiumLeg.getY() + 0.5,
+          FieldConstants.Stage.podiumLeg.getY(),
           Rotation2d.fromDegrees(180.0));
 
   static {
     // Davis Ethical Auto (5 Note)
-    Pose2d podiumShootingPose =
-        getShootingPose(
-            FieldConstants.Stage.podiumLeg
-                .transformBy(new Translation2d(-0.7, 0.2).toTransform2d())
-                .getTranslation());
     Pose2d stageRightShootingPose =
         getShootingPose(
-            FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.8, -1.6)));
+            FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
     Pose2d stageLeftShootingPose =
         getShootingPose(
             FieldConstants.Stage.podiumLeg
                 .getTranslation()
                 .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
-                .plus(new Translation2d(-0.1, 0.2)));
+                .plus(new Translation2d(-0.15, 0.2)));
     Translation2d stageRightAvoidance =
         FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
     Translation2d stageCenterAvoidance =
         FieldConstants.Stage.sourceLeg
             .getTranslation()
-            .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.55);
-    paths.put(
-        "davisEthicalAuto_driveToPodium",
-        List.of(
-            PathSegment.newBuilder()
-                .addPoseWaypoint(startingCenterLine)
-                .addPoseWaypoint(
-                    podiumShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                .addPoseWaypoint(podiumShootingPose)
-                .build()));
+            .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
     paths.put(
         "davisEthicalAuto_grabCenterline0",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(podiumShootingPose)
+                .addPoseWaypoint(getShootingPose(startingCenterLine.getTranslation()))
                 .addTranslationWaypoint(
-                    podiumShootingPose.getTranslation().plus(new Translation2d(0.2, -1.0)))
+                    FieldConstants.Stage.podiumLeg
+                        .getTranslation()
+                        .plus(new Translation2d(0.5, -2.0)))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[0],
@@ -106,12 +94,12 @@ public class DriveTrajectories {
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[1],
                             Rotation2d.fromDegrees(-160.0))
-                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[1],
                             Rotation2d.fromDegrees(160.0))
-                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
@@ -136,72 +124,75 @@ public class DriveTrajectories {
         getShootingPose(
             FieldConstants.StagingLocations.spikeTranslations[1].interpolate(
                 FieldConstants.StagingLocations.spikeTranslations[2], 0.5));
-    paths.put(
-        "unethicalAuto_grabAll",
-        List.of(
-            PathSegment.newBuilder()
-                .addPoseWaypoint(startingCenterFace)
-                .addPoseWaypoint(
-                    movingShotCenter.transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
-                .build(),
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    movingShotCenter.transformBy(new Translation2d(-0.25, 0.0).toTransform2d()))
-                .setMaxOmega(0.0)
-                .setStraightLine(true)
-                .build(),
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    new Pose2d(
-                        FieldConstants.StagingLocations.centerlineTranslations[4].plus(
-                            new Translation2d(-1.0, 0.0)),
-                        Rotation2d.fromDegrees(180.0)))
-                .build(),
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    new Pose2d(
-                        FieldConstants.StagingLocations.centerlineTranslations[4].plus(
-                            new Translation2d(-0.3, -0.1)),
-                        Rotation2d.fromDegrees(180.0)))
-                .setMaxOmega(0.0)
-                .build(),
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    new Pose2d(
-                        FieldConstants.StagingLocations.centerlineTranslations[3].plus(
-                            new Translation2d(-0.3, 0.4)),
-                        Rotation2d.fromDegrees(135.0)))
-                .setStraightLine(true)
-                .setMaxVelocity(intakeMaxVelocity)
-                .build(),
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    new Pose2d(
-                        FieldConstants.StagingLocations.centerlineTranslations[0].plus(
-                            new Translation2d(-0.3, 0.4)),
-                        Rotation2d.fromDegrees(135.0)))
-                .setMaxOmega(0.0)
-                .setStraightLine(true)
-                .setMaxVelocity(intakeMaxVelocity)
-                .build(),
-            PathSegment.newBuilder()
-                .addTranslationWaypoint(
-                    FieldConstants.StagingLocations.centerlineTranslations[0].plus(
-                        new Translation2d(-1.0, 0.0)))
-                .addTranslationWaypoint(
-                    FieldConstants.Stage.podiumLeg
-                        .getTranslation()
-                        .plus(new Translation2d(-1.5, 0.0)))
-                .addPoseWaypoint(
-                    podiumShootingPose.transformBy(new Translation2d(0.65, 0.0).toTransform2d()))
-                .build()));
-    paths.put(
-        "unethicalAuto_grabPodium",
-        List.of(
-            PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("unethicalAuto_grabAll"))
-                .addPoseWaypoint(podiumShootingPose)
-                .build()));
+    //    paths.put(
+    //        "unethicalAuto_grabAll",
+    //        List.of(
+    //            PathSegment.newBuilder()
+    //                .addPoseWaypoint(startingCenterFace)
+    //                .addPoseWaypoint(
+    //                    movingShotCenter.transformBy(new Translation2d(0.25,
+    // 0.0).toTransform2d()))
+    //                .build(),
+    //            PathSegment.newBuilder()
+    //                .addPoseWaypoint(
+    //                    movingShotCenter.transformBy(new Translation2d(-0.25,
+    // 0.0).toTransform2d()))
+    //                .setMaxOmega(0.0)
+    //                .setStraightLine(true)
+    //                .build(),
+    //            PathSegment.newBuilder()
+    //                .addPoseWaypoint(
+    //                    new Pose2d(
+    //                        FieldConstants.StagingLocations.centerlineTranslations[4].plus(
+    //                            new Translation2d(-1.0, 0.0)),
+    //                        Rotation2d.fromDegrees(180.0)))
+    //                .build(),
+    //            PathSegment.newBuilder()
+    //                .addPoseWaypoint(
+    //                    new Pose2d(
+    //                        FieldConstants.StagingLocations.centerlineTranslations[4].plus(
+    //                            new Translation2d(-0.3, -0.1)),
+    //                        Rotation2d.fromDegrees(180.0)))
+    //                .setMaxOmega(0.0)
+    //                .build(),
+    //            PathSegment.newBuilder()
+    //                .addPoseWaypoint(
+    //                    new Pose2d(
+    //                        FieldConstants.StagingLocations.centerlineTranslations[3].plus(
+    //                            new Translation2d(-0.3, 0.4)),
+    //                        Rotation2d.fromDegrees(135.0)))
+    //                .setStraightLine(true)
+    //                .setMaxVelocity(intakeMaxVelocity)
+    //                .build(),
+    //            PathSegment.newBuilder()
+    //                .addPoseWaypoint(
+    //                    new Pose2d(
+    //                        FieldConstants.StagingLocations.centerlineTranslations[0].plus(
+    //                            new Translation2d(-0.3, 0.4)),
+    //                        Rotation2d.fromDegrees(135.0)))
+    //                .setMaxOmega(0.0)
+    //                .setStraightLine(true)
+    //                .setMaxVelocity(intakeMaxVelocity)
+    //                .build(),
+    //            PathSegment.newBuilder()
+    //                .addTranslationWaypoint(
+    //                    FieldConstants.StagingLocations.centerlineTranslations[0].plus(
+    //                        new Translation2d(-1.0, 0.0)))
+    //                .addTranslationWaypoint(
+    //                    FieldConstants.Stage.podiumLeg
+    //                        .getTranslation()
+    //                        .plus(new Translation2d(-1.5, 0.0)))
+    //                .addPoseWaypoint(
+    //                    podiumShootingPose.transformBy(new Translation2d(0.65,
+    // 0.0).toTransform2d()))
+    //                .build()));
+    //    paths.put(
+    //        "unethicalAuto_grabPodium",
+    //        List.of(
+    //            PathSegment.newBuilder()
+    //                .addWaypoints(getLastWaypoint("unethicalAuto_grabAll"))
+    //                .addPoseWaypoint(podiumShootingPose)
+    //                .build()));
   }
 
   // calculate Pose2d of robot given a translation

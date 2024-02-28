@@ -22,7 +22,7 @@ public class Feeder extends GenericRollerSystem<Feeder.Goal> {
   @Getter
   public enum Goal implements VoltageGoal {
     IDLING(() -> 0.0),
-    FLOOR_INTAKING(new LoggedTunableNumber("Feeder/FloorIntakingVoltage", 8.0)),
+    FLOOR_INTAKING(new LoggedTunableNumber("Feeder/FloorIntakingVoltage", 10.0)),
     SHOOTING(new LoggedTunableNumber("Feeder/Shooting", 8.0)),
     EJECTING(new LoggedTunableNumber("Feeder/EjectingVoltage", -6.0));
 

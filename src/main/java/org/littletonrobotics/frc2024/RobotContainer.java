@@ -241,7 +241,7 @@ public class RobotContainer {
 
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
-    autoChooser.addOption("Unethical Auto", autoBuilder.unethicalAuto());
+    //    autoChooser.addOption("Unethical Auto", autoBuilder.unethicalAuto());
 
     // Set up feedforward characterization
     autoChooser.addOption(

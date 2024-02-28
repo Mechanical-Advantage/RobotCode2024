@@ -40,7 +40,7 @@ public class GenerateTrajectories {
             .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
             .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
-            .setMaxWheelTorque(3.2)
+            .setMaxWheelTorque(3.0)
             .setMaxWheelOmega(
                 DriveConstants.moduleLimitsFree.maxDriveVelocity()
                     / DriveConstants.driveConfig.wheelRadius()
@@ -114,7 +114,7 @@ public class GenerateTrajectories {
             "\r"
                 + entry.getKey()
                 + " - Finished in "
-                + Double.toString(Math.round((endTime - startTime) / 100.0) / 10.0)
+                + Math.round((endTime - startTime) / 100.0) / 10.0
                 + " secs ✅");
       } catch (IOException e) {
         System.out.println("\r" + entry.getKey() + " - FAILED ⛔️");

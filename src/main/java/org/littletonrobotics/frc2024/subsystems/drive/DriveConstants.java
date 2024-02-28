@@ -144,7 +144,7 @@ public final class DriveConstants {
   // Trajectory Following
   public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT -> TrajectoryConstants.builder().linearkP(15.0).thetakP(12.0).build();
+        case COMPBOT -> TrajectoryConstants.builder().linearkP(8.0).thetakP(10.0).build();
         case DEVBOT ->
             new TrajectoryConstants(
                 6.0,

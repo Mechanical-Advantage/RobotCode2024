@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -31,25 +32,41 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Arm {
-  private static final LoggedTunableNumber kP = new LoggedTunableNumber("Arm/kP", gains.kP());
-  private static final LoggedTunableNumber kI = new LoggedTunableNumber("Arm/kI", gains.kI());
-  private static final LoggedTunableNumber kD = new LoggedTunableNumber("Arm/kD", gains.kD());
-  private static final LoggedTunableNumber kS = new LoggedTunableNumber("Arm/kS", gains.ffkS());
-  private static final LoggedTunableNumber kV = new LoggedTunableNumber("Arm/kV", gains.ffkV());
-  private static final LoggedTunableNumber kA = new LoggedTunableNumber("Arm/kA", gains.ffkA());
-  private static final LoggedTunableNumber kG = new LoggedTunableNumber("Arm/kG", gains.ffkG());
+  private static final LoggedTunableNumber kP = new LoggedTunableNumber("Arm/Gains/kP", gains.kP());
+  private static final LoggedTunableNumber kI = new LoggedTunableNumber("Arm/Gains/kI", gains.kI());
+  private static final LoggedTunableNumber kD = new LoggedTunableNumber("Arm/Gains/kD", gains.kD());
+  private static final LoggedTunableNumber kS =
+      new LoggedTunableNumber("Arm/Gains/kS", gains.ffkS());
+  private static final LoggedTunableNumber kV =
+      new LoggedTunableNumber("Arm/Gains/kV", gains.ffkV());
+  private static final LoggedTunableNumber kA =
+      new LoggedTunableNumber("Arm/Gains/kA", gains.ffkA());
+  private static final LoggedTunableNumber kG =
+      new LoggedTunableNumber("Arm/Gains/kG", gains.ffkG());
   private static final LoggedTunableNumber maxVelocity =
       new LoggedTunableNumber("Arm/Velocity", profileConstraints.maxVelocity);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
-  private static final LoggedTunableNumber slowVelocity =
-      new LoggedTunableNumber("Arm/SlowVelocity", profileConstraints.maxVelocity);
-  private static final LoggedTunableNumber slowAcceleration =
-      new LoggedTunableNumber("Arm/SlowAcceleration", 2.0);
+  private static final LoggedTunableNumber smoothVelocity =
+      new LoggedTunableNumber("Arm/SmoothVelocity", 2.5);
+  private static final LoggedTunableNumber smoothAcceleration =
+      new LoggedTunableNumber("Arm/SmoothAcceleration", 4.0);
+  private static final LoggedTunableNumber prepareClimbVelocity =
+      new LoggedTunableNumber("Arm/PrepareClimbVelocity", 1.5);
+  private static final LoggedTunableNumber prepareClimbAcceleration =
+      new LoggedTunableNumber("Arm/PrepareClimbAcceleration", 1.0);
   private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
       new LoggedTunableNumber("Arm/UpperLimitDegrees", maxAngle.getDegrees());
+  // Profile constraints
+  public static final Supplier<TrapezoidProfile.Constraints> maxProfileConstraints =
+      () -> new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get());
+  public static final Supplier<TrapezoidProfile.Constraints> smoothProfileConstraints =
+      () -> new TrapezoidProfile.Constraints(smoothVelocity.get(), smoothAcceleration.get());
+  public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints =
+      () ->
+          new TrapezoidProfile.Constraints(prepareClimbVelocity.get(), prepareClimbVelocity.get());
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -79,7 +96,8 @@ public class Arm {
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
-  private TrapezoidProfile motionProfile;
+  private TrapezoidProfile.Constraints currentConstraints = maxProfileConstraints.get();
+  private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
   private ArmFeedforward ff;
 
@@ -102,7 +120,7 @@ public class Arm {
     this.io = io;
     io.setBrakeMode(true);
 
-    motionProfile =
+    profile =
         new TrapezoidProfile(
             new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
     io.setPID(kP.get(), kI.get(), kD.get());
@@ -140,14 +158,6 @@ public class Arm {
         kG,
         kV,
         kA);
-    LoggedTunableNumber.ifChanged(
-        hashCode(),
-        constraints ->
-            motionProfile =
-                new TrapezoidProfile(
-                    new TrapezoidProfile.Constraints(constraints[0], constraints[1])),
-        maxVelocity,
-        maxAcceleration);
 
     // Check if disabled
     if (disableSupplier.getAsBoolean() || goal == Goal.STOP) {
@@ -159,20 +169,6 @@ public class Arm {
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
 
-    if (lastGoal != goal && goal != Goal.STOP) {
-      // Update profile constraints when prepare climb
-      if (goal == Goal.PREPARE_CLIMB) {
-        motionProfile =
-            new TrapezoidProfile(
-                new TrapezoidProfile.Constraints(slowVelocity.get(), slowAcceleration.get()));
-      } else {
-        motionProfile =
-            new TrapezoidProfile(
-                new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()));
-      }
-      lastGoal = goal;
-    }
-
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing
         && brakeModeEnabled
@@ -180,7 +176,7 @@ public class Arm {
         && goal != Goal.STOP) {
       // Run closed loop
       setpointState =
-          motionProfile.calculate(
+          profile.calculate(
               Constants.loopPeriodSecs,
               setpointState,
               new TrapezoidProfile.State(
@@ -217,6 +213,14 @@ public class Arm {
     if (brakeModeEnabled == enabled) return;
     brakeModeEnabled = enabled;
     io.setBrakeMode(brakeModeEnabled);
+  }
+
+  public void setProfileConstraints(TrapezoidProfile.Constraints constraints) {
+    if (EqualsUtil.epsilonEquals(currentConstraints.maxVelocity, constraints.maxVelocity)
+        && EqualsUtil.epsilonEquals(currentConstraints.maxAcceleration, constraints.maxVelocity))
+      return;
+    currentConstraints = constraints;
+    profile = new TrapezoidProfile(currentConstraints);
   }
 
   public void runCharacterization(double amps) {

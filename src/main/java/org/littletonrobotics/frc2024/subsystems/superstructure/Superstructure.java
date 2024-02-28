@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -58,6 +59,7 @@ public class Superstructure extends SubsystemBase {
       arm.stop();
     }
 
+    // Retract climber
     if (!climber.retracted()
         && desiredGoal != Goal.PREPARE_CLIMB
         && desiredGoal != Goal.CLIMB
@@ -152,14 +154,24 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
+  /** Set goal of superstructure */
   public void setGoal(Goal goal) {
     if (desiredGoal == goal) return;
     desiredGoal = goal;
   }
 
+  /** Command to set goal of superstructure */
   public Command setGoalCommand(Goal goal) {
     return startEnd(() -> setGoal(goal), () -> setGoal(Goal.STOW))
         .withName("Superstructure " + goal);
+  }
+
+  /** Command to set goal of superstructure with additional profile constraints on arm */
+  public Command setGoalWithConstraintsCommand(
+      Goal goal, TrapezoidProfile.Constraints armProfileConstraints) {
+    return setGoalCommand(goal)
+        .beforeStarting(() -> arm.setProfileConstraints(armProfileConstraints))
+        .finallyDo(() -> arm.setProfileConstraints(Arm.maxProfileConstraints.get()));
   }
 
   @AutoLogOutput(key = "Superstructure/CompletedGoal")

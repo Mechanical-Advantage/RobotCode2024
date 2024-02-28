@@ -48,9 +48,9 @@ public class Arm {
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
   private static final LoggedTunableNumber smoothVelocity =
-      new LoggedTunableNumber("Arm/SmoothVelocity", 2.5);
+      new LoggedTunableNumber("Arm/SmoothVelocity", profileConstraints.maxVelocity * 0.75);
   private static final LoggedTunableNumber smoothAcceleration =
-      new LoggedTunableNumber("Arm/SmoothAcceleration", 4.0);
+      new LoggedTunableNumber("Arm/SmoothAcceleration", profileConstraints.maxAcceleration * 0.5);
   private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =

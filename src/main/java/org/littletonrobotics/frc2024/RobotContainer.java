@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
@@ -52,10 +53,8 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
-import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
-import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
-import org.littletonrobotics.frc2024.util.OverrideSwitches;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 /**
@@ -92,6 +91,7 @@ public class RobotContainer {
       new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
+
   private boolean podiumShotMode = false;
 
   // Dashboard inputs
@@ -367,24 +367,49 @@ public class RobotContainer {
                 .withName("Eject To Floor"));
 
     // ------------- Amp Scoring Controls -------------
+    Supplier<Pose2d> ampAlignedPose =
+        () -> {
+          Pose2d ampCenterRotated =
+              AllianceFlipUtil.apply(
+                  new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
+          return ampCenterRotated.transformBy(
+              GeomUtil.toTransform2d(
+                  Units.inchesToMeters(20.0) // End of intake bumper to center robot
+                      + Units.inchesToMeters(10.0),
+                  0));
+        };
     controller
-        .rightBumper()
+        .b()
         .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.AMP)
+            Commands.either(
+                    Commands.none(),
+                    drive.startEnd(
+                        () -> drive.setAutoAlignGoal(ampAlignedPose, false),
+                        drive::clearAutoAlignGoal),
+                    autoDriveDisable)
                 .alongWith(
-                    Commands.either(
-                        Commands.none(),
-                        Commands.startEnd(
-                            () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
-                            drive::clearHeadingGoal),
-                        autoDriveDisable)));
+                    Commands.waitUntil(
+                            () -> {
+                              if (autoDriveDisable.getAsBoolean()) return true;
+                              Pose2d poseError =
+                                  RobotState.getInstance()
+                                      .getEstimatedPose()
+                                      .relativeTo(ampAlignedPose.get());
+                              return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
+                                  && Math.abs(poseError.getRotation().getDegrees()) <= 120;
+                            })
+                        .andThen(
+                            superstructure.setGoalWithConstraintsCommand(
+                                Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get()))));
     controller
-        .rightBumper()
-        .and(controller.rightTrigger())
+        .rightTrigger()
+        .and(controller.b())
+        .and(
+            () ->
+                superstructure.getDesiredGoal() == Superstructure.Goal.AMP
+                    && superstructure.atGoal())
         .whileTrue(
-            Commands.waitUntil(superstructure::atGoal)
-                .andThen(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
+            rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(controller.rightTrigger()));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -409,14 +434,9 @@ public class RobotContainer {
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());
 
-    // Reset pose
+    // Reset heading
     controller
         .y()
-        .onTrue(
-            Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(new Pose2d())))
-                .ignoringDisable(true));
-    controller
-        .b()
         .onTrue(
             Commands.runOnce(
                     () ->

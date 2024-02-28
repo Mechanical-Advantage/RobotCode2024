@@ -163,20 +163,6 @@ public final class DriveConstants {
                 driveConfig.maxAngularVelocity() / 2.0);
       };
 
-  // Auto Align
-  public static final AutoAlignConstants autoAlignConstants =
-      new AutoAlignConstants(
-          6.0,
-          0.0,
-          5.0,
-          0.0,
-          Units.inchesToMeters(2.0),
-          Units.degreesToRadians(2.0),
-          driveConfig.maxLinearVelocity(),
-          driveConfig.maxLinearAcceleration() * 0.5,
-          driveConfig.maxAngularVelocity() * 0.3,
-          driveConfig.maxAngularAcceleration() * 0.5);
-
   // Swerve Heading Control
   public static final HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {

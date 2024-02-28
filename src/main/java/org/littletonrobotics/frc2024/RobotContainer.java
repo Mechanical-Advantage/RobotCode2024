@@ -56,7 +56,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -92,8 +91,6 @@ public class RobotContainer {
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   private boolean podiumShotMode = false;
-  private static final LoggedDashboardNumber ampOffsetInches =
-      new LoggedDashboardNumber("Driver/AmpOffsetInches");
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -365,18 +362,6 @@ public class RobotContainer {
                 .withName("Eject To Floor"));
 
     // ------------- Amp Scoring Controls -------------
-    //    controller
-    //        .rightBumper()
-    //        .whileTrue(
-    //            superstructure
-    //                .amp()
-    //                .alongWith(
-    //                    Commands.either(
-    //                        Commands.none(),
-    //                        Commands.startEnd(
-    //                            () -> drive.setHeadingGoal(() -> new Rotation2d(-Math.PI / 2.0)),
-    //                            drive::clearHeadingGoal),
-    //                        autoDriveDisable)));
     Supplier<Pose2d> ampAlignedPose =
         () -> {
           Pose2d ampCenterRotated =
@@ -384,8 +369,8 @@ public class RobotContainer {
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           return ampCenterRotated.transformBy(
               GeomUtil.toTransform2d(
-                  DriveConstants.driveConfig.bumperWidthX() / 2.0
-                      + Units.inchesToMeters(ampOffsetInches.get()),
+                  Units.inchesToMeters(20.0) // End of intake bumper to center robot
+                      + Units.inchesToMeters(4.0),
                   0));
         };
     controller
@@ -405,7 +390,7 @@ public class RobotContainer {
                                   RobotState.getInstance()
                                       .getEstimatedPose()
                                       .relativeTo(ampAlignedPose.get());
-                              return poseError.getTranslation().getNorm() <= Units.feetToMeters(3.0)
+                              return poseError.getTranslation().getNorm() <= Units.feetToMeters(2.0)
                                   && Math.abs(poseError.getRotation().getRotations()) <= 0.25;
                             })
                         .andThen(superstructure.amp()),

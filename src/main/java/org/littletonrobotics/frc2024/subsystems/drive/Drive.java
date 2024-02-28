@@ -239,9 +239,6 @@ public class Drive extends SubsystemBase {
       case AUTO_ALIGN -> {
         // Run auto align with drive input
         desiredSpeeds = autoAlignController.update();
-        desiredSpeeds.vxMetersPerSecond += teleopSpeeds.vxMetersPerSecond * 0.1;
-        desiredSpeeds.vyMetersPerSecond += teleopSpeeds.vyMetersPerSecond * 0.1;
-        desiredSpeeds.omegaRadiansPerSecond += teleopSpeeds.omegaRadiansPerSecond * 0.1;
       }
       case CHARACTERIZATION -> {
         // Run characterization

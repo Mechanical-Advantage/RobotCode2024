@@ -88,6 +88,8 @@ public class RobotContainer {
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
+  private final Alert operatorDisconnected =
+      new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private boolean podiumShotMode = false;
@@ -225,12 +227,12 @@ public class RobotContainer {
     configureAutos();
     configureButtonBindings();
 
+    // Alerts for constants
     if (Constants.aprilTagType != Constants.AprilTagType.OFFICIAL) {
-      new Alert("Non-official april tag layout selected", AlertType.WARNING).set(true);
+      new Alert("Non-official april tag layout selected", AlertType.INFO).set(true);
     }
-
     if (Constants.tuningMode) {
-      new Alert("Tuning mode enabled", AlertType.WARNING).set(true);
+      new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
   }
 
@@ -427,6 +429,9 @@ public class RobotContainer {
     driverDisconnected.set(
         !DriverStation.isJoystickConnected(controller.getHID().getPort())
             || !DriverStation.getJoystickIsXbox(controller.getHID().getPort()));
+    operatorDisconnected.set(
+        !DriverStation.isJoystickConnected(operator.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(operator.getHID().getPort()));
     overrideDisconnected.set(!overrides.isConnected());
   }
 

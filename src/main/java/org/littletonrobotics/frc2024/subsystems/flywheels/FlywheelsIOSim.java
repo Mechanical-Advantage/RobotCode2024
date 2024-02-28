@@ -63,6 +63,8 @@ public class FlywheelsIOSim implements FlywheelsIO {
 
   @Override
   public void runVolts(double leftVolts, double rightVolts) {
+    leftSetpointRpm = null;
+    rightSetpointRpm = null;
     leftAppliedVolts = MathUtil.clamp(leftVolts, -12.0, 12.0);
     rightAppliedVolts = MathUtil.clamp(rightVolts, -12.0, 12.0);
     leftSim.setInputVoltage(leftAppliedVolts);

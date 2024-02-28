@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure;
 
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -39,7 +40,7 @@ public class Superstructure extends SubsystemBase {
   public Superstructure(Arm arm) {
     this.arm = arm;
 
-    setDefaultCommand(runOnce(this::stow).withName("Superstructure Stowing"));
+    setDefaultCommand(setGoalCommand(Goal.STOW));
   }
 
   @Override
@@ -69,46 +70,29 @@ public class Superstructure extends SubsystemBase {
     Logger.recordOutput("Superstructure/CurrentState", currentGoal);
   }
 
+  /** Set goal of superstructure */
+  private void setGoal(Goal goal) {
+    if (desiredGoal == goal) return;
+    desiredGoal = goal;
+  }
+
+  /** Command to set goal of superstructure */
+  public Command setGoalCommand(Goal goal) {
+    return startEnd(() -> setGoal(goal), () -> setGoal(Goal.STOW))
+        .withName("Superstructure " + goal);
+  }
+
+  /** Command to set goal of superstructure with additional profile constraints on arm */
+  public Command setGoalWithConstraintsCommand(
+      Goal goal, TrapezoidProfile.Constraints armProfileConstraints) {
+    return setGoalCommand(goal)
+        .beforeStarting(() -> arm.setProfileConstraints(armProfileConstraints))
+        .finallyDo(() -> arm.setProfileConstraints(Arm.maxProfileConstraints.get()));
+  }
+
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
     return currentGoal == desiredGoal && arm.atGoal();
-  }
-
-  public void stow() {
-    desiredGoal = Goal.STOW;
-  }
-
-  public Command aim() {
-    return startEnd(() -> desiredGoal = Goal.AIM, this::stow).withName("Superstructure Aiming");
-  }
-
-  public Command subwoofer() {
-    return startEnd(() -> desiredGoal = Goal.SUBWOOFER, this::stow)
-        .withName("Superstructure Subwoofer Aiming");
-  }
-
-  public Command podium() {
-    return startEnd(() -> desiredGoal = Goal.PODIUM, this::stow)
-        .withName("Superstructure Podium Aiming");
-  }
-
-  public Command intake() {
-    return startEnd(() -> desiredGoal = Goal.INTAKE, this::stow)
-        .withName("Superstructure Intaking");
-  }
-
-  public Command amp() {
-    return startEnd(() -> desiredGoal = Goal.AMP, this::stow).withName("Superstructure Amping");
-  }
-
-  public Command stationIntake() {
-    return startEnd(() -> desiredGoal = Goal.STATION_INTAKE, this::stow)
-        .withName("Superstructure Station Intaking");
-  }
-
-  public Command diagnoseArm() {
-    return startEnd(() -> desiredGoal = Goal.DIAGNOSTIC_ARM, this::stow)
-        .withName("Arm Custom Goal");
   }
 
   public void runArmCharacterization(double input) {

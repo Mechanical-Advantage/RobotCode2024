@@ -28,12 +28,10 @@ public class HeadingController {
       new LoggedTunableNumber("HeadingController/kP", headingControllerConstants.kP());
   private static final LoggedTunableNumber kD =
       new LoggedTunableNumber("HeadingController/kD", headingControllerConstants.kD());
-  private static final LoggedTunableNumber maxVelocity =
-      new LoggedTunableNumber(
-          "HeadingController/MaxVelocity", headingControllerConstants.maxVelocity());
-  private static final LoggedTunableNumber maxAcceleration =
-      new LoggedTunableNumber(
-          "HeadingController/MaxAcceleration", headingControllerConstants.maxAcceleration());
+  private static final LoggedTunableNumber maxVelocityMultipler =
+      new LoggedTunableNumber("HeadingController/MaxVelocityMultipler", 0.8);
+  private static final LoggedTunableNumber maxAccelerationMultipler =
+      new LoggedTunableNumber("HeadingController/MaxAccelerationMultipler", 0.8);
   private static final LoggedTunableNumber toleranceDegrees =
       new LoggedTunableNumber("HeadingController/ToleranceDegrees", 1.0);
 
@@ -46,7 +44,7 @@ public class HeadingController {
             kP.get(),
             0,
             kD.get(),
-            new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get()),
+            new TrapezoidProfile.Constraints(0.0, 0.0),
             Constants.loopPeriodSecs);
     controller.enableContinuousInput(-Math.PI, Math.PI);
     controller.setTolerance(Units.degreesToRadians(toleranceDegrees.get()));
@@ -65,9 +63,13 @@ public class HeadingController {
 
     ModuleLimits moduleLimits = RobotState.getInstance().getModuleLimits();
     double maxAngularAcceleration =
-        moduleLimits.maxDriveAcceleration() / DriveConstants.driveConfig.driveBaseRadius();
+        moduleLimits.maxDriveAcceleration()
+            / DriveConstants.driveConfig.driveBaseRadius()
+            * maxAccelerationMultipler.get();
     double maxAngularVelocity =
-        moduleLimits.maxDriveVelocity() / DriveConstants.driveConfig.driveBaseRadius();
+        moduleLimits.maxDriveVelocity()
+            / DriveConstants.driveConfig.driveBaseRadius()
+            * maxVelocityMultipler.get();
     controller.setConstraints(
         new TrapezoidProfile.Constraints(maxAngularVelocity, maxAngularAcceleration));
 

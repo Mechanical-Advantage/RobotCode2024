@@ -20,6 +20,7 @@ import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Rollers extends SubsystemBase {
@@ -51,7 +52,7 @@ public class Rollers extends SubsystemBase {
   }
 
   @Getter private Goal goal = Goal.IDLE;
-  @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
+  @AutoLogOutput @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
   private GamepieceState lastGamepieceState = GamepieceState.NONE;
   private Timer gamepieceStateTimer = new Timer();
 

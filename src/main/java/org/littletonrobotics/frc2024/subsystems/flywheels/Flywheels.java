@@ -13,9 +13,11 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.Alert;
@@ -35,6 +37,8 @@ public class Flywheels extends SubsystemBase {
       new LoggedTunableNumber("Flywheels/ShootingLeftRpm", 6000.0);
   private static final LoggedTunableNumber shootingRightRpm =
       new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4000.0);
+  private static final LoggedTunableNumber prepareShootMultiplier =
+      new LoggedTunableNumber("Flywheels/PrepareShootMultiplier", 0.75);
   private static final LoggedTunableNumber intakingRpm =
       new LoggedTunableNumber("Flywheels/IntakingRpm", -2000.0);
   private static final LoggedTunableNumber ejectingRpm =
@@ -51,6 +55,7 @@ public class Flywheels extends SubsystemBase {
   private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(kS.get(), kV.get(), kA.get());
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
+  @Setter private BooleanSupplier prepareShootSupplier = () -> false;
 
   // Disconnected alerts
   private final Alert leftDisconnected =
@@ -134,11 +139,19 @@ public class Flywheels extends SubsystemBase {
       wasClosedLoop = false;
     }
 
+    // Get goal
+    double leftGoal = goal.getLeftGoal();
+    double rightGoal = goal.getRightGoal();
+    if (goal == Goal.IDLE && prepareShootSupplier.getAsBoolean()) {
+      leftGoal = Goal.SHOOT.getLeftGoal() * prepareShootMultiplier.get();
+      leftGoal = Goal.SHOOT.getRightGoal() * prepareShootMultiplier.get();
+    }
+
     // Run to setpoint
     if (closedLoop) {
       // Update goals
-      leftProfile.setGoal(goal.getLeftGoal());
-      rightProfile.setGoal(goal.getRightGoal());
+      leftProfile.setGoal(leftGoal);
+      rightProfile.setGoal(rightGoal);
       double leftSetpoint = leftProfile.calculateSetpoint();
       double rightSetpoint = rightProfile.calculateSetpoint();
       io.runVelocity(
@@ -151,8 +164,8 @@ public class Flywheels extends SubsystemBase {
 
     Logger.recordOutput("Flywheels/SetpointLeftRpm", leftProfile.getCurrentSetpoint());
     Logger.recordOutput("Flywheels/SetpointRightRpm", rightProfile.getCurrentSetpoint());
-    Logger.recordOutput("Flywheels/GoalLeftRpm", goal.getLeftGoal());
-    Logger.recordOutput("Flywheels/GoalRightRpm", goal.getRightGoal());
+    Logger.recordOutput("Flywheels/GoalLeftRpm", leftGoal);
+    Logger.recordOutput("Flywheels/GoalRightRpm", rightGoal);
   }
 
   /** Set the current goal of the flywheel */

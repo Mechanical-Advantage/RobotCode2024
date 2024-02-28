@@ -31,6 +31,7 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionION
 import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
+import org.littletonrobotics.frc2024.subsystems.rollers.Rollers.GamepieceState;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIOCompbot;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIODevbot;
@@ -220,8 +221,23 @@ public class RobotContainer {
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
     superstructure = new Superstructure(arm);
 
+    // Set up subsystems
     arm.setOverrides(armDisable, armCoast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
+    flywheels.setPrepareShootSupplier(
+        () -> {
+          return DriverStation.isTeleopEnabled()
+              && RobotState.getInstance()
+                      .getEstimatedPose()
+                      .getTranslation()
+                      .getDistance(
+                          AllianceFlipUtil.apply(
+                              FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+                  < Units.feetToMeters(20.0)
+              && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
+              && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
+              && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB;
+        });
 
     // Configure autos and buttons
     configureAutos();

@@ -7,9 +7,18 @@
 
 package org.littletonrobotics.frc2024;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.function.Supplier;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
@@ -23,6 +32,8 @@ public final class Constants {
   public static final double loopPeriodSecs = 0.02;
   private static RobotType robotType = RobotType.COMPBOT;
   public static final boolean tuningMode = true;
+
+  public static final AprilTagType aprilTagType = AprilTagType.OFFICIAL;
 
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
@@ -38,6 +49,21 @@ public final class Constants {
       case DEVBOT, COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
       case SIMBOT -> Mode.SIM;
     };
+  }
+
+  @Getter
+  @RequiredArgsConstructor
+  public enum AprilTagType {
+    OFFICIAL(() -> AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo)),
+    WPI(() -> {
+      try {
+        return new AprilTagFieldLayout(Path.of(Filesystem.getDeployDirectory().getPath(), "apriltags", "2024-wpi-custom.json"));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+
+    private final Supplier<AprilTagFieldLayout> layoutSupplier;
   }
 
   public enum Mode {

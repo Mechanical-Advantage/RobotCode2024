@@ -65,7 +65,9 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -101,10 +103,16 @@ public class RobotContainer {
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private boolean podiumShotMode = false;
+  public boolean trapScoreMode = false;
 
-  // Dashboard inputs
+  // Dashboard
   private final LoggedDashboardChooser<Command> autoChooser =
       new LoggedDashboardChooser<>("Auto Choices");
+  public final LoggedDashboardBoolean trapScoreEnabledDashboardOut =
+      new LoggedDashboardBoolean("Trap Score Enabled", trapScoreMode);
+  public final LoggedDashboardNumber shotCompensationDashboardOut =
+      new LoggedDashboardNumber(
+          "Shot Compensation Degrees", RobotState.getInstance().getShotCompensationDegrees());
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -395,11 +403,10 @@ public class RobotContainer {
               AllianceFlipUtil.apply(
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           return ampCenterRotated.transformBy(
-              GeomUtil.toTransform2d(
-                  DriveConstants.driveConfig.bumperWidthX() / 2.0 + Units.inchesToMeters(12.0), 0));
+              GeomUtil.toTransform2d(Units.inchesToMeters(20.0) + Units.inchesToMeters(3.0), 0));
         };
     controller
-        .rightBumper()
+        .b()
         .whileTrue(
             Commands.waitUntil(
                     () -> {
@@ -410,7 +417,9 @@ public class RobotContainer {
                               .getDistance(ampAlignedPose.get().getTranslation());
                       return distance <= Units.feetToMeters(2.0);
                     })
-                .andThen(superstructure.setGoalCommand(Superstructure.Goal.AMP))
+                .andThen(
+                    superstructure.setGoalWithConstraintsCommand(
+                        Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get()))
                 .alongWith(
                     Commands.either(
                         Commands.none(),
@@ -425,12 +434,15 @@ public class RobotContainer {
             Commands.waitUntil(superstructure::atGoal)
                 .andThen(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
-    // Climb controls
+    // ------------- Climbing Controls -------------
     controller
         .x()
+        .and(autoDriveDisable.negate())
         .whileTrue(
-            ClimbingCommands.driveToBack(drive, () -> -controller.getLeftX())
-                .onlyIf(autoDriveDisable.negate()));
+            Commands.either(
+                ClimbingCommands.driveToBack(drive, () -> -controller.getLeftX()),
+                ClimbingCommands.driveToFront(drive, () -> -controller.getLeftX()),
+                () -> trapScoreMode));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -449,28 +461,31 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Climber controls
+    operator.b().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
     operator
         .leftBumper()
+        .and(() -> trapScoreMode)
         .toggleOnTrue(
-            ClimbingCommands.climbSequence(
+            ClimbingCommands.climbNTrapSequence(
                 drive,
                 superstructure,
                 rollers,
-                operator.leftTrigger().doublePress(),
+                operator.rightBumper().doublePress(),
                 operator.x().doublePress(),
                 autoDriveDisable));
+    operator
+        .leftBumper()
+        .and(() -> !trapScoreMode)
+        .toggleOnTrue(
+            ClimbingCommands.simpleClimbSequence(
+                drive, superstructure, operator.rightBumper().doublePress(), autoDriveDisable));
 
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());
 
-    // Reset pose
+    // Reset heading
     controller
         .y()
-        .onTrue(
-            Commands.runOnce(() -> robotState.resetPose(AllianceFlipUtil.apply(new Pose2d())))
-                .ignoringDisable(true));
-    controller
-        .b()
         .onTrue(
             Commands.runOnce(
                     () ->

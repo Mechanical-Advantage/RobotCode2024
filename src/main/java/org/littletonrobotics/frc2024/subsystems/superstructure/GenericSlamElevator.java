@@ -97,6 +97,8 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       staticTimer.stop();
       staticTimer.reset();
     }
+    // Set last goal
+    lastGoal = getGoal();
 
     // Set alert
     disconnected.set(!inputs.motorConnected);
@@ -127,9 +129,6 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
         io.runCurrent(getGoal().getSlammingCurrent().getAsDouble());
       }
     }
-
-    // Set last goal
-    lastGoal = getGoal();
 
     if (DriverStation.isDisabled()) {
       // Reset

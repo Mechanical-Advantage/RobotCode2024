@@ -177,6 +177,12 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
     }
+
+    // Update dashboard
+    robotContainer.shotCompensationDashboardOut.set(
+        RobotState.getInstance().getShotCompensationDegrees());
+    robotContainer.trapScoreEnabledDashboardOut.set(robotContainer.trapScoreMode);
+
     Threads.setCurrentThreadPriority(true, 10);
   }
 

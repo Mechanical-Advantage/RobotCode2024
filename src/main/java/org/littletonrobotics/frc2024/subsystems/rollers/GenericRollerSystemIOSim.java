@@ -31,7 +31,7 @@ public class GenericRollerSystemIOSim implements GenericRollerSystemIO {
     inputs.positionRads = sim.getAngularPositionRad();
     inputs.velocityRadsPerSec = sim.getAngularVelocityRadPerSec();
     inputs.appliedVoltage = appliedVoltage;
-    inputs.outputCurrent = sim.getCurrentDrawAmps();
+    inputs.supplyCurrentAmps = sim.getCurrentDrawAmps();
   }
 
   @Override

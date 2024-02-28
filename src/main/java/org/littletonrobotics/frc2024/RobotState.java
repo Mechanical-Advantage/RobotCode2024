@@ -18,7 +18,6 @@ import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.util.Units;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
@@ -29,6 +28,7 @@ import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
+import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.junction.AutoLogOutput;
 
 @ExtensionMethod({GeomUtil.class})
@@ -48,22 +48,35 @@ public class RobotState {
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
-  /** Arm angle look up table key: meters, values: radians */
+  /** Arm angle look up table key: meters, values: degrees */
   private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
 
+  @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
+
   static {
-    armAngleMap.put(1.039, 0.890);
-    armAngleMap.put(1.258, 0.819);
-    armAngleMap.put(1.511, 0.749);
-    armAngleMap.put(1.745, 0.730);
-    armAngleMap.put(2.008, 0.678);
-    armAngleMap.put(2.266, 0.663);
-    armAngleMap.put(2.514, 0.592);
-    armAngleMap.put(2.749, 0.558);
-    armAngleMap.put(2.994, 0.528);
-    armAngleMap.put(3.260, 0.503);
-    armAngleMap.put(5.156, 0.408);
-    armAngleMap.put(1.229, 0.838);
+    armAngleMap.put(1.11, 52.0);
+    armAngleMap.put(1.25, 50.0);
+    armAngleMap.put(1.27, 50.0); // Side subwoofer
+    armAngleMap.put(1.50, 49.0);
+    armAngleMap.put(1.75, 44.0);
+    armAngleMap.put(2.00, 40.5);
+    armAngleMap.put(2.25, 37.5);
+    armAngleMap.put(2.50, 36.0);
+    armAngleMap.put(2.75, 34.0);
+    armAngleMap.put(3.0, 33.0);
+    armAngleMap.put(3.25, 31.0);
+    armAngleMap.put(3.50, 30.0);
+    armAngleMap.put(3.50, 30.0);
+    armAngleMap.put(3.75, 28.5);
+    armAngleMap.put(4.0, 28.0);
+    armAngleMap.put(4.23, 27.5);
+    armAngleMap.put(4.50, 26.5);
+    armAngleMap.put(4.75, 26.25);
+    armAngleMap.put(5.0, 25.25);
+    armAngleMap.put(5.25, 25.0);
+    armAngleMap.put(5.59, 24.75); // Bumper in front of the wing line
+    armAngleMap.put(5.81, 24.6);
+    armAngleMap.put(6.11, 24.25);
   }
 
   @AutoLogOutput @Setter @Getter private double shotCompensationDegrees = 0.0;
@@ -232,11 +245,16 @@ public class RobotState {
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            Rotation2d.fromRadians(
-                armAngleMap.get(targetDistance) + Units.degreesToRadians(shotCompensationDegrees)),
+            Rotation2d.fromDegrees(armAngleMap.get(targetDistance) + shotCompensationDegrees),
             targetDistance,
             feedVelocity);
     return latestParameters;
+  }
+
+  public ModuleLimits getModuleLimits() {
+    return flywheelAccelerating
+        ? DriveConstants.moduleLimitsFlywheelSpinup
+        : DriveConstants.moduleLimitsFree;
   }
 
   /**

@@ -87,6 +87,8 @@ public class RobotContainer {
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
+  private final Alert operatorDisconnected =
+      new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
@@ -224,6 +226,14 @@ public class RobotContainer {
     // Configure autos and buttons
     configureAutos();
     configureButtonBindings();
+
+    // Alerts for constants
+    if (Constants.aprilTagType != Constants.AprilTagType.OFFICIAL) {
+      new Alert("Non-official april tag layout selected", AlertType.INFO).set(true);
+    }
+    if (Constants.tuningMode) {
+      new Alert("Tuning mode enabled", AlertType.INFO).set(true);
+    }
   }
 
   private void configureAutos() {
@@ -242,14 +252,6 @@ public class RobotContainer {
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
     autoChooser.addOption(
-        "Drive Static Characterization",
-        new StaticCharacterization(
-            drive, drive::runCharacterization, drive::getCharacterizationVelocity));
-    autoChooser.addOption(
-        "Flywheels Static Characterization",
-        new StaticCharacterization(
-            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption(
         "Arm Static Characterization",
         new StaticCharacterization(
                 superstructure,
@@ -264,7 +266,8 @@ public class RobotContainer {
                 new WheelRadiusCharacterization(
                     drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
-    autoChooser.addOption("Diagnose Arm", superstructure.diagnoseArm());
+    autoChooser.addOption(
+        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -292,8 +295,10 @@ public class RobotContainer {
         () ->
             Commands.either(
                 Commands.either(
-                    superstructure.podium(), superstructure.subwoofer(), () -> podiumShotMode),
-                superstructure.aim(),
+                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
+                    () -> podiumShotMode),
+                superstructure.setGoalCommand(Superstructure.Goal.AIM),
                 shootPresets);
     Supplier<Command> driveAimCommand =
         () ->
@@ -332,7 +337,7 @@ public class RobotContainer {
         .whileTrue(
             Commands.startEnd(
                 () -> {
-                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.5);
+                  controller.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
                 },
                 () -> {
                   controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
@@ -344,7 +349,7 @@ public class RobotContainer {
         .leftTrigger()
         .whileTrue(
             superstructure
-                .intake()
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
@@ -355,7 +360,7 @@ public class RobotContainer {
         .leftBumper()
         .whileTrue(
             superstructure
-                .intake()
+                .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
@@ -393,7 +398,7 @@ public class RobotContainer {
                               return poseError.getTranslation().getNorm() <= Units.feetToMeters(2.0)
                                   && Math.abs(poseError.getRotation().getRotations()) <= 0.25;
                             })
-                        .andThen(superstructure.amp()),
+                        .andThen(superstructure.setGoalWithConstraintsCommand(Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get())),
                     rollers
                         .setGoalCommand(Rollers.Goal.AMP_SCORE)
                         .onlyWhile(controller.rightTrigger())));
@@ -402,14 +407,18 @@ public class RobotContainer {
     // Adjust shot compensation
     operator
         .povUp()
-        .onTrue(
+        .whileTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
-                .ignoringDisable(true));
+                .andThen(Commands.waitSeconds(0.05))
+                .ignoringDisable(true)
+                .repeatedly());
     operator
         .povDown()
-        .onTrue(
+        .whileTrue(
             Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
-                .ignoringDisable(true));
+                .andThen(Commands.waitSeconds(0.05))
+                .ignoringDisable(true)
+                .repeatedly());
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
@@ -435,6 +444,9 @@ public class RobotContainer {
     driverDisconnected.set(
         !DriverStation.isJoystickConnected(controller.getHID().getPort())
             || !DriverStation.getJoystickIsXbox(controller.getHID().getPort()));
+    operatorDisconnected.set(
+        !DriverStation.isJoystickConnected(operator.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(operator.getHID().getPort()));
     overrideDisconnected.set(!overrides.isConnected());
   }
 

@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.flywheels;
 
 import static org.littletonrobotics.frc2024.subsystems.flywheels.FlywheelConstants.*;
 
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -16,6 +17,7 @@ import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LinearProfile;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -46,6 +48,7 @@ public class Flywheels extends SubsystemBase {
 
   private final LinearProfile leftProfile;
   private final LinearProfile rightProfile;
+  private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(kS.get(), kV.get(), kA.get());
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
 
@@ -84,6 +87,11 @@ public class Flywheels extends SubsystemBase {
   @AutoLogOutput(key = "Flywheels/Goal")
   private Goal goal = Goal.IDLE;
 
+  private boolean isDrawingHighCurrent() {
+    return Math.abs(inputs.leftSupplyCurrentAmps) > 50.0
+        || Math.abs(inputs.rightSupplyCurrentAmps) > 50.0;
+  }
+
   public Flywheels(FlywheelsIO io) {
     this.io = io;
 
@@ -105,7 +113,7 @@ public class Flywheels extends SubsystemBase {
     // Check controllers
     LoggedTunableNumber.ifChanged(hashCode(), pid -> io.setPID(pid[0], pid[1], pid[2]), kP, kI, kD);
     LoggedTunableNumber.ifChanged(
-        hashCode(), kSVA -> io.setFF(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
+        hashCode(), kSVA -> ff = new SimpleMotorFeedforward(kSVA[0], kSVA[1], kSVA[2]), kS, kV, kA);
     LoggedTunableNumber.ifChanged(
         hashCode(),
         () -> {
@@ -131,8 +139,13 @@ public class Flywheels extends SubsystemBase {
       // Update goals
       leftProfile.setGoal(goal.getLeftGoal());
       rightProfile.setGoal(goal.getRightGoal());
-      io.runVelocity(leftProfile.calculateSetpoint(), rightProfile.calculateSetpoint());
+      double leftSetpoint = leftProfile.calculateSetpoint();
+      double rightSetpoint = rightProfile.calculateSetpoint();
+      io.runVelocity(
+          leftSetpoint, rightSetpoint, ff.calculate(leftSetpoint), ff.calculate(rightSetpoint));
+      RobotState.getInstance().setFlywheelAccelerating(!atGoal() || isDrawingHighCurrent());
     } else if (goal == Goal.IDLE) {
+      RobotState.getInstance().setFlywheelAccelerating(false);
       io.stop();
     }
 

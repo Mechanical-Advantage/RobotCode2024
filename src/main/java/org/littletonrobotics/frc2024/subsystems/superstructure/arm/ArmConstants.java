@@ -46,7 +46,7 @@ public class ArmConstants {
   /** The offset of the arm encoder in radians. */
   public static final double armEncoderOffsetRads =
       switch (Constants.getRobot()) {
-        default -> 0.35588 - Math.PI / 2.0;
+        default -> 0.42337869745643697 - Math.PI / 2.0;
         case DEVBOT -> -1.233 - Math.PI / 2.0;
       };
 
@@ -60,7 +60,7 @@ public class ArmConstants {
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         case DEVBOT -> new Gains(75.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0);
-        case COMPBOT -> new Gains(75.0, 0.0, 2.5, 10.911, 0.0, 0.0, 20.469 - 10.911);
+        case COMPBOT -> new Gains(75.0, 0.0, 2.5, 8.4, 0.0, 0.0, 22.9);
       };
 
   public static TrapezoidProfile.Constraints profileConstraints =

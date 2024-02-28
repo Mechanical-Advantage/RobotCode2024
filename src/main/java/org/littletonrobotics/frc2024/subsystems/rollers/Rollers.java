@@ -8,6 +8,7 @@
 package org.littletonrobotics.frc2024.subsystems.rollers;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -19,6 +20,7 @@ import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Rollers extends SubsystemBase {
@@ -50,7 +52,9 @@ public class Rollers extends SubsystemBase {
   }
 
   @Getter private Goal goal = Goal.IDLE;
-  @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
+  @AutoLogOutput @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
+  private GamepieceState lastGamepieceState = GamepieceState.NONE;
+  private Timer gamepieceStateTimer = new Timer();
 
   @Setter private BooleanSupplier backpackActuatedSupplier = () -> false;
 
@@ -67,6 +71,7 @@ public class Rollers extends SubsystemBase {
     this.sensorsIO = sensorsIO;
 
     setDefaultCommand(setGoalCommand(Goal.IDLE));
+    gamepieceStateTimer.start();
   }
 
   @Override
@@ -85,6 +90,10 @@ public class Rollers extends SubsystemBase {
     } else {
       gamepieceState = GamepieceState.NONE;
     }
+    if (gamepieceState != lastGamepieceState) {
+      gamepieceStateTimer.reset();
+    }
+    lastGamepieceState = gamepieceState;
 
     NoteVisualizer.setHasNote(gamepieceState != GamepieceState.NONE);
 
@@ -105,7 +114,7 @@ public class Rollers extends SubsystemBase {
         }
       }
       case STATION_INTAKE -> {
-        if (gamepieceState != GamepieceState.NONE) {
+        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.2)) {
           indexer.setGoal(Indexer.Goal.IDLING);
         } else {
           indexer.setGoal(Indexer.Goal.STATION_INTAKING);

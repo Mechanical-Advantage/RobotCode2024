@@ -71,12 +71,10 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     // Config Motors
     driveTalonConfig.Voltage.PeakForwardVoltage = 12.0;
     driveTalonConfig.Voltage.PeakReverseVoltage = -12.0;
-    driveTalonConfig.CurrentLimits.SupplyCurrentLimit = 60.0;
+    driveTalonConfig.CurrentLimits.SupplyCurrentLimit = 80.0;
     driveTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
     driveTalonConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
-    turnTalonConfig.TorqueCurrent.PeakForwardTorqueCurrent = 40.0;
-    turnTalonConfig.TorqueCurrent.PeakReverseTorqueCurrent = -40.0;
     turnTalonConfig.MotorOutput.Inverted =
         config.turnMotorInverted()
             ? InvertedValue.Clockwise_Positive

@@ -22,6 +22,7 @@ public class Superstructure extends SubsystemBase {
     STOW,
     AIM,
     INTAKE,
+    UNJAM_INTAKE,
     STATION_INTAKE,
     AMP,
     SUBWOOFER,
@@ -56,6 +57,7 @@ public class Superstructure extends SubsystemBase {
       case STOW -> arm.setGoal(Arm.Goal.STOW);
       case AIM -> arm.setGoal(Arm.Goal.AIM);
       case INTAKE -> arm.setGoal(Arm.Goal.FLOOR_INTAKE);
+      case UNJAM_INTAKE -> arm.setGoal(Arm.Goal.UNJAM_INTAKE);
       case STATION_INTAKE -> arm.setGoal(Arm.Goal.STATION_INTAKE);
       case DIAGNOSTIC_ARM -> arm.setGoal(Arm.Goal.CUSTOM);
       case AMP -> arm.setGoal(Arm.Goal.AMP);

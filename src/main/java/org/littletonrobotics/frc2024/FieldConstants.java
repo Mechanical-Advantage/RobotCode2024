@@ -32,9 +32,7 @@ public class FieldConstants {
   public static final Translation2d ampCenter =
       new Translation2d(Units.inchesToMeters(72.455), fieldWidth);
 
-  /**
-   * Staging locations for each note
-   */
+  /** Staging locations for each note */
   public static final class StagingLocations {
     public static final double centerlineX = fieldLength / 2.0;
 
@@ -63,9 +61,7 @@ public class FieldConstants {
     }
   }
 
-  /**
-   * Each corner of the speaker *
-   */
+  /** Each corner of the speaker * */
   public static final class Speaker {
 
     // corners (blue alliance origin)
@@ -86,9 +82,7 @@ public class FieldConstants {
     public static final Translation3d bottomLeftSpeaker =
         new Translation3d(0.0, Units.inchesToMeters(197.765), Units.inchesToMeters(78.324));
 
-    /**
-     * Center of the speaker opening (blue alliance)
-     */
+    /** Center of the speaker opening (blue alliance) */
     public static final Translation3d centerSpeakerOpening =
         bottomLeftSpeaker.interpolate(topRightSpeaker, 0.5);
   }

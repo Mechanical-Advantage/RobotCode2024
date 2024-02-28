@@ -229,7 +229,7 @@ public class RobotContainer {
 
     // Alerts for constants
     if (Constants.aprilTagType != Constants.AprilTagType.OFFICIAL) {
-      new Alert("Non-official april tag layout selected", AlertType.INFO).set(true);
+      new Alert("Non-official AprilTag layout selected", AlertType.INFO).set(true);
     }
     if (Constants.tuningMode) {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);

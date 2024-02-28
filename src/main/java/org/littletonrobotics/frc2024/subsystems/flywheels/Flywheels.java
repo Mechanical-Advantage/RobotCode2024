@@ -142,13 +142,14 @@ public class Flywheels extends SubsystemBase {
     // Get goal
     double leftGoal = goal.getLeftGoal();
     double rightGoal = goal.getRightGoal();
-    if (goal == Goal.IDLE && prepareShootSupplier.getAsBoolean()) {
+    boolean idlePrepareShoot = goal == Goal.IDLE && prepareShootSupplier.getAsBoolean();
+    if (idlePrepareShoot) {
       leftGoal = Goal.SHOOT.getLeftGoal() * prepareShootMultiplier.get();
-      leftGoal = Goal.SHOOT.getRightGoal() * prepareShootMultiplier.get();
+      rightGoal = Goal.SHOOT.getRightGoal() * prepareShootMultiplier.get();
     }
 
     // Run to setpoint
-    if (closedLoop) {
+    if (closedLoop || idlePrepareShoot) {
       // Update goals
       leftProfile.setGoal(leftGoal);
       rightProfile.setGoal(rightGoal);
@@ -203,8 +204,9 @@ public class Flywheels extends SubsystemBase {
   /** Get if velocity profile has ended */
   @AutoLogOutput(key = "Flywheels/AtGoal")
   public boolean atGoal() {
-    return leftProfile.getCurrentSetpoint() == goal.getLeftGoal()
-        && rightProfile.getCurrentSetpoint() == goal.getRightGoal();
+    return goal == Goal.IDLE
+        || (leftProfile.getCurrentSetpoint() == goal.getLeftGoal()
+            && rightProfile.getCurrentSetpoint() == goal.getRightGoal());
   }
 
   public Command shootCommand() {

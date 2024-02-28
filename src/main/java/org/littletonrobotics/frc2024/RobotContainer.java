@@ -233,7 +233,7 @@ public class RobotContainer {
                       .getDistance(
                           AllianceFlipUtil.apply(
                               FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-                  < Units.feetToMeters(20.0)
+                  < Units.feetToMeters(25.0)
               && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
               && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
               && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB;

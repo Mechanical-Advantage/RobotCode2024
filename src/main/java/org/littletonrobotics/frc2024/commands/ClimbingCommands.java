@@ -110,7 +110,7 @@ public class ClimbingCommands {
             () -> {
               Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
               Pose2d targetPose =
-                  currentPose.transformBy(new Translation2d(-chainToBack.get(), 0).toTransform2d());
+                  currentPose.transformBy(new Translation2d(chainToBack.get(), 0).toTransform2d());
               drive.setAutoAlignGoal(() -> targetPose, true);
             },
             drive::clearAutoAlignGoal)
@@ -131,7 +131,7 @@ public class ClimbingCommands {
               drive.setAutoAlignGoal(() -> targetPose, true);
             },
             drive::clearAutoAlignGoal)
-        .onlyIf(autoDriveDisable)
+        .onlyIf(autoDriveDisable.negate())
         .alongWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
   }
 
@@ -141,15 +141,29 @@ public class ClimbingCommands {
       Trigger startClimbTrigger,
       Trigger autoDriveDisable) {
     return Commands.sequence(
-        // Drive forward while raising arm and climber
-        prepareClimbFromFront(drive, superstructure, autoDriveDisable)
-            .until(
-                () ->
-                    superstructure.atGoal()
-                        && (autoDriveDisable.getAsBoolean() || drive.isAutoAlignGoalCompleted())),
+            // Drive forward while raising arm and climber
+            prepareClimbFromFront(drive, superstructure, autoDriveDisable)
+                .until(superstructure::atGoal),
 
-        // Allow driver to line up
-        Commands.waitUntil(startClimbTrigger));
+            // Allow driver to line up
+            Commands.waitUntil(startClimbTrigger)
+                .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)),
+
+            // Climb
+            superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+
+        // If cancelled, go to safe state
+        .finallyDo(
+            () -> {
+              switch (superstructure.getCurrentGoal()) {
+                case PREPARE_CLIMB ->
+                    superstructure.setDefaultCommand(
+                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
+                case CLIMB ->
+                    superstructure.setDefaultCommand(
+                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
+              }
+            });
   }
 
   /** Runs the climbing sequence and then scores in the trap when the trapScore button is pressed */
@@ -163,14 +177,11 @@ public class ClimbingCommands {
     return Commands.sequence(
             // Drive forward while raising arm and climber
             prepareClimbFromBack(drive, superstructure, autoDriveDisable)
-                .until(
-                    () ->
-                        superstructure.atGoal()
-                            && (autoDriveDisable.getAsBoolean()
-                                || drive.isAutoAlignGoalCompleted())),
+                .until(superstructure::atGoal),
 
             // Allow driver to line up
-            Commands.waitUntil(startClimbTrigger),
+            Commands.waitUntil(startClimbTrigger)
+                .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)),
 
             // Climb and wait, continue if trap button pressed
             superstructure

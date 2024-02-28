@@ -375,7 +375,7 @@ public class RobotContainer {
           return ampCenterRotated.transformBy(
               GeomUtil.toTransform2d(
                   Units.inchesToMeters(20.0) // End of intake bumper to center robot
-                      + Units.inchesToMeters(4.0),
+                      + Units.inchesToMeters(10.0),
                   0));
         };
     controller
@@ -395,13 +395,21 @@ public class RobotContainer {
                                   RobotState.getInstance()
                                       .getEstimatedPose()
                                       .relativeTo(ampAlignedPose.get());
-                              return poseError.getTranslation().getNorm() <= Units.feetToMeters(2.0)
-                                  && Math.abs(poseError.getRotation().getRotations()) <= 0.25;
+                              return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
+                                  && Math.abs(poseError.getRotation().getDegrees()) <= 120;
                             })
-                        .andThen(superstructure.setGoalWithConstraintsCommand(Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get())),
-                    rollers
-                        .setGoalCommand(Rollers.Goal.AMP_SCORE)
-                        .onlyWhile(controller.rightTrigger())));
+                        .andThen(
+                            superstructure.setGoalWithConstraintsCommand(
+                                Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get()))));
+    controller
+        .rightTrigger()
+        .and(controller.b())
+        .and(
+            () ->
+                superstructure.getDesiredGoal() == Superstructure.Goal.AMP
+                    && superstructure.atGoal())
+        .whileTrue(
+            rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(controller.rightTrigger()));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation

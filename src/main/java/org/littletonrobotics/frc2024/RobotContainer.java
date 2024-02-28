@@ -224,6 +224,14 @@ public class RobotContainer {
     // Configure autos and buttons
     configureAutos();
     configureButtonBindings();
+
+    if (Constants.aprilTagType != Constants.AprilTagType.OFFICIAL) {
+      new Alert("Non-official april tag layout selected", AlertType.WARNING).set(true);
+    }
+
+    if (Constants.tuningMode) {
+      new Alert("Tuning mode enabled", AlertType.WARNING).set(true);
+    }
   }
 
   private void configureAutos() {

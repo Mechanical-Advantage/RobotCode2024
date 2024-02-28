@@ -446,6 +446,7 @@ public class RobotContainer {
     // Reset heading
     driver
         .start()
+        .or(driver.back())
         .onTrue(
             Commands.runOnce(
                     () ->

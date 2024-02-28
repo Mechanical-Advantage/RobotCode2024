@@ -22,8 +22,6 @@ import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 
-// import org.littletonrobotics.frc2024.util.NoteVisualizer;
-
 public class AutoBuilder {
   private final Drive drive;
   private final Superstructure superstructure;
@@ -43,14 +41,14 @@ public class AutoBuilder {
     var grabCenterline1 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline1");
     var grabCenterline2 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline2");
 
-    final double preloadDelay = 1.5;
+    final double preloadDelay = 1.0;
 
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             // Drive sequence
             Commands.sequence(
-                    resetPose(DriveTrajectories.startingCenterLine),
+                    resetPose(DriveTrajectories.startingLinePodium),
                     Commands.startEnd(
                             () ->
                                 drive.setHeadingGoal(
@@ -172,15 +170,16 @@ public class AutoBuilder {
     var grabCenterline3 = new HolonomicTrajectory("davisAlternativeAuto_grabCenterline3");
     var grabCenterline2 = new HolonomicTrajectory("davisAlternativeAuto_grabCenterline2");
 
-    final double preloadDelay = 1.5;
-    final double spikeDelay = 0.75;
+    final double preloadDelay = 1.0;
+    final double spikeIntakeDelay = 0.5;
+    final double spikeAimDelay = 0.4;
 
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             // Drive sequence
             Commands.sequence(
-                    resetPose(DriveTrajectories.startingSpikeLine),
+                    resetPose(DriveTrajectories.startingLineSpike2),
                     Commands.startEnd(
                             () ->
                                 drive.setHeadingGoal(
@@ -191,7 +190,7 @@ public class AutoBuilder {
                             drive::clearHeadingGoal)
                         .withTimeout(preloadDelay),
                     followTrajectory(drive, grabSpike),
-                    Commands.waitSeconds(spikeDelay + shootTimeoutSecs.get()),
+                    Commands.waitSeconds(spikeIntakeDelay + spikeAimDelay + shootTimeoutSecs.get()),
                     followTrajectory(drive, grabCenterline4),
                     followTrajectory(drive, grabCenterline3),
                     followTrajectory(drive, grabCenterline2))
@@ -207,14 +206,29 @@ public class AutoBuilder {
                                     .until(() -> autoTimer.hasElapsed(preloadDelay)))
                             .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
 
-                        // Intake & shoot spike
+                        // Intake spike
                         Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.AIM),
-                                rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
+                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
                             .until(
                                 () ->
                                     autoTimer.hasElapsed(
-                                        preloadDelay + grabSpike.getDuration() + spikeDelay)),
+                                        preloadDelay + grabSpike.getDuration() + spikeIntakeDelay)),
+
+                        // Shoot spike
+                        superstructure
+                            .setGoalCommand(Superstructure.Goal.AIM)
+                            .alongWith(
+                                Commands.waitSeconds(spikeAimDelay)
+                                    .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)))
+                            .until(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadDelay
+                                            + grabSpike.getDuration()
+                                            + spikeIntakeDelay
+                                            + spikeAimDelay
+                                            + shootTimeoutSecs.get())),
 
                         // Intake centerline 4
                         waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
@@ -229,7 +243,9 @@ public class AutoBuilder {
                                     autoTimer.hasElapsed(
                                         preloadDelay
                                             + grabSpike.getDuration()
-                                            + spikeDelay
+                                            + spikeIntakeDelay
+                                            + spikeAimDelay
+                                            + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             - shootTimeoutSecs.get()))
                             .andThen(
@@ -251,7 +267,9 @@ public class AutoBuilder {
                                     autoTimer.hasElapsed(
                                         preloadDelay
                                             + grabSpike.getDuration()
-                                            + spikeDelay
+                                            + spikeIntakeDelay
+                                            + spikeAimDelay
+                                            + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             + grabCenterline3.getDuration()
                                             - shootTimeoutSecs.get()))
@@ -283,7 +301,9 @@ public class AutoBuilder {
                                     autoTimer.hasElapsed(
                                         preloadDelay
                                             + grabSpike.getDuration()
-                                            + spikeDelay
+                                            + spikeIntakeDelay
+                                            + spikeAimDelay
+                                            + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             + grabCenterline3.getDuration()
                                             + grabCenterline2.getDuration()

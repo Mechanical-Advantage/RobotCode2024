@@ -41,161 +41,151 @@ public class DriveTrajectories {
   public static final Pose2d startingCenterFace =
       FieldConstants.Subwoofer.centerFace.transformBy(
           new Transform2d(-DriveConstants.driveConfig.bumperWidthX() / 2, 0, new Rotation2d(0)));
-  public static final Pose2d startingCenterLine =
+  public static final Pose2d startingLinePodium =
       new Pose2d(
           FieldConstants.startingLineX - 0.5,
           FieldConstants.Stage.podiumLeg.getY(),
           Rotation2d.fromDegrees(180.0));
-  public static final Pose2d startingSpikeLine =
+  public static final Pose2d startingLineSpike2 =
       new Pose2d(
           FieldConstants.startingLineX - 0.5,
           FieldConstants.StagingLocations.spikeTranslations[2].getY(),
           Rotation2d.fromDegrees(180.0));
+  public static final Pose2d startingLineSpike12 =
+      new Pose2d(
+          FieldConstants.startingLineX - 0.5,
+          (FieldConstants.StagingLocations.spikeTranslations[1].getY()
+                  + FieldConstants.StagingLocations.spikeTranslations[2].getY())
+              / 2.0,
+          Rotation2d.fromDegrees(180.0));
 
   static {
     // Davis Ethical Auto (4 Note)
-    {
-      Pose2d stageRightShootingPose =
-          getShootingPose(
-              FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
-      Pose2d stageLeftShootingPose =
-          getShootingPose(
-              FieldConstants.Stage.podiumLeg
-                  .getTranslation()
-                  .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
-                  .plus(new Translation2d(-0.15, 0.2)));
-      Translation2d stageRightAvoidance =
-          FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
-      Translation2d stageCenterAvoidance =
-          FieldConstants.Stage.sourceLeg
-              .getTranslation()
-              .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
-      paths.put(
-          "davisEthicalAuto_grabCenterline0",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(getShootingPose(startingCenterLine.getTranslation()))
-                  .addTranslationWaypoint(
-                      FieldConstants.Stage.podiumLeg
-                          .getTranslation()
-                          .plus(new Translation2d(0.5, -2.0)))
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[0],
-                              Rotation2d.fromDegrees(170.0))
-                          .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addTranslationWaypoint(stageRightAvoidance)
-                  .addPoseWaypoint(stageRightShootingPose)
-                  .build()));
-      paths.put(
-          "davisEthicalAuto_grabCenterline1",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(stageRightShootingPose)
-                  .addTranslationWaypoint(stageRightAvoidance)
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[1],
-                              Rotation2d.fromDegrees(-160.0))
-                          .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[1],
-                              Rotation2d.fromDegrees(160.0))
-                          .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
-                  .addTranslationWaypoint(stageCenterAvoidance)
-                  .addPoseWaypoint(stageLeftShootingPose)
-                  .build()));
-      paths.put(
-          "davisEthicalAuto_grabCenterline2",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(stageLeftShootingPose)
-                  .addTranslationWaypoint(stageCenterAvoidance)
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[2],
-                              Rotation2d.fromDegrees(180.0))
-                          .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addTranslationWaypoint(stageCenterAvoidance)
-                  .addPoseWaypoint(stageLeftShootingPose)
-                  .build()));
-    }
+    Pose2d stageRightShootingPose =
+        getShootingPose(
+            FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
+    Pose2d stageCenterShootingPose =
+        getShootingPose(
+            FieldConstants.Stage.podiumLeg
+                .getTranslation()
+                .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
+                .plus(new Translation2d(-0.15, 0.2)));
+    Translation2d stageRightAvoidance =
+        FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
+    Translation2d stageCenterAvoidance =
+        FieldConstants.Stage.sourceLeg
+            .getTranslation()
+            .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
+    paths.put(
+        "davisEthicalAuto_grabCenterline0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(getShootingPose(startingLinePodium.getTranslation()))
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.podiumLeg
+                        .getTranslation()
+                        .plus(new Translation2d(0.5, -2.0)))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[0],
+                            Rotation2d.fromDegrees(170.0))
+                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageRightAvoidance)
+                .addPoseWaypoint(stageRightShootingPose)
+                .build()));
+    paths.put(
+        "davisEthicalAuto_grabCenterline1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageRightShootingPose)
+                .addTranslationWaypoint(stageRightAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(-160.0))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(160.0))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+    paths.put(
+        "davisEthicalAuto_grabCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageCenterShootingPose)
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(180.0))
+                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
 
     // Davis Alternative Auto (5 Note)
-    {
-      Pose2d spikeShootingPose =
-          getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]);
-      Pose2d outsideShootingPose =
-          getShootingPose(
-              FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.5, 1.2)));
-      Pose2d insideShootingPose =
-          getShootingPose(
-              FieldConstants.Stage.podiumLeg
-                  .getTranslation()
-                  .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
-                  .plus(new Translation2d(-0.15, 0.2)));
-      getShootingPose(
-          FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-1.0, 1.5)));
-      paths.put(
-          "davisAlternativeAuto_grabSpike",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(getShootingPose(startingSpikeLine.getTranslation()))
-                  .addPoseWaypoint(
-                      spikeShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addPoseWaypoint(spikeShootingPose)
-                  .build()));
-      paths.put(
-          "davisAlternativeAuto_grabCenterline4",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(spikeShootingPose)
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[4],
-                              Rotation2d.fromDegrees(-170.0))
-                          .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addPoseWaypoint(outsideShootingPose)
-                  .build()));
-      paths.put(
-          "davisAlternativeAuto_grabCenterline3",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(outsideShootingPose)
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[3],
-                              Rotation2d.fromDegrees(160.0))
-                          .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addPoseWaypoint(outsideShootingPose)
-                  .build()));
-      paths.put(
-          "davisAlternativeAuto_grabCenterline2",
-          List.of(
-              PathSegment.newBuilder()
-                  .addPoseWaypoint(outsideShootingPose)
-                  .addTranslationWaypoint(
-                      FieldConstants.Stage.ampLeg
-                          .getTranslation()
-                          .plus(new Translation2d(0.1, 1.0)))
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[2],
-                              Rotation2d.fromDegrees(120.0))
-                          .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addPoseWaypoint(
-                      new Pose2d(
-                              FieldConstants.StagingLocations.centerlineTranslations[2],
-                              Rotation2d.fromDegrees(140.0))
-                          .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
-                  .addTranslationWaypoint(
-                      FieldConstants.Stage.sourceLeg
-                          .getTranslation()
-                          .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62))
-                  .addPoseWaypoint(insideShootingPose)
-                  .build()));
-    }
+    Pose2d spike2ShootingPose =
+        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]);
+    Pose2d stageLeftShootingPose =
+        getShootingPose(
+            FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.5, 1.2)));
+    paths.put(
+        "davisAlternativeAuto_grabSpike",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(getShootingPose(startingLineSpike2.getTranslation()))
+                .addPoseWaypoint(
+                    spike2ShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addPoseWaypoint(spike2ShootingPose)
+                .build()));
+    paths.put(
+        "davisAlternativeAuto_grabCenterline4",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(spike2ShootingPose)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-170.0))
+                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addPoseWaypoint(stageLeftShootingPose)
+                .build()));
+    paths.put(
+        "davisAlternativeAuto_grabCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageLeftShootingPose)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(160.0))
+                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addPoseWaypoint(stageLeftShootingPose)
+                .build()));
+    paths.put(
+        "davisAlternativeAuto_grabCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageLeftShootingPose)
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(0.1, 1.0)))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(120.0))
+                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(140.0))
+                        .transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
   }
 
   // calculate Pose2d of robot given a translation

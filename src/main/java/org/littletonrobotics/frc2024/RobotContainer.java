@@ -75,7 +75,7 @@ public class RobotContainer {
   private final Superstructure superstructure;
 
   // Controller
-  private final CommandXboxController controller = new CommandXboxController(0);
+  private final CommandXboxController driver = new CommandXboxController(0);
   private final CommandXboxController operator = new CommandXboxController(1);
   private final OverrideSwitches overrides = new OverrideSwitches(5);
   private final Trigger robotRelative = overrides.driverSwitch(0);
@@ -283,9 +283,9 @@ public class RobotContainer {
             .run(
                 () ->
                     drive.acceptTeleopInput(
-                        -controller.getLeftY(),
-                        -controller.getLeftX(),
-                        -controller.getRightX(),
+                        -driver.getLeftY(),
+                        -driver.getLeftX(),
+                        -driver.getRightX(),
                         robotRelative.getAsBoolean()))
             .withName("Drive Teleop Input"));
 
@@ -310,7 +310,7 @@ public class RobotContainer {
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
-    controller
+    driver
         .a()
         .whileTrue(
             driveAimCommand
@@ -319,33 +319,33 @@ public class RobotContainer {
                 .withName("Prepare Shot"));
     Trigger readyToShoot =
         new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
-    controller
+    driver
         .rightTrigger()
-        .and(controller.a())
+        .and(driver.a())
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5),
-                    Commands.waitUntil(controller.rightTrigger().negate()))
+                    Commands.waitUntil(driver.rightTrigger().negate()))
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
-    controller
+    driver
         .a()
         .and(readyToShoot)
         .whileTrue(
             Commands.startEnd(
                 () -> {
-                  controller.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+                  driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
                 },
                 () -> {
-                  controller.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                  driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
                 }));
 
     // ------------- Intake Controls -------------
     // Intake Floor
-    controller
+    driver
         .leftTrigger()
         .whileTrue(
             superstructure
@@ -356,7 +356,7 @@ public class RobotContainer {
                 .withName("Floor Intake"));
 
     // Eject Floor
-    controller
+    driver
         .leftBumper()
         .whileTrue(
             superstructure
@@ -378,7 +378,7 @@ public class RobotContainer {
                       + Units.inchesToMeters(10.0),
                   0));
         };
-    controller
+    driver
         .b()
         .whileTrue(
             Commands.either(
@@ -401,15 +401,15 @@ public class RobotContainer {
                         .andThen(
                             superstructure.setGoalWithConstraintsCommand(
                                 Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get()))));
-    controller
+    driver
         .rightTrigger()
-        .and(controller.b())
+        .and(driver.b())
         .and(
             () ->
                 superstructure.getDesiredGoal() == Superstructure.Goal.AMP
                     && superstructure.atGoal())
         .whileTrue(
-            rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(controller.rightTrigger()));
+            rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -435,7 +435,7 @@ public class RobotContainer {
     operator.b().whileTrue(rollers.shuffle());
 
     // Reset heading
-    controller
+    driver
         .start()
         .onTrue(
             Commands.runOnce(
@@ -450,8 +450,8 @@ public class RobotContainer {
   /** Updates the alerts for disconnected controllers. */
   public void checkControllers() {
     driverDisconnected.set(
-        !DriverStation.isJoystickConnected(controller.getHID().getPort())
-            || !DriverStation.getJoystickIsXbox(controller.getHID().getPort()));
+        !DriverStation.isJoystickConnected(driver.getHID().getPort())
+            || !DriverStation.getJoystickIsXbox(driver.getHID().getPort()));
     operatorDisconnected.set(
         !DriverStation.isJoystickConnected(operator.getHID().getPort())
             || !DriverStation.getJoystickIsXbox(operator.getHID().getPort()));

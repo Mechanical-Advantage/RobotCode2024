@@ -31,7 +31,7 @@ public final class DriveConstants {
                 .bumperWidthX(Units.inchesToMeters(37))
                 .bumperWidthY(Units.inchesToMeters(33))
                 .maxLinearVelocity(Units.feetToMeters(15.0))
-                .maxLinearAcceleration(Units.feetToMeters(24.0))
+                .maxLinearAcceleration(Units.feetToMeters(75.0))
                 .maxAngularVelocity(12.0)
                 .maxAngularAcceleration(6.0)
                 .build();
@@ -170,20 +170,6 @@ public final class DriveConstants {
                 driveConfig.maxLinearVelocity() / 2.0,
                 driveConfig.maxAngularVelocity() / 2.0);
       };
-
-  // Auto Align
-  public static final AutoAlignConstants autoAlignConstants =
-      new AutoAlignConstants(
-          6.0,
-          0.0,
-          5.0,
-          0.0,
-          Units.inchesToMeters(2.0),
-          Units.degreesToRadians(2.0),
-          driveConfig.maxLinearVelocity(),
-          driveConfig.maxLinearAcceleration() * 0.5,
-          driveConfig.maxAngularVelocity() * 0.3,
-          driveConfig.maxAngularAcceleration() * 0.5);
 
   // Swerve Heading Control
   public static final HeadingControllerConstants headingControllerConstants =

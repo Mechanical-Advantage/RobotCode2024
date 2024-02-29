@@ -320,4 +320,29 @@ public class AutoBuilder {
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
   }
+
+  public Command everythingAuto() {
+    var fullCycle = new HolonomicTrajectory("everythingAuto_fullCycle");
+
+    return Commands.sequence(
+            resetPose(fullCycle),
+            followTrajectory(drive, fullCycle)
+                .deadlineWith(
+                    waitUntilXCrossed(FieldConstants.fieldLength - FieldConstants.wingX, true)
+                        .andThen(
+                            waitUntilXCrossed(
+                                    FieldConstants.fieldLength - FieldConstants.wingX, false)
+                                .deadlineWith(
+                                    superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                                    rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)),
+                            waitUntilXCrossed(FieldConstants.Stage.center.getX() + 0.1, false),
+                            superstructure.setGoalCommand(Superstructure.Goal.AIM)))
+                .andThen(
+                    rollers
+                        .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                        .alongWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))
+                        .withTimeout(0.3))
+                .repeatedly())
+        .deadlineWith(flywheels.shootCommand());
+  }
 }

@@ -201,6 +201,33 @@ public class DriveTrajectories {
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));
+
+    // Everything Auto
+    paths.put(
+        "everythingAuto_fullCycle",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageCenterShootingPose)
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addTranslationWaypoint(
+                    new Translation2d(
+                        FieldConstants.fieldLength - FieldConstants.wingX,
+                        FieldConstants.Stage.sourceLeg.getY() / 2.0))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.fieldLength - FieldConstants.startingLineX,
+                        0.8,
+                        Rotation2d.fromDegrees(180.0)))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.fieldLength - 0.8, 2.0, Rotation2d.fromDegrees(180.0)))
+                .addTranslationWaypoint(
+                    new Translation2d(
+                        FieldConstants.fieldLength - FieldConstants.wingX,
+                        FieldConstants.Stage.sourceLeg.getY() / 2.0))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
   }
 
   // calculate Pose2d of robot given a translation

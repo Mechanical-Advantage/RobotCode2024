@@ -117,7 +117,7 @@ public class GenerateTrajectories {
                 + Math.round((endTime - startTime) / 100.0) / 10.0
                 + " secs ✅");
       } catch (IOException e) {
-        System.out.println("\r" + entry.getKey() + " - FAILED ⛔️");
+        System.out.println("\r" + entry.getKey() + " - FAILED ⛔");
         e.printStackTrace();
       }
     }

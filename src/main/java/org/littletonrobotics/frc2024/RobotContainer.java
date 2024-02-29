@@ -409,9 +409,19 @@ public class RobotContainer {
         .whileTrue(
             Commands.either(
                     Commands.none(),
-                    drive.startEnd(
-                        () -> drive.setAutoAlignGoal(ampAlignedPose, false),
-                        drive::clearAutoAlignGoal),
+                    drive
+                        .startEnd(
+                            () -> drive.setAutoAlignGoal(ampAlignedPose, false),
+                            drive::clearAutoAlignGoal)
+                        .until(drive::isAutoAlignGoalCompleted)
+                        .andThen(
+                            drive.run(
+                                () ->
+                                    drive.acceptTeleopInput(
+                                        -driver.getLeftY() * 0.25,
+                                        -driver.getLeftX() * 0.25,
+                                        0.0,
+                                        robotRelative.getAsBoolean()))),
                     autoDriveDisable)
                 .alongWith(
                     Commands.waitUntil(

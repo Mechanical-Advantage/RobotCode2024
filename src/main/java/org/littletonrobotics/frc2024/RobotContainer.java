@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -501,6 +502,14 @@ public class RobotContainer {
         !DriverStation.isJoystickConnected(operator.getHID().getPort())
             || !DriverStation.getJoystickIsXbox(operator.getHID().getPort()));
     overrideDisconnected.set(!overrides.isConnected());
+  }
+
+  /** Updates dashboard data. */
+  public void updateDashboardOutputs() {
+    SmartDashboard.putString(
+        "Shot Compensation Degrees",
+        String.format("%.1f", RobotState.getInstance().getShotCompensationDegrees()));
+    SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
   }
 
   /**

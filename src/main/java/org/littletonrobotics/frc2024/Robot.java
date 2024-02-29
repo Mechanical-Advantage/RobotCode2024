@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024;
 
+import static org.littletonrobotics.frc2024.util.Alert.AlertType;
+
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
@@ -37,11 +40,28 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * project.
  */
 public class Robot extends LoggedRobot {
+  private static final double canErrorTimeThreshold = 0.5; // Seconds to disable alert
+  private static final double canivoreErrorTimeThreshold = 0.5;
+  private static final double lowBatteryVoltage = 11.8;
+  private static final double lowBatteryDisabledTime = 1.5;
+
   private Command autoCommand;
   private RobotContainer robotContainer;
-
   private double autoStart;
   private boolean autoMessagePrinted;
+  private final Timer disabledTimer = new Timer();
+  private final Timer canErrorTimer = new Timer();
+  private final Timer canInitialErrorTimer = new Timer();
+  private final Timer canivoreErrorTimer = new Timer();
+
+  private final Alert canErrorAlert =
+      new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
+  private final Alert canivoreErrorAlert =
+      new Alert("CANivore error detected, robot may no tbe controllable.", AlertType.ERROR);
+  private final Alert lowBatteryAlert =
+      new Alert(
+          "Battery voltage is very low, consider turning off the robot or replacing the battery.",
+          AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -127,6 +147,11 @@ public class Robot extends LoggedRobot {
       DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
     }
 
+    canErrorTimer.restart();
+    canInitialErrorTimer.restart();
+    canivoreErrorTimer.restart();
+    disabledTimer.restart();
+
     RobotController.setBrownoutVoltage(6.0);
 
     Leds.getInstance();
@@ -171,9 +196,19 @@ public class Robot extends LoggedRobot {
 
     // Robot container periodic methods
     robotContainer.checkControllers();
+    robotContainer.updateDashboardOutputs();
 
     // Update NoteVisualizer
     NoteVisualizer.showIntakedNotes();
+
+    // Check CAN status
+    var canStatus = RobotController.getCANStatus();
+    if (canStatus.transmitErrorCount > 0 || canStatus.receiveErrorCount > 0) {
+      canErrorTimer.restart();
+    }
+    canErrorAlert.set(
+        !canErrorTimer.hasElapsed(canErrorTimeThreshold)
+            && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
 
     // Log CANivore status
     if (Constants.getMode() == Mode.REAL) {
@@ -184,7 +219,23 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
+      // Alerts
+      if (!canivoreStatus.Status.isOK()) {
+        canivoreErrorTimer.restart();
+      }
+      canivoreErrorAlert.set(
+          !canivoreStatus.Status.isOK()
+              || !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold));
     }
+
+    // Low battery alert
+    if (DriverStation.isEnabled()) {
+      disabledTimer.reset();
+    }
+    lowBatteryAlert.set(
+        RobotController.getBatteryVoltage() <= lowBatteryVoltage
+            && disabledTimer.hasElapsed(lowBatteryDisabledTime));
+
     Threads.setCurrentThreadPriority(true, 10);
   }
 

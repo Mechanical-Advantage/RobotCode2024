@@ -67,9 +67,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
-import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
-import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -108,16 +106,11 @@ public class RobotContainer {
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   private boolean podiumShotMode = false;
-  public boolean trapScoreMode = false;
+  private boolean trapScoreMode = false;
 
-  // Dashboard
+  // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
       new LoggedDashboardChooser<>("Auto Choices");
-  public final LoggedDashboardBoolean trapScoreEnabledDashboardOut =
-      new LoggedDashboardBoolean("Trap Score Enabled", trapScoreMode);
-  public final LoggedDashboardNumber shotCompensationDashboardOut =
-      new LoggedDashboardNumber(
-          "Shot Compensation Degrees", RobotState.getInstance().getShotCompensationDegrees());
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -563,6 +556,7 @@ public class RobotContainer {
         "Shot Compensation Degrees",
         String.format("%.1f", RobotState.getInstance().getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
+    SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
   }
 
   /**

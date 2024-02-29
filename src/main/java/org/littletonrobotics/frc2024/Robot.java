@@ -180,10 +180,10 @@ public class Robot extends LoggedRobot {
         } catch (IOException e) {
           e.printStackTrace();
         }
-
         if (previousBatteryName.equals(BatteryTracker.getName())) {
           // Same battery, set alert
           sameBatteryAlert.set(true);
+          Leds.getInstance().sameBattery = true;
         } else {
           // New battery, delete file
           file.delete();
@@ -274,7 +274,6 @@ public class Robot extends LoggedRobot {
       lowBatteryAlert.set(true);
       Leds.getInstance().lowBatteryAlert = true;
     }
-
 
     // Write battery name if connected to field
     if (Constants.getMode() == Mode.REAL

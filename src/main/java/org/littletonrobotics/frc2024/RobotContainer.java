@@ -267,12 +267,14 @@ public class RobotContainer {
                     () -> {
                       driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
                       operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+                      Leds.getInstance().endgameAlert = true;
                     }),
                 Commands.waitSeconds(time),
                 Commands.runOnce(
                     () -> {
                       driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
                       operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                      Leds.getInstance().endgameAlert = false;
                     }));
     new Trigger(
             () ->

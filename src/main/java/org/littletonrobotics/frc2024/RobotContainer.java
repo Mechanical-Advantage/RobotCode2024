@@ -30,6 +30,7 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers.GamepieceState;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
@@ -454,6 +455,9 @@ public class RobotContainer {
 
     // Adjust arm preset
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+
+    // Request amp
+    operator.b().whileTrue(Commands.startEnd(() -> Leds.getInstance().requestAmp = true, () -> Leds.getInstance().requestAmp = false));
 
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());

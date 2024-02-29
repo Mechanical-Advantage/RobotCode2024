@@ -171,20 +171,14 @@ public class Leds extends VirtualSubsystem {
         solid((Timer.getFPGATimestamp() - autoFinishedTime) / fullTime, Color.kGreen);
       }
     } else { // Enabled
-      if (trapping) {
-        wave(allianceColor, Color.kBlack, waveFastCycleLength, waveFastDuration);
-      } else if (climbing) {
-        strobe(allianceColor, strobeSlowDuration);
+      if (trapping || climbing || autoDrive || autoShoot) {
+        rainbow(rainbowCycleLength, rainbowDuration);
       } else if (hasNote) {
         solid(Color.kGreen);
       } else if (intaking) {
-        strobe(Color.kWhite, strobeFastDuration);
+        strobe(Color.kOrange, strobeFastDuration);
       } else if (requestAmp) {
-        strobe(allianceColor, strobeFastDuration);
-      } else if (autoShoot) {
-        wave(allianceColor, Color.kWhite, waveFastCycleLength, waveFastDuration);
-      } else if (autoDrive) {
-        rainbow(rainbowCycleLength, rainbowDuration);
+        strobe(Color.kWhite, strobeFastDuration);
       }
 
       if (endgameAlert) {
@@ -199,7 +193,7 @@ public class Leds extends VirtualSubsystem {
 
     // Arm estop alert
     if (armEstopped) {
-      strobe(Color.kRed, strobeFastDuration);
+      solid(Color.kRed);
     }
 
     // Same battery alert

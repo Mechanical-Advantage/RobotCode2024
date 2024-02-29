@@ -114,6 +114,7 @@ public class Robot extends LoggedRobot {
 
     // Start AdvantageKit logger
     Logger.start();
+    Leds.getInstance();
 
     // Log active commands
     Map<String, Integer> commandCounts = new HashMap<>();
@@ -153,8 +154,6 @@ public class Robot extends LoggedRobot {
     disabledTimer.restart();
 
     RobotController.setBrownoutVoltage(6.0);
-
-    Leds.getInstance();
 
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
@@ -232,9 +231,11 @@ public class Robot extends LoggedRobot {
     if (DriverStation.isEnabled()) {
       disabledTimer.reset();
     }
-    lowBatteryAlert.set(
-        RobotController.getBatteryVoltage() <= lowBatteryVoltage
-            && disabledTimer.hasElapsed(lowBatteryDisabledTime));
+    if (RobotController.getBatteryVoltage() <= lowBatteryVoltage
+            && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
+      lowBatteryAlert.set(true);
+      Leds.getInstance().lowBatteryAlert = true;
+    }
 
     Threads.setCurrentThreadPriority(true, 10);
   }

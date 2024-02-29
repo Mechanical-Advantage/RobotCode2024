@@ -23,6 +23,8 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 public class TeleopDriveController {
   private static final LoggedTunableNumber controllerDeadband =
       new LoggedTunableNumber("TeleopDrive/Deadband", 0.1);
+  private static final LoggedTunableNumber maxAngularVelocityScalar =
+      new LoggedTunableNumber("TeleopDrive/MaxAngularVelocityScalar", 0.75);
 
   private double controllerX = 0;
   private double controllerY = 0;
@@ -66,11 +68,13 @@ public class TeleopDriveController {
             .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
             .getTranslation();
 
+    final double maxAngularVelocity =
+        driveConfig.maxAngularVelocity() * maxAngularVelocityScalar.get();
     if (robotRelative) {
       return new ChassisSpeeds(
           linearVelocity.getX() * driveConfig.maxLinearVelocity(),
           linearVelocity.getY() * driveConfig.maxLinearVelocity(),
-          omega * driveConfig.maxAngularVelocity());
+          omega * maxAngularVelocity);
     } else {
       if (DriverStation.getAlliance().isPresent()
           && DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
@@ -79,7 +83,7 @@ public class TeleopDriveController {
       return ChassisSpeeds.fromFieldRelativeSpeeds(
           linearVelocity.getX() * driveConfig.maxLinearVelocity(),
           linearVelocity.getY() * driveConfig.maxLinearVelocity(),
-          omega * driveConfig.maxAngularVelocity(),
+          omega * maxAngularVelocity,
           RobotState.getInstance().getEstimatedPose().getRotation());
     }
   }

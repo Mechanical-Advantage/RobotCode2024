@@ -24,6 +24,7 @@ public class Superstructure extends SubsystemBase {
     STOW,
     AIM,
     INTAKE,
+    UNJAM_INTAKE,
     STATION_INTAKE,
     AMP,
     SUBWOOFER,
@@ -155,7 +156,7 @@ public class Superstructure extends SubsystemBase {
   }
 
   /** Set goal of superstructure */
-  public void setGoal(Goal goal) {
+  private void setGoal(Goal goal) {
     if (desiredGoal == goal) return;
     desiredGoal = goal;
   }
@@ -177,7 +178,7 @@ public class Superstructure extends SubsystemBase {
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
     return currentGoal == desiredGoal
-        && arm.atGoal() & climber.atGoal()
+        && arm.atGoal() && climber.atGoal()
         && backpackActuator.atGoal();
   }
 

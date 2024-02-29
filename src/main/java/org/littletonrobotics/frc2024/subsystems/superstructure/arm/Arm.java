@@ -48,10 +48,10 @@ public class Arm {
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber("Arm/Acceleration", profileConstraints.maxAcceleration);
   private static final LoggedTunableNumber smoothVelocity =
-      new LoggedTunableNumber("Arm/SmoothVelocity", 2.5);
+      new LoggedTunableNumber("Arm/SmoothVelocity", profileConstraints.maxVelocity * 0.75);
   private static final LoggedTunableNumber smoothAcceleration =
-      new LoggedTunableNumber("Arm/SmoothAcceleration", 4.0);
-  private static final LoggedTunableNumber prepareClimbVelocity =
+      new LoggedTunableNumber("Arm/SmoothAcceleration", profileConstraints.maxAcceleration * 0.5);
+      private static final LoggedTunableNumber prepareClimbVelocity =
       new LoggedTunableNumber("Arm/PrepareClimbVelocity", 1.5);
   private static final LoggedTunableNumber prepareClimbAcceleration =
       new LoggedTunableNumber("Arm/PrepareClimbAcceleration", 1.0);
@@ -66,12 +66,13 @@ public class Arm {
       () -> new TrapezoidProfile.Constraints(smoothVelocity.get(), smoothAcceleration.get());
   public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints =
       () ->
-          new TrapezoidProfile.Constraints(prepareClimbVelocity.get(), prepareClimbVelocity.get());
+          new TrapezoidProfile.Constraints(prepareClimbVelocity.get(), prepareClimbAcceleration.get());
 
   @RequiredArgsConstructor
   public enum Goal {
     STOP(() -> 0),
-    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 18.0)),
+    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 7.0)),
+    UNJAM_INTAKE(new LoggedTunableNumber("Arm/UnjamDegrees", 55.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     STOW(new LoggedTunableNumber("Arm/StowDegrees", 0.0)),
@@ -90,7 +91,6 @@ public class Arm {
   }
 
   @Getter @Setter private Goal goal = Goal.STOW;
-  private Goal lastGoal = goal;
   private boolean characterizing = false;
 
   private final ArmIO io;
@@ -127,7 +127,7 @@ public class Arm {
     ff = new ArmFeedforward(kS.get(), kG.get(), kV.get(), kA.get());
 
     // Set up visualizers
-    NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.armPositionRads));
+    NoteVisualizer.setArmAngleSupplier(() -> Rotation2d.fromRadians(inputs.positionRads));
     measuredVisualizer = new ArmVisualizer("Measured", Color.kBlack);
     setpointVisualizer = new ArmVisualizer("Setpoint", Color.kGreen);
     goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
@@ -163,7 +163,7 @@ public class Arm {
     if (disableSupplier.getAsBoolean() || goal == Goal.STOP) {
       io.stop();
       // Reset profile when disabled
-      setpointState = new TrapezoidProfile.State(inputs.armPositionRads, 0);
+      setpointState = new TrapezoidProfile.State(inputs.positionRads, 0);
     }
 
     // Set coast mode with override
@@ -191,7 +191,7 @@ public class Arm {
     }
 
     // Logs
-    measuredVisualizer.update(inputs.armPositionRads);
+    measuredVisualizer.update(inputs.positionRads);
     setpointVisualizer.update(setpointState.position);
     goalVisualizer.update(goal.getRads());
     Logger.recordOutput("Arm/GoalAngle", goal.getRads());
@@ -229,7 +229,7 @@ public class Arm {
   }
 
   public double getCharacterizationVelocity() {
-    return inputs.armVelocityRadsPerSec;
+    return inputs.velocityRadsPerSec;
   }
 
   public void endCharacterization() {

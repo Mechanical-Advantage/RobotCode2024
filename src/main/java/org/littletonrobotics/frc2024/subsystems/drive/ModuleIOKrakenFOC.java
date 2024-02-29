@@ -12,7 +12,6 @@ import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.*;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusCode;
 import com.ctre.phoenix6.StatusSignal;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -51,20 +50,16 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   private final Queue<Double> turnPositionQueue;
 
   // Controller Configs
-  private final Slot0Configs driveFeedbackConfig = new Slot0Configs();
-  private final Slot0Configs turnFeedbackConfig = new Slot0Configs();
+  private final TalonFXConfiguration driveTalonConfig = new TalonFXConfiguration();
+  private final TalonFXConfiguration turnTalonConfig = new TalonFXConfiguration();
 
   // Control
-  private final VoltageOut driveVoltage = new VoltageOut(0).withUpdateFreqHz(0);
-  private final VoltageOut turnVoltage = new VoltageOut(0).withUpdateFreqHz(0);
-  private final TorqueCurrentFOC driveCurrent = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final TorqueCurrentFOC turnCurrent = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final VelocityTorqueCurrentFOC driveVelocityControl =
-      new VelocityTorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final PositionTorqueCurrentFOC turnPositionControl =
+  private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0);
+  private final VelocityVoltage velocityControl =
+      new VelocityVoltage(0).withEnableFOC(true).withUpdateFreqHz(0);
+  private final PositionTorqueCurrentFOC positionControl =
       new PositionTorqueCurrentFOC(0).withUpdateFreqHz(0);
-  private final NeutralOut driveNeutral = new NeutralOut().withUpdateFreqHz(0);
-  private final NeutralOut turnNeutral = new NeutralOut().withUpdateFreqHz(0);
+  private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0);
 
   public ModuleIOKrakenFOC(ModuleConfig config) {
     // Init controllers and encoders from config constants
@@ -74,33 +69,27 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     absoluteEncoderOffset = config.absoluteEncoderOffset();
 
     // Config Motors
-    var driveConfig = new TalonFXConfiguration();
-    driveConfig.CurrentLimits.SupplyCurrentLimit = 40.0;
-    driveConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-    driveConfig.Voltage.PeakForwardVoltage = 12.0;
-    driveConfig.Voltage.PeakReverseVoltage = -12.0;
+    driveTalonConfig.Voltage.PeakForwardVoltage = 12.0;
+    driveTalonConfig.Voltage.PeakReverseVoltage = -12.0;
+    driveTalonConfig.CurrentLimits.SupplyCurrentLimit = 80.0;
+    driveTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+    driveTalonConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
-    var turnConfig = new TalonFXConfiguration();
-    turnConfig.CurrentLimits.SupplyCurrentLimit = 30.0;
-    turnConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-    turnConfig.Voltage.PeakForwardVoltage = 12.0;
-    turnConfig.Voltage.PeakReverseVoltage = -12.0;
-    turnConfig.MotorOutput.Inverted =
+    turnTalonConfig.MotorOutput.Inverted =
         config.turnMotorInverted()
             ? InvertedValue.Clockwise_Positive
             : InvertedValue.CounterClockwise_Positive;
+    turnTalonConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
     // Conversions affect getPosition()/setPosition() and getVelocity()
-    driveConfig.Feedback.SensorToMechanismRatio = moduleConstants.driveReduction();
-    turnConfig.Feedback.SensorToMechanismRatio = moduleConstants.turnReduction();
-    turnConfig.ClosedLoopGeneral.ContinuousWrap = true;
+    driveTalonConfig.Feedback.SensorToMechanismRatio = moduleConstants.driveReduction();
+    turnTalonConfig.Feedback.SensorToMechanismRatio = moduleConstants.turnReduction();
+    turnTalonConfig.ClosedLoopGeneral.ContinuousWrap = true;
 
     // Apply configs
     for (int i = 0; i < 4; i++) {
-      boolean error = driveTalon.getConfigurator().apply(driveConfig, 0.1) == StatusCode.OK;
-      setDriveBrakeMode(true);
-      error = error && (turnTalon.getConfigurator().apply(turnConfig, 0.1) == StatusCode.OK);
-      setTurnBrakeMode(true);
+      boolean error = driveTalon.getConfigurator().apply(driveTalonConfig, 0.1) == StatusCode.OK;
+      error = error && (turnTalon.getConfigurator().apply(turnTalonConfig, 0.1) == StatusCode.OK);
       if (!error) break;
     }
 
@@ -192,66 +181,60 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   @Override
   public void runDriveVolts(double volts) {
-    driveTalon.setControl(driveVoltage.withOutput(volts));
+    driveTalon.setControl(voltageControl.withOutput(volts));
   }
 
   @Override
   public void runTurnVolts(double volts) {
-    turnTalon.setControl(turnVoltage.withOutput(volts));
-  }
-
-  @Override
-  public void runDriveCurrent(double current) {
-    driveTalon.setControl(driveCurrent.withOutput(current));
-  }
-
-  @Override
-  public void runTurnCurrent(double current) {
-    turnTalon.setControl(turnCurrent.withOutput(current));
+    turnTalon.setControl(voltageControl.withOutput(volts));
   }
 
   @Override
   public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
     driveTalon.setControl(
-        driveVelocityControl
+        velocityControl
             .withVelocity(Units.radiansToRotations(velocityRadsPerSec))
             .withFeedForward(feedForward));
   }
 
   @Override
   public void runTurnPositionSetpoint(double angleRads) {
-    turnTalon.setControl(turnPositionControl.withPosition(Units.radiansToRotations(angleRads)));
+    turnTalon.setControl(positionControl.withPosition(Units.radiansToRotations(angleRads)));
   }
 
   @Override
   public void setDrivePID(double kP, double kI, double kD) {
-    driveFeedbackConfig.kP = kP;
-    driveFeedbackConfig.kI = kI;
-    driveFeedbackConfig.kD = kD;
-    driveTalon.getConfigurator().apply(driveFeedbackConfig, 0.01);
+    driveTalonConfig.Slot0.kP = kP;
+    driveTalonConfig.Slot0.kI = kI;
+    driveTalonConfig.Slot0.kD = kD;
+    driveTalon.getConfigurator().apply(driveTalonConfig, 0.01);
   }
 
   @Override
   public void setTurnPID(double kP, double kI, double kD) {
-    turnFeedbackConfig.kP = kP;
-    turnFeedbackConfig.kI = kI;
-    turnFeedbackConfig.kD = kD;
-    turnTalon.getConfigurator().apply(turnFeedbackConfig, 0.01);
+    turnTalonConfig.Slot0.kP = kP;
+    turnTalonConfig.Slot0.kI = kI;
+    turnTalonConfig.Slot0.kD = kD;
+    turnTalon.getConfigurator().apply(turnTalonConfig, 0.01);
   }
 
   @Override
   public void setDriveBrakeMode(boolean enable) {
-    driveTalon.setNeutralMode(enable ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+    driveTalonConfig.MotorOutput.NeutralMode =
+        enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+    driveTalon.getConfigurator().apply(driveTalonConfig);
   }
 
   @Override
   public void setTurnBrakeMode(boolean enable) {
-    turnTalon.setNeutralMode(enable ? NeutralModeValue.Brake : NeutralModeValue.Coast);
+    turnTalonConfig.MotorOutput.NeutralMode =
+        enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+    turnTalon.getConfigurator().apply(turnTalonConfig);
   }
 
   @Override
   public void stop() {
-    driveTalon.setControl(driveNeutral);
-    turnTalon.setControl(turnNeutral);
+    driveTalon.setControl(neutralControl);
+    turnTalon.setControl(neutralControl);
   }
 }

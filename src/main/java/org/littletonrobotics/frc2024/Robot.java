@@ -10,6 +10,7 @@ package org.littletonrobotics.frc2024;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
@@ -125,6 +126,8 @@ public class Robot extends LoggedRobot {
       DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
     }
 
+    RobotController.setBrownoutVoltage(6.0);
+
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
@@ -163,6 +166,7 @@ public class Robot extends LoggedRobot {
 
     // Robot container periodic methods
     robotContainer.checkControllers();
+    robotContainer.updateDashboardOutputs();
 
     // Update NoteVisualizer
     NoteVisualizer.showIntakedNotes();

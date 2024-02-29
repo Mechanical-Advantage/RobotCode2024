@@ -70,7 +70,7 @@ public class ClimbingCommands {
                       0, 0, Rotation2d.fromDegrees(180.0))); // Flip climbed pose for front climb
 
   private static Command driveToPoseWithAdjust(
-      Drive drive, Supplier<Pose2d> prepareClimbPose, DoubleSupplier controllerX) {
+      Drive drive, Supplier<Pose2d> prepareClimbPose, DoubleSupplier controllerY) {
     return Commands.sequence(
         // Auto drive to behind the chain
         drive
@@ -83,20 +83,37 @@ public class ClimbingCommands {
             () ->
                 drive.acceptTeleopInput(
                     0.0,
-                    Math.signum(controllerX.getAsDouble())
-                        * Math.pow(controllerX.getAsDouble(), 2)
+                    Math.signum(controllerY.getAsDouble())
+                        * Math.pow(controllerY.getAsDouble(), 2)
                         * 0.25,
                     0.0,
                     true)));
   }
 
   /** Drive to back climber ready pose. */
-  public static Command driveToBack(Drive drive, DoubleSupplier controllerX) {
-    return driveToPoseWithAdjust(drive, backPrepareClimbPose, controllerX);
+  public static Command driveToBack(Drive drive, DoubleSupplier controllerY) {
+    return driveToPoseWithAdjust(drive, backPrepareClimbPose, controllerY);
   }
 
-  public static Command driveToFront(Drive drive, DoubleSupplier controllerX) {
-    return driveToPoseWithAdjust(drive, frontPrepareClimbPose, controllerX);
+  /** Drive to front climber ready pose */
+  public static Command driveToFront(Drive drive, DoubleSupplier controllerY) {
+    return driveToPoseWithAdjust(drive, frontPrepareClimbPose, controllerY);
+  }
+
+  /** Command that lets driver adjust robot relative to the robot at slow speed */
+  private static Command driverAdjust(
+      Drive drive, DoubleSupplier controllerX, DoubleSupplier controllerY) {
+    return drive.run(
+        () ->
+            drive.acceptTeleopInput(
+                Math.signum(controllerX.getAsDouble())
+                    * Math.pow(controllerX.getAsDouble(), 2)
+                    * 0.25,
+                Math.signum(controllerY.getAsDouble())
+                    * Math.pow(controllerY.getAsDouble(), 2)
+                    * 0.25,
+                0,
+                true));
   }
 
   /**
@@ -138,6 +155,8 @@ public class ClimbingCommands {
   public static Command simpleClimbSequence(
       Drive drive,
       Superstructure superstructure,
+      DoubleSupplier controllerX,
+      DoubleSupplier controllerY,
       Trigger startClimbTrigger,
       Trigger autoDriveDisable) {
     return Commands.sequence(
@@ -147,7 +166,9 @@ public class ClimbingCommands {
 
             // Allow driver to line up
             Commands.waitUntil(startClimbTrigger)
-                .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)),
+                .deadlineWith(
+                    superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
+                    driverAdjust(drive, controllerX, controllerY)),
 
             // Climb
             superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
@@ -171,6 +192,8 @@ public class ClimbingCommands {
       Drive drive,
       Superstructure superstructure,
       Rollers rollers,
+      DoubleSupplier controllerX,
+      DoubleSupplier controllerY,
       Trigger startClimbTrigger,
       Trigger trapScoreTrigger,
       Trigger autoDriveDisable) {
@@ -181,7 +204,9 @@ public class ClimbingCommands {
 
             // Allow driver to line up
             Commands.waitUntil(startClimbTrigger)
-                .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)),
+                .deadlineWith(
+                    superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
+                    driverAdjust(drive, controllerX, controllerY)),
 
             // Climb and wait, continue if trap button pressed
             superstructure

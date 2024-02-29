@@ -504,6 +504,8 @@ public class RobotContainer {
                 drive,
                 superstructure,
                 rollers,
+                () -> -driver.getLeftY(),
+                () -> -driver.getLeftX(),
                 operator.rightBumper().doublePress(),
                 operator.start().doublePress().or(operator.back().doublePress()),
                 autoDriveDisable));
@@ -512,7 +514,12 @@ public class RobotContainer {
         .and(() -> !trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.simpleClimbSequence(
-                drive, superstructure, operator.rightBumper().doublePress(), autoDriveDisable));
+                drive,
+                superstructure,
+                () -> -driver.getLeftY(),
+                () -> -driver.getLeftX(),
+                operator.rightBumper().doublePress(),
+                autoDriveDisable));
 
     // Shuffle gamepiece
     operator.a().whileTrue(rollers.shuffle());

@@ -18,12 +18,19 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
+import org.littletonrobotics.frc2024.util.BatteryTracker;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -40,6 +47,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * project.
  */
 public class Robot extends LoggedRobot {
+  private static final String batteryNameFile = "/home/lvuser/battery-name.txt";
   private static final double canErrorTimeThreshold = 0.5; // Seconds to disable alert
   private static final double canivoreErrorTimeThreshold = 0.5;
   private static final double lowBatteryVoltage = 11.8;
@@ -49,6 +57,7 @@ public class Robot extends LoggedRobot {
   private RobotContainer robotContainer;
   private double autoStart;
   private boolean autoMessagePrinted;
+  private boolean batteryNameWritten = false;
   private final Timer disabledTimer = new Timer();
   private final Timer canErrorTimer = new Timer();
   private final Timer canInitialErrorTimer = new Timer();
@@ -62,6 +71,8 @@ public class Robot extends LoggedRobot {
       new Alert(
           "Battery voltage is very low, consider turning off the robot or replacing the battery.",
           AlertType.WARNING);
+  private final Alert sameBatteryAlert =
+      new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -71,6 +82,9 @@ public class Robot extends LoggedRobot {
   public void robotInit() {
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
+    System.out.println("[Init] Scanning battery");
+    Logger.recordMetadata("BatteryName", "BAT-" + BatteryTracker.scanBattery(1.5));
+    System.out.println("[Init] Starting AdvantageKit");
     Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
     Logger.recordMetadata("RuntimeType", getRuntimeType().toString());
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -152,6 +166,30 @@ public class Robot extends LoggedRobot {
     canInitialErrorTimer.restart();
     canivoreErrorTimer.restart();
     disabledTimer.restart();
+
+    // Check for battery alert
+    if (Constants.getMode() == Mode.REAL
+        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)) {
+      File file = new File(batteryNameFile);
+      if (file.exists()) {
+        // Read previous battery name
+        String previousBatteryName = "";
+        try {
+          previousBatteryName =
+              new String(Files.readAllBytes(Paths.get(batteryNameFile)), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
+        if (previousBatteryName.equals(BatteryTracker.getName())) {
+          // Same battery, set alert
+          sameBatteryAlert.set(true);
+        } else {
+          // New battery, delete file
+          file.delete();
+        }
+      }
+    }
 
     RobotController.setBrownoutVoltage(6.0);
 
@@ -235,6 +273,22 @@ public class Robot extends LoggedRobot {
             && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
       lowBatteryAlert.set(true);
       Leds.getInstance().lowBatteryAlert = true;
+    }
+
+
+    // Write battery name if connected to field
+    if (Constants.getMode() == Mode.REAL
+        && !batteryNameWritten
+        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)
+        && DriverStation.isFMSAttached()) {
+      batteryNameWritten = true;
+      try {
+        FileWriter fileWriter = new FileWriter(batteryNameFile);
+        fileWriter.write(BatteryTracker.getName());
+        fileWriter.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
 
     Threads.setCurrentThreadPriority(true, 10);

@@ -54,13 +54,13 @@ public class Robot extends LoggedRobot {
   private final Timer canivoreErrorTimer = new Timer();
 
   private final Alert canErrorAlert =
-          new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
+      new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert canivoreErrorAlert =
-          new Alert("CANivore error detected, robot may no tbe controllable.", AlertType.ERROR);
+      new Alert("CANivore error detected, robot may no tbe controllable.", AlertType.ERROR);
   private final Alert lowBatteryAlert =
-          new Alert(
-                  "Battery voltage is very low, consider turning off the robot or replacing the battery.",
-                  AlertType.WARNING);
+      new Alert(
+          "Battery voltage is very low, consider turning off the robot or replacing the battery.",
+          AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -201,7 +201,9 @@ public class Robot extends LoggedRobot {
     if (canStatus.transmitErrorCount > 0 || canStatus.receiveErrorCount > 0) {
       canErrorTimer.restart();
     }
-    canErrorAlert.set(!canErrorTimer.hasElapsed(canErrorTimeThreshold) && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
+    canErrorAlert.set(
+        !canErrorTimer.hasElapsed(canErrorTimeThreshold)
+            && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
 
     // Log CANivore status
     if (Constants.getMode() == Mode.REAL) {
@@ -216,14 +218,17 @@ public class Robot extends LoggedRobot {
       if (!canivoreStatus.Status.isOK()) {
         canivoreErrorTimer.restart();
       }
-      canivoreErrorAlert.set(!canivoreStatus.Status.isOK() || !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold));
+      canivoreErrorAlert.set(
+          !canivoreStatus.Status.isOK()
+              || !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold));
     }
 
     // Low battery alert
     if (DriverStation.isEnabled()) {
       disabledTimer.reset();
     }
-    if (RobotController.getBatteryVoltage() <= lowBatteryVoltage && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
+    if (RobotController.getBatteryVoltage() <= lowBatteryVoltage
+        && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
       lowBatteryAlert.set(true);
     }
 

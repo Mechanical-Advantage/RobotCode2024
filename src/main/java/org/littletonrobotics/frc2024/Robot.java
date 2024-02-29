@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024;
 
+import static org.littletonrobotics.frc2024.util.Alert.AlertType;
+
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -16,10 +18,18 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
+import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.BatteryTracker;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -36,11 +46,17 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * project.
  */
 public class Robot extends LoggedRobot {
+  private static final String batteryNameFile = "/home/lvuser/battery-name.txt";
+
   private Command autoCommand;
   private RobotContainer robotContainer;
 
   private double autoStart;
   private boolean autoMessagePrinted;
+  private boolean batteryNameWritten = false;
+
+  private final Alert sameBatteryAlert =
+      new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -50,6 +66,9 @@ public class Robot extends LoggedRobot {
   public void robotInit() {
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
+    System.out.println("[Init] Scanning battery");
+    Logger.recordMetadata("BatteryName", "BAT-" + BatteryTracker.scanBattery(1.5));
+    System.out.println("[Init] Starting AdvantageKit");
     Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
     Logger.recordMetadata("RuntimeType", getRuntimeType().toString());
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -126,6 +145,30 @@ public class Robot extends LoggedRobot {
       DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
     }
 
+    // Check for battery alert
+    if (Constants.getMode() == Mode.REAL
+        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)) {
+      File file = new File(batteryNameFile);
+      if (file.exists()) {
+        // Read previous battery name
+        String previousBatteryName = "";
+        try {
+          previousBatteryName =
+              new String(Files.readAllBytes(Paths.get(batteryNameFile)), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+
+        if (previousBatteryName.equals(BatteryTracker.getName())) {
+          // Same battery, set alert
+          sameBatteryAlert.set(true);
+        } else {
+          // New battery, delete file
+          file.delete();
+        }
+      }
+    }
+
     RobotController.setBrownoutVoltage(6.0);
 
     // Instantiate our RobotContainer. This will perform all our button bindings,
@@ -180,6 +223,21 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
+    }
+
+    // Write battery name if connected to field
+    if (Constants.getMode() == Mode.REAL
+        && !batteryNameWritten
+        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)
+        && DriverStation.isFMSAttached()) {
+      batteryNameWritten = true;
+      try {
+        FileWriter fileWriter = new FileWriter(batteryNameFile);
+        fileWriter.write(BatteryTracker.getName());
+        fileWriter.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
 
     Threads.setCurrentThreadPriority(true, 10);

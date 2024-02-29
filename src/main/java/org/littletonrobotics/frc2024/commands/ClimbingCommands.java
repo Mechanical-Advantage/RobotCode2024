@@ -79,15 +79,7 @@ public class ClimbingCommands {
             .until(drive::isAutoAlignGoalCompleted),
 
         // Let driver move robot left and right while aligned to chain
-        drive.run(
-            () ->
-                drive.acceptTeleopInput(
-                    0.0,
-                    Math.signum(controllerY.getAsDouble())
-                        * Math.pow(controllerY.getAsDouble(), 2)
-                        * 0.25,
-                    0.0,
-                    true)));
+        drive.run(() -> drive.acceptTeleopInput(0.0, controllerY.getAsDouble() * 0.25, 0.0, true)));
   }
 
   /** Drive to back climber ready pose. */
@@ -106,14 +98,7 @@ public class ClimbingCommands {
     return drive.run(
         () ->
             drive.acceptTeleopInput(
-                Math.signum(controllerX.getAsDouble())
-                    * Math.pow(controllerX.getAsDouble(), 2)
-                    * 0.25,
-                Math.signum(controllerY.getAsDouble())
-                    * Math.pow(controllerY.getAsDouble(), 2)
-                    * 0.25,
-                0,
-                true));
+                controllerX.getAsDouble() * 0.25, controllerY.getAsDouble() * 0.25, 0, true));
   }
 
   /**

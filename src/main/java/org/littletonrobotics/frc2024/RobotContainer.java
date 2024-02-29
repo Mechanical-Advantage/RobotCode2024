@@ -470,9 +470,10 @@ public class RobotContainer {
         .and(autoDriveDisable.negate())
         .whileTrue(
             Commands.either(
-                ClimbingCommands.driveToBack(drive, () -> -driver.getLeftX()),
-                ClimbingCommands.driveToFront(drive, () -> -driver.getLeftX()),
-                () -> trapScoreMode));
+                    ClimbingCommands.driveToBack(drive, () -> -driver.getLeftX()),
+                    ClimbingCommands.driveToFront(drive, superstructure, () -> -driver.getLeftX()),
+                    () -> trapScoreMode)
+                .withInterruptBehavior(Command.InterruptionBehavior.kCancelSelf));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation

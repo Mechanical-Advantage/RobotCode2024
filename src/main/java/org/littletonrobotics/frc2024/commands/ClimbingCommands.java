@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -87,9 +88,23 @@ public class ClimbingCommands {
     return driveToPoseWithAdjust(drive, backPrepareClimbPose, controllerY);
   }
 
-  /** Drive to front climber ready pose */
-  public static Command driveToFront(Drive drive, DoubleSupplier controllerY) {
-    return driveToPoseWithAdjust(drive, frontPrepareClimbPose, controllerY);
+  /** Drive to front climber ready pose while preparing climber */
+  public static Command driveToFront(
+      Drive drive, Superstructure superstructure, DoubleSupplier controllerY) {
+    return driveToPoseWithAdjust(drive, frontPrepareClimbPose, controllerY)
+        .alongWith(
+            Commands.waitUntil(
+                    () -> {
+                      Pose2d poseError =
+                          RobotState.getInstance()
+                              .getEstimatedPose()
+                              .relativeTo(frontPrepareClimbPose.get());
+                      return poseError.getTranslation().getNorm() <= Units.feetToMeters(2.0)
+                          && Math.abs(poseError.getRotation().getRotations()) <= 0.25;
+                    })
+                .andThen(
+                    superstructure.setGoalWithConstraintsCommand(
+                        Superstructure.Goal.PREPARE_CLIMB, Arm.smoothProfileConstraints.get())));
   }
 
   /** Command that lets driver adjust robot relative to the robot at slow speed */
@@ -112,7 +127,7 @@ public class ClimbingCommands {
             () -> {
               Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
               Pose2d targetPose =
-                  currentPose.transformBy(new Translation2d(chainToBack.get(), 0).toTransform2d());
+                  currentPose.transformBy(new Translation2d(-chainToBack.get(), 0).toTransform2d());
               drive.setAutoAlignGoal(() -> targetPose, true);
             },
             drive::clearAutoAlignGoal)
@@ -145,9 +160,9 @@ public class ClimbingCommands {
       Trigger startClimbTrigger,
       Trigger autoDriveDisable) {
     return Commands.sequence(
-            // Drive forward while raising arm and climber
+            // Drive forward
             prepareClimbFromFront(drive, superstructure, autoDriveDisable)
-                .until(superstructure::atGoal),
+                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted()),
 
             // Allow driver to line up
             Commands.waitUntil(startClimbTrigger)

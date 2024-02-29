@@ -135,13 +135,13 @@ public class Rollers extends SubsystemBase {
         indexer.setGoal(Indexer.Goal.SHOOTING);
       }
       case AMP_SCORE -> {
-        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        feeder.setGoal(Feeder.Goal.SHUFFLING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.AMP_SCORING);
       }
       case SHUFFLE_BACKPACK -> {
         // Shuffle into backpack
-        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        feeder.setGoal(Feeder.Goal.SHUFFLING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         if (gamepieceState != GamepieceState.BACKPACK_STAGED) {
           backpack.setGoal(Backpack.Goal.AMP_SCORING);
@@ -151,7 +151,7 @@ public class Rollers extends SubsystemBase {
       }
       case SHUFFLE_SHOOTER -> {
         // Shuffle into shooter
-        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        feeder.setGoal(Feeder.Goal.SHUFFLING);
         backpack.setGoal(Backpack.Goal.EJECTING);
         if (gamepieceState != GamepieceState.SHOOTER_STAGED) {
           indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);

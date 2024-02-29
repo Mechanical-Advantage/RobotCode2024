@@ -30,6 +30,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.HeadingControl
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -219,6 +220,7 @@ public class Drive extends SubsystemBase {
 
     // Run drive based on current mode
     ChassisSpeeds teleopSpeeds = teleopDriveController.update();
+    Leds.getInstance().autoDrive = false;
     switch (currentDriveMode) {
       case TELEOP -> {
         // Plain teleop drive
@@ -235,6 +237,7 @@ public class Drive extends SubsystemBase {
       case AUTO_ALIGN -> {
         // Run auto align with drive input
         desiredSpeeds = autoAlignController.update();
+        Leds.getInstance().autoDrive = true;
       }
       case CHARACTERIZATION -> {
         // Run characterization

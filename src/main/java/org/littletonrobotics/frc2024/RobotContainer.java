@@ -492,7 +492,7 @@ public class RobotContainer {
                 .repeatedly());
 
     // Adjust arm preset
-    operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+    operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Climber controls
     operator.b().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
@@ -505,7 +505,7 @@ public class RobotContainer {
                 superstructure,
                 rollers,
                 operator.rightBumper().doublePress(),
-                operator.x().doublePress(),
+                operator.start().doublePress().or(operator.back().doublePress()),
                 autoDriveDisable));
     operator
         .leftBumper()
@@ -515,10 +515,10 @@ public class RobotContainer {
                 drive, superstructure, operator.rightBumper().doublePress(), autoDriveDisable));
 
     // Shuffle gamepiece
-    operator.b().whileTrue(rollers.shuffle());
+    operator.a().whileTrue(rollers.shuffle());
 
     // Start flywheels
-    operator.x().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
+    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
 
     // Unjam intake
     operator

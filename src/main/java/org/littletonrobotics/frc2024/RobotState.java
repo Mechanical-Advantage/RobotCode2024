@@ -54,28 +54,29 @@ public class RobotState {
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
 
   static {
-    armAngleMap.put(1.026639, 52.0);
-    armAngleMap.put(1.156125, 50.0);
-    armAngleMap.put(1.174623, 50.0);
-    armAngleMap.put(1.38735, 49.0);
-    armAngleMap.put(1.618575, 44.0);
-    armAngleMap.put(1.8498, 40.5);
-    armAngleMap.put(2.081025, 37.5);
-    armAngleMap.put(2.31225, 36.0);
-    armAngleMap.put(2.543475, 34.0);
-    armAngleMap.put(2.7747, 33.0);
-    armAngleMap.put(3.005925, 31.0);
-    armAngleMap.put(3.23715, 30.0);
-    armAngleMap.put(3.468375, 28.5);
-    armAngleMap.put(3.468375, 28.0);
-    armAngleMap.put(3.6996, 27.5);
-    armAngleMap.put(3.912327, 26.5);
-    armAngleMap.put(4.16205, 26.25);
-    armAngleMap.put(4.393275, 25.25);
-    armAngleMap.put(4.6245, 25.0);
-    armAngleMap.put(4.855725, 24.75);
-    armAngleMap.put(5.170191, 24.6);
-    armAngleMap.put(5.373669, 24.25);
+    armAngleMap.put(1.11, 52.0);
+    armAngleMap.put(1.11396503027344, 50.0);
+    armAngleMap.put(1.11517881505102, 50.0);
+    armAngleMap.put(1.14076944411173, 49.0);
+    armAngleMap.put(1.19286104081633, 44.0);
+    armAngleMap.put(1.27023982038724, 40.5);
+    armAngleMap.put(1.37290578282446, 37.5);
+    armAngleMap.put(1.50085892812799, 36.0);
+    armAngleMap.put(1.65409925629783, 34.0);
+    armAngleMap.put(1.83262676733398, 33.0);
+    armAngleMap.put(2.03644146123645, 31.0);
+    armAngleMap.put(2.26554333800522, 30.0);
+    armAngleMap.put(2.26554333800522, 30.0);
+    armAngleMap.put(2.51993239764031, 28.5);
+    armAngleMap.put(2.7996086401417, 28.0);
+    armAngleMap.put(3.07924442315051, 27.5);
+    armAngleMap.put(3.43482267374342, 26.5);
+    armAngleMap.put(3.79036046484375, 26.25);
+    armAngleMap.put(4.17118543881039, 25.25);
+    armAngleMap.put(4.57729759564334, 25.0);
+    armAngleMap.put(5.170191, 24.75);
+    armAngleMap.put(5.57875095613441, 24.6);
+    armAngleMap.put(6.16743657326212, 24.25);
   }
 
   @AutoLogOutput @Setter @Getter private double shotCompensationDegrees = 0.0;

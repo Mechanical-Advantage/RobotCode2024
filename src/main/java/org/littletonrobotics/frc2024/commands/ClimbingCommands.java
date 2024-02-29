@@ -84,14 +84,20 @@ public class ClimbingCommands {
   }
 
   /** Drive to back climber ready pose. */
-  public static Command driveToBack(Drive drive, DoubleSupplier controllerY) {
-    return driveToPoseWithAdjust(drive, backPrepareClimbPose, controllerY);
+  public static Command driveToBack(
+      Drive drive, DoubleSupplier controllerY, Trigger autoDriveDisable) {
+    return driveToPoseWithAdjust(drive, backPrepareClimbPose, controllerY)
+        .onlyIf(autoDriveDisable.negate());
   }
 
   /** Drive to front climber ready pose while preparing climber */
   public static Command driveToFront(
-      Drive drive, Superstructure superstructure, DoubleSupplier controllerY) {
+      Drive drive,
+      Superstructure superstructure,
+      DoubleSupplier controllerY,
+      Trigger autoDriveDisable) {
     return driveToPoseWithAdjust(drive, frontPrepareClimbPose, controllerY)
+        .onlyIf(autoDriveDisable.negate())
         .alongWith(
             Commands.waitUntil(
                     () -> {
@@ -184,7 +190,9 @@ public class ClimbingCommands {
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
               }
-            });
+              superstructure.setClimbSequenceActivated(false);
+            })
+        .beforeStarting(() -> superstructure.setClimbSequenceActivated(true));
   }
 
   /** Runs the climbing sequence and then scores in the trap when the trapScore button is pressed */
@@ -241,6 +249,8 @@ public class ClimbingCommands {
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
               }
-            });
+              superstructure.setClimbSequenceActivated(false);
+            })
+        .beforeStarting(() -> superstructure.setClimbSequenceActivated(true));
   }
 }

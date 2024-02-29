@@ -467,11 +467,16 @@ public class RobotContainer {
     // ------------- Climbing Controls -------------
     driver
         .x()
-        .and(autoDriveDisable.negate())
+        .and(() -> !superstructure.isClimbSequenceActivated())
+        .and(
+            () ->
+                superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
+                    && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
         .whileTrue(
             Commands.either(
-                    ClimbingCommands.driveToBack(drive, () -> -driver.getLeftX()),
-                    ClimbingCommands.driveToFront(drive, superstructure, () -> -driver.getLeftX()),
+                    ClimbingCommands.driveToBack(drive, () -> -driver.getLeftX(), autoDriveDisable),
+                    ClimbingCommands.driveToFront(
+                        drive, superstructure, () -> -driver.getLeftX(), autoDriveDisable),
                     () -> trapScoreMode)
                 .withInterruptBehavior(Command.InterruptionBehavior.kCancelSelf));
 
@@ -496,7 +501,7 @@ public class RobotContainer {
     operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Climber controls
-    operator.b().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
+    operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
     operator
         .leftBumper()
         .and(() -> trapScoreMode)
@@ -521,6 +526,7 @@ public class RobotContainer {
                 () -> -driver.getLeftX(),
                 operator.rightBumper().doublePress(),
                 autoDriveDisable));
+    operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
 
     // Shuffle gamepiece
     operator.a().whileTrue(rollers.shuffle());

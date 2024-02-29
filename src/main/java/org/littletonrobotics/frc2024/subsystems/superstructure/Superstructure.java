@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
+import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
@@ -35,11 +36,14 @@ public class Superstructure extends SubsystemBase {
     CLIMB,
     CANCEL_CLIMB,
     TRAP,
+    RESET,
     DIAGNOSTIC_ARM
   }
 
   @Getter private Goal currentGoal = Goal.STOW;
   @Getter private Goal desiredGoal = Goal.STOW;
+
+  @Getter @Setter private boolean climbSequenceActivated = false;
 
   private final Arm arm;
   private final Climber climber;
@@ -68,6 +72,10 @@ public class Superstructure extends SubsystemBase {
         && !DriverStation.isAutonomousEnabled()) {
       currentGoal = Goal.RESET_CLIMB;
     } else {
+      currentGoal = desiredGoal;
+    }
+
+    if (desiredGoal == Goal.CANCEL_CLIMB || desiredGoal == Goal.CANCEL_PREPARE_CLIMB) {
       currentGoal = desiredGoal;
     }
 
@@ -139,6 +147,10 @@ public class Superstructure extends SubsystemBase {
           climber.setGoal(Climber.Goal.RETRACT);
         }
         backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
+      }
+      case RESET -> {
+        desiredGoal = Goal.STOW;
+        setDefaultCommand(setGoalCommand(Goal.STOW));
       }
       case DIAGNOSTIC_ARM -> {
         arm.setGoal(Arm.Goal.CUSTOM);

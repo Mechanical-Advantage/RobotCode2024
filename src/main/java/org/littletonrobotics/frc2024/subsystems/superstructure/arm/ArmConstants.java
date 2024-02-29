@@ -46,7 +46,7 @@ public class ArmConstants {
   /** The offset of the arm encoder in radians. */
   public static final double armEncoderOffsetRads =
       switch (Constants.getRobot()) {
-        default -> 0.42337869745643697 - Math.PI / 2.0;
+        default -> -1.2241166687327416;
         case DEVBOT -> -1.233 - Math.PI / 2.0;
       };
 

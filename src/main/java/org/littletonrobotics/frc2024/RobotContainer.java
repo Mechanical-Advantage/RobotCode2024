@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
@@ -59,6 +60,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -94,6 +96,10 @@ public class RobotContainer {
       new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
+  private final LoggedDashboardNumber endgameAlert1 =
+      new LoggedDashboardNumber("Endgame alert 1", 30.0);
+  private final LoggedDashboardNumber endgameAlert2 =
+      new LoggedDashboardNumber("Endgame alert 2", 10.0);
 
   private boolean podiumShotMode = false;
 
@@ -252,6 +258,40 @@ public class RobotContainer {
     if (Constants.tuningMode) {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
+
+    // Endgame alert trigger
+    Function<Double, Command> controllerRumbleCommandFactory =
+        time ->
+            Commands.sequence(
+                Commands.runOnce(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+                      operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+                    }),
+                Commands.waitSeconds(time),
+                Commands.runOnce(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                      operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                    }));
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
+        .onTrue(controllerRumbleCommandFactory.apply(0.5));
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
+        .onTrue(
+            Commands.sequence(
+                controllerRumbleCommandFactory.apply(0.2),
+                Commands.waitSeconds(0.1),
+                controllerRumbleCommandFactory.apply(0.2),
+                Commands.waitSeconds(0.1),
+                controllerRumbleCommandFactory.apply(0.2)));
   }
 
   private void configureAutos() {

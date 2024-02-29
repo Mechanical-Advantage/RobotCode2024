@@ -171,7 +171,7 @@ public class AutoBuilder {
     var grabCenterline2 = new HolonomicTrajectory("davisAlternativeAuto_grabCenterline2");
 
     final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.5;
+    final double spikeIntakeDelay = 0.1;
     final double spikeAimDelay = 0.4;
 
     Timer autoTimer = new Timer();
@@ -247,7 +247,7 @@ public class AutoBuilder {
                                             + spikeAimDelay
                                             + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
-                                            - shootTimeoutSecs.get()))
+                                            - shootTimeoutSecs.get() / 2))
                             .andThen(
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
@@ -272,7 +272,7 @@ public class AutoBuilder {
                                             + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             + grabCenterline3.getDuration()
-                                            - shootTimeoutSecs.get()))
+                                            - shootTimeoutSecs.get() / 2))
                             .andThen(
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)

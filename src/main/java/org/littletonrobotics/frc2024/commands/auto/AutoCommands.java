@@ -56,7 +56,7 @@ public class AutoCommands {
    *     from center line
    */
   public static boolean xCrossed(double xPosition, boolean towardsCenterline) {
-    Pose2d robotPose = RobotState.getInstance().getEstimatedPose();
+    Pose2d robotPose = RobotState.getInstance().getTrajectorySetpoint();
     if (AllianceFlipUtil.shouldFlip()) {
       if (towardsCenterline) {
         return robotPose.getX() < FieldConstants.fieldLength - xPosition;

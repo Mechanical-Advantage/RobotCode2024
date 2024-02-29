@@ -49,7 +49,7 @@ public class Leds extends VirtualSubsystem {
 
   private Optional<Alliance> alliance = Optional.empty();
   private Color allianceColor = Color.kGold;
-  private Color secondaryDisabledColor = Color.kBlue;
+  private Color secondaryDisabledColor = Color.kDarkBlue;
   private boolean lastEnabledAuto = false;
   private double lastEnabledTime = 0.0;
   private boolean estopped = false;
@@ -105,7 +105,7 @@ public class Leds extends VirtualSubsystem {
           alliance
               .map(alliance -> alliance == Alliance.Blue ? Color.kBlue : Color.kRed)
               .orElse(Color.kGold);
-      secondaryDisabledColor = alliance.isPresent() ? Color.kBlack : Color.kBlue;
+      secondaryDisabledColor = alliance.isPresent() ? Color.kBlack : Color.kDarkBlue;
     }
 
     // Update auto state
@@ -160,11 +160,15 @@ public class Leds extends VirtualSubsystem {
                 new Color(0.15, 0.3, 1.0)),
             3,
             5.0);
-        solid(allianceColor);
         buffer.setLED(staticSectionLength, allianceColor);
       } else {
         // Default pattern
-        wave(allianceColor, secondaryDisabledColor, waveSlowCycleLength, waveSlowDuration);
+        wave(allianceColor, secondaryDisabledColor, waveAllianceCycleLength, waveAllianceDuration);
+      }
+
+      // Same battery alert
+      if (sameBattery) {
+        strobe(Color.kRed, strobeFastDuration);
       }
     } else if (DriverStation.isAutonomous()) {
       wave(Color.kGold, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);
@@ -177,8 +181,6 @@ public class Leds extends VirtualSubsystem {
         rainbow(rainbowCycleLength, rainbowDuration);
       } else if (hasNote) {
         solid(Color.kGreen);
-      } else if (intaking) {
-        strobe(Color.kOrange, strobeFastDuration);
       } else if (requestAmp) {
         strobe(Color.kWhite, strobeFastDuration);
       }
@@ -196,11 +198,6 @@ public class Leds extends VirtualSubsystem {
     // Arm estop alert
     if (armEstopped) {
       solid(Color.kRed);
-    }
-
-    // Same battery alert
-    if (sameBattery) {
-      breath(Color.kRed, Color.kBlack, breathDuration);
     }
 
     // Update LEDs

@@ -122,7 +122,7 @@ public class AutoBuilder {
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX() + 0.1, false)
+                                waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
                                     .andThen(
                                         superstructure.setGoalCommand(Superstructure.Goal.AIM))),
 
@@ -156,7 +156,7 @@ public class AutoBuilder {
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX() + 0.1, false)
+                                waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
                                     .andThen(
                                         superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
 
@@ -171,8 +171,8 @@ public class AutoBuilder {
     var grabCenterline2 = new HolonomicTrajectory("davisAlternativeAuto_grabCenterline2");
 
     final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.1;
-    final double spikeAimDelay = 0.4;
+    final double spikeIntakeDelay = 0.05;
+    final double spikeAimDelay = 0.32;
 
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)

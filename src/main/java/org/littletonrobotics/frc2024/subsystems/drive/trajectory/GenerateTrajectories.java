@@ -44,7 +44,7 @@ public class GenerateTrajectories {
             .setMaxWheelOmega(
                 DriveConstants.moduleLimitsFree.maxDriveVelocity()
                     / DriveConstants.driveConfig.wheelRadius()
-                    * 0.8)
+                    * 0.75)
             .build();
 
     // Check hashcodes

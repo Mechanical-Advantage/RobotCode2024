@@ -457,7 +457,12 @@ public class RobotContainer {
     operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
 
     // Request amp
-    operator.b().whileTrue(Commands.startEnd(() -> Leds.getInstance().requestAmp = true, () -> Leds.getInstance().requestAmp = false));
+    operator
+        .b()
+        .whileTrue(
+            Commands.startEnd(
+                () -> Leds.getInstance().requestAmp = true,
+                () -> Leds.getInstance().requestAmp = false));
 
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());

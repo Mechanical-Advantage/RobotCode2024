@@ -51,7 +51,7 @@ public class Arm {
       new LoggedTunableNumber("Arm/SmoothVelocity", profileConstraints.maxVelocity * 0.75);
   private static final LoggedTunableNumber smoothAcceleration =
       new LoggedTunableNumber("Arm/SmoothAcceleration", profileConstraints.maxAcceleration * 0.5);
-      private static final LoggedTunableNumber prepareClimbVelocity =
+  private static final LoggedTunableNumber prepareClimbVelocity =
       new LoggedTunableNumber("Arm/PrepareClimbVelocity", 1.5);
   private static final LoggedTunableNumber prepareClimbAcceleration =
       new LoggedTunableNumber("Arm/PrepareClimbAcceleration", 1.0);
@@ -66,7 +66,8 @@ public class Arm {
       () -> new TrapezoidProfile.Constraints(smoothVelocity.get(), smoothAcceleration.get());
   public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints =
       () ->
-          new TrapezoidProfile.Constraints(prepareClimbVelocity.get(), prepareClimbAcceleration.get());
+          new TrapezoidProfile.Constraints(
+              prepareClimbVelocity.get(), prepareClimbAcceleration.get());
 
   @RequiredArgsConstructor
   public enum Goal {

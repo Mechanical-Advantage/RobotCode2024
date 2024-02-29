@@ -68,8 +68,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
-import org.littletonrobotics.frc2024.util.*;
-import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 

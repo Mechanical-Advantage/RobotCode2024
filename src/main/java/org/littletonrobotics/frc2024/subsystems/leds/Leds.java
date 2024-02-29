@@ -49,6 +49,7 @@ public class Leds extends VirtualSubsystem {
 
   private Optional<Alliance> alliance = Optional.empty();
   private Color allianceColor = Color.kGold;
+  private Color secondaryDisabledColor = Color.kBlue;
   private boolean lastEnabledAuto = false;
   private double lastEnabledTime = 0.0;
   private boolean estopped = false;
@@ -104,6 +105,7 @@ public class Leds extends VirtualSubsystem {
           alliance
               .map(alliance -> alliance == Alliance.Blue ? Color.kBlue : Color.kRed)
               .orElse(Color.kGold);
+      secondaryDisabledColor = alliance.isPresent() ? Color.kBlack : Color.kBlue;
     }
 
     // Update auto state
@@ -162,7 +164,7 @@ public class Leds extends VirtualSubsystem {
         buffer.setLED(staticSectionLength, allianceColor);
       } else {
         // Default pattern
-        wave(allianceColor, Color.kBlack, waveSlowCycleLength, waveSlowDuration);
+        wave(allianceColor, secondaryDisabledColor, waveSlowCycleLength, waveSlowDuration);
       }
     } else if (DriverStation.isAutonomous()) {
       wave(Color.kGold, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);

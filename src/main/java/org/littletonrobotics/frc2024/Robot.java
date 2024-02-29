@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
-import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
+import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.BatteryTracker;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
@@ -270,7 +270,7 @@ public class Robot extends LoggedRobot {
       disabledTimer.reset();
     }
     if (RobotController.getBatteryVoltage() <= lowBatteryVoltage
-            && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
+        && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
       lowBatteryAlert.set(true);
       Leds.getInstance().lowBatteryAlert = true;
     }

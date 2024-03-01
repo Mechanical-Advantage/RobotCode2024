@@ -151,7 +151,7 @@ task(eventDeploy) {
         }
     }
 }
-compileJava.dependsOn(eventDeploy)
+// compileJava.dependsOn(eventDeploy)
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 4.

@@ -83,6 +83,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 public class RobotContainer {
   // Load robot state
   private final RobotState robotState = RobotState.getInstance();
+  private final Leds leds = Leds.getInstance();
 
   // Subsystems
   private Drive drive;

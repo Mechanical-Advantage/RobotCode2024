@@ -32,7 +32,7 @@ public final class Constants {
   private static RobotType robotType = RobotType.COMPBOT;
   public static final boolean tuningMode = false;
 
-  public static final AprilTagType aprilTagType = AprilTagType.WPI;
+  public static final AprilTagType aprilTagType = AprilTagType.OFFICIAL;
 
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {

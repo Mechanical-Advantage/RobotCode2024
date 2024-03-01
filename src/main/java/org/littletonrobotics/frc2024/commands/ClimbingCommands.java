@@ -141,26 +141,11 @@ public class ClimbingCommands {
   }
 
   public static Command simpleClimbSequence(
-      Drive drive,
-      Superstructure superstructure,
-      DoubleSupplier controllerX,
-      DoubleSupplier controllerY,
-      Trigger startClimbTrigger,
-      Trigger autoDriveDisable) {
-    return Commands.sequence(
-            // Drive forward
-            prepareClimbFromFront(drive, superstructure, autoDriveDisable)
-                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted())
-                .withTimeout(5.0),
-
-            // Allow driver to line up
-            Commands.waitUntil(startClimbTrigger)
-                .deadlineWith(
-                    superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
-                    driverAdjust(drive, controllerX, controllerY)),
-
-            // Climb
-            superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+      Superstructure superstructure, Trigger startClimbTrigger) {
+    return superstructure
+        .setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)
+        .until(startClimbTrigger)
+        .andThen(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
 
         // If cancelled, go to safe state
         .finallyDo(

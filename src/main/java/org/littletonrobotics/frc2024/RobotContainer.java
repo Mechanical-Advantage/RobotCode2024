@@ -600,12 +600,7 @@ public class RobotContainer {
         .and(() -> !trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.simpleClimbSequence(
-                    drive,
-                    superstructure,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    operator.rightBumper().doublePress(),
-                    autoDriveDisable)
+                    superstructure, operator.rightBumper().doublePress())
                 .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
 

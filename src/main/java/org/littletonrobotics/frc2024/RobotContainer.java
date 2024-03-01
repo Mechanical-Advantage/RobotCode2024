@@ -485,7 +485,7 @@ public class RobotContainer {
           return ampCenterRotated.transformBy(
               GeomUtil.toTransform2d(
                   Units.inchesToMeters(20.0) // End of intake bumper to center robot
-                      + Units.inchesToMeters(8.0),
+                      + Units.inchesToMeters(9.0),
                   0));
         };
     driver

@@ -17,11 +17,14 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.Supplier;
+import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
@@ -55,6 +58,14 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIO;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOKrakenFOC;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOKrakenFOC;
+import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuatorIOSim;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOKrakenFOC;
+import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
@@ -65,6 +76,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
+@ExtensionMethod({DoublePressTracker.class})
 public class RobotContainer {
   // Load robot state
   private final RobotState robotState = RobotState.getInstance();
@@ -95,6 +107,7 @@ public class RobotContainer {
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   private boolean podiumShotMode = false;
+  private boolean trapScoreMode = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -108,6 +121,8 @@ public class RobotContainer {
     Intake intake = null;
     Backpack backpack = null;
     Arm arm = null;
+    Climber climber = null;
+    BackpackActuator backpackActuator = null;
     RollersSensorsIO rollersSensorsIO = null;
 
     // Create subsystems
@@ -134,6 +149,8 @@ public class RobotContainer {
           backpack = new Backpack(new BackpackIOKrakenFOC());
           rollersSensorsIO = new RollersSensorsIOCompbot();
           arm = new Arm(new ArmIOKrakenFOC());
+          climber = new Climber(new ClimberIOKrakenFOC());
+          backpackActuator = new BackpackActuator(new BackpackActuatorIOKrakenFOC());
         }
         case DEVBOT -> {
           drive =
@@ -169,6 +186,8 @@ public class RobotContainer {
           backpack = new Backpack(new BackpackIOSim());
           rollersSensorsIO = new RollersSensorsIO() {};
           arm = new Arm(new ArmIOSim());
+          climber = new Climber(new ClimberIOSim());
+          backpackActuator = new BackpackActuator(new BackpackActuatorIOSim());
         }
       }
     }
@@ -219,12 +238,19 @@ public class RobotContainer {
     if (arm == null) {
       arm = new Arm(new ArmIO() {});
     }
+    if (climber == null) {
+      climber = new Climber(new ClimberIO() {});
+    }
+    if (backpackActuator == null) {
+      backpackActuator = new BackpackActuator(new BackpackActuatorIO() {});
+    }
     rollers = new Rollers(feeder, indexer, intake, backpack, rollersSensorsIO);
-    superstructure = new Superstructure(arm);
+    superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Set up subsystems
     arm.setOverrides(armDisable, armCoast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
+    climber.setCoastOverride(armCoast);
     flywheels.setPrepareShootSupplier(
         () -> {
           return DriverStation.isTeleopEnabled()
@@ -237,7 +263,10 @@ public class RobotContainer {
                   < Units.feetToMeters(25.0)
               && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
               && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB;
+              && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
+              && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
+              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
+              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB;
         });
 
     // Configure autos and buttons
@@ -446,6 +475,29 @@ public class RobotContainer {
                     && superstructure.atGoal())
         .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
+    // ------------- Climbing Controls -------------
+    driver
+        .x()
+        .and(
+            () ->
+                superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
+                    && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
+        .whileTrue(
+            Commands.either(
+                ClimbingCommands.autoDrive(
+                    false,
+                    drive,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    autoDriveDisable),
+                ClimbingCommands.autoDrive(
+                    true,
+                    drive,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    autoDriveDisable),
+                () -> trapScoreMode));
+
     // ------------- Operator Controls -------------
     // Adjust shot compensation
     operator
@@ -464,13 +516,43 @@ public class RobotContainer {
                 .repeatedly());
 
     // Adjust arm preset
-    operator.a().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+    operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+
+    // Climber controls
+    operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
+    operator
+        .leftBumper()
+        .and(() -> trapScoreMode)
+        .toggleOnTrue(
+            ClimbingCommands.climbNTrapSequence(
+                    drive,
+                    superstructure,
+                    rollers,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    operator.rightBumper().doublePress(),
+                    operator.start().doublePress().or(operator.back().doublePress()),
+                    autoDriveDisable)
+                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
+    operator
+        .leftBumper()
+        .and(() -> !trapScoreMode)
+        .toggleOnTrue(
+            ClimbingCommands.simpleClimbSequence(
+                    drive,
+                    superstructure,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    operator.rightBumper().doublePress(),
+                    autoDriveDisable)
+                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
+    operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
 
     // Shuffle gamepiece
-    operator.b().whileTrue(rollers.shuffle());
+    operator.a().whileTrue(rollers.shuffle());
 
     // Start flywheels
-    operator.x().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
+    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
 
     // Unjam intake
     operator
@@ -511,6 +593,7 @@ public class RobotContainer {
         "Shot Compensation Degrees",
         String.format("%.1f", RobotState.getInstance().getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
+    SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
   }
 
   /**

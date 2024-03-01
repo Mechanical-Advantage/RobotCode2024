@@ -51,6 +51,10 @@ public class Arm {
       new LoggedTunableNumber("Arm/SmoothVelocity", profileConstraints.maxVelocity * 0.75);
   private static final LoggedTunableNumber smoothAcceleration =
       new LoggedTunableNumber("Arm/SmoothAcceleration", profileConstraints.maxAcceleration * 0.5);
+  private static final LoggedTunableNumber prepareClimbVelocity =
+      new LoggedTunableNumber("Arm/PrepareClimbVelocity", 0.75);
+  private static final LoggedTunableNumber prepareClimbAcceleration =
+      new LoggedTunableNumber("Arm/PrepareClimbAcceleration", 0.8);
   private static final LoggedTunableNumber lowerLimitDegrees =
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
@@ -60,6 +64,10 @@ public class Arm {
       () -> new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get());
   public static final Supplier<TrapezoidProfile.Constraints> smoothProfileConstraints =
       () -> new TrapezoidProfile.Constraints(smoothVelocity.get(), smoothAcceleration.get());
+  public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints =
+      () ->
+          new TrapezoidProfile.Constraints(
+              prepareClimbVelocity.get(), prepareClimbAcceleration.get());
 
   @RequiredArgsConstructor
   public enum Goal {
@@ -69,9 +77,11 @@ public class Arm {
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     STOW(new LoggedTunableNumber("Arm/StowDegrees", 0.0)),
-    AMP(new LoggedTunableNumber("Arm/AmpDegrees", 100.0)),
+    AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
+    PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 105.0)),
+    CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
@@ -195,7 +205,7 @@ public class Arm {
     io.stop();
   }
 
-  @AutoLogOutput(key = "Arm/AtGoal")
+  @AutoLogOutput(key = "Superstructure/Arm/AtGoal")
   public boolean atGoal() {
     return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
   }

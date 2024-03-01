@@ -627,7 +627,7 @@ public class RobotContainer {
                 .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.waitUntil(superstructure::atGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNTACO)))
                 .withName("Untaco"));
 
     // Unjam intake

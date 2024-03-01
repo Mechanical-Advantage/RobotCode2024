@@ -37,6 +37,7 @@ public class Rollers extends SubsystemBase {
   public enum Goal {
     IDLE,
     FLOOR_INTAKE,
+    UNTACO,
     STATION_INTAKE,
     EJECT_TO_FLOOR,
     EJECT_FROM_FEEDER,
@@ -111,6 +112,15 @@ public class Rollers extends SubsystemBase {
       case FLOOR_INTAKE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);
+        if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
+          indexer.setGoal(Indexer.Goal.IDLING);
+        } else {
+          indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
+        }
+      }
+      case UNTACO -> {
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        intake.setGoal(Intake.Goal.IDLING);
         if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
           indexer.setGoal(Indexer.Goal.IDLING);
         } else {

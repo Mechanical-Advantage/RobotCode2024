@@ -418,8 +418,8 @@ public class RobotContainer {
                             drive.run(
                                 () ->
                                     drive.acceptTeleopInput(
-                                        -driver.getLeftY() * 0.25,
-                                        -driver.getLeftX() * 0.25,
+                                        -driver.getLeftY() * 0.5,
+                                        -driver.getLeftX() * 0.5,
                                         0.0,
                                         robotRelative.getAsBoolean()))),
                     autoDriveDisable)

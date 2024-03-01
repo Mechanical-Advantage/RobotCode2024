@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -329,7 +330,15 @@ public class RobotContainer {
   private void configureAutos() {
     AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
 
-    autoChooser.addDefaultOption("Do Nothing", Commands.none());
+    autoChooser.addDefaultOption(
+        "Do Nothing",
+        Commands.runOnce(
+            () ->
+                RobotState.getInstance()
+                    .resetPose(
+                        new Pose2d(
+                            new Translation2d(),
+                            AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 

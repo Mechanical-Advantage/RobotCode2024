@@ -619,7 +619,7 @@ public class RobotContainer {
     // Reset heading
     driver
         .start()
-        .or(driver.back())
+        .and(driver.back())
         .onTrue(
             Commands.runOnce(
                     () ->

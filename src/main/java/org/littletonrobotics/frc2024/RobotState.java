@@ -78,7 +78,7 @@ public class RobotState {
     armAngleMap.put(5.373669, 24.25);
   }
 
-  @Getter private double shotCompensationDegrees = 0.0;
+  @AutoLogOutput @Getter private double shotCompensationDegrees = 2.6;
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
     shotCompensationDegrees += deltaDegrees;

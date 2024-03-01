@@ -34,7 +34,7 @@ public class ClimbingCommands {
   private static final LoggedTunableNumber climbedXOffset =
       new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
-      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.5);
+      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.65);
   private static final LoggedTunableNumber chainToFront =
       new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.9);
 
@@ -69,11 +69,17 @@ public class ClimbingCommands {
 
   /** Command that lets driver adjust robot relative to the robot at slow speed */
   private static Command driverAdjust(
-      Drive drive, DoubleSupplier controllerX, DoubleSupplier controllerY) {
+      Drive drive,
+      DoubleSupplier controllerX,
+      DoubleSupplier controllerY,
+      DoubleSupplier controllerOmega) {
     return drive.run(
         () ->
             drive.acceptTeleopInput(
-                controllerX.getAsDouble() * 0.25, controllerY.getAsDouble() * 0.25, 0, true));
+                controllerX.getAsDouble(),
+                controllerY.getAsDouble(),
+                controllerOmega.getAsDouble(),
+                false));
   }
 
   private static Command driveToPoseWithAdjust(
@@ -89,7 +95,7 @@ public class ClimbingCommands {
             .until(drive::isAutoAlignGoalCompleted),
 
         // Let driver move robot left and right while aligned to chain
-        driverAdjust(drive, controllerX, controllerY));
+        driverAdjust(drive, controllerX, controllerY, () -> 0.0));
   }
 
   /** Drive to back climber ready pose. */
@@ -168,6 +174,7 @@ public class ClimbingCommands {
       Rollers rollers,
       DoubleSupplier controllerX,
       DoubleSupplier controllerY,
+      DoubleSupplier controllerOmega,
       Trigger startClimbTrigger,
       Trigger trapScoreTrigger,
       Trigger autoDriveDisable) {
@@ -181,7 +188,7 @@ public class ClimbingCommands {
             Commands.waitUntil(startClimbTrigger)
                 .deadlineWith(
                     superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
-                    driverAdjust(drive, controllerX, controllerY)),
+                    driverAdjust(drive, controllerX, controllerY, controllerOmega)),
 
             // Climb and wait, continue if trap button pressed
             superstructure

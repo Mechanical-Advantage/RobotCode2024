@@ -591,6 +591,7 @@ public class RobotContainer {
                     rollers,
                     () -> -driver.getLeftY(),
                     () -> -driver.getLeftX(),
+                    () -> -driver.getRightX(),
                     operator.rightBumper().doublePress(),
                     operator.start().doublePress().or(operator.back().doublePress()),
                     autoDriveDisable)

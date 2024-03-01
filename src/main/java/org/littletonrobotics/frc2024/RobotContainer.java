@@ -620,7 +620,7 @@ public class RobotContainer {
     operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
 
     // Unjam folded to shooter
-    driver
+    operator
         .leftTrigger()
         .whileTrue(
             superstructure

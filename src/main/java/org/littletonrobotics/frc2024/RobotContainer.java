@@ -483,7 +483,14 @@ public class RobotContainer {
         .b()
         .whileTrue(
             Commands.either(
-                    Commands.none(),
+                    drive
+                        .run(
+                            () ->
+                                drive.acceptTeleopInput(
+                                    -driver.getLeftY(),
+                                    -driver.getLeftX(),
+                                    -driver.getRightX(),
+                                    robotRelative.getAsBoolean())),
                     drive
                         .startEnd(
                             () -> drive.setAutoAlignGoal(ampAlignedPose, false),

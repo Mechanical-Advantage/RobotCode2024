@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -166,9 +167,11 @@ public class Arm {
       // Reset profile when disabled
       setpointState = new TrapezoidProfile.State(inputs.positionRads, 0);
     }
+    Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
 
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
+    Leds.getInstance().armCoast = coastSupplier.getAsBoolean() && disableSupplier.getAsBoolean();
 
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing

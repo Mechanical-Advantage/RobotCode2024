@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.commands.ClimbingCommands;
@@ -34,6 +35,7 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers.GamepieceState;
 import org.littletonrobotics.frc2024.subsystems.rollers.RollersSensorsIO;
@@ -69,6 +71,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -105,6 +108,10 @@ public class RobotContainer {
       new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
+  private final LoggedDashboardNumber endgameAlert1 =
+      new LoggedDashboardNumber("Endgame alert 1", 30.0);
+  private final LoggedDashboardNumber endgameAlert2 =
+      new LoggedDashboardNumber("Endgame alert 2", 10.0);
 
   private boolean podiumShotMode = false;
   private boolean trapScoreMode = true;
@@ -280,6 +287,42 @@ public class RobotContainer {
     if (Constants.tuningMode) {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
+
+    // Endgame alert trigger
+    Function<Double, Command> controllerRumbleCommandFactory =
+        time ->
+            Commands.sequence(
+                Commands.runOnce(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+                      operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+                      Leds.getInstance().endgameAlert = true;
+                    }),
+                Commands.waitSeconds(time),
+                Commands.runOnce(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                      operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                      Leds.getInstance().endgameAlert = false;
+                    }));
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
+        .onTrue(controllerRumbleCommandFactory.apply(0.5));
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
+        .onTrue(
+            Commands.sequence(
+                controllerRumbleCommandFactory.apply(0.2),
+                Commands.waitSeconds(0.1),
+                controllerRumbleCommandFactory.apply(0.2),
+                Commands.waitSeconds(0.1),
+                controllerRumbleCommandFactory.apply(0.2)));
   }
 
   private void configureAutos() {
@@ -547,6 +590,14 @@ public class RobotContainer {
                     autoDriveDisable)
                 .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
+
+    // Request amp
+    operator
+        .b()
+        .whileTrue(
+            Commands.startEnd(
+                () -> Leds.getInstance().requestAmp = true,
+                () -> Leds.getInstance().requestAmp = false));
 
     // Shuffle gamepiece
     operator.a().whileTrue(rollers.shuffle());

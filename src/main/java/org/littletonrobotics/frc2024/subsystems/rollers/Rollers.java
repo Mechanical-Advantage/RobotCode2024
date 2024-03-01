@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
 import lombok.Setter;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
@@ -179,6 +180,9 @@ public class Rollers extends SubsystemBase {
     indexer.periodic();
     intake.periodic();
     backpack.periodic();
+
+    Leds.getInstance().hasNote = gamepieceState != GamepieceState.NONE;
+    Leds.getInstance().intaking = goal == Goal.FLOOR_INTAKE || goal == Goal.STATION_INTAKE;
   }
 
   public Command setGoalCommand(Goal goal) {

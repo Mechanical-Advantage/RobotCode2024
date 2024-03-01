@@ -33,7 +33,7 @@ public class AutoAlignController {
   private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("AutoAlign/thetakD", 0.0);
   private static final LoggedTunableNumber linearTolerance =
-      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.1);
+      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.06);
   private static final LoggedTunableNumber thetaTolerance =
       new LoggedTunableNumber("AutoAlign/controllerThetaTolerance", Units.degreesToRadians(5.0));
   private static final LoggedTunableNumber maxLinearVelocity =

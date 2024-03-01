@@ -151,10 +151,10 @@ public class ClimbingCommands {
         .finallyDo(
             () -> {
               switch (superstructure.getCurrentGoal()) {
-                case PREPARE_CLIMB ->
+                case PREPARE_CLIMB, CANCEL_PREPARE_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
-                case CLIMB ->
+                case CLIMB, CANCEL_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
               }
@@ -213,10 +213,10 @@ public class ClimbingCommands {
         .finallyDo(
             () -> {
               switch (superstructure.getCurrentGoal()) {
-                case PREPARE_CLIMB ->
+                case PREPARE_CLIMB, CANCEL_PREPARE_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
-                case CLIMB ->
+                case CLIMB, CANCEL_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
                 case TRAP ->

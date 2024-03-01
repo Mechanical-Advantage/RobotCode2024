@@ -77,6 +77,7 @@ public class TrajectoryController {
     // Sample and flip state
     VehicleState setpointState = trajectory.sample(sampletime);
     setpointState = AllianceFlipUtil.apply(setpointState);
+    RobotState.getInstance().setTrajectorySetpoint(setpointState.getPose());
 
     // Calculate feedback velocities (based on position error).
     double xFeedback = xController.calculate(currentState.getX(), setpointState.getX());

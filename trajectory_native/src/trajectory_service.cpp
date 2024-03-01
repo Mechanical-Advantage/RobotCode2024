@@ -13,7 +13,9 @@ namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 
 // Scales the Choreo algorithm's estimate of initial guess points, since we've found it to sometimes underestimate.
 // We take the tradeoff of increased computation time since we cache paths anyway.
-static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.75;
+static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.0;
+
+static const int MINIMUM_CONTROL_INTERVAL_COUNT = 40;
 
 trajopt::SwerveDrivetrain create_drivetrain(const vts::VehicleModel &model) {
     trajopt::SwerveDrivetrain drivetrain{
@@ -59,7 +61,7 @@ int guess_control_interval_count(const vts::Waypoint &waypoint, const vts::Waypo
                         2 * (sqrt(distance * max_accel) / max_accel) :
                         distance / max_vel + max_vel / max_accel;
     total_time += heading_weight * abs(dtheta);
-    return ceil(total_time / 0.1 * CONTROL_INTERVAL_GUESS_SCALAR);
+    return ceil(fmax(MINIMUM_CONTROL_INTERVAL_COUNT, total_time / 0.1 * CONTROL_INTERVAL_GUESS_SCALAR));
 }
 
 void convert_sample(vts::TimestampedVehicleState *state_out, const trajopt::HolonomicTrajectorySample &sample_in) {

@@ -236,7 +236,7 @@ public class Robot extends LoggedRobot {
     robotContainer.updateDashboardOutputs();
 
     // Update NoteVisualizer
-    NoteVisualizer.showIntakedNotes();
+    NoteVisualizer.showHeldNotes();
 
     // Check CAN status
     var canStatus = RobotController.getCANStatus();

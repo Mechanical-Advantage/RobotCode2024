@@ -15,7 +15,7 @@ public class BackpackIOKrakenFOC extends GenericRollerSystemIOKrakenFOC implemen
   private static final int currentLimitAmps = 40;
   private static final boolean invert = false;
   private static final boolean brake = true;
-  private static final double reduction = (1.0 / 1.0);
+  private static final double reduction = (1.0);
 
   public BackpackIOKrakenFOC() {
     super(id, bus, currentLimitAmps, invert, brake, reduction);

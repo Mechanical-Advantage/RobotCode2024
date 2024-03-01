@@ -9,43 +9,76 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static edu.wpi.first.wpilibj2.command.Commands.*;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
-import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 public class AutoCommands {
-  private Drive drive;
-  private Superstructure superstructure;
+  public static final LoggedTunableNumber shootTimeoutSecs =
+      new LoggedTunableNumber("Auto/ShotTimeoutSecs", 0.3);
 
-  public AutoCommands(Drive drive, Superstructure superstructure) {
-    this.drive = drive;
-    this.superstructure = superstructure;
+  /**
+   * Resets pose accounting for alliance color.
+   *
+   * @param pose Pose to reset to.
+   */
+  public static Command resetPose(Pose2d pose) {
+    return Commands.runOnce(() -> RobotState.getInstance().resetPose(AllianceFlipUtil.apply(pose)));
   }
 
-  private Command path(String pathName) {
-    HolonomicTrajectory trajectory = new HolonomicTrajectory(pathName);
-
-    return startEnd(
-            () -> {
-              drive.setTrajectory(trajectory);
-            },
-            () -> {
-              drive.clearTrajectory();
-            })
-        .until(() -> drive.isTrajectoryCompleted());
+  /**
+   * Resets pose to beginning of trajectory accounting for alliance color {@link
+   * org.littletonrobotics.frc2024.util.AllianceFlipUtil}.
+   *
+   * @param trajectory Trajectory to reset to.
+   */
+  public static Command resetPose(HolonomicTrajectory trajectory) {
+    return resetPose(trajectory.getStartPose());
   }
 
-  private Command reset(String path) {
-    HolonomicTrajectory trajectory = new HolonomicTrajectory(path);
-    return runOnce(
-        () ->
-            RobotState.getInstance().resetPose(AllianceFlipUtil.apply(trajectory.getStartPose())));
+  /** Creates a command that follows a trajectory, command ends when the trajectory is finished */
+  public static Command followTrajectory(Drive drive, HolonomicTrajectory trajectory) {
+    return startEnd(() -> drive.setTrajectory(trajectory), drive::clearTrajectory)
+        .until(drive::isTrajectoryCompleted);
   }
 
-  public Command driveStraight() {
-    return reset("driveStraight").andThen(path("driveStraight"));
+  /**
+   * Returns whether robot has crossed x boundary, accounting for alliance flip
+   *
+   * @param xPosition X position coordinate on blue side of field.
+   * @param towardsCenterline Whether to wait until passed x coordinate towards center line or away
+   *     from center line
+   */
+  public static boolean xCrossed(double xPosition, boolean towardsCenterline) {
+    Pose2d robotPose = RobotState.getInstance().getTrajectorySetpoint();
+    if (AllianceFlipUtil.shouldFlip()) {
+      if (towardsCenterline) {
+        return robotPose.getX() < FieldConstants.fieldLength - xPosition;
+      } else {
+        return robotPose.getX() > FieldConstants.fieldLength - xPosition;
+      }
+    } else {
+      if (towardsCenterline) {
+        return robotPose.getX() > xPosition;
+      } else {
+        return robotPose.getX() < xPosition;
+      }
+    }
+  }
+
+  /** Command that waits for x boundary to be crossed. See {@link #xCrossed(double, boolean)} */
+  public static Command waitUntilXCrossed(double xPosition, boolean towardsCenterline) {
+    return Commands.waitUntil(() -> xCrossed(xPosition, towardsCenterline));
+  }
+
+  // reset Path and call followTrajectory
+  public static Command resetAndFollow(Drive drive, HolonomicTrajectory trajectory) {
+    return sequence(resetPose(trajectory), followTrajectory(drive, trajectory));
   }
 }

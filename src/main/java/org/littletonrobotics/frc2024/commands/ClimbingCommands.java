@@ -189,7 +189,8 @@ public class ClimbingCommands {
     return Commands.sequence(
             // Drive forward while raising arm and climber
             prepareClimbFromBack(drive, superstructure, autoDriveDisable)
-                .until(superstructure::atGoal),
+                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted())
+                .withTimeout(5.0),
 
             // Allow driver to line up
             Commands.waitUntil(startClimbTrigger)
@@ -209,12 +210,19 @@ public class ClimbingCommands {
                                 == Rollers.GamepieceState.BACKPACK_STAGED),
 
             // Extend backpack
-            superstructure.setGoalCommand(Superstructure.Goal.TRAP).until(superstructure::atGoal),
+            superstructure
+                .setGoalCommand(Superstructure.Goal.TRAP)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE))
+                .until(superstructure::atGoal),
 
             // Score in trap and wait
             rollers
                 .setGoalCommand(Rollers.Goal.TRAP_SCORE)
-                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP)))
+                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP))
+                .until(() -> trapScoreTrigger.getAsBoolean()),
+
+            // Retract backpack
+            superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
 
         // If cancelled, go to safe state
         .finallyDo(

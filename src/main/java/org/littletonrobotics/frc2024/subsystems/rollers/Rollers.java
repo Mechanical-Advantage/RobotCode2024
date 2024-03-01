@@ -41,6 +41,7 @@ public class Rollers extends SubsystemBase {
     QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER,
     AMP_SCORE,
+    TRAP_PRESCORE,
     TRAP_SCORE,
     SHUFFLE_BACKPACK,
     SHUFFLE_SHOOTER
@@ -141,6 +142,11 @@ public class Rollers extends SubsystemBase {
         indexer.setGoal(Indexer.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.AMP_SCORING);
       }
+      case TRAP_PRESCORE -> {
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        indexer.setGoal(Indexer.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.IDLING);
+      }
       case TRAP_SCORE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
@@ -149,10 +155,11 @@ public class Rollers extends SubsystemBase {
       case SHUFFLE_BACKPACK -> {
         // Shuffle into backpack
         feeder.setGoal(Feeder.Goal.SHUFFLING);
-        indexer.setGoal(Indexer.Goal.EJECTING);
         if (gamepieceState != GamepieceState.BACKPACK_STAGED) {
+          indexer.setGoal(Indexer.Goal.EJECTING);
           backpack.setGoal(Backpack.Goal.AMP_SCORING);
         } else {
+          indexer.setGoal(Indexer.Goal.IDLING);
           backpack.setGoal(Backpack.Goal.IDLING);
         }
       }

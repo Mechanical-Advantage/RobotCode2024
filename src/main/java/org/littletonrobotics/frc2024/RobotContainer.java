@@ -619,6 +619,17 @@ public class RobotContainer {
     // Start flywheels
     operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
 
+    // Unjam folded to shooter
+    driver
+        .leftTrigger()
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.AMP)
+                .alongWith(
+                    Commands.waitUntil(superstructure::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
+                .withName("Untaco"));
+
     // Unjam intake
     operator
         .y()

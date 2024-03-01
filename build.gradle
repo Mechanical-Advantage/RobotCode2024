@@ -141,6 +141,7 @@ task(eventDeploy) {
                     workingDir(projectDir)
                     executable 'git'
                     args 'commit', '-m', commitMessage
+                    ignoreExitValue = true
                 }
 
                 println "Committed to branch: '$branch'"

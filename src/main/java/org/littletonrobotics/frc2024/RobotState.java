@@ -80,7 +80,7 @@ public class RobotState {
 
   public static final double teleopShotCompensation = 2.8;
 
-  @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 4.0;
+  @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 3.8;
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
     shotCompensationDegrees += deltaDegrees;

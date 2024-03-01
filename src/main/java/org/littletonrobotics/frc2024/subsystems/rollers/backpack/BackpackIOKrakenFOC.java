@@ -12,7 +12,7 @@ import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOKra
 public class BackpackIOKrakenFOC extends GenericRollerSystemIOKrakenFOC implements BackpackIO {
   private static final int id = 2;
   private static final String bus = "rio";
-  private static final int currentLimitAmps = 40;
+  private static final int currentLimitAmps = 50;
   private static final boolean invert = false;
   private static final boolean brake = true;
   private static final double reduction = (1.0);

@@ -89,7 +89,7 @@ public class DriveTrajectories {
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[0],
                             Rotation2d.fromDegrees(170.0))
-                        .transformBy(new Translation2d(0.3, -0.05).toTransform2d()))
+                        .transformBy(new Translation2d(0.25, -0.07).toTransform2d()))
                 .addTranslationWaypoint(stageRightAvoidance)
                 .addPoseWaypoint(stageRightShootingPose)
                 .build()));

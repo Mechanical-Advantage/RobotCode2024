@@ -333,6 +333,8 @@ public class Robot extends LoggedRobot {
     }
     NoteVisualizer.clearAutoNotes();
     NoteVisualizer.showAutoNotes();
+
+    RobotState.getInstance().setShotCompensationDegrees(RobotState.teleopShotCompensation);
   }
 
   /** This function is called periodically during operator control. */

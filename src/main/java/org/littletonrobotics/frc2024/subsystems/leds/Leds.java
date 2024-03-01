@@ -177,12 +177,12 @@ public class Leds extends VirtualSubsystem {
         solid((Timer.getFPGATimestamp() - autoFinishedTime) / fullTime, Color.kGreen);
       }
     } else { // Enabled
-      if (trapping || climbing || autoDrive || autoShoot) {
+      if (requestAmp) {
+        strobe(Color.kWhite, strobeFastDuration);
+      } else if (trapping || climbing || autoDrive || autoShoot) {
         rainbow(rainbowCycleLength, rainbowDuration);
       } else if (hasNote) {
         solid(Color.kGreen);
-      } else if (requestAmp) {
-        strobe(Color.kWhite, strobeFastDuration);
       }
 
       if (endgameAlert) {

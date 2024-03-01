@@ -26,6 +26,7 @@ import org.littletonrobotics.junction.Logger;
 
 public class NoteVisualizer {
   private static final double shotSpeed = 9.0; // Meters per sec
+  private static final double ejectSpeed = 2.0; // Meters per sec
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
   @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
   private static final List<Translation2d> autoNotes = new ArrayList<>();
@@ -34,7 +35,7 @@ public class NoteVisualizer {
   /** Show all staged notes for alliance */
   public static void showAutoNotes() {
     if (autoNotes.isEmpty()) {
-      Logger.recordOutput("NoteVisualizer/StagedNotes", new Pose3d[] {});
+      Logger.recordOutput("NoteVisualizer/StagedNotes");
     }
     // Show auto notes
     Stream<Translation2d> presentNotes = autoNotes.stream().filter(Objects::nonNull);
@@ -80,11 +81,11 @@ public class NoteVisualizer {
   }
 
   /** Shows the currently held note if there is one */
-  public static void showIntakedNotes() {
+  public static void showHeldNotes() {
     if (hasNote) {
       Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {getIndexerPose3d()});
     } else {
-      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {});
+      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d());
     }
   }
 
@@ -112,8 +113,36 @@ public class NoteVisualizer {
                                     startPose.interpolate(endPose, timer.get() / duration)
                                   }))
                       .until(() -> timer.hasElapsed(duration))
-                      .finallyDo(
-                          () -> Logger.recordOutput("NoteVisualizer/ShotNotes", new Pose3d[] {}));
+                      .finallyDo(() -> Logger.recordOutput("NoteVisualizer/ShotNotes"));
+                },
+                Set.of())
+            .ignoringDisable(true));
+  }
+
+  public static Command eject() {
+    return new ScheduleCommand( // Branch off and exit immediately
+        Commands.defer(
+                () -> {
+                  hasNote = false;
+                  final Pose3d startPose = getIndexerPose3d();
+                  System.out.println(getIndexerPose3d().getZ());
+                  final Pose3d endPose =
+                      startPose.transformBy(
+                          new Transform3d(2, 0, -1 + startPose.getZ(), new Rotation3d()));
+
+                  final double duration =
+                      startPose.getTranslation().getDistance(endPose.getTranslation()) / ejectSpeed;
+                  final Timer timer = new Timer();
+                  timer.start();
+                  return Commands.run(
+                          () ->
+                              Logger.recordOutput(
+                                  "NoteVisualizer/ShotNotes",
+                                  new Pose3d[] {
+                                    startPose.interpolate(endPose, timer.get() / duration)
+                                  }))
+                      .until(() -> timer.hasElapsed(duration))
+                      .finallyDo(() -> Logger.recordOutput("NoteVisualizer/EjectNotes"));
                 },
                 Set.of())
             .ignoringDisable(true));

@@ -32,7 +32,7 @@ public final class Constants {
   private static RobotType robotType = RobotType.COMPBOT;
   public static final boolean tuningMode = true;
 
-  public static final AprilTagType aprilTagType = AprilTagType.OFFICIAL;
+  public static final AprilTagType aprilTagType = AprilTagType.WPI;
 
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
@@ -56,6 +56,7 @@ public final class Constants {
     OFFICIAL(() -> AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo)),
     WPI(
         () -> {
+          if (disableHAL) return null;
           try {
             return new AprilTagFieldLayout(
                 Path.of(

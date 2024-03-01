@@ -29,7 +29,7 @@ import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
 import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
-import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
+import org.littletonrobotics.frc2024.commands.auto.AutoBuilder;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
@@ -326,9 +326,11 @@ public class RobotContainer {
   }
 
   private void configureAutos() {
+    AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
+
     autoChooser.addDefaultOption("Do Nothing", Commands.none());
-    AutoCommands autoCommands = new AutoCommands(drive, superstructure);
-    autoChooser.addOption("Drive Straight", autoCommands.driveStraight());
+    autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
+    autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
     // Set up feedforward characterization
     autoChooser.addOption(

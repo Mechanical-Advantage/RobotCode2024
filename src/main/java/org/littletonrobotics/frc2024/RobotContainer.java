@@ -625,7 +625,8 @@ public class RobotContainer {
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)));
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_FROM_FEEDER))
+                .withName("Unjam From Feeder"));
 
     // Reset heading
     driver

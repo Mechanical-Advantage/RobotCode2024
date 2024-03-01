@@ -13,7 +13,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -35,9 +34,9 @@ public class ClimbingCommands {
   private static final LoggedTunableNumber climbedXOffset =
       new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
-      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", -0.5);
+      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.5);
   private static final LoggedTunableNumber chainToFront =
-      new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.4);
+      new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.9);
 
   private static final List<Pose2d> centeredClimbedPosesNoOffset =
       List.of(
@@ -48,11 +47,7 @@ public class ClimbingCommands {
         Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
         List<Pose2d> climbedPoses =
             centeredClimbedPosesNoOffset.stream()
-                .map(
-                    pose ->
-                        AllianceFlipUtil.apply(
-                            pose.transformBy(
-                                new Translation2d(climbedXOffset.get(), 0).toTransform2d())))
+                .map(pose -> AllianceFlipUtil.apply(pose))
                 .toList();
         return currentPose.nearest(climbedPoses);
       };
@@ -60,58 +55,17 @@ public class ClimbingCommands {
       () ->
           nearestClimbedPose
               .get()
-              .transformBy(new Translation2d(chainToBack.get(), 0).toTransform2d());
+              .transformBy(
+                  new Translation2d(climbedXOffset.get() - chainToBack.get(), 0).toTransform2d());
   private static final Supplier<Pose2d> frontPrepareClimbPose =
       () ->
           nearestClimbedPose
               .get()
-              .transformBy(new Translation2d(chainToFront.get(), 0).toTransform2d())
+              .transformBy(
+                  new Translation2d(-climbedXOffset.get() + chainToFront.get(), 0).toTransform2d())
               .transformBy(
                   new Transform2d(
                       0, 0, Rotation2d.fromDegrees(180.0))); // Flip climbed pose for front climb
-
-  private static Command driveToPoseWithAdjust(
-      Drive drive, Supplier<Pose2d> prepareClimbPose, DoubleSupplier controllerY) {
-    return Commands.sequence(
-        // Auto drive to behind the chain
-        drive
-            .startEnd(
-                () -> drive.setAutoAlignGoal(prepareClimbPose, false), drive::clearAutoAlignGoal)
-            .until(drive::isAutoAlignGoalCompleted),
-
-        // Let driver move robot left and right while aligned to chain
-        drive.run(() -> drive.acceptTeleopInput(0.0, controllerY.getAsDouble() * 0.25, 0.0, true)));
-  }
-
-  /** Drive to back climber ready pose. */
-  public static Command driveToBack(
-      Drive drive, DoubleSupplier controllerY, Trigger autoDriveDisable) {
-    return driveToPoseWithAdjust(drive, backPrepareClimbPose, controllerY)
-        .onlyIf(autoDriveDisable.negate());
-  }
-
-  /** Drive to front climber ready pose while preparing climber */
-  public static Command driveToFront(
-      Drive drive,
-      Superstructure superstructure,
-      DoubleSupplier controllerY,
-      Trigger autoDriveDisable) {
-    return driveToPoseWithAdjust(drive, frontPrepareClimbPose, controllerY)
-        .onlyIf(autoDriveDisable.negate())
-        .alongWith(
-            Commands.waitUntil(
-                    () -> {
-                      Pose2d poseError =
-                          RobotState.getInstance()
-                              .getEstimatedPose()
-                              .relativeTo(frontPrepareClimbPose.get());
-                      return poseError.getTranslation().getNorm() <= Units.feetToMeters(2.0)
-                          && Math.abs(poseError.getRotation().getRotations()) <= 0.25;
-                    })
-                .andThen(
-                    superstructure.setGoalWithConstraintsCommand(
-                        Superstructure.Goal.PREPARE_CLIMB, Arm.smoothProfileConstraints.get())));
-  }
 
   /** Command that lets driver adjust robot relative to the robot at slow speed */
   private static Command driverAdjust(
@@ -120,6 +74,34 @@ public class ClimbingCommands {
         () ->
             drive.acceptTeleopInput(
                 controllerX.getAsDouble() * 0.25, controllerY.getAsDouble() * 0.25, 0, true));
+  }
+
+  private static Command driveToPoseWithAdjust(
+      Drive drive,
+      Supplier<Pose2d> prepareClimbPose,
+      DoubleSupplier controllerX,
+      DoubleSupplier controllerY) {
+    return Commands.sequence(
+        // Auto drive to behind the chain
+        drive
+            .startEnd(
+                () -> drive.setAutoAlignGoal(prepareClimbPose, false), drive::clearAutoAlignGoal)
+            .until(drive::isAutoAlignGoalCompleted),
+
+        // Let driver move robot left and right while aligned to chain
+        driverAdjust(drive, controllerX, controllerY));
+  }
+
+  /** Drive to back climber ready pose. */
+  public static Command autoDrive(
+      boolean isFront,
+      Drive drive,
+      DoubleSupplier controllerX,
+      DoubleSupplier controllerY,
+      Trigger autoDriveDisable) {
+    return driveToPoseWithAdjust(
+            drive, isFront ? frontPrepareClimbPose : backPrepareClimbPose, controllerX, controllerY)
+        .onlyIf(autoDriveDisable.negate());
   }
 
   /**
@@ -133,7 +115,7 @@ public class ClimbingCommands {
             () -> {
               Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
               Pose2d targetPose =
-                  currentPose.transformBy(new Translation2d(-chainToBack.get(), 0).toTransform2d());
+                  currentPose.transformBy(new Translation2d(chainToBack.get(), 0).toTransform2d());
               drive.setAutoAlignGoal(() -> targetPose, true);
             },
             drive::clearAutoAlignGoal)
@@ -168,7 +150,8 @@ public class ClimbingCommands {
     return Commands.sequence(
             // Drive forward
             prepareClimbFromFront(drive, superstructure, autoDriveDisable)
-                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted()),
+                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted())
+                .withTimeout(5.0),
 
             // Allow driver to line up
             Commands.waitUntil(startClimbTrigger)
@@ -190,9 +173,7 @@ public class ClimbingCommands {
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
               }
-              superstructure.setClimbSequenceActivated(false);
-            })
-        .beforeStarting(() -> superstructure.setClimbSequenceActivated(true));
+            });
   }
 
   /** Runs the climbing sequence and then scores in the trap when the trapScore button is pressed */
@@ -219,13 +200,13 @@ public class ClimbingCommands {
             // Climb and wait, continue if trap button pressed
             superstructure
                 .setGoalCommand(Superstructure.Goal.CLIMB)
-                .until(() -> trapScoreTrigger.getAsBoolean() && superstructure.atGoal()),
-
-            // Shuffle to backpack
-            rollers
-                .setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)
-                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
-                .until(() -> rollers.getGamepieceState() == Rollers.GamepieceState.BACKPACK_STAGED),
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK))
+                .until(
+                    () ->
+                        trapScoreTrigger.getAsBoolean()
+                            && superstructure.atGoal()
+                            && rollers.getGamepieceState()
+                                == Rollers.GamepieceState.BACKPACK_STAGED),
 
             // Extend backpack
             superstructure.setGoalCommand(Superstructure.Goal.TRAP).until(superstructure::atGoal),
@@ -249,8 +230,6 @@ public class ClimbingCommands {
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
               }
-              superstructure.setClimbSequenceActivated(false);
-            })
-        .beforeStarting(() -> superstructure.setClimbSequenceActivated(true));
+            });
   }
 }

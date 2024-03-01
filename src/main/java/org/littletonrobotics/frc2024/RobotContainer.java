@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -467,18 +468,25 @@ public class RobotContainer {
     // ------------- Climbing Controls -------------
     driver
         .x()
-        .and(() -> !superstructure.isClimbSequenceActivated())
         .and(
             () ->
                 superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
                     && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
         .whileTrue(
             Commands.either(
-                    ClimbingCommands.driveToBack(drive, () -> -driver.getLeftX(), autoDriveDisable),
-                    ClimbingCommands.driveToFront(
-                        drive, superstructure, () -> -driver.getLeftX(), autoDriveDisable),
-                    () -> trapScoreMode)
-                .withInterruptBehavior(Command.InterruptionBehavior.kCancelSelf));
+                ClimbingCommands.autoDrive(
+                    false,
+                    drive,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    autoDriveDisable),
+                ClimbingCommands.autoDrive(
+                    true,
+                    drive,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    autoDriveDisable),
+                () -> trapScoreMode));
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -507,25 +515,27 @@ public class RobotContainer {
         .and(() -> trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.climbNTrapSequence(
-                drive,
-                superstructure,
-                rollers,
-                () -> -driver.getLeftY(),
-                () -> -driver.getLeftX(),
-                operator.rightBumper().doublePress(),
-                operator.start().doublePress().or(operator.back().doublePress()),
-                autoDriveDisable));
+                    drive,
+                    superstructure,
+                    rollers,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    operator.rightBumper().doublePress(),
+                    operator.start().doublePress().or(operator.back().doublePress()),
+                    autoDriveDisable)
+                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator
         .leftBumper()
         .and(() -> !trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.simpleClimbSequence(
-                drive,
-                superstructure,
-                () -> -driver.getLeftY(),
-                () -> -driver.getLeftX(),
-                operator.rightBumper().doublePress(),
-                autoDriveDisable));
+                    drive,
+                    superstructure,
+                    () -> -driver.getLeftY(),
+                    () -> -driver.getLeftX(),
+                    operator.rightBumper().doublePress(),
+                    autoDriveDisable)
+                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
 
     // Shuffle gamepiece

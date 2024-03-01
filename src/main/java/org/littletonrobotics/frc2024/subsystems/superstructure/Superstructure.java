@@ -12,7 +12,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
-import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
@@ -42,8 +41,6 @@ public class Superstructure extends SubsystemBase {
 
   @Getter private Goal currentGoal = Goal.STOW;
   @Getter private Goal desiredGoal = Goal.STOW;
-
-  @Getter @Setter private boolean climbSequenceActivated = false;
 
   private final Arm arm;
   private final Climber climber;

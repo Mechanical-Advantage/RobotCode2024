@@ -107,7 +107,7 @@ public class RobotContainer {
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
 
   private boolean podiumShotMode = false;
-  private boolean trapScoreMode = false;
+  private boolean trapScoreMode = true;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =

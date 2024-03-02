@@ -194,24 +194,25 @@ public class ClimbingCommands {
             superstructure
                 .setGoalCommand(Superstructure.Goal.CLIMB)
                 .alongWith(rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK))
-                .until(
-                    () ->
-                        trapScoreTrigger.getAsBoolean()
-                            && superstructure.atGoal()
-                            && rollers.getGamepieceState()
-                                == Rollers.GamepieceState.BACKPACK_STAGED),
+                .raceWith(
+                    Commands.waitUntil(trapScoreTrigger)
+                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Extend backpack
             superstructure
                 .setGoalCommand(Superstructure.Goal.TRAP)
                 .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE))
-                .until(superstructure::atGoal),
+                .raceWith(
+                    Commands.waitUntil(trapScoreTrigger)
+                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Score in trap and wait
             rollers
                 .setGoalCommand(Rollers.Goal.TRAP_SCORE)
                 .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP))
-                .until(() -> trapScoreTrigger.getAsBoolean()),
+                .raceWith(
+                    Commands.waitUntil(trapScoreTrigger)
+                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Retract backpack
             superstructure.setGoalCommand(Superstructure.Goal.CLIMB))

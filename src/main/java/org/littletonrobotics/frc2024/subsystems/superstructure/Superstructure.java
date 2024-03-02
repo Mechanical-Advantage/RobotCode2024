@@ -191,10 +191,7 @@ public class Superstructure extends SubsystemBase {
 
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
-    return currentGoal == desiredGoal
-        && arm.atGoal()
-        && climber.atGoal()
-        && backpackActuator.atGoal();
+    return currentGoal == desiredGoal && arm.atGoal() && climber.atGoal();
   }
 
   @AutoLogOutput(key = "Superstructure/AtArmGoal")

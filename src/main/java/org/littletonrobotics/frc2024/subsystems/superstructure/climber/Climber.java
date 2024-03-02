@@ -82,7 +82,7 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
             >= cancelClimbCheckInches.get()
         && !hasCheckedCancel) {
       if (Math.abs(inputs.torqueCurrentAmps) <= cancelClimbMaxTorqueCurrent.get()) {
-        //requestCancelClimb = true;
+        // requestCancelClimb = true;
       }
       hasCheckedCancel = true;
     }

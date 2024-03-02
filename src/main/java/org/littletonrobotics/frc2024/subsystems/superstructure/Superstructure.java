@@ -197,6 +197,11 @@ public class Superstructure extends SubsystemBase {
         && backpackActuator.atGoal();
   }
 
+  @AutoLogOutput(key = "Superstructure/AtArmGoal")
+  public boolean atArmGoal() {
+    return currentGoal == desiredGoal && arm.atGoal();
+  }
+
   public void runArmCharacterization(double input) {
     arm.runCharacterization(input);
   }

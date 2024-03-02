@@ -419,7 +419,8 @@ public class RobotContainer {
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
     Trigger readyToShoot =
-        new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
+        new Trigger(
+            () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
     driver
         .rightTrigger()
         .and(driver.a())
@@ -451,7 +452,7 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal)
+                    Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
 
@@ -462,7 +463,7 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal)
+                    Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
                 .withName("Eject To Floor"));
 
@@ -533,7 +534,7 @@ public class RobotContainer {
         .and(
             () ->
                 superstructure.getDesiredGoal() == Superstructure.Goal.AMP
-                    && superstructure.atGoal())
+                    && superstructure.atArmGoal())
         .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
     // ------------- Climbing Controls -------------
@@ -626,7 +627,7 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal)
+                    Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.UNTACO)))
                 .withName("Untaco"));
 

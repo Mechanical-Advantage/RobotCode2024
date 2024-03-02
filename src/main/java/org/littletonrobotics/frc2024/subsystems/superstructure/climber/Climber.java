@@ -32,7 +32,7 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
     STOP(new LoggedTunableNumber("Climber/StopCurrent", 0.0), false, SlamElevatorState.IDLING),
     IDLE(new LoggedTunableNumber("Climber/IdleCurrent", -8.0), true, SlamElevatorState.RETRACTING),
     RETRACT(
-        new LoggedTunableNumber("Climber/RetractingCurrent", -10.0), // 10.0
+        new LoggedTunableNumber("Climber/RetractingCurrent", -30.0),
         false,
         SlamElevatorState.RETRACTING),
     EXTEND(
@@ -82,7 +82,7 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
             >= cancelClimbCheckInches.get()
         && !hasCheckedCancel) {
       if (Math.abs(inputs.torqueCurrentAmps) <= cancelClimbMaxTorqueCurrent.get()) {
-        //requestCancelClimb = true;
+        requestCancelClimb = true;
       }
       hasCheckedCancel = true;
     }

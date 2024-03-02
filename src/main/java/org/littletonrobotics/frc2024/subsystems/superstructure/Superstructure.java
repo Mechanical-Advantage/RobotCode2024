@@ -22,6 +22,7 @@ public class Superstructure extends SubsystemBase {
 
   public enum Goal {
     STOW,
+    BACKPACK_OUT_UNJAM,
     AIM,
     INTAKE,
     UNJAM_INTAKE,
@@ -81,6 +82,11 @@ public class Superstructure extends SubsystemBase {
         arm.setGoal(Arm.Goal.STOW);
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case BACKPACK_OUT_UNJAM -> {
+        arm.setGoal(Arm.Goal.UNJAM_INTAKE);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
       }
       case UNJAM_INTAKE -> {
         arm.setGoal(Arm.Goal.UNJAM_INTAKE);

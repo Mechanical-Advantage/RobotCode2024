@@ -640,6 +640,14 @@ public class RobotContainer {
                 .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_FROM_FEEDER))
                 .withName("Unjam From Feeder"));
 
+    operator
+        .povLeft()
+        .or(operator.povRight())
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.BACKPACK_OUT_UNJAM)
+                .withName("Backpack Out Unjam"));
+
     // Reset heading
     driver
         .start()

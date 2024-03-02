@@ -149,10 +149,12 @@ task(eventDeploy) {
             } else {
                 println "Not on an event branch, skipping commit"
             }
+        } else {
+            println "Not running deploy task, skipping commit"
         }
     }
 }
-compileJava.dependsOn(eventDeploy)
+createVersionFile.dependsOn(eventDeploy)
 
 // Defining my dependencies. In this case, WPILib (+ friends), and vendor libraries.
 // Also defines JUnit 4.

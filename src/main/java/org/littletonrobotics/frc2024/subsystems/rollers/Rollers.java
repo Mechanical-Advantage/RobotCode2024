@@ -138,13 +138,13 @@ public class Rollers extends SubsystemBase {
         feeder.setGoal(Feeder.Goal.EJECTING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.EJECTING);
-        backpack.setGoal(Backpack.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.IDLING);
       }
       case EJECT_FROM_FEEDER -> {
         feeder.setGoal(Feeder.Goal.EJECTING);
         indexer.setGoal(Indexer.Goal.IDLING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);
-        backpack.setGoal(Backpack.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.IDLING);
       }
       case QUICK_INTAKE_TO_FEED -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);

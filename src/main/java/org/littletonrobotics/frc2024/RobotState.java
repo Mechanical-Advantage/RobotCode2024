@@ -66,7 +66,7 @@ public class RobotState {
     armAngleMap.put(2.7747, 33.0);
     armAngleMap.put(3.005925, 31.0);
     armAngleMap.put(3.23715, 30.0);
-    armAngleMap.put(3.468375, 28.5);
+    armAngleMap.put(3.468375, 28.5); // same value
     armAngleMap.put(3.468375, 28.0);
     armAngleMap.put(3.6996, 27.5);
     armAngleMap.put(3.912327, 26.5);

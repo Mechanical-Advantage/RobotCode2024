@@ -99,9 +99,10 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
-                0.23466,
-                0.12025,
-                1.6,
+                5.0,
+                0.0,
+                51.547492, // A/(N*m)
+                35.0,
                 0.0,
                 4000.0,
                 50.0,
@@ -111,6 +112,7 @@ public final class DriveConstants {
             new ModuleConstants(
                 0.1,
                 0.13,
+                0.0,
                 0.1,
                 0.0,
                 10.0,
@@ -121,6 +123,7 @@ public final class DriveConstants {
             new ModuleConstants(
                 0.014,
                 0.134,
+                0.0,
                 0.1,
                 0.0,
                 10.0,
@@ -203,6 +206,7 @@ public final class DriveConstants {
   public record ModuleConstants(
       double ffkS,
       double ffkV,
+      double ffkT,
       double drivekP,
       double drivekD,
       double turnkP,

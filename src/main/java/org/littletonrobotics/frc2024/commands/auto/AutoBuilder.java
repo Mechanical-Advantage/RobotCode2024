@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -34,6 +35,11 @@ public class AutoBuilder {
     this.superstructure = superstructure;
     this.flywheels = flywheels;
     this.rollers = rollers;
+  }
+
+  public Command torqueTest() {
+    return Commands.sequence(
+        resetPose(new Pose2d()), followTrajectory(drive, new HolonomicTrajectory("torqueTest")));
   }
 
   public Command davisEthicalAuto() {

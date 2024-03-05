@@ -18,6 +18,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleState;
 
@@ -122,6 +124,22 @@ public class HolonomicTrajectory {
     double interpolatedAngularVelocity =
         MathUtil.interpolate(before.getState().getOmega(), after.getState().getOmega(), s);
 
+    List<ModuleForce> moduleForces = new ArrayList<>(4);
+    for (int i = 0; i < 4; i++) {
+      double interpolatedFx =
+          MathUtil.interpolate(
+              before.getState().getModuleForces(i).getFx(),
+              after.getState().getModuleForces(i).getFx(),
+              s);
+      double interpolatedFy =
+          MathUtil.interpolate(
+              before.getState().getModuleForces(i).getFy(),
+              after.getState().getModuleForces(i).getFy(),
+              s);
+      moduleForces.add(
+          ModuleForce.newBuilder().setFx(interpolatedFx).setFy(interpolatedFy).build());
+    }
+
     return VehicleState.newBuilder()
         .setX(interpolatedPoseX)
         .setY(interpolatedPoseY)
@@ -129,6 +147,7 @@ public class HolonomicTrajectory {
         .setVx(interpolatedVelocityX)
         .setVy(interpolatedVelocityY)
         .setOmega(interpolatedAngularVelocity)
+        .addAllModuleForces(moduleForces)
         .build();
   }
 }

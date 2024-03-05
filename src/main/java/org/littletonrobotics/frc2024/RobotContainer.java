@@ -341,6 +341,7 @@ public class RobotContainer {
                             AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
+    autoChooser.addOption("Torque Test", autoBuilder.torqueTest());
 
     // Set up feedforward characterization
     autoChooser.addOption(

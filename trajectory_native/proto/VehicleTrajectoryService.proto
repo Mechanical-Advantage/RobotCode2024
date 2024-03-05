@@ -12,6 +12,11 @@ message VehicleModel {
   double max_wheel_torque = 7;
 }
 
+message ModuleForce {
+  double fx = 1;
+  double fy = 2;
+}
+
 message VehicleState {
   double x = 1;
   double y = 2;
@@ -19,6 +24,7 @@ message VehicleState {
   double vx = 4;
   double vy = 5;
   double omega = 6;
+  repeated ModuleForce module_forces = 7;
 }
 
 message TimestampedVehicleState {

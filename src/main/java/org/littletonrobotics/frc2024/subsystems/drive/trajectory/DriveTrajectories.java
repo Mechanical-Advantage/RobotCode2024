@@ -76,6 +76,17 @@ public class DriveTrajectories {
         FieldConstants.Stage.sourceLeg
             .getTranslation()
             .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
+
+    paths.put(
+        "torqueTest",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(new Pose2d())
+                .addTranslationWaypoint(new Translation2d(1.0, 1.5))
+                .addPoseWaypoint(
+                    new Pose2d(new Translation2d(3.0, 1.0), Rotation2d.fromDegrees(20.0)))
+                .build()));
+
     paths.put(
         "davisEthicalAuto_grabCenterline0",
         List.of(

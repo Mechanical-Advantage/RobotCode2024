@@ -57,6 +57,8 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0);
   private final VelocityVoltage velocityControl =
       new VelocityVoltage(0).withEnableFOC(true).withUpdateFreqHz(0);
+  private final VelocityTorqueCurrentFOC velocityTorqueCurrentFOC =
+      new VelocityTorqueCurrentFOC(0).withUpdateFreqHz(0);
   private final PositionTorqueCurrentFOC positionControl =
       new PositionTorqueCurrentFOC(0).withUpdateFreqHz(0);
   private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0);
@@ -71,6 +73,9 @@ public class ModuleIOKrakenFOC implements ModuleIO {
     // Config Motors
     driveTalonConfig.Voltage.PeakForwardVoltage = 12.0;
     driveTalonConfig.Voltage.PeakReverseVoltage = -12.0;
+    driveTalonConfig.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
+    driveTalonConfig.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
+    driveTalonConfig.ClosedLoopRamps.TorqueClosedLoopRampPeriod = 0.02;
     driveTalonConfig.CurrentLimits.SupplyCurrentLimit = 80.0;
     driveTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
     driveTalonConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -192,7 +197,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   @Override
   public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
     driveTalon.setControl(
-        velocityControl
+        velocityTorqueCurrentFOC
             .withVelocity(Units.radiansToRotations(velocityRadsPerSec))
             .withFeedForward(feedForward));
   }

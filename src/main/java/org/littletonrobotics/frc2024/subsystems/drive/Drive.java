@@ -7,10 +7,13 @@
 
 package org.littletonrobotics.frc2024.subsystems.drive;
 
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.*;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -260,13 +263,31 @@ public class Drive extends SubsystemBase {
     // run modules
     if (currentDriveMode != DriveMode.CHARACTERIZATION && !modulesOrienting) {
       SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
+      SwerveModuleState[] optimizedSetpointTorques = new SwerveModuleState[4];
       for (int i = 0; i < modules.length; i++) {
         // Optimize setpoints
         optimizedSetpointStates[i] =
             SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
-        modules[i].runSetpoint(optimizedSetpointStates[i]);
+
+        if (currentDriveMode == DriveMode.TRAJECTORY && trajectoryController != null) {
+          // Only do torque FF in trajectory mode
+          Vector<N2> wheelDirection =
+              VecBuilder.fill(
+                  optimizedSetpointStates[i].angle.getCos(),
+                  optimizedSetpointStates[i].angle.getSin());
+          Vector<N2> wheelForces = trajectoryController.getModuleForces().get(i);
+          double wheelTorque =
+              wheelForces.dot(wheelDirection) * DriveConstants.driveConfig.wheelRadius();
+          optimizedSetpointTorques[i] =
+              new SwerveModuleState(wheelTorque, optimizedSetpointStates[i].angle);
+        } else {
+          optimizedSetpointTorques[i] =
+              new SwerveModuleState(0.0, optimizedSetpointStates[i].angle);
+        }
+        modules[i].runSetpoint(optimizedSetpointStates[i], optimizedSetpointTorques[i]);
       }
       Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
+      Logger.recordOutput("Drive/SwerveStates/Torques", optimizedSetpointTorques);
     }
 
     // Log chassis speeds and swerve states
@@ -392,7 +413,9 @@ public class Drive extends SubsystemBase {
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
           for (int i = 0; i < orientations.length; i++) {
-            modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
+            modules[i].runSetpoint(
+                new SwerveModuleState(0.0, orientations[i]),
+                new SwerveModuleState(0.0, new Rotation2d()));
           }
         })
         .until(

@@ -7,10 +7,13 @@
 
 package org.littletonrobotics.frc2024.subsystems.drive;
 
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.*;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,6 +33,8 @@ import org.littletonrobotics.frc2024.subsystems.drive.controllers.HeadingControl
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TrajectoryController;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
+import org.littletonrobotics.frc2024.util.EqualsUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
@@ -57,7 +62,10 @@ public class Drive extends SubsystemBase {
     AUTO_ALIGN,
 
     /** Characterizing (modules oriented forwards, motor outputs supplied externally). */
-    CHARACTERIZATION
+    CHARACTERIZATION,
+
+    /** Running wheel radius characterization routine (spinning in circle) */
+    WHEEL_RADIUS_CHARACTERIZATION
   }
 
   @AutoLog
@@ -82,6 +90,7 @@ public class Drive extends SubsystemBase {
   private DriveMode currentDriveMode = DriveMode.TELEOP;
 
   private double characterizationInput = 0.0;
+  private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
   @Getter
@@ -89,7 +98,7 @@ public class Drive extends SubsystemBase {
   private boolean brakeModeEnabled = true;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
-  private final ModuleLimits currentModuleLimits = DriveConstants.moduleLimits;
+
   private SwerveSetpoint currentSetpoint =
       new SwerveSetpoint(
           new ChassisSpeeds(),
@@ -113,7 +122,6 @@ public class Drive extends SubsystemBase {
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
     lastMovementTimer.start();
-    setBrakeMode(true);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -140,6 +148,8 @@ public class Drive extends SubsystemBase {
     // Read inputs from modules
     Arrays.stream(modules).forEach(Module::updateInputs);
     odometryLock.unlock();
+
+    ModuleLimits currentModuleLimits = RobotState.getInstance().getModuleLimits();
 
     // Calculate the min odometry position updates across all modules
     int minOdometryUpdates =
@@ -210,14 +220,10 @@ public class Drive extends SubsystemBase {
         .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
       lastMovementTimer.reset();
     }
-    if (DriverStation.isEnabled()) {
-      setBrakeMode(true); // Always in brake mode during teleop
-    } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
-      setBrakeMode(false);
-    }
 
     // Run drive based on current mode
     ChassisSpeeds teleopSpeeds = teleopDriveController.update();
+    Leds.getInstance().autoDrive = false;
     switch (currentDriveMode) {
       case TELEOP -> {
         // Plain teleop drive
@@ -234,15 +240,16 @@ public class Drive extends SubsystemBase {
       case AUTO_ALIGN -> {
         // Run auto align with drive input
         desiredSpeeds = autoAlignController.update();
-        desiredSpeeds.vxMetersPerSecond += teleopSpeeds.vxMetersPerSecond * 0.1;
-        desiredSpeeds.vyMetersPerSecond += teleopSpeeds.vyMetersPerSecond * 0.1;
-        desiredSpeeds.omegaRadiansPerSecond += teleopSpeeds.omegaRadiansPerSecond * 0.1;
+        Leds.getInstance().autoDrive = true;
       }
       case CHARACTERIZATION -> {
-        // run characterization
+        // Run characterization
         for (Module module : modules) {
-          module.runCharacterization(characterizationInput);
+          module.runCharacterization(0.0, characterizationInput);
         }
+      }
+      case WHEEL_RADIUS_CHARACTERIZATION -> {
+        desiredSpeeds = new ChassisSpeeds(0, 0, characterizationInput);
       }
       default -> {}
     }
@@ -254,15 +261,33 @@ public class Drive extends SubsystemBase {
             currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
 
     // run modules
-    if (currentDriveMode != DriveMode.CHARACTERIZATION) {
+    if (currentDriveMode != DriveMode.CHARACTERIZATION && !modulesOrienting) {
       SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
+      SwerveModuleState[] optimizedSetpointTorques = new SwerveModuleState[4];
       for (int i = 0; i < modules.length; i++) {
         // Optimize setpoints
         optimizedSetpointStates[i] =
             SwerveModuleState.optimize(currentSetpoint.moduleStates()[i], modules[i].getAngle());
-        modules[i].runSetpoint(optimizedSetpointStates[i]);
+
+        if (currentDriveMode == DriveMode.TRAJECTORY && trajectoryController != null) {
+          // Only do torque FF in trajectory mode
+          Vector<N2> wheelDirection =
+              VecBuilder.fill(
+                  optimizedSetpointStates[i].angle.getCos(),
+                  optimizedSetpointStates[i].angle.getSin());
+          Vector<N2> wheelForces = trajectoryController.getModuleForces().get(i);
+          double wheelTorque =
+              wheelForces.dot(wheelDirection) * DriveConstants.driveConfig.wheelRadius();
+          optimizedSetpointTorques[i] =
+              new SwerveModuleState(wheelTorque, optimizedSetpointStates[i].angle);
+        } else {
+          optimizedSetpointTorques[i] =
+              new SwerveModuleState(0.0, optimizedSetpointStates[i].angle);
+        }
+        modules[i].runSetpoint(optimizedSetpointStates[i], optimizedSetpointTorques[i]);
       }
       Logger.recordOutput("Drive/SwerveStates/Setpoints", optimizedSetpointStates);
+      Logger.recordOutput("Drive/SwerveStates/Torques", optimizedSetpointTorques);
     }
 
     // Log chassis speeds and swerve states
@@ -275,12 +300,14 @@ public class Drive extends SubsystemBase {
   }
 
   /** Pass controller input into teleopDriveController in field relative input */
-  public void acceptTeleopInput(double controllerX, double controllerY, double controllerOmega) {
+  public void acceptTeleopInput(
+      double controllerX, double controllerY, double controllerOmega, boolean robotRelative) {
     if (DriverStation.isTeleopEnabled()) {
       if (currentDriveMode != DriveMode.AUTO_ALIGN) {
         currentDriveMode = DriveMode.TELEOP;
       }
-      teleopDriveController.acceptDriveInput(controllerX, controllerY, controllerOmega);
+      teleopDriveController.acceptDriveInput(
+          controllerX, controllerY, controllerOmega, robotRelative);
     }
   }
 
@@ -305,10 +332,10 @@ public class Drive extends SubsystemBase {
   }
 
   /** Sets the goal pose for the robot to drive to */
-  public void setAutoAlignGoal(Pose2d goalPose) {
+  public void setAutoAlignGoal(Supplier<Pose2d> poseSupplier, boolean slowMode) {
     if (DriverStation.isTeleopEnabled()) {
       currentDriveMode = DriveMode.AUTO_ALIGN;
-      autoAlignController = new AutoAlignController(goalPose);
+      autoAlignController = new AutoAlignController(poseSupplier, slowMode);
     }
   }
 
@@ -321,7 +348,7 @@ public class Drive extends SubsystemBase {
   /** Returns true if the robot is at current goal pose. */
   @AutoLogOutput(key = "Drive/AutoAlignCompleted")
   public boolean isAutoAlignGoalCompleted() {
-    return autoAlignController != null && autoAlignController.atGoal();
+    return autoAlignController == null || autoAlignController.atGoal();
   }
 
   /** Enable auto aiming on drive */
@@ -337,11 +364,11 @@ public class Drive extends SubsystemBase {
   /** Returns true if robot is aimed at speaker */
   @AutoLogOutput(key = "Drive/AtHeadingGoal")
   public boolean atHeadingGoal() {
-    return headingController != null && headingController.atGoal();
+    return headingController == null || headingController.atGoal();
   }
 
-  /** Runs forwards at the commanded voltage. */
-  public void runCharacterizationVolts(double volts) {
+  /** Runs forwards at the commanded voltage or amps. */
+  public void runCharacterization(double volts) {
     currentDriveMode = DriveMode.CHARACTERIZATION;
     characterizationInput = volts;
   }
@@ -360,22 +387,35 @@ public class Drive extends SubsystemBase {
     return driveVelocityAverage / 4.0;
   }
 
-  /** Set brake mode to {@code enabled} doesn't change brake mode if already set */
-  public void setBrakeMode(boolean enabled) {
-    if (brakeModeEnabled != enabled) {
-      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
-    }
-    brakeModeEnabled = enabled;
+  /** Runs in a circle at omega. */
+  public void runWheelRadiusCharacterization(double omegaSpeed) {
+    currentDriveMode = DriveMode.WHEEL_RADIUS_CHARACTERIZATION;
+    characterizationInput = omegaSpeed;
   }
 
+  /** Get the position of all drive wheels in radians. */
+  public double[] getWheelRadiusCharacterizationPosition() {
+    return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();
+  }
+
+  /**
+   * Returns command that orients all modules to {@code orientation}, ending when the modules have
+   * rotated.
+   */
   public Command orientModules(Rotation2d orientation) {
     return orientModules(new Rotation2d[] {orientation, orientation, orientation, orientation});
   }
 
+  /**
+   * Returns command that orients all modules to {@code orientations[]}, ending when the modules
+   * have rotated.
+   */
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
           for (int i = 0; i < orientations.length; i++) {
-            modules[i].runSetpoint(new SwerveModuleState(0.0, orientations[i]));
+            modules[i].runSetpoint(
+                new SwerveModuleState(0.0, orientations[i]),
+                new SwerveModuleState(0.0, new Rotation2d()));
           }
         })
         .until(
@@ -383,10 +423,13 @@ public class Drive extends SubsystemBase {
                 Arrays.stream(modules)
                     .allMatch(
                         module ->
-                            Math.abs(
-                                    module.getAngle().getDegrees()
-                                        - module.getSetpointState().angle.getDegrees())
-                                <= 2.0));
+                            EqualsUtil.epsilonEquals(
+                                module.getAngle().getDegrees(),
+                                module.getSetpointState().angle.getDegrees(),
+                                2.0)))
+        .beforeStarting(() -> modulesOrienting = true)
+        .finallyDo(() -> modulesOrienting = false)
+        .withName("Orient Modules");
   }
 
   /** Returns the module states (turn angles and drive velocities) for all of the modules. */
@@ -408,6 +451,12 @@ public class Drive extends SubsystemBase {
   public static Rotation2d[] getXOrientations() {
     return Arrays.stream(DriveConstants.moduleTranslations)
         .map(Translation2d::getAngle)
+        .toArray(Rotation2d[]::new);
+  }
+
+  public static Rotation2d[] getCircleOrientations() {
+    return Arrays.stream(DriveConstants.moduleTranslations)
+        .map(translation -> translation.getAngle().plus(new Rotation2d(Math.PI / 2.0)))
         .toArray(Rotation2d[]::new);
   }
 }

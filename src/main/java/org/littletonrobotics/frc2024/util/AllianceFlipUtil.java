@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import org.littletonrobotics.frc2024.FieldConstants;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleState;
 
 /** Utility functions for flipping from the blue to red alliance. */
@@ -75,6 +76,15 @@ public class AllianceFlipUtil {
           .setVx(-state.getVx())
           .setVy(state.getVy())
           .setOmega(-state.getOmega())
+          .addAllModuleForces(
+              state.getModuleForcesList().stream()
+                  .map(
+                      forces ->
+                          VehicleTrajectoryServiceOuterClass.ModuleForce.newBuilder()
+                              .setFx(-forces.getFx())
+                              .setFy(forces.getFy())
+                              .build())
+                  .toList())
           .build();
     } else {
       return state;

@@ -35,15 +35,16 @@ public class GenerateTrajectories {
     // Create vehicle model
     VehicleModel model =
         VehicleModel.newBuilder()
-            .setMass(70)
-            .setMoi(6)
+            .setMass(61)
+            .setMoi(5.8)
             .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
             .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
             .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
-            .setMaxWheelTorque(2)
+            .setMaxWheelTorque(4.0)
             .setMaxWheelOmega(
-                DriveConstants.moduleLimits.maxDriveVelocity()
-                    / DriveConstants.driveConfig.wheelRadius())
+                DriveConstants.moduleLimitsFree.maxDriveVelocity()
+                    / DriveConstants.driveConfig.wheelRadius()
+                    * 0.75)
             .build();
 
     // Check hashcodes
@@ -69,6 +70,7 @@ public class GenerateTrajectories {
 
     // Exit if trajectories up-to-date
     if (pathQueue.isEmpty()) {
+      System.out.println("All trajectories up-to-date!");
       return;
     }
 
@@ -82,6 +84,8 @@ public class GenerateTrajectories {
     // Generate trajectories
     for (Map.Entry<String, List<PathSegment>> entry : pathQueue.entrySet()) {
       Trajectory trajectory;
+      System.out.print(entry.getKey() + " - Generating 💭");
+      double startTime = System.currentTimeMillis();
       if (generateEmpty) {
         trajectory = Trajectory.newBuilder().build();
       } else {
@@ -104,9 +108,16 @@ public class GenerateTrajectories {
           Path.of("src", "main", "deploy", "trajectories", entry.getKey() + ".pathblob").toFile();
       try {
         OutputStream fileStream = new FileOutputStream(pathFile);
-        System.out.println("Writing to " + pathFile.getAbsolutePath());
         trajectory.writeTo(fileStream);
+        double endTime = System.currentTimeMillis();
+        System.out.println(
+            "\r"
+                + entry.getKey()
+                + " - Finished in "
+                + Math.round((endTime - startTime) / 100.0) / 10.0
+                + " secs ✅");
       } catch (IOException e) {
+        System.out.println("\r" + entry.getKey() + " - FAILED ⛔");
         e.printStackTrace();
       }
     }

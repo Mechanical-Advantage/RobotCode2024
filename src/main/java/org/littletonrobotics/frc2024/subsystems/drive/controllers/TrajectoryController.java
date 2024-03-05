@@ -10,12 +10,20 @@ package org.littletonrobotics.frc2024.subsystems.drive.controllers;
 import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.trajectoryConstants;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.IntStream;
+import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
@@ -28,20 +36,24 @@ import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOu
 
 @ExtensionMethod({TrajectoryGenerationHelpers.class})
 public class TrajectoryController {
-  private static LoggedTunableNumber linearkP =
+  private static final LoggedTunableNumber linearkP =
       new LoggedTunableNumber("Trajectory/linearkP", trajectoryConstants.linearkP());
-  private static LoggedTunableNumber linearkD =
+  private static final LoggedTunableNumber linearkD =
       new LoggedTunableNumber("Trajectory/linearkD", trajectoryConstants.linearkD());
-  private static LoggedTunableNumber thetakP =
+  private static final LoggedTunableNumber thetakP =
       new LoggedTunableNumber("Trajectory/thetakP", trajectoryConstants.thetakP());
-  private static LoggedTunableNumber thetakD =
+  private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("Trajectory/thetakD", trajectoryConstants.thetakD());
 
   private final HolonomicTrajectory trajectory;
   private final PIDController xController;
   private final PIDController yController;
   private final PIDController thetaController;
-  private Timer timer = new Timer();
+  private final Timer timer = new Timer();
+
+  @Getter
+  private List<Vector<N2>> moduleForces =
+      IntStream.range(0, 4).boxed().map(i -> VecBuilder.fill(0, 0)).toList();
 
   public TrajectoryController(HolonomicTrajectory trajectory) {
     this.trajectory = trajectory;
@@ -75,8 +87,8 @@ public class TrajectoryController {
             .build();
 
     // Sample and flip state
-    VehicleState setpointState = trajectory.sample(sampletime);
-    setpointState = AllianceFlipUtil.apply(setpointState);
+    VehicleState setpointState = AllianceFlipUtil.apply(trajectory.sample(sampletime));
+    RobotState.getInstance().setTrajectorySetpoint(setpointState.getPose());
 
     // Calculate feedback velocities (based on position error).
     double xFeedback = xController.calculate(currentState.getX(), setpointState.getX());
@@ -93,6 +105,15 @@ public class TrajectoryController {
             setpointState.getVy() + yFeedback,
             setpointState.getOmega() + thetaFeedback,
             currentPose.getRotation());
+
+    moduleForces =
+        setpointState.getModuleForcesList().stream()
+            .map(
+                forces ->
+                    new Translation2d(forces.getFx(), forces.getFy())
+                        .rotateBy(Rotation2d.fromRadians(setpointState.getTheta()).unaryMinus())
+                        .toVector())
+            .toList();
 
     // Log trajectory data
     Logger.recordOutput("Trajectory/SetpointPose", setpointState.getPose());

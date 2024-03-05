@@ -15,29 +15,31 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
+import lombok.Builder;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
-  public static DriveConfig driveConfig =
+  public static final DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
-            new DriveConfig(
-                Units.inchesToMeters(1.98),
-                Units.inchesToMeters(26.0),
-                Units.inchesToMeters(26.0),
-                Units.inchesToMeters(37),
-                Units.inchesToMeters(33),
-                Units.feetToMeters(13.05),
-                Units.feetToMeters(30.02),
-                8.86,
-                43.97);
+            DriveConfig.builder()
+                .wheelRadius(Units.inchesToMeters(2.026301746625535))
+                .trackWidthX(Units.inchesToMeters(20.75))
+                .trackWidthY(Units.inchesToMeters(20.75))
+                .bumperWidthX(Units.inchesToMeters(37))
+                .bumperWidthY(Units.inchesToMeters(33))
+                .maxLinearVelocity(Units.feetToMeters(15.0))
+                .maxLinearAcceleration(Units.feetToMeters(75.0))
+                .maxAngularVelocity(12.0)
+                .maxAngularAcceleration(6.0)
+                .build();
         case DEVBOT ->
             new DriveConfig(
                 Units.inchesToMeters(2.01834634),
-                Units.inchesToMeters(26.0),
-                Units.inchesToMeters(26.0),
+                Units.inchesToMeters(20.75),
+                Units.inchesToMeters(20.75),
                 Units.inchesToMeters(37),
                 Units.inchesToMeters(33),
                 Units.feetToMeters(12.16),
@@ -69,14 +71,14 @@ public final class DriveConstants {
       };
 
   // Module Constants
-  public static ModuleConfig[] moduleConfigs =
+  public static final ModuleConfig[] moduleConfigs =
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConfig[] {
-              new ModuleConfig(16, 12, 0, new Rotation2d(-1.93585), true),
-              new ModuleConfig(19, 14, 1, new Rotation2d(0.73053), true),
-              new ModuleConfig(17, 13, 2, new Rotation2d(-0.50507), true),
-              new ModuleConfig(18, 15, 3, new Rotation2d(-1.51666), true)
+              new ModuleConfig(16, 12, 0, new Rotation2d(-0.81761), true),
+              new ModuleConfig(19, 14, 1, new Rotation2d(1.80875), true),
+              new ModuleConfig(17, 13, 2, new Rotation2d(-0.48936), true),
+              new ModuleConfig(18, 15, 3, new Rotation2d(-1.52578), true)
             };
         case DEVBOT ->
             new ModuleConfig[] {
@@ -93,22 +95,24 @@ public final class DriveConstants {
         }
       };
 
-  public static ModuleConstants moduleConstants =
+  public static final ModuleConstants moduleConstants =
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
+                5.0,
                 0.0,
+                51.547492, // A/(N*m)
+                35.0,
                 0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
+                4000.0,
+                50.0,
                 Mk4iReductions.L3.reduction,
                 Mk4iReductions.TURN.reduction);
         case DEVBOT ->
             new ModuleConstants(
                 0.1,
                 0.13,
+                0.0,
                 0.1,
                 0.0,
                 10.0,
@@ -119,6 +123,7 @@ public final class DriveConstants {
             new ModuleConstants(
                 0.014,
                 0.134,
+                0.0,
                 0.1,
                 0.0,
                 10.0,
@@ -127,16 +132,22 @@ public final class DriveConstants {
                 Mk4iReductions.TURN.reduction);
       };
 
-  public static ModuleLimits moduleLimits =
+  public static final ModuleLimits moduleLimitsFree =
       new ModuleLimits(
           driveConfig.maxLinearVelocity(),
-          driveConfig.maxLinearVelocity() * 5,
+          driveConfig.maxLinearAcceleration(),
+          Units.degreesToRadians(1080.0));
+
+  public static final ModuleLimits moduleLimitsFlywheelSpinup =
+      new ModuleLimits(
+          driveConfig.maxLinearVelocity(),
+          driveConfig.maxLinearAcceleration() / 2.0,
           Units.degreesToRadians(1080.0));
 
   // Trajectory Following
-  public static TrajectoryConstants trajectoryConstants =
+  public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT -> new TrajectoryConstants(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        case COMPBOT -> TrajectoryConstants.builder().linearkP(8.0).thetakP(10.0).build();
         case DEVBOT ->
             new TrajectoryConstants(
                 6.0,
@@ -163,26 +174,13 @@ public final class DriveConstants {
                 driveConfig.maxAngularVelocity() / 2.0);
       };
 
-  // Auto Align
-  public static AutoAlignConstants autoAlignConstants =
-      new AutoAlignConstants(
-          6.0,
-          0.0,
-          5.0,
-          0.0,
-          Units.inchesToMeters(2.0),
-          Units.degreesToRadians(2.0),
-          driveConfig.maxLinearVelocity(),
-          driveConfig.maxLinearAcceleration() * 0.5,
-          driveConfig.maxAngularVelocity() * 0.3,
-          driveConfig.maxAngularAcceleration() * 0.5);
-
   // Swerve Heading Control
-  public static HeadingControllerConstants headingControllerConstants =
+  public static final HeadingControllerConstants headingControllerConstants =
       switch (Constants.getRobot()) {
         default -> new HeadingControllerConstants(5.0, 0.0, 8.0, 20.0);
       };
 
+  @Builder
   public record DriveConfig(
       double wheelRadius,
       double trackWidthX,
@@ -208,6 +206,7 @@ public final class DriveConstants {
   public record ModuleConstants(
       double ffkS,
       double ffkV,
+      double ffkT,
       double drivekP,
       double drivekD,
       double turnkP,
@@ -215,6 +214,7 @@ public final class DriveConstants {
       double driveReduction,
       double turnReduction) {}
 
+  @Builder
   public record TrajectoryConstants(
       double linearkP,
       double linearkD,

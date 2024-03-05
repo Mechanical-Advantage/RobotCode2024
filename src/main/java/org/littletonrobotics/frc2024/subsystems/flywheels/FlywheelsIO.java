@@ -18,13 +18,15 @@ public interface FlywheelsIO {
     public double leftPositionRads = 0.0;
     public double leftVelocityRpm = 0.0;
     public double leftAppliedVolts = 0.0;
-    public double leftOutputCurrent = 0.0;
+    public double leftSupplyCurrentAmps = 0.0;
+    public double leftTorqueCurrentAmps = 0.0;
     public double leftTempCelsius = 0.0;
 
     public double rightPositionRads = 0.0;
     public double rightVelocityRpm = 0.0;
     public double rightAppliedVolts = 0.0;
-    public double rightOutputCurrent = 0.0;
+    public double rightSupplyCurrentAmps = 0.0;
+    public double rightTorqueCurrentAmps = 0.0;
     public double rightTempCelsius = 0.0;
   }
 
@@ -38,7 +40,8 @@ public interface FlywheelsIO {
   default void stop() {}
 
   /** Run left and right flywheels at velocity in rpm */
-  default void runVelocity(double leftRpm, double rightRpm) {}
+  default void runVelocity(
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {}
 
   /** Config PID values for both motors */
   default void setPID(double kP, double kI, double kD) {}

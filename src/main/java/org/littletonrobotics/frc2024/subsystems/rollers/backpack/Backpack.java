@@ -12,7 +12,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystem;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystem.VoltageGoal;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 @Setter
@@ -22,7 +21,9 @@ public class Backpack extends GenericRollerSystem<Backpack.Goal> {
   @Getter
   public enum Goal implements VoltageGoal {
     IDLING(() -> 0),
-    AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0));
+    AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0)),
+    TRAP_SCORING(new LoggedTunableNumber("Backpack/TrapScoringVoltage", 2.0)),
+    EJECTING(new LoggedTunableNumber("Backpack/EjectingVoltage", -12.0));
 
     private final DoubleSupplier voltageSupplier;
   }

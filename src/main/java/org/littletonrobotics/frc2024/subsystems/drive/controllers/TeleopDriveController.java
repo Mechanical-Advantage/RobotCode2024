@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024.subsystems.drive.controllers;
 
+import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.driveConfig;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -15,17 +17,19 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import org.littletonrobotics.frc2024.RobotState;
-import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
 /** Drive controller for outputting {@link ChassisSpeeds} from driver joysticks. */
 public class TeleopDriveController {
   private static final LoggedTunableNumber controllerDeadband =
       new LoggedTunableNumber("TeleopDrive/Deadband", 0.1);
+  private static final LoggedTunableNumber maxAngularVelocityScalar =
+      new LoggedTunableNumber("TeleopDrive/MaxAngularVelocityScalar", 0.75);
 
   private double controllerX = 0;
   private double controllerY = 0;
   private double controllerOmega = 0;
+  private boolean robotRelative = false;
 
   /**
    * Accepts new drive input from joysticks.
@@ -33,11 +37,13 @@ public class TeleopDriveController {
    * @param x Desired x velocity scalar, -1..1
    * @param y Desired y velocity scalar, -1..1
    * @param omega Desired omega velocity scalar, -1..1
+   * @param robotRelative Robot relative drive
    */
-  public void acceptDriveInput(double x, double y, double omega) {
+  public void acceptDriveInput(double x, double y, double omega, boolean robotRelative) {
     controllerX = x;
     controllerY = y;
     controllerOmega = omega;
+    this.robotRelative = robotRelative;
   }
 
   /**
@@ -61,15 +67,24 @@ public class TeleopDriveController {
         new Pose2d(new Translation2d(), linearDirection)
             .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
             .getTranslation();
-    if (DriverStation.getAlliance().isPresent()
-        && DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
-      linearVelocity = linearVelocity.rotateBy(Rotation2d.fromRadians(Math.PI));
-    }
 
-    return ChassisSpeeds.fromFieldRelativeSpeeds(
-        linearVelocity.getX() * DriveConstants.driveConfig.maxLinearVelocity(),
-        linearVelocity.getY() * DriveConstants.driveConfig.maxLinearVelocity(),
-        omega * DriveConstants.driveConfig.maxAngularVelocity(),
-        RobotState.getInstance().getEstimatedPose().getRotation());
+    final double maxAngularVelocity =
+        driveConfig.maxAngularVelocity() * maxAngularVelocityScalar.get();
+    if (robotRelative) {
+      return new ChassisSpeeds(
+          linearVelocity.getX() * driveConfig.maxLinearVelocity(),
+          linearVelocity.getY() * driveConfig.maxLinearVelocity(),
+          omega * maxAngularVelocity);
+    } else {
+      if (DriverStation.getAlliance().isPresent()
+          && DriverStation.getAlliance().get() == DriverStation.Alliance.Red) {
+        linearVelocity = linearVelocity.rotateBy(Rotation2d.fromRadians(Math.PI));
+      }
+      return ChassisSpeeds.fromFieldRelativeSpeeds(
+          linearVelocity.getX() * driveConfig.maxLinearVelocity(),
+          linearVelocity.getY() * driveConfig.maxLinearVelocity(),
+          omega * maxAngularVelocity,
+          RobotState.getInstance().getEstimatedPose().getRotation());
+    }
   }
 }

@@ -85,7 +85,6 @@ public class LoggedTunableNumber implements DoubleSupplier {
    *     otherwise.
    */
   public boolean hasChanged(int id) {
-    if (!Constants.tuningMode) return false;
     double currentValue = get();
     Double lastValue = lastHasChangedValues.get(id);
     if (lastValue == null || currentValue != lastValue) {

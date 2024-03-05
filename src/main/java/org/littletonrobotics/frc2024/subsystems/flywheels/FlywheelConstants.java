@@ -10,26 +10,22 @@ package org.littletonrobotics.frc2024.subsystems.flywheels;
 import org.littletonrobotics.frc2024.Constants;
 
 public class FlywheelConstants {
-  public static FlywheelConfig flywheelConfig =
+  public static final FlywheelConfig flywheelConfig =
       switch (Constants.getRobot()) {
-        case COMPBOT -> new FlywheelConfig(0, 0, 0, 0, 0);
-        case DEVBOT -> new FlywheelConfig(5, 4, (1.0 / 2.0), 6000.0, 100.0);
-        case SIMBOT -> new FlywheelConfig(0, 0, (1.0 / 2.0), 6000.0, 50.0);
+        case COMPBOT -> new FlywheelConfig(4, 0, (1.0 / 2.0), 9000.0);
+        case DEVBOT -> new FlywheelConfig(5, 4, (1.0 / 2.0), 6000.0);
+        case SIMBOT -> new FlywheelConfig(0, 0, (1.0 / 2.0), 9000.0);
       };
 
-  public static Gains gains =
+  public static final Gains gains =
       switch (Constants.getRobot()) {
-        case COMPBOT -> new Gains(0, 0, 0, 0, 0, 0);
-        case DEVBOT -> new Gains(0.0006, 0.0, 0.05, 0.33329, 0.00083, 0.0);
+        case COMPBOT -> new Gains(0.25, 0, 0.0012, 0.8, 0.00105, 0);
+        case DEVBOT -> new Gains(0.0003, 0.0, 0.0, 0.33329, 0.00083, 0.0);
         case SIMBOT -> new Gains(0.05, 0.0, 0.0, 0.01, 0.00103, 0.0);
       };
 
   public record FlywheelConfig(
-      int leftID,
-      int rightID,
-      double reduction,
-      double maxAcclerationRpmPerSec,
-      double toleranceRPM) {}
+      int leftID, int rightID, double reduction, double maxAcclerationRpmPerSec) {}
 
   public record Gains(double kP, double kI, double kD, double kS, double kV, double kA) {}
 }

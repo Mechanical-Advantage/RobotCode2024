@@ -8,14 +8,20 @@
 package org.littletonrobotics.frc2024.subsystems.rollers;
 
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.BooleanSupplier;
 import lombok.Getter;
 import lombok.Setter;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
+import org.littletonrobotics.frc2024.util.NoteVisualizer;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Rollers extends SubsystemBase {
@@ -31,20 +37,31 @@ public class Rollers extends SubsystemBase {
   public enum Goal {
     IDLE,
     FLOOR_INTAKE,
+    UNTACO,
     STATION_INTAKE,
     EJECT_TO_FLOOR,
+    EJECT_FROM_FEEDER,
     QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER,
-    AMP_SCORE
+    AMP_SCORE,
+    TRAP_PRESCORE,
+    TRAP_SCORE,
+    SHUFFLE_BACKPACK,
+    SHUFFLE_SHOOTER
   }
 
   public enum GamepieceState {
     NONE,
-    SHOOTER_STAGED
+    SHOOTER_STAGED,
+    BACKPACK_STAGED
   }
 
   @Getter private Goal goal = Goal.IDLE;
-  @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
+  @AutoLogOutput @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
+  private GamepieceState lastGamepieceState = GamepieceState.NONE;
+  private Timer gamepieceStateTimer = new Timer();
+
+  @Setter private BooleanSupplier backpackActuatedSupplier = () -> false;
 
   public Rollers(
       Feeder feeder,
@@ -58,7 +75,8 @@ public class Rollers extends SubsystemBase {
     this.backpack = backpack;
     this.sensorsIO = sensorsIO;
 
-    setDefaultCommand(runOnce(this::goIdle).withName("Rollers Idling"));
+    setDefaultCommand(setGoalCommand(Goal.IDLE));
+    gamepieceStateTimer.start();
   }
 
   @Override
@@ -67,34 +85,53 @@ public class Rollers extends SubsystemBase {
     Logger.processInputs("RollersSensors", sensorInputs);
 
     if (DriverStation.isDisabled()) {
-      goIdle();
+      goal = Goal.IDLE;
     }
 
+    if (sensorInputs.shooterStaged) {
+      gamepieceState = GamepieceState.SHOOTER_STAGED;
+    } else if (sensorInputs.backbackStaged) {
+      gamepieceState = GamepieceState.BACKPACK_STAGED;
+    } else {
+      gamepieceState = GamepieceState.NONE;
+    }
+    if (gamepieceState != lastGamepieceState) {
+      gamepieceStateTimer.reset();
+    }
+    lastGamepieceState = gamepieceState;
+
+    NoteVisualizer.setHasNote(gamepieceState != GamepieceState.NONE);
+
+    // Reset idle and wait for other input
+    feeder.setGoal(Feeder.Goal.IDLING);
+    indexer.setGoal(Indexer.Goal.IDLING);
+    intake.setGoal(Intake.Goal.IDLING);
+    backpack.setGoal(Backpack.Goal.IDLING);
     switch (goal) {
-      case IDLE -> {
-        feeder.setGoal(Feeder.Goal.IDLING);
-        indexer.setGoal(Indexer.Goal.IDLING);
-        intake.setGoal(Intake.Goal.IDLING);
-        backpack.setGoal(Backpack.Goal.IDLING);
-      }
+      case IDLE -> {}
       case FLOOR_INTAKE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
-        indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);
-        backpack.setGoal(Backpack.Goal.IDLING);
-        if (sensorInputs.shooterStaged) {
+        if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
           indexer.setGoal(Indexer.Goal.IDLING);
-          gamepieceState = GamepieceState.SHOOTER_STAGED;
+        } else {
+          indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
+        }
+      }
+      case UNTACO -> {
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        intake.setGoal(Intake.Goal.IDLING);
+        if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
+          indexer.setGoal(Indexer.Goal.IDLING);
+        } else {
+          indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
         }
       }
       case STATION_INTAKE -> {
-        feeder.setGoal(Feeder.Goal.IDLING);
-        indexer.setGoal(Indexer.Goal.STATION_INTAKING);
-        intake.setGoal(Intake.Goal.IDLING);
-        backpack.setGoal(Backpack.Goal.IDLING);
-        if (sensorInputs.shooterStaged) {
+        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.08)) {
           indexer.setGoal(Indexer.Goal.IDLING);
-          gamepieceState = GamepieceState.SHOOTER_STAGED;
+        } else {
+          indexer.setGoal(Indexer.Goal.STATION_INTAKING);
         }
       }
       case EJECT_TO_FLOOR -> {
@@ -102,27 +139,57 @@ public class Rollers extends SubsystemBase {
         indexer.setGoal(Indexer.Goal.EJECTING);
         intake.setGoal(Intake.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.IDLING);
-        gamepieceState = GamepieceState.NONE;
+      }
+      case EJECT_FROM_FEEDER -> {
+        feeder.setGoal(Feeder.Goal.EJECTING);
+        indexer.setGoal(Indexer.Goal.IDLING);
+        intake.setGoal(Intake.Goal.FLOOR_INTAKING);
+        backpack.setGoal(Backpack.Goal.IDLING);
       }
       case QUICK_INTAKE_TO_FEED -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);
-        backpack.setGoal(Backpack.Goal.IDLING);
       }
       case FEED_TO_SHOOTER -> {
         feeder.setGoal(Feeder.Goal.SHOOTING);
         indexer.setGoal(Indexer.Goal.SHOOTING);
-        intake.setGoal(Intake.Goal.IDLING);
-        backpack.setGoal(Backpack.Goal.IDLING);
-        gamepieceState = GamepieceState.NONE;
       }
       case AMP_SCORE -> {
+        feeder.setGoal(Feeder.Goal.SHUFFLING);
+        indexer.setGoal(Indexer.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.AMP_SCORING);
+      }
+      case TRAP_PRESCORE -> {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
-        intake.setGoal(Intake.Goal.IDLING);
-        backpack.setGoal(Backpack.Goal.AMP_SCORING);
-        gamepieceState = GamepieceState.NONE;
+        backpack.setGoal(Backpack.Goal.IDLING);
+      }
+      case TRAP_SCORE -> {
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        indexer.setGoal(Indexer.Goal.EJECTING);
+        backpack.setGoal(Backpack.Goal.TRAP_SCORING);
+      }
+      case SHUFFLE_BACKPACK -> {
+        // Shuffle into backpack
+        feeder.setGoal(Feeder.Goal.SHUFFLING);
+        if (gamepieceState != GamepieceState.BACKPACK_STAGED) {
+          indexer.setGoal(Indexer.Goal.EJECTING);
+          backpack.setGoal(Backpack.Goal.AMP_SCORING);
+        } else {
+          indexer.setGoal(Indexer.Goal.IDLING);
+          backpack.setGoal(Backpack.Goal.IDLING);
+        }
+      }
+      case SHUFFLE_SHOOTER -> {
+        // Shuffle into shooter
+        feeder.setGoal(Feeder.Goal.SHUFFLING);
+        backpack.setGoal(Backpack.Goal.EJECTING);
+        if (gamepieceState != GamepieceState.SHOOTER_STAGED) {
+          indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
+        } else {
+          indexer.setGoal(Indexer.Goal.IDLING);
+        }
       }
     }
 
@@ -130,40 +197,22 @@ public class Rollers extends SubsystemBase {
     indexer.periodic();
     intake.periodic();
     backpack.periodic();
+
+    Leds.getInstance().hasNote = gamepieceState != GamepieceState.NONE;
+    Leds.getInstance().intaking = goal == Goal.FLOOR_INTAKE || goal == Goal.STATION_INTAKE;
   }
 
-  private void goIdle() {
-    goal = Goal.IDLE;
+  public Command setGoalCommand(Goal goal) {
+    return startEnd(() -> this.goal = goal, () -> this.goal = Goal.IDLE)
+        .withName("Rollers " + goal);
   }
 
-  public boolean isGamepieceStaged() {
-    return gamepieceState == GamepieceState.SHOOTER_STAGED;
-  }
-
-  public Command floorIntake() {
-    return startEnd(() -> goal = Goal.FLOOR_INTAKE, this::goIdle).withName("Rollers Floor Intake");
-  }
-
-  public Command stationIntake() {
-    return startEnd(() -> goal = Goal.STATION_INTAKE, this::goIdle)
-        .withName("Rollers Station Intake");
-  }
-
-  public Command ejectFloor() {
-    return startEnd(() -> goal = Goal.EJECT_TO_FLOOR, this::goIdle).withName("Rollers Eject Floor");
-  }
-
-  public Command quickFeed() {
-    return startEnd(() -> goal = Goal.QUICK_INTAKE_TO_FEED, this::goIdle)
-        .withName("Rollers Quick Feed");
-  }
-
-  public Command feedShooter() {
-    return startEnd(() -> goal = Goal.FEED_TO_SHOOTER, this::goIdle)
-        .withName("Rollers Feed Shooter");
-  }
-
-  public Command ampScore() {
-    return startEnd(() -> goal = Goal.AMP_SCORE, this::goIdle).withName("Rollers Amp Scoring");
+  public Command shuffle() {
+    return Commands.either(
+        setGoalCommand(Goal.SHUFFLE_BACKPACK)
+            .until(() -> gamepieceState == GamepieceState.BACKPACK_STAGED),
+        setGoalCommand(Goal.SHUFFLE_SHOOTER)
+            .until(() -> gamepieceState == GamepieceState.SHOOTER_STAGED),
+        () -> gamepieceState == GamepieceState.SHOOTER_STAGED);
   }
 }

@@ -13,10 +13,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.NeutralOut;
-import com.ctre.phoenix6.controls.TorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -31,20 +28,20 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   private final StatusSignal<Double> leftPosition;
   private final StatusSignal<Double> leftVelocity;
   private final StatusSignal<Double> leftAppliedVolts;
+  private final StatusSignal<Double> leftSupplyCurrent;
   private final StatusSignal<Double> leftTorqueCurrent;
   private final StatusSignal<Double> leftTempCelsius;
   private final StatusSignal<Double> rightPosition;
   private final StatusSignal<Double> rightVelocity;
   private final StatusSignal<Double> rightAppliedVolts;
+  private final StatusSignal<Double> rightSupplyCurrent;
   private final StatusSignal<Double> rightTorqueCurrent;
   private final StatusSignal<Double> rightTempCelsius;
 
   // Control
   private final Slot0Configs controllerConfig = new Slot0Configs();
-  private final VoltageOut voltageControl = new VoltageOut(0.0).withUpdateFreqHz(0.0);
-  private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-  private final VelocityTorqueCurrentFOC velocityControl =
-      new VelocityTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
+  private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0.0);
+  private final VelocityVoltage velocityControl = new VelocityVoltage(0).withUpdateFreqHz(0.0);
   private final NeutralOut neutralControl = new NeutralOut().withUpdateFreqHz(0.0);
 
   public FlywheelsIOKrakenFOC() {
@@ -55,8 +52,6 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
     TalonFXConfiguration config = new TalonFXConfiguration();
     config.CurrentLimits.SupplyCurrentLimit = 60.0;
     config.CurrentLimits.SupplyCurrentLimitEnable = true;
-    config.Voltage.PeakForwardVoltage = 12.0;
-    config.Voltage.PeakReverseVoltage = -12.0;
     config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
     config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
     config.Feedback.SensorToMechanismRatio = flywheelConfig.reduction();
@@ -75,15 +70,22 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
     leftTalon.getConfigurator().apply(controllerConfig, 1.0);
     rightTalon.getConfigurator().apply(controllerConfig, 1.0);
 
+    // Set inverts
+    leftTalon.setInverted(true);
+    rightTalon.setInverted(false);
+
     // Set signals
     leftPosition = leftTalon.getPosition();
     leftVelocity = leftTalon.getVelocity();
     leftAppliedVolts = leftTalon.getMotorVoltage();
+    leftSupplyCurrent = leftTalon.getSupplyCurrent();
     leftTorqueCurrent = leftTalon.getTorqueCurrent();
     leftTempCelsius = leftTalon.getDeviceTemp();
+
     rightPosition = rightTalon.getPosition();
     rightVelocity = rightTalon.getVelocity();
     rightAppliedVolts = rightTalon.getMotorVoltage();
+    rightSupplyCurrent = rightTalon.getSupplyCurrent();
     rightTorqueCurrent = rightTalon.getTorqueCurrent();
     rightTempCelsius = rightTalon.getDeviceTemp();
 
@@ -92,11 +94,13 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
         leftPosition,
         leftVelocity,
         leftAppliedVolts,
+        leftSupplyCurrent,
         leftTorqueCurrent,
         leftTempCelsius,
         rightPosition,
         rightVelocity,
         rightAppliedVolts,
+        rightSupplyCurrent,
         rightTorqueCurrent,
         rightTempCelsius);
   }
@@ -105,13 +109,19 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   public void updateInputs(FlywheelsIOInputs inputs) {
     inputs.leftMotorConnected =
         BaseStatusSignal.refreshAll(
-                leftPosition, leftVelocity, leftAppliedVolts, leftTorqueCurrent, leftTempCelsius)
+                leftPosition,
+                leftVelocity,
+                leftAppliedVolts,
+                leftSupplyCurrent,
+                leftTorqueCurrent,
+                leftTempCelsius)
             .isOK();
     inputs.rightMotorConnected =
-        !BaseStatusSignal.refreshAll(
+        BaseStatusSignal.refreshAll(
                 rightPosition,
                 rightVelocity,
                 rightAppliedVolts,
+                rightSupplyCurrent,
                 rightTorqueCurrent,
                 rightTempCelsius)
             .isOK();
@@ -119,13 +129,15 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
     inputs.leftPositionRads = Units.rotationsToRadians(leftPosition.getValueAsDouble());
     inputs.leftVelocityRpm = leftVelocity.getValueAsDouble() * 60.0;
     inputs.leftAppliedVolts = leftAppliedVolts.getValueAsDouble();
-    inputs.leftOutputCurrent = leftTorqueCurrent.getValueAsDouble();
+    inputs.leftSupplyCurrentAmps = leftSupplyCurrent.getValueAsDouble();
+    inputs.leftTorqueCurrentAmps = leftTorqueCurrent.getValueAsDouble();
     inputs.leftTempCelsius = leftTempCelsius.getValueAsDouble();
 
     inputs.rightPositionRads = Units.rotationsToRadians(rightPosition.getValueAsDouble());
     inputs.rightVelocityRpm = rightVelocity.getValueAsDouble() * 60.0;
     inputs.rightAppliedVolts = rightAppliedVolts.getValueAsDouble();
-    inputs.rightOutputCurrent = rightTorqueCurrent.getValueAsDouble();
+    inputs.rightSupplyCurrentAmps = rightSupplyCurrent.getValueAsDouble();
+    inputs.rightTorqueCurrentAmps = rightTorqueCurrent.getValueAsDouble();
     inputs.rightTempCelsius = rightTempCelsius.getValueAsDouble();
   }
 
@@ -142,9 +154,12 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   }
 
   @Override
-  public void runVelocity(double leftRpm, double rightRpm) {
-    leftTalon.setControl(velocityControl.withVelocity(leftRpm / 60.0));
-    rightTalon.setControl(velocityControl.withVelocity(rightRpm / 60.0));
+  public void runVelocity(
+      double leftRpm, double rightRpm, double leftFeedforward, double rightFeedforward) {
+    leftTalon.setControl(
+        velocityControl.withVelocity(leftRpm / 60.0).withFeedForward(leftFeedforward));
+    rightTalon.setControl(
+        velocityControl.withVelocity(rightRpm / 60.0).withFeedForward(rightFeedforward));
   }
 
   @Override
@@ -157,21 +172,12 @@ public class FlywheelsIOKrakenFOC implements FlywheelsIO {
   }
 
   @Override
-  public void setFF(double kS, double kV, double kA) {
-    controllerConfig.kS = kS;
-    controllerConfig.kV = kV;
-    controllerConfig.kA = kA;
-    leftTalon.getConfigurator().apply(controllerConfig);
-    rightTalon.getConfigurator().apply(controllerConfig);
-  }
-
-  @Override
   public void runCharacterizationLeft(double input) {
-    leftTalon.setControl(currentControl.withOutput(input));
+    leftTalon.setControl(voltageControl.withOutput(input));
   }
 
   @Override
   public void runCharacterizationRight(double input) {
-    rightTalon.setControl(currentControl.withOutput(input));
+    rightTalon.setControl(voltageControl.withOutput(input));
   }
 }

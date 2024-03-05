@@ -28,6 +28,8 @@ public class Module {
       new LoggedTunableNumber("Drive/Module/DrivekS", moduleConstants.ffkS());
   private static final LoggedTunableNumber drivekV =
       new LoggedTunableNumber("Drive/Module/DrivekV", moduleConstants.ffkV());
+  private static final LoggedTunableNumber drivekT =
+      new LoggedTunableNumber("Drive/Module/DrivekT", moduleConstants.ffkT());
   private static final LoggedTunableNumber turnkP =
       new LoggedTunableNumber("Drive/Module/TurnkP", moduleConstants.turnkP());
   private static final LoggedTunableNumber turnkD =
@@ -77,28 +79,21 @@ public class Module {
   }
 
   /** Runs to {@link SwerveModuleState} */
-  public void runSetpoint(SwerveModuleState setpoint) {
+  public void runSetpoint(SwerveModuleState setpoint, SwerveModuleState torqueFF) {
     setpointState = setpoint;
+    double wheelTorqueNm =
+        torqueFF.speedMetersPerSecond; // Using SwerveModuleState for torque for easy logging
     io.runDriveVelocitySetpoint(
         setpoint.speedMetersPerSecond / driveConfig.wheelRadius(),
-        ff.calculate(setpoint.speedMetersPerSecond / driveConfig.wheelRadius()));
+        ff.calculate(setpoint.speedMetersPerSecond / driveConfig.wheelRadius())
+            + (wheelTorqueNm / moduleConstants.driveReduction() * drivekT.get()));
     io.runTurnPositionSetpoint(setpoint.angle.getRadians());
   }
 
   /** Runs characterization volts or amps depending on using voltage or current control. */
-  public void runCharacterization(double input) {
-    io.runTurnPositionSetpoint(0.0);
-    if (inputs.hasCurrentControl) {
-      io.runDriveCurrent(input);
-    } else {
-      io.runDriveVolts(input);
-    }
-  }
-
-  /** Sets brake mode to {@code enabled}. */
-  public void setBrakeMode(boolean enabled) {
-    io.setDriveBrakeMode(enabled);
-    io.setTurnBrakeMode(enabled);
+  public void runCharacterization(double turnSetpointRads, double volts) {
+    io.runTurnPositionSetpoint(turnSetpointRads);
+    io.runDriveVolts(volts);
   }
 
   /** Stops motors. */
@@ -124,14 +119,19 @@ public class Module {
     return inputs.turnAbsolutePosition;
   }
 
+  /** Get position of wheel rotations in radians */
+  public double getPositionRads() {
+    return inputs.drivePositionRads;
+  }
+
   /** Get position of wheel in meters. */
   public double getPositionMeters() {
-    return inputs.drivePositionRad * driveConfig.wheelRadius();
+    return inputs.drivePositionRads * driveConfig.wheelRadius();
   }
 
   /** Get velocity of wheel in m/s. */
   public double getVelocityMetersPerSec() {
-    return inputs.driveVelocityRadPerSec * driveConfig.wheelRadius();
+    return inputs.driveVelocityRadsPerSec * driveConfig.wheelRadius();
   }
 
   /** Get current {@link SwerveModulePosition} of module. */
@@ -146,6 +146,6 @@ public class Module {
 
   /** Get velocity of drive wheel for characterization */
   public double getCharacterizationVelocity() {
-    return inputs.driveVelocityRadPerSec;
+    return inputs.driveVelocityRadsPerSec;
   }
 }

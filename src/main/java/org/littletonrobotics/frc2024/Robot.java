@@ -7,18 +7,30 @@
 
 package org.littletonrobotics.frc2024;
 
+import static org.littletonrobotics.frc2024.util.Alert.AlertType;
+
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
+import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.BatteryTracker;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -35,11 +47,32 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter;
  * project.
  */
 public class Robot extends LoggedRobot {
+  private static final String batteryNameFile = "/home/lvuser/battery-name.txt";
+  private static final double canErrorTimeThreshold = 0.5; // Seconds to disable alert
+  private static final double canivoreErrorTimeThreshold = 0.5;
+  private static final double lowBatteryVoltage = 11.8;
+  private static final double lowBatteryDisabledTime = 1.5;
+
   private Command autoCommand;
   private RobotContainer robotContainer;
-
   private double autoStart;
   private boolean autoMessagePrinted;
+  private boolean batteryNameWritten = false;
+  private final Timer disabledTimer = new Timer();
+  private final Timer canErrorTimer = new Timer();
+  private final Timer canInitialErrorTimer = new Timer();
+  private final Timer canivoreErrorTimer = new Timer();
+
+  private final Alert canErrorAlert =
+      new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
+  private final Alert canivoreErrorAlert =
+      new Alert("CANivore error detected, robot may no tbe controllable.", AlertType.ERROR);
+  private final Alert lowBatteryAlert =
+      new Alert(
+          "Battery voltage is very low, consider turning off the robot or replacing the battery.",
+          AlertType.WARNING);
+  private final Alert sameBatteryAlert =
+      new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -49,6 +82,9 @@ public class Robot extends LoggedRobot {
   public void robotInit() {
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
+    System.out.println("[Init] Scanning battery");
+    Logger.recordMetadata("BatteryName", "BAT-" + BatteryTracker.scanBattery(1.5));
+    System.out.println("[Init] Starting AdvantageKit");
     Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
     Logger.recordMetadata("RuntimeType", getRuntimeType().toString());
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -92,6 +128,7 @@ public class Robot extends LoggedRobot {
 
     // Start AdvantageKit logger
     Logger.start();
+    Leds.getInstance();
 
     // Log active commands
     Map<String, Integer> commandCounts = new HashMap<>();
@@ -125,6 +162,37 @@ public class Robot extends LoggedRobot {
       DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
     }
 
+    canErrorTimer.restart();
+    canInitialErrorTimer.restart();
+    canivoreErrorTimer.restart();
+    disabledTimer.restart();
+
+    // Check for battery alert
+    if (Constants.getMode() == Mode.REAL
+        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)) {
+      File file = new File(batteryNameFile);
+      if (file.exists()) {
+        // Read previous battery name
+        String previousBatteryName = "";
+        try {
+          previousBatteryName =
+              new String(Files.readAllBytes(Paths.get(batteryNameFile)), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+        if (previousBatteryName.equals(BatteryTracker.getName())) {
+          // Same battery, set alert
+          sameBatteryAlert.set(true);
+          Leds.getInstance().sameBattery = true;
+        } else {
+          // New battery, delete file
+          file.delete();
+        }
+      }
+    }
+
+    RobotController.setBrownoutVoltage(6.0);
+
     // Instantiate our RobotContainer. This will perform all our button bindings,
     // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
@@ -148,6 +216,8 @@ public class Robot extends LoggedRobot {
               "*** Auto cancelled in %.2f secs ***%n", Timer.getFPGATimestamp() - autoStart);
         }
         autoMessagePrinted = true;
+        Leds.getInstance().autoFinished = true;
+        Leds.getInstance().autoFinishedTime = Timer.getFPGATimestamp();
       }
     }
 
@@ -163,9 +233,19 @@ public class Robot extends LoggedRobot {
 
     // Robot container periodic methods
     robotContainer.checkControllers();
+    robotContainer.updateDashboardOutputs();
 
     // Update NoteVisualizer
-    NoteVisualizer.showIntakedNotes();
+    NoteVisualizer.showHeldNotes();
+
+    // Check CAN status
+    var canStatus = RobotController.getCANStatus();
+    if (canStatus.transmitErrorCount > 0 || canStatus.receiveErrorCount > 0) {
+      canErrorTimer.restart();
+    }
+    canErrorAlert.set(
+        !canErrorTimer.hasElapsed(canErrorTimeThreshold)
+            && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
 
     // Log CANivore status
     if (Constants.getMode() == Mode.REAL) {
@@ -176,7 +256,40 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
+      // Alerts
+      if (!canivoreStatus.Status.isOK()) {
+        canivoreErrorTimer.restart();
+      }
+      canivoreErrorAlert.set(
+          !canivoreStatus.Status.isOK()
+              || !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold));
     }
+
+    // Low battery alert
+    if (DriverStation.isEnabled()) {
+      disabledTimer.reset();
+    }
+    if (RobotController.getBatteryVoltage() <= lowBatteryVoltage
+        && disabledTimer.hasElapsed(lowBatteryDisabledTime)) {
+      lowBatteryAlert.set(true);
+      Leds.getInstance().lowBatteryAlert = true;
+    }
+
+    // Write battery name if connected to field
+    if (Constants.getMode() == Mode.REAL
+        && !batteryNameWritten
+        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)
+        && DriverStation.isFMSAttached()) {
+      batteryNameWritten = true;
+      try {
+        FileWriter fileWriter = new FileWriter(batteryNameFile);
+        fileWriter.write(BatteryTracker.getName());
+        fileWriter.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
     Threads.setCurrentThreadPriority(true, 10);
   }
 
@@ -220,6 +333,8 @@ public class Robot extends LoggedRobot {
     }
     NoteVisualizer.clearAutoNotes();
     NoteVisualizer.showAutoNotes();
+
+    RobotState.getInstance().setShotCompensationDegrees(RobotState.teleopShotCompensation);
   }
 
   /** This function is called periodically during operator control. */

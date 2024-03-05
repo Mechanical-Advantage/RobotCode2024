@@ -15,14 +15,13 @@ public interface ArmIO {
     public boolean leaderMotorConnected = true;
     public boolean followerMotorConnected = true;
 
-    public double armPositionRads = 0.0;
-    public double armEncoderPositionRads = 0.0;
-    public double armAbsoluteEncoderPositionRads = 0.0;
-    public double armVelocityRadsPerSec = 0.0;
-    public double[] armAppliedVolts = new double[] {};
-    public double[] armCurrentAmps = new double[] {};
-    public double[] armTorqueCurrentAmps = new double[] {};
-    public double[] armTempCelcius = new double[] {};
+    public double positionRads = 0.0;
+    public double absoluteEncoderPositionRads = 0.0;
+    public double velocityRadsPerSec = 0.0;
+    public double[] appliedVolts = new double[] {};
+    public double[] supplyCurrentAmps = new double[] {};
+    public double[] torqueCurrentAmps = new double[] {};
+    public double[] tempCelcius = new double[] {};
     public boolean absoluteEncoderConnected = true;
   }
 

@@ -1,0 +1,271 @@
+# Disable in-source builds to prevent source tree corruption
+if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+    message(
+        FATAL_ERROR
+        "
+FATAL: In-source builds are not allowed.
+       You should create a separate directory for build files.
+"
+    )
+endif()
+
+cmake_minimum_required(VERSION 3.24)
+set(CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH}
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
+)
+
+project(TrajoptLib LANGUAGES CXX)
+
+# Use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+# When building, don't use the install RPATH already (but later on when
+# installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+# Add the automatically determined parts of the RPATH which point to directories
+# outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# The RPATH to be used when installing, but only if it's not a system directory
+list(
+    FIND
+    CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+    "${CMAKE_INSTALL_PREFIX}/lib"
+    isSystemDir
+)
+if("${isSystemDir}" STREQUAL "-1")
+    list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
+# Set default build type to release with debug info (i.e. release mode
+# optimizations are performed, but debug info still exists).
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
+endif()
+
+# Generate compile_commands.json by default
+if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS "YES" CACHE STRING "" FORCE)
+endif()
+
+# Control where the static and shared libraries are built so that on Windows,
+# we don't need to tinker with the path to run the executable
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS FALSE)
+
+include(TrajoptLibCompilerFlags)
+
+file(GLOB_RECURSE src src/*.cpp)
+if(${OPTIMIZER_BACKEND} STREQUAL "casadi")
+    list(FILTER src EXCLUDE REGEX "SleipnirOpti.cpp")
+elseif(${OPTIMIZER_BACKEND} STREQUAL "sleipnir")
+    list(FILTER src EXCLUDE REGEX "CasADiOpti.cpp")
+endif()
+list(FILTER src EXCLUDE REGEX trajoptlibrust.cpp)
+
+add_library(TrajoptLib ${src})
+trajoptlib_compiler_flags(TrajoptLib)
+target_include_directories(TrajoptLib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+
+set_target_properties(TrajoptLib PROPERTIES DEBUG_POSTFIX "d")
+
+set_property(TARGET TrajoptLib PROPERTY FOLDER "libraries")
+target_compile_definitions(TrajoptLib PRIVATE TRAJOPT_EXPORTS)
+
+include(CMakeDependentOption)
+include(CTest)
+include(FetchContent)
+
+if(BUILD_TESTING)
+    # Catch2 dependency
+    fetchcontent_declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.2
+        CMAKE_ARGS
+    )
+    fetchcontent_makeavailable(Catch2)
+endif()
+
+set(OPTIMIZER_BACKEND "casadi" CACHE STRING "Optimizer backend")
+set_property(CACHE OPTIMIZER_BACKEND PROPERTY STRINGS casadi sleipnir)
+
+if(${OPTIMIZER_BACKEND} STREQUAL "casadi")
+    message(STATUS "Using CasADi optimizer")
+
+    find_package(casadi REQUIRED)
+    #include(FetchCasADi)
+    #fetch_casadi()
+    target_compile_definitions(TrajoptLib PRIVATE OPTIMIZER_BACKEND_CASADI)
+    #target_include_directories(TrajoptLib SYSTEM PRIVATE ${CASADI_INCLUDEDIR})
+    #target_link_directories(TrajoptLib PRIVATE ${CASADI_LIBDIR})
+    target_link_libraries(TrajoptLib PRIVATE casadi)
+
+    # Add current directory to RPATH
+    if(APPLE)
+        set_property(
+            TARGET TrajoptLib
+            APPEND
+            PROPERTY INSTALL_RPATH "@loader_path/../lib;@loader_path"
+        )
+    elseif(UNIX)
+        set_property(
+            TARGET TrajoptLib
+            APPEND
+            PROPERTY INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN"
+        )
+    endif()
+
+    # Install CasADi libraries since FetchContent isn't setting that up properly
+    install(FILES ${CASADI_INSTALL_LIBS} DESTINATION ${CASADI_INSTALL_DEST})
+elseif(${OPTIMIZER_BACKEND} STREQUAL "sleipnir")
+    message(STATUS "Using Sleipnir optimizer")
+
+    set(BUILD_TESTING_SAVE ${BUILD_TESTING})
+    set(BUILD_TESTING OFF)
+
+    fetchcontent_declare(
+        Sleipnir
+        GIT_REPOSITORY https://github.com/SleipnirGroup/Sleipnir.git
+        # main on 2024-03-02
+        GIT_TAG 249c4b4d688076524f8b49361b3595ee1c7b0e3a
+    )
+    fetchcontent_makeavailable(Sleipnir)
+
+    set(BUILD_TESTING ${BUILD_TESTING_SAVE})
+
+    target_compile_definitions(TrajoptLib PRIVATE OPTIMIZER_BACKEND_SLEIPNIR)
+    target_link_libraries(TrajoptLib PRIVATE Sleipnir)
+endif()
+
+target_include_directories(
+    TrajoptLib
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+install(
+    TARGETS TrajoptLib
+    EXPORT TrajoptLibTargets
+    LIBRARY
+    DESTINATION lib
+    ARCHIVE
+    DESTINATION lib
+    RUNTIME
+    DESTINATION bin
+    INCLUDES DESTINATION include
+)
+export(TARGETS TrajoptLib FILE TrajoptLib.cmake NAMESPACE TrajoptLib::)
+install(DIRECTORY include/ COMPONENT TrajoptLib DESTINATION "include")
+install(
+    EXPORT TrajoptLibTargets
+    FILE TrajoptLib.cmake
+    NAMESPACE TrajoptLib::
+    DESTINATION lib/cmake/TrajoptLib
+)
+
+include(CMakePackageConfigHelpers)
+
+# Generate the config file that includes the exports
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/TrajoptLibConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/TrajoptLibConfig.cmake
+    INSTALL_DESTINATION "lib/cmake/TrajoptLib"
+    NO_SET_AND_CHECK_MACRO
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+# Install the config file
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/TrajoptLibConfig.cmake
+    COMPONENT TrajoptLib
+    DESTINATION lib/cmake/TrajoptLib
+)
+
+if(BUILD_TESTING)
+    enable_testing()
+    list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+    include(Catch)
+    if(
+        ${OPTIMIZER_BACKEND} STREQUAL "casadi"
+        AND ${CMAKE_SYSTEM_NAME} STREQUAL "Linux"
+        AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU"
+    )
+        target_compile_definitions(Catch2 PUBLIC "_GLIBCXX_USE_CXX11_ABI=0")
+        target_compile_definitions(
+            Catch2WithMain
+            PUBLIC "_GLIBCXX_USE_CXX11_ABI=0"
+        )
+    endif()
+endif()
+
+# Build TrajoptLib tests
+if(BUILD_TESTING)
+    file(GLOB_RECURSE TrajoptLib_test_src test/src/*.cpp)
+    add_executable(TrajoptLibTest ${TrajoptLib_test_src})
+    trajoptlib_compiler_flags(TrajoptLibTest)
+    target_include_directories(
+        TrajoptLibTest
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/units/include
+    )
+    target_link_libraries(TrajoptLibTest PRIVATE TrajoptLib Catch2::Catch2)
+    if(NOT CMAKE_TOOLCHAIN_FILE)
+        catch_discover_tests(TrajoptLibTest)
+    endif()
+endif()
+
+# Build examples and example tests
+include(TrajoptLibSubdirList)
+trajoptlib_subdir_list(EXAMPLES ${CMAKE_CURRENT_SOURCE_DIR}/examples)
+foreach(example ${EXAMPLES})
+    # Build example
+    file(GLOB_RECURSE sources examples/${example}/src/*.cpp)
+    add_executable(${example} ${sources})
+    trajoptlib_compiler_flags(${example})
+    target_include_directories(
+        ${example}
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/examples/${example}/include
+    )
+    target_link_libraries(${example} PRIVATE TrajoptLib)
+
+    # Build example test if files exist for it
+    if(
+        BUILD_TESTING
+        AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/examples/${example}/test
+    )
+        file(GLOB_RECURSE test_sources examples/${example}/test/*.cpp)
+        add_executable(${example}Test ${sources} ${test_sources})
+        target_include_directories(
+            ${example}Test
+            PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/${example}/src
+                ${CMAKE_CURRENT_SOURCE_DIR}/examples/${example}/test
+        )
+        trajoptlib_compiler_flags(${example}Test)
+        target_compile_definitions(${example}Test PUBLIC RUNNING_TESTS)
+        target_include_directories(
+            ${example}Test
+            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/examples/${example}/include
+        )
+        target_link_libraries(
+            ${example}Test
+            PRIVATE TrajoptLib Catch2::Catch2WithMain
+        )
+        if(NOT CMAKE_TOOLCHAIN_FILE)
+            catch_discover_tests(${example}Test)
+        endif()
+    endif()
+endforeach()

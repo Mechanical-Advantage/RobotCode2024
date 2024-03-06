@@ -7,7 +7,11 @@
 #include <trajopt/OptimalTrajectoryGenerator.h>
 #include <trajopt/drivetrain/SwerveDrivetrain.h>
 #include <trajopt/path/SwervePathBuilder.h>
+#include <trajopt/trajectory/HolonomicTrajectorySample.h>
+
+#include <fmt/format.h>
 #include <numbers>
+#include <csignal>
 
 namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 
@@ -16,6 +20,12 @@ namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.0;
 
 static const int MINIMUM_CONTROL_INTERVAL_COUNT = 40;
+
+static std::unique_ptr<grpc::Server> server;
+
+static void signal_handler(int signal) {
+    server->Shutdown();
+}
 
 trajopt::SwerveDrivetrain create_drivetrain(const vts::VehicleModel &model) {
     trajopt::SwerveDrivetrain drivetrain{
@@ -266,9 +276,14 @@ public:
 
         try {
             fmt::print("Generating trajectory\n");
-            trajopt::SwerveSolution solution = trajopt::OptimalTrajectoryGenerator::Generate(builder);
-            fmt::print("Generation finished\n");
-            convert_solution(response->mutable_trajectory(), solution);
+            auto solution = trajopt::OptimalTrajectoryGenerator::Generate(builder);
+            if (solution.has_value()) {
+                fmt::print("Generation finished\n");
+                convert_solution(response->mutable_trajectory(), solution.value());
+            } else {
+                fmt::print("Generation failed: {}\n", std::string(solution.error()));
+                response->mutable_error()->set_reason(std::string(solution.error()));
+            }
         } catch (std::exception &e) {
             fmt::print("Generation failed: {}\n", std::string(e.what()));
             response->mutable_error()->set_reason(std::string(e.what()));
@@ -287,7 +302,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
 
     builder.RegisterService(&service);
 
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    // This is a hack but who cares
+    std::signal(SIGTERM, signal_handler);
+    std::signal(SIGKILL, signal_handler);
+
+    server = std::move(builder.BuildAndStart());
     server->Wait();
 
     return 0;

@@ -19,9 +19,6 @@ get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
 protobuf_generate(TARGET trajectory_native_proto LANGUAGE cpp)
 protobuf_generate(TARGET trajectory_native_proto LANGUAGE grpc GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
 
-find_library(TRAJOPT_LIBRARY NAMES TrajoptLib)
-message(${TRAJOPT_LIBRARY})
-
 
 add_executable(trajectory_native src/trajectory_service.cpp)
-target_link_libraries(trajectory_native PRIVATE ${TRAJOPT_LIBRARY} trajectory_native_proto fmt::fmt nlohmann_json::nlohmann_json)
+target_link_libraries(trajectory_native PRIVATE TrajoptLib::TrajoptLib trajectory_native_proto fmt::fmt nlohmann_json::nlohmann_json)

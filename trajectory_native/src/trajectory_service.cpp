@@ -11,6 +11,7 @@
 
 #include <fmt/format.h>
 #include <numbers>
+#include <csignal>
 
 namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 
@@ -19,6 +20,12 @@ namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.0;
 
 static const int MINIMUM_CONTROL_INTERVAL_COUNT = 40;
+
+static std::unique_ptr<grpc::Server> server;
+
+static void signal_handler(int signal) {
+    server->Shutdown();
+}
 
 trajopt::SwerveDrivetrain create_drivetrain(const vts::VehicleModel &model) {
     trajopt::SwerveDrivetrain drivetrain{
@@ -295,7 +302,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) {
 
     builder.RegisterService(&service);
 
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+    // This is a hack but who cares
+    std::signal(SIGTERM, signal_handler);
+    std::signal(SIGKILL, signal_handler);
+
+    server = std::move(builder.BuildAndStart());
     server->Wait();
 
     return 0;

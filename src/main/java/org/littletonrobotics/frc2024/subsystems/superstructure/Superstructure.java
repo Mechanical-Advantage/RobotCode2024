@@ -135,11 +135,7 @@ public class Superstructure extends SubsystemBase {
       }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        if (climber.isRequestCancelClimb()) {
-          desiredGoal = Goal.CANCEL_CLIMB;
-        } else {
-          climber.setGoal(Climber.Goal.RETRACT);
-        }
+        climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case CANCEL_CLIMB -> {
@@ -149,11 +145,7 @@ public class Superstructure extends SubsystemBase {
       }
       case TRAP -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        if (climber.isRequestCancelClimb()) {
-          desiredGoal = Goal.PREPARE_CLIMB;
-        } else {
-          climber.setGoal(Climber.Goal.RETRACT);
-        }
+        climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
       }
       case RESET -> {

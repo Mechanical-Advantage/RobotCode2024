@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
@@ -83,6 +84,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 public class RobotContainer {
   // Load robot state
   private final RobotState robotState = RobotState.getInstance();
+  private final Leds leds = Leds.getInstance();
 
   // Subsystems
   private Drive drive;
@@ -328,7 +330,15 @@ public class RobotContainer {
   private void configureAutos() {
     AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
 
-    autoChooser.addDefaultOption("Do Nothing", Commands.none());
+    autoChooser.addDefaultOption(
+        "Do Nothing",
+        Commands.runOnce(
+            () ->
+                RobotState.getInstance()
+                    .resetPose(
+                        new Pose2d(
+                            new Translation2d(),
+                            AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
@@ -409,7 +419,8 @@ public class RobotContainer {
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
     Trigger readyToShoot =
-        new Trigger(() -> drive.atHeadingGoal() && superstructure.atGoal() && flywheels.atGoal());
+        new Trigger(
+            () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
     driver
         .rightTrigger()
         .and(driver.a())
@@ -441,7 +452,7 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal)
+                    Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
 
@@ -452,7 +463,7 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
-                    Commands.waitUntil(superstructure::atGoal)
+                    Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
                 .withName("Eject To Floor"));
 
@@ -475,14 +486,20 @@ public class RobotContainer {
           return ampCenterRotated.transformBy(
               GeomUtil.toTransform2d(
                   Units.inchesToMeters(20.0) // End of intake bumper to center robot
-                      + Units.inchesToMeters(10.0),
+                      + Units.inchesToMeters(9.0),
                   0));
         };
     driver
         .b()
         .whileTrue(
             Commands.either(
-                    Commands.none(),
+                    drive.run(
+                        () ->
+                            drive.acceptTeleopInput(
+                                -driver.getLeftY(),
+                                -driver.getLeftX(),
+                                -driver.getRightX(),
+                                robotRelative.getAsBoolean())),
                     drive
                         .startEnd(
                             () -> drive.setAutoAlignGoal(ampAlignedPose, false),
@@ -517,7 +534,7 @@ public class RobotContainer {
         .and(
             () ->
                 superstructure.getDesiredGoal() == Superstructure.Goal.AMP
-                    && superstructure.atGoal())
+                    && superstructure.atArmGoal())
         .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
     // ------------- Climbing Controls -------------
@@ -575,6 +592,7 @@ public class RobotContainer {
                     rollers,
                     () -> -driver.getLeftY(),
                     () -> -driver.getLeftX(),
+                    () -> -driver.getRightX(),
                     operator.rightBumper().doublePress(),
                     operator.start().doublePress().or(operator.back().doublePress()),
                     autoDriveDisable)
@@ -584,12 +602,7 @@ public class RobotContainer {
         .and(() -> !trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.simpleClimbSequence(
-                    drive,
-                    superstructure,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    operator.rightBumper().doublePress(),
-                    autoDriveDisable)
+                    superstructure, operator.rightBumper().doublePress())
                 .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
 
@@ -607,18 +620,38 @@ public class RobotContainer {
     // Start flywheels
     operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
 
+    // Unjam folded to shooter
+    operator
+        .leftTrigger()
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.AMP)
+                .alongWith(
+                    Commands.waitUntil(superstructure::atArmGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNTACO)))
+                .withName("Untaco"));
+
     // Unjam intake
     operator
         .y()
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)));
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_FROM_FEEDER))
+                .withName("Unjam From Feeder"));
+
+    operator
+        .povLeft()
+        .or(operator.povRight())
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.BACKPACK_OUT_UNJAM)
+                .withName("Backpack Out Unjam"));
 
     // Reset heading
     driver
         .start()
-        .or(driver.back())
+        .and(driver.back())
         .onTrue(
             Commands.runOnce(
                     () ->

@@ -34,7 +34,7 @@ public class ClimbingCommands {
   private static final LoggedTunableNumber climbedXOffset =
       new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
-      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.5);
+      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.65);
   private static final LoggedTunableNumber chainToFront =
       new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.9);
 
@@ -69,11 +69,17 @@ public class ClimbingCommands {
 
   /** Command that lets driver adjust robot relative to the robot at slow speed */
   private static Command driverAdjust(
-      Drive drive, DoubleSupplier controllerX, DoubleSupplier controllerY) {
+      Drive drive,
+      DoubleSupplier controllerX,
+      DoubleSupplier controllerY,
+      DoubleSupplier controllerOmega) {
     return drive.run(
         () ->
             drive.acceptTeleopInput(
-                controllerX.getAsDouble() * 0.25, controllerY.getAsDouble() * 0.25, 0, true));
+                controllerX.getAsDouble(),
+                controllerY.getAsDouble(),
+                controllerOmega.getAsDouble(),
+                false));
   }
 
   private static Command driveToPoseWithAdjust(
@@ -89,7 +95,7 @@ public class ClimbingCommands {
             .until(drive::isAutoAlignGoalCompleted),
 
         // Let driver move robot left and right while aligned to chain
-        driverAdjust(drive, controllerX, controllerY));
+        driverAdjust(drive, controllerX, controllerY, () -> 0.0));
   }
 
   /** Drive to back climber ready pose. */
@@ -141,35 +147,20 @@ public class ClimbingCommands {
   }
 
   public static Command simpleClimbSequence(
-      Drive drive,
-      Superstructure superstructure,
-      DoubleSupplier controllerX,
-      DoubleSupplier controllerY,
-      Trigger startClimbTrigger,
-      Trigger autoDriveDisable) {
-    return Commands.sequence(
-            // Drive forward
-            prepareClimbFromFront(drive, superstructure, autoDriveDisable)
-                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted())
-                .withTimeout(5.0),
-
-            // Allow driver to line up
-            Commands.waitUntil(startClimbTrigger)
-                .deadlineWith(
-                    superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
-                    driverAdjust(drive, controllerX, controllerY)),
-
-            // Climb
-            superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+      Superstructure superstructure, Trigger startClimbTrigger) {
+    return superstructure
+        .setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)
+        .until(startClimbTrigger)
+        .andThen(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
 
         // If cancelled, go to safe state
         .finallyDo(
             () -> {
               switch (superstructure.getCurrentGoal()) {
-                case PREPARE_CLIMB ->
+                case PREPARE_CLIMB, CANCEL_PREPARE_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
-                case CLIMB ->
+                case CLIMB, CANCEL_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
               }
@@ -183,6 +174,7 @@ public class ClimbingCommands {
       Rollers rollers,
       DoubleSupplier controllerX,
       DoubleSupplier controllerY,
+      DoubleSupplier controllerOmega,
       Trigger startClimbTrigger,
       Trigger trapScoreTrigger,
       Trigger autoDriveDisable) {
@@ -196,30 +188,31 @@ public class ClimbingCommands {
             Commands.waitUntil(startClimbTrigger)
                 .deadlineWith(
                     superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
-                    driverAdjust(drive, controllerX, controllerY)),
+                    driverAdjust(drive, controllerX, controllerY, controllerOmega)),
 
             // Climb and wait, continue if trap button pressed
             superstructure
                 .setGoalCommand(Superstructure.Goal.CLIMB)
                 .alongWith(rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK))
-                .until(
-                    () ->
-                        trapScoreTrigger.getAsBoolean()
-                            && superstructure.atGoal()
-                            && rollers.getGamepieceState()
-                                == Rollers.GamepieceState.BACKPACK_STAGED),
+                .raceWith(
+                    Commands.waitUntil(trapScoreTrigger)
+                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Extend backpack
             superstructure
                 .setGoalCommand(Superstructure.Goal.TRAP)
                 .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE))
-                .until(superstructure::atGoal),
+                .raceWith(
+                    Commands.waitUntil(trapScoreTrigger)
+                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Score in trap and wait
             rollers
                 .setGoalCommand(Rollers.Goal.TRAP_SCORE)
                 .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP))
-                .until(() -> trapScoreTrigger.getAsBoolean()),
+                .raceWith(
+                    Commands.waitUntil(trapScoreTrigger)
+                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Retract backpack
             superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
@@ -228,10 +221,10 @@ public class ClimbingCommands {
         .finallyDo(
             () -> {
               switch (superstructure.getCurrentGoal()) {
-                case PREPARE_CLIMB ->
+                case PREPARE_CLIMB, CANCEL_PREPARE_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
-                case CLIMB ->
+                case CLIMB, CANCEL_CLIMB ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
                 case TRAP ->

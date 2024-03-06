@@ -22,6 +22,7 @@ public class Superstructure extends SubsystemBase {
 
   public enum Goal {
     STOW,
+    BACKPACK_OUT_UNJAM,
     AIM,
     INTAKE,
     UNJAM_INTAKE,
@@ -82,6 +83,16 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
+      case BACKPACK_OUT_UNJAM -> {
+        arm.setGoal(Arm.Goal.UNJAM_INTAKE);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
+      }
+      case UNJAM_INTAKE -> {
+        arm.setGoal(Arm.Goal.UNJAM_INTAKE);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
       case AIM -> {
         arm.setGoal(Arm.Goal.AIM);
         climber.setGoal(Climber.Goal.IDLE);
@@ -124,11 +135,7 @@ public class Superstructure extends SubsystemBase {
       }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        if (climber.isRequestCancelClimb()) {
-          desiredGoal = Goal.CANCEL_CLIMB;
-        } else {
-          climber.setGoal(Climber.Goal.RETRACT);
-        }
+        climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case CANCEL_CLIMB -> {
@@ -138,11 +145,7 @@ public class Superstructure extends SubsystemBase {
       }
       case TRAP -> {
         arm.setGoal(Arm.Goal.CLIMB);
-        if (climber.isRequestCancelClimb()) {
-          desiredGoal = Goal.PREPARE_CLIMB;
-        } else {
-          climber.setGoal(Climber.Goal.RETRACT);
-        }
+        climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
       }
       case RESET -> {
@@ -186,10 +189,12 @@ public class Superstructure extends SubsystemBase {
 
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
-    return currentGoal == desiredGoal
-        && arm.atGoal()
-        && climber.atGoal()
-        && backpackActuator.atGoal();
+    return currentGoal == desiredGoal && arm.atGoal() && climber.atGoal();
+  }
+
+  @AutoLogOutput(key = "Superstructure/AtArmGoal")
+  public boolean atArmGoal() {
+    return currentGoal == desiredGoal && arm.atGoal();
   }
 
   public void runArmCharacterization(double input) {

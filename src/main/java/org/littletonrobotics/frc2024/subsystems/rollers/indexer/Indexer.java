@@ -23,7 +23,7 @@ public class Indexer extends GenericRollerSystem<Indexer.Goal> {
   public enum Goal implements VoltageGoal {
     IDLING(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Indexer/FloorIntakingVoltage", 6.0)),
-    STATION_INTAKING(new LoggedTunableNumber("Indexer/StationIntakingVoltage", -2.0)),
+    STATION_INTAKING(new LoggedTunableNumber("Indexer/StationIntakingVoltage", -6.0)),
     SHOOTING(new LoggedTunableNumber("Indexer/ShootingVoltage", 12.0)),
     EJECTING(new LoggedTunableNumber("Indexer/EjectingVoltage", -8.0));
 

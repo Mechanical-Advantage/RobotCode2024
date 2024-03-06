@@ -38,12 +38,14 @@ public class ArmIOKrakenFOC implements ArmIO {
   private final List<StatusSignal<Double>> tempCelsius;
 
   // Control
-  private final Slot0Configs controllerConfig;
   private final VoltageOut voltageControl =
       new VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0);
   private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
   private final PositionTorqueCurrentFOC positionControl =
       new PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
+
+  // Config
+  private final TalonFXConfiguration config = new TalonFXConfiguration();
 
   public ArmIOKrakenFOC() {
     leaderTalon = new TalonFX(leaderID, "*");
@@ -59,16 +61,11 @@ public class ArmIOKrakenFOC implements ArmIO {
     absoluteEncoder.getConfigurator().apply(armEncoderConfig, 1);
 
     // Leader motor configs
-    TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
-    leaderConfig.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
-    leaderConfig.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
-    leaderConfig.MotorOutput.Inverted =
+    config.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
+    config.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
+    config.MotorOutput.Inverted =
         leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
-    leaderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-
-    // Set up controller
-    controllerConfig = new Slot0Configs().withKP(gains.kP()).withKI(gains.kI()).withKD(gains.kD());
-    leaderConfig.Slot0 = controllerConfig;
+    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
     // Follower configs
     TalonFXConfiguration followerConfig = new TalonFXConfiguration();
@@ -171,10 +168,10 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   @Override
   public void setPID(double p, double i, double d) {
-    controllerConfig.kP = p;
-    controllerConfig.kI = i;
-    controllerConfig.kD = d;
-    leaderTalon.getConfigurator().apply(controllerConfig);
+    config.Slot0.kP = p;
+    config.Slot0.kI = i;
+    config.Slot0.kD = d;
+    leaderTalon.getConfigurator().apply(config, 0.01);
   }
 
   @Override

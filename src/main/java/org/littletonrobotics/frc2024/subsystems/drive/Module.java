@@ -28,8 +28,6 @@ public class Module {
       new LoggedTunableNumber("Drive/Module/DrivekS", moduleConstants.ffkS());
   private static final LoggedTunableNumber drivekV =
       new LoggedTunableNumber("Drive/Module/DrivekV", moduleConstants.ffkV());
-  private static final LoggedTunableNumber drivekT =
-      new LoggedTunableNumber("Drive/Module/DrivekT", moduleConstants.ffkT());
   private static final LoggedTunableNumber turnkP =
       new LoggedTunableNumber("Drive/Module/TurnkP", moduleConstants.turnkP());
   private static final LoggedTunableNumber turnkD =
@@ -86,7 +84,7 @@ public class Module {
     io.runDriveVelocitySetpoint(
         setpoint.speedMetersPerSecond / driveConfig.wheelRadius(),
         ff.calculate(setpoint.speedMetersPerSecond / driveConfig.wheelRadius())
-            + (wheelTorqueNm / moduleConstants.driveReduction() * drivekT.get()));
+            + ((wheelTorqueNm / moduleConstants.driveReduction()) * moduleConstants.ffkT()));
     io.runTurnPositionSetpoint(setpoint.angle.getRadians());
   }
 

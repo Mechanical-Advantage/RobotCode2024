@@ -76,6 +76,7 @@ public class DriveTrajectories {
         FieldConstants.Stage.sourceLeg
             .getTranslation()
             .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
+
     paths.put(
         "davisEthicalAuto_grabCenterline0",
         List.of(

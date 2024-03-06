@@ -75,9 +75,29 @@ void convert_sample(vts::TimestampedVehicleState *state_out, const trajopt::Holo
     vehicle_state->set_omega(sample_in.angularVelocity);
 }
 
-void convert_trajectory(vts::Trajectory *trajectory_out, const trajopt::HolonomicTrajectory &trajectory_in) {
-    for (const trajopt::HolonomicTrajectorySample &sample: trajectory_in.samples) {
-        convert_sample(trajectory_out->add_states(), sample);
+void convert_solution(vts::Trajectory *trajectory_out, const trajopt::SwerveSolution &solution_in) {
+    double ts = 0.0;
+    for (size_t samp = 0; samp < solution_in.x.size(); samp++) {
+        if (samp != 0) {
+            ts += solution_in.dt[samp - 1];
+        }
+
+        vts::TimestampedVehicleState *timestamped_state = trajectory_out->add_states();
+        timestamped_state->set_time(ts);
+
+        vts::VehicleState *vehicle_state = timestamped_state->mutable_state();
+        vehicle_state->set_x(solution_in.x.at(samp));
+        vehicle_state->set_y(solution_in.y.at(samp));
+        vehicle_state->set_theta(solution_in.theta.at(samp));
+        vehicle_state->set_vx(solution_in.vx.at(samp));
+        vehicle_state->set_vy(solution_in.vy.at(samp));
+        vehicle_state->set_omega(solution_in.omega.at(samp));
+
+        for (int module_idx = 0; module_idx < solution_in.moduleFX.at(samp).size(); module_idx++) {
+            vts::ModuleForce *module_force = vehicle_state->add_module_forces();
+            module_force->set_fx(solution_in.moduleFX.at(samp).at(module_idx));
+            module_force->set_fy(solution_in.moduleFY.at(samp).at(module_idx));
+        }
     }
 }
 
@@ -246,9 +266,9 @@ public:
 
         try {
             fmt::print("Generating trajectory\n");
-            trajopt::HolonomicTrajectory trajectory{trajopt::OptimalTrajectoryGenerator::Generate(builder)};
+            trajopt::SwerveSolution solution = trajopt::OptimalTrajectoryGenerator::Generate(builder);
             fmt::print("Generation finished\n");
-            convert_trajectory(response->mutable_trajectory(), trajectory);
+            convert_solution(response->mutable_trajectory(), solution);
         } catch (std::exception &e) {
             fmt::print("Generation failed: {}\n", std::string(e.what()));
             response->mutable_error()->set_reason(std::string(e.what()));

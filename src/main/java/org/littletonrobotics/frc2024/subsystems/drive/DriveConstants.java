@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import lombok.Builder;
 import org.littletonrobotics.frc2024.Constants;
@@ -99,9 +100,10 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case COMPBOT ->
             new ModuleConstants(
-                0.23466,
-                0.12025,
-                1.6,
+                5.0,
+                0.0,
+                1.0 / DCMotor.getKrakenX60Foc(1).KtNMPerAmp, // A/(N*m)
+                35.0,
                 0.0,
                 4000.0,
                 50.0,
@@ -111,6 +113,7 @@ public final class DriveConstants {
             new ModuleConstants(
                 0.1,
                 0.13,
+                0.0,
                 0.1,
                 0.0,
                 10.0,
@@ -121,6 +124,7 @@ public final class DriveConstants {
             new ModuleConstants(
                 0.014,
                 0.134,
+                0.0,
                 0.1,
                 0.0,
                 10.0,
@@ -144,7 +148,7 @@ public final class DriveConstants {
   // Trajectory Following
   public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT -> TrajectoryConstants.builder().linearkP(8.0).thetakP(10.0).build();
+        case COMPBOT -> TrajectoryConstants.builder().linearkP(10.0).thetakP(10.0).build();
         case DEVBOT ->
             new TrajectoryConstants(
                 6.0,
@@ -203,6 +207,7 @@ public final class DriveConstants {
   public record ModuleConstants(
       double ffkS,
       double ffkV,
+      double ffkT,
       double drivekP,
       double drivekD,
       double turnkP,

@@ -77,11 +77,14 @@ public class Module {
   }
 
   /** Runs to {@link SwerveModuleState} */
-  public void runSetpoint(SwerveModuleState setpoint) {
+  public void runSetpoint(SwerveModuleState setpoint, SwerveModuleState torqueFF) {
     setpointState = setpoint;
+    double wheelTorqueNm =
+        torqueFF.speedMetersPerSecond; // Using SwerveModuleState for torque for easy logging
     io.runDriveVelocitySetpoint(
         setpoint.speedMetersPerSecond / driveConfig.wheelRadius(),
-        ff.calculate(setpoint.speedMetersPerSecond / driveConfig.wheelRadius()));
+        ff.calculate(setpoint.speedMetersPerSecond / driveConfig.wheelRadius())
+            + ((wheelTorqueNm / moduleConstants.driveReduction()) * moduleConstants.ffkT()));
     io.runTurnPositionSetpoint(setpoint.angle.getRadians());
   }
 

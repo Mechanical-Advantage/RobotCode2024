@@ -37,7 +37,13 @@ public class Superstructure extends SubsystemBase {
     CANCEL_CLIMB,
     TRAP,
     RESET,
-    DIAGNOSTIC_ARM
+
+    // System Diagnostic States
+    DIAGNOSE_ARM,
+    BACKPACK_EXTEND,
+    BACKPACK_RETRACT,
+    CLIMBER_EXTEND,
+    CLIMBER_RETRACT
   }
 
   @Getter private Goal currentGoal = Goal.STOW;
@@ -67,6 +73,10 @@ public class Superstructure extends SubsystemBase {
         && desiredGoal != Goal.PREPARE_CLIMB
         && desiredGoal != Goal.CLIMB
         && desiredGoal != Goal.TRAP
+        && desiredGoal != Goal.BACKPACK_EXTEND
+        && desiredGoal != Goal.BACKPACK_RETRACT
+        && desiredGoal != Goal.CLIMBER_EXTEND
+        && desiredGoal != Goal.CLIMBER_RETRACT
         && !DriverStation.isAutonomousEnabled()) {
       currentGoal = Goal.RESET_CLIMB;
     } else {
@@ -152,9 +162,29 @@ public class Superstructure extends SubsystemBase {
         desiredGoal = Goal.STOW;
         setDefaultCommand(setGoalCommand(Goal.STOW));
       }
-      case DIAGNOSTIC_ARM -> {
-        arm.setGoal(Arm.Goal.CUSTOM);
+      case DIAGNOSE_ARM -> {
+        arm.setGoal(Arm.Goal.DIAGNOSE);
         climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case BACKPACK_EXTEND -> {
+        arm.setGoal(Arm.Goal.STOP);
+        climber.setGoal(Climber.Goal.STOP);
+        backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
+      }
+      case BACKPACK_RETRACT -> {
+        arm.setGoal(Arm.Goal.STOP);
+        climber.setGoal(Climber.Goal.STOP);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case CLIMBER_EXTEND -> {
+        arm.setGoal(Arm.Goal.STOP);
+        climber.setGoal(Climber.Goal.EXTEND);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case CLIMBER_RETRACT -> {
+        arm.setGoal(Arm.Goal.STOP);
+        climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
     }

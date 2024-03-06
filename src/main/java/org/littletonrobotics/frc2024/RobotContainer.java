@@ -71,6 +71,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -281,6 +282,7 @@ public class RobotContainer {
     // Configure autos and buttons
     configureAutos();
     configureButtonBindings();
+    configureDiagnosticBindings();
 
     // Alerts for constants
     if (Constants.aprilTagType != Constants.AprilTagType.OFFICIAL) {
@@ -367,8 +369,6 @@ public class RobotContainer {
                 new WheelRadiusCharacterization(
                     drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
-    autoChooser.addOption(
-        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -660,6 +660,22 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(),
                                 AllianceFlipUtil.apply(new Rotation2d()))))
                 .ignoringDisable(true));
+  }
+
+  private void configureDiagnosticBindings() {
+    // Superstructure diagnostic modes
+    Trigger armDiagnose = new Trigger(new LoggedDashboardBoolean("Diagnose Arm", false)::get);
+    Trigger backpackExtend = new Trigger(new LoggedDashboardBoolean("Backpack Extend", false)::get);
+    Trigger backpackRetract =
+        new Trigger(new LoggedDashboardBoolean("Backpack Retract", false)::get);
+    Trigger climberExtend = new Trigger(new LoggedDashboardBoolean("Climber Extend", false)::get);
+    Trigger climberRetract = new Trigger(new LoggedDashboardBoolean("Climber Retract", false)::get);
+
+    armDiagnose.whileTrue(superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSE_ARM));
+    backpackExtend.whileTrue(superstructure.setGoalCommand(Superstructure.Goal.BACKPACK_EXTEND));
+    backpackRetract.whileTrue(superstructure.setGoalCommand(Superstructure.Goal.BACKPACK_RETRACT));
+    climberExtend.whileTrue(superstructure.setGoalCommand(Superstructure.Goal.CLIMBER_EXTEND));
+    climberRetract.whileTrue(superstructure.setGoalCommand(Superstructure.Goal.CLIMBER_RETRACT));
   }
 
   /** Updates the alerts for disconnected controllers. */

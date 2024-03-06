@@ -7,7 +7,6 @@
 #include <trajopt/OptimalTrajectoryGenerator.h>
 #include <trajopt/drivetrain/SwerveDrivetrain.h>
 #include <trajopt/path/SwervePathBuilder.h>
-#include <trajopt/trajectory/HolonomicTrajectory.h>
 #include <trajopt/trajectory/HolonomicTrajectorySample.h>
 
 #include <fmt/format.h>
@@ -270,9 +269,14 @@ public:
 
         try {
             fmt::print("Generating trajectory\n");
-            trajopt::SwerveSolution solution = trajopt::OptimalTrajectoryGenerator::Generate(builder);
-            fmt::print("Generation finished\n");
-            convert_solution(response->mutable_trajectory(), solution);
+            auto solution = trajopt::OptimalTrajectoryGenerator::Generate(builder);
+            if (solution.has_value()) {
+                fmt::print("Generation finished\n");
+                convert_solution(response->mutable_trajectory(), solution.value());
+            } else {
+                fmt::print("Generation failed: {}\n", std::string(solution.error()));
+                response->mutable_error()->set_reason(std::string(solution.error()));
+            }
         } catch (std::exception &e) {
             fmt::print("Generation failed: {}\n", std::string(e.what()));
             response->mutable_error()->set_reason(std::string(e.what()));

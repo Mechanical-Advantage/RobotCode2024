@@ -61,21 +61,21 @@ casadi:
 
 trajoptlib:
     FROM +apk-deps
-    #BUILD +ipopt
-    #BUILD +casadi
-    #COPY +ipopt/installroot/usr/local /usr/local/
-    #COPY +casadi/installroot/usr/local /usr/local/
-    LET TRAJOPT_COMMIT=f3bee6367c076c86bf7f1156de59d5f36f79713b
+    BUILD +ipopt
+    BUILD +casadi
+    COPY +ipopt/installroot/usr/local /usr/local/
+    COPY +casadi/installroot/usr/local /usr/local/
+    LET TRAJOPT_COMMIT=f6cf3d42359f6f41f311f848a4e7f51c3f88c2ca
     RUN wget -c https://github.com/SleipnirGroup/TrajoptLib/archive/$TRAJOPT_COMMIT.tar.gz -O - | tar -xz
     RUN mkdir TrajoptLib-$TRAJOPT_COMMIT/build
     WORKDIR TrajoptLib-$TRAJOPT_COMMIT/build
     # Use our CMakeLists.txt (uses system casadi install)
-    #RUN rm ../CMakeLists.txt
-    #COPY trajoptlib-CMakeLists.txt ../CMakeLists.txt
+    RUN rm ../CMakeLists.txt
+    COPY trajoptlib-CMakeLists.txt ../CMakeLists.txt
     DO +APK_ADD --pkgs="clang make cmake git tinyxml2-dev"
     ENV CC=clang
     ENV CXX=clang++
-    RUN cmake -DOPTIMIZER_BACKEND=sleipnir ..
+    RUN cmake -DOPTIMIZER_BACKEND=casadi ..
     RUN make -j8
     RUN make DESTDIR=$(pwd)/installroot install
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-trajoptlib:latest

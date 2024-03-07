@@ -31,6 +31,7 @@ public class Superstructure extends SubsystemBase {
     SUBWOOFER,
     PODIUM,
     RESET_CLIMB,
+    PREPARE_PREPARE_TRAP_CLIMB,
     PREPARE_CLIMB,
     CANCEL_PREPARE_CLIMB,
     CLIMB,
@@ -121,6 +122,11 @@ public class Superstructure extends SubsystemBase {
       case RESET_CLIMB -> {
         arm.setGoal(Arm.Goal.STOP);
         climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case PREPARE_PREPARE_TRAP_CLIMB -> {
+        arm.setGoal(Arm.Goal.PREPARE_PREPARE_TRAP_CLIMB);
+        climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case PREPARE_CLIMB -> {

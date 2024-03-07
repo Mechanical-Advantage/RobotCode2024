@@ -546,18 +546,8 @@ public class RobotContainer {
                     && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
         .whileTrue(
             Commands.either(
-                ClimbingCommands.autoDrive(
-                    false,
-                    drive,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    autoDriveDisable),
-                ClimbingCommands.autoDrive(
-                    true,
-                    drive,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    autoDriveDisable),
+                superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
+                Commands.none(),
                 () -> trapScoreMode));
 
     // ------------- Operator Controls -------------

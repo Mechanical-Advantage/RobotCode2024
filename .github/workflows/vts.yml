@@ -5,7 +5,10 @@ on:
   pull_request:
 
 concurrency:
-  group: vts
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  packages: write
 
 jobs:
   build:

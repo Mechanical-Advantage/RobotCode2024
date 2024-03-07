@@ -583,7 +583,7 @@ public class RobotContainer {
     // Climber controls
     operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
     operator
-        .leftBumper()
+        .leftBumper().doublePress()
         .and(() -> trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.climbNTrapSequence(
@@ -598,7 +598,7 @@ public class RobotContainer {
                     autoDriveDisable)
                 .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator
-        .leftBumper()
+        .leftBumper().doublePress()
         .and(() -> !trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.simpleClimbSequence(

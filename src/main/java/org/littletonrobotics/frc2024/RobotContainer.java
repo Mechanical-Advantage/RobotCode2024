@@ -260,23 +260,14 @@ public class RobotContainer {
     arm.setOverrides(armDisable, armCoast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
     climber.setCoastOverride(armCoast);
-    flywheels.setPrepareShootSupplier(
-        () -> {
-          return DriverStation.isTeleopEnabled()
-              && RobotState.getInstance()
-                      .getEstimatedPose()
-                      .getTranslation()
-                      .getDistance(
-                          AllianceFlipUtil.apply(
-                              FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-                  < Units.feetToMeters(25.0)
-              && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
-              && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB;
-        });
+    flywheels.setAllowSpinup(
+        () ->
+            rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
+                && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB);
 
     // Configure autos and buttons
     configureAutos();
@@ -390,33 +381,36 @@ public class RobotContainer {
                         robotRelative.getAsBoolean()))
             .withName("Drive Teleop Input"));
 
-    // ------------- Shooting Controls -------------
+    // ------------- Shooting & Pooping Controls -------------
     // Aim and rev flywheels
-    Supplier<Command> superstructureAimCommand =
-        () ->
-            Commands.either(
-                Commands.either(
-                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
-                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
-                    () -> podiumShotMode),
-                superstructure.setGoalCommand(Superstructure.Goal.AIM),
-                shootPresets);
+    Supplier<Rotation2d> driveAimHeadingSupplier =
+        () -> {
+          if (RobotState.getInstance().isPrepareShot()) {
+            return RobotState.getInstance().getAimingParameters().driveHeading();
+          } else {
+            // Aim between subwoofer and amp
+            Pose2d robot = RobotState.getInstance().getEstimatedPose();
+            Translation2d target =
+                FieldConstants.Subwoofer.centerFace
+                    .getTranslation()
+                    .interpolate(FieldConstants.ampCenter, 0.5);
+            target = AllianceFlipUtil.apply(target);
+            return target.plus(robot.getTranslation().unaryMinus()).getAngle();
+          }
+        };
     Supplier<Command> driveAimCommand =
         () ->
-            Commands.either(
-                Commands.none(),
-                Commands.startEnd(
-                    () ->
-                        drive.setHeadingGoal(
-                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
-                    drive::clearHeadingGoal),
-                shootAlignDisable);
+            Commands.startEnd(
+                    () -> drive.setHeadingGoal(driveAimHeadingSupplier), drive::clearHeadingGoal)
+                .onlyIf(shootAlignDisable.negate());
     driver
         .a()
         .whileTrue(
             driveAimCommand
                 .get()
-                .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
+                .alongWith(
+                    superstructure.shootOrSuperPoopCommand(shootPresets, () -> podiumShotMode),
+                    flywheels.shootOrSuperPoopCommand())
                 .withName("Prepare Shot"));
     Trigger readyToShoot =
         new Trigger(
@@ -430,8 +424,8 @@ public class RobotContainer {
                     Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
-                    superstructureAimCommand.get(),
-                    flywheels.shootCommand()));
+                    superstructure.shootOrSuperPoopCommand(shootPresets, () -> podiumShotMode),
+                    flywheels.shootOrSuperPoopCommand()));
     driver
         .a()
         .and(readyToShoot)
@@ -618,7 +612,7 @@ public class RobotContainer {
     operator.a().whileTrue(rollers.shuffle());
 
     // Start flywheels
-    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
+    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootOrSuperPoopCommand());
 
     // Unjam folded to shooter
     operator

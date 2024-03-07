@@ -11,7 +11,9 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.BooleanSupplier;
 import lombok.Getter;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
@@ -24,6 +26,7 @@ public class Superstructure extends SubsystemBase {
     STOW,
     BACKPACK_OUT_UNJAM,
     AIM,
+    SUPER_POOP,
     INTAKE,
     UNJAM_INTAKE,
     STATION_INTAKE,
@@ -95,6 +98,11 @@ public class Superstructure extends SubsystemBase {
       }
       case AIM -> {
         arm.setGoal(Arm.Goal.AIM);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case SUPER_POOP -> {
+        arm.setGoal(Arm.Goal.SUPER_POOP);
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
@@ -195,6 +203,27 @@ public class Superstructure extends SubsystemBase {
   @AutoLogOutput(key = "Superstructure/AtArmGoal")
   public boolean atArmGoal() {
     return currentGoal == desiredGoal && arm.atGoal();
+  }
+
+  public Command shootOrSuperPoopCommand(
+      BooleanSupplier shootPresetsOverride, BooleanSupplier podiumMode) {
+    return runEnd(
+        () -> {
+          if (RobotState.getInstance().isPrepareShot()) {
+            if (shootPresetsOverride.getAsBoolean()) {
+              if (podiumMode.getAsBoolean()) {
+                setGoal(Goal.PODIUM);
+              } else {
+                setGoal(Goal.SUBWOOFER);
+              }
+            } else {
+              setGoal(Goal.AIM);
+            }
+          } else {
+            setGoal(Goal.SUPER_POOP);
+          }
+        },
+        () -> setGoal(Goal.STOW));
   }
 
   public void runArmCharacterization(double input) {

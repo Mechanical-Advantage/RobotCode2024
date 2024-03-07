@@ -18,6 +18,8 @@ import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
@@ -46,12 +48,13 @@ public class RobotState {
 
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
+  private static final LoggedTunableNumber prepareShootMaxDistanceFeet =
+      new LoggedTunableNumber("RobotState/PrepareShootMaxDistanceFeet", 25.0);
+
   private static final double poseBufferSizeSeconds = 2.0;
 
   /** Arm angle look up table key: meters, values: degrees */
   private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
-
-  @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
 
   static {
     armAngleMap.put(1.026639, 52.0);
@@ -76,6 +79,8 @@ public class RobotState {
     armAngleMap.put(5.170191, 24.6);
     armAngleMap.put(5.373669, 24.25);
   }
+
+  @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
 
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
 
@@ -264,6 +269,18 @@ public class RobotState {
     estimatedPose = initialPose;
     odometryPose = initialPose;
     poseBuffer.clear();
+  }
+
+  /** Returns if the robot is within distance to prepare shot or prepare for super pooping */
+  @AutoLogOutput(key = "RobotState/IsPrepareShot")
+  public boolean isPrepareShot() {
+    return DriverStation.isTeleopEnabled()
+        && getEstimatedPose()
+                .getTranslation()
+                .getDistance(
+                    AllianceFlipUtil.apply(
+                        FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+            <= Units.feetToMeters(prepareShootMaxDistanceFeet.get());
   }
 
   @AutoLogOutput(key = "RobotState/FieldVelocity")

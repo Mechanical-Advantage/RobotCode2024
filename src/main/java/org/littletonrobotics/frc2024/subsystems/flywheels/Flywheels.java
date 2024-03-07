@@ -41,8 +41,8 @@ public class Flywheels extends SubsystemBase {
       new LoggedTunableNumber("Flywheels/PrepareShootMultiplier", 0.75);
   private static final LoggedTunableNumber intakingRpm =
       new LoggedTunableNumber("Flywheels/IntakingRpm", -3000.0);
-  private static final LoggedTunableNumber ejectingRpm =
-      new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
+  private static final LoggedTunableNumber superPoopingRpm =
+      new LoggedTunableNumber("Flywheels/SuperPoopingRpm", 3000.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
@@ -55,7 +55,7 @@ public class Flywheels extends SubsystemBase {
   private SimpleMotorFeedforward ff = new SimpleMotorFeedforward(kS.get(), kV.get(), kA.get());
   private boolean wasClosedLoop = false;
   private boolean closedLoop = false;
-  @Setter private BooleanSupplier prepareShootSupplier = () -> false;
+  @Setter private BooleanSupplier allowSpinup = () -> false;
 
   // Disconnected alerts
   private final Alert leftDisconnected =
@@ -68,7 +68,7 @@ public class Flywheels extends SubsystemBase {
     IDLE(() -> 0.0, () -> 0.0),
     SHOOT(shootingLeftRpm, shootingRightRpm),
     INTAKE(intakingRpm, intakingRpm),
-    EJECT(ejectingRpm, ejectingRpm),
+    SUPER_POOP(() -> superPoopingRpm.get() * (3.0 / 2.0), superPoopingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftGoal;
@@ -83,19 +83,9 @@ public class Flywheels extends SubsystemBase {
     }
   }
 
-  public enum IdleMode {
-    TELEOP,
-    AUTO
-  }
-
   @Getter
   @AutoLogOutput(key = "Flywheels/Goal")
   private Goal goal = Goal.IDLE;
-
-  private boolean isDrawingHighCurrent() {
-    return Math.abs(inputs.leftSupplyCurrentAmps) > 50.0
-        || Math.abs(inputs.rightSupplyCurrentAmps) > 50.0;
-  }
 
   public Flywheels(FlywheelsIO io) {
     this.io = io;
@@ -104,6 +94,11 @@ public class Flywheels extends SubsystemBase {
     rightProfile = new LinearProfile(maxAcceleration.get(), Constants.loopPeriodSecs);
 
     setDefaultCommand(runOnce(() -> setGoal(Goal.IDLE)).withName("Flywheels Idle"));
+  }
+
+  private boolean isDrawingHighCurrent() {
+    return Math.abs(inputs.leftSupplyCurrentAmps) > 50.0
+        || Math.abs(inputs.rightSupplyCurrentAmps) > 50.0;
   }
 
   @Override
@@ -142,10 +137,15 @@ public class Flywheels extends SubsystemBase {
     // Get goal
     double leftGoal = goal.getLeftGoal();
     double rightGoal = goal.getRightGoal();
-    boolean idlePrepareShoot = goal == Goal.IDLE && prepareShootSupplier.getAsBoolean();
+    boolean idlePrepareShoot = goal == Goal.IDLE && allowSpinup.getAsBoolean();
     if (idlePrepareShoot) {
-      leftGoal = Goal.SHOOT.getLeftGoal() * prepareShootMultiplier.get();
-      rightGoal = Goal.SHOOT.getRightGoal() * prepareShootMultiplier.get();
+      if (RobotState.getInstance().isPrepareShot()) {
+        leftGoal = Goal.SHOOT.getLeftGoal() * prepareShootMultiplier.get();
+        rightGoal = Goal.SHOOT.getRightGoal() * prepareShootMultiplier.get();
+      } else {
+        leftGoal = Goal.SUPER_POOP.getLeftGoal() * prepareShootMultiplier.get();
+        rightGoal = Goal.SUPER_POOP.getRightGoal() * prepareShootMultiplier.get();
+      }
     }
 
     // Run to setpoint
@@ -210,17 +210,21 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command shootCommand() {
-    return startEnd(() -> setGoal(Goal.SHOOT), () -> setGoal(Goal.IDLE))
+    return runEnd(
+            () -> setGoal(RobotState.getInstance().isPrepareShot() ? Goal.SHOOT : Goal.SUPER_POOP),
+            () -> setGoal(Goal.IDLE))
+        .withName("Flywheels Shoot");
+  }
+
+  public Command shootOrSuperPoopCommand() {
+    return runEnd(
+            () -> setGoal(RobotState.getInstance().isPrepareShot() ? Goal.SHOOT : Goal.SUPER_POOP),
+            () -> setGoal(Goal.IDLE))
         .withName("Flywheels Shoot");
   }
 
   public Command intakeCommand() {
     return startEnd(() -> setGoal(Goal.INTAKE), () -> setGoal(Goal.IDLE))
         .withName("Flywheels Intake");
-  }
-
-  public Command ejectCommand() {
-    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
-        .withName("Flywheels Eject");
   }
 }

@@ -664,7 +664,8 @@ public class RobotContainer {
 
   private void configureDiagnosticBindings() {
     // Roller diagnostic mode
-    Trigger rollersDiagnose = new Trigger(new LoggedDashboardBoolean("Diagnose Rollers", false)::get);
+    Trigger rollersDiagnose =
+        new Trigger(new LoggedDashboardBoolean("Diagnose Rollers", false)::get);
     rollersDiagnose.whileTrue(rollers.setGoalCommand(Rollers.Goal.DIAGNOSE));
 
     // Superstructure diagnostic modes

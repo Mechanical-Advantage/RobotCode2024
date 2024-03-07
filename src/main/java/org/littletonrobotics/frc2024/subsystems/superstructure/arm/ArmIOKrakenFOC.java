@@ -7,18 +7,14 @@
 
 package org.littletonrobotics.frc2024.subsystems.superstructure.arm;
 
-import static org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants.*;
-
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.*;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.util.Units;
 import java.util.List;
 
@@ -26,11 +22,11 @@ public class ArmIOKrakenFOC implements ArmIO {
   // Hardware
   private final TalonFX leaderTalon;
   private final TalonFX followerTalon;
-  private final CANcoder absoluteEncoder;
 
   // Status Signals
   private final StatusSignal<Double> internalPositionRotations;
-  private final StatusSignal<Double> absolutePositionRotations;
+  private final StatusSignal<Double> encoderAbsolutePositionRotations;
+  private final StatusSignal<Double> encoderRelativePositionRotations;
   private final StatusSignal<Double> velocityRps;
   private final List<StatusSignal<Double>> appliedVoltage;
   private final List<StatusSignal<Double>> supplyCurrent;
@@ -38,55 +34,59 @@ public class ArmIOKrakenFOC implements ArmIO {
   private final List<StatusSignal<Double>> tempCelsius;
 
   // Control
-  private final Slot0Configs controllerConfig;
   private final VoltageOut voltageControl =
       new VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0);
   private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
   private final PositionTorqueCurrentFOC positionControl =
       new PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
 
+  // Config
+  private final TalonFXConfiguration config = new TalonFXConfiguration();
+
   public ArmIOKrakenFOC() {
-    leaderTalon = new TalonFX(leaderID, "*");
-    followerTalon = new TalonFX(followerID, "*");
-    followerTalon.setControl(new Follower(leaderID, true));
-    absoluteEncoder = new CANcoder(armEncoderID, "*");
+    leaderTalon = new TalonFX(ArmConstants.leaderID, "*");
+    followerTalon = new TalonFX(ArmConstants.followerID, "*");
+    followerTalon.setControl(new Follower(ArmConstants.leaderID, true));
+    CANcoder absoluteEncoder = new CANcoder(ArmConstants.armEncoderID, "*");
 
     // Arm Encoder Configs
     CANcoderConfiguration armEncoderConfig = new CANcoderConfiguration();
     armEncoderConfig.MagnetSensor.AbsoluteSensorRange =
         AbsoluteSensorRangeValue.Signed_PlusMinusHalf;
     armEncoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
-    absoluteEncoder.getConfigurator().apply(armEncoderConfig, 1);
+    armEncoderConfig.MagnetSensor.MagnetOffset =
+        Units.radiansToRotations(ArmConstants.armEncoderOffsetRads);
+    absoluteEncoder.getConfigurator().apply(armEncoderConfig, 1.0);
 
     // Leader motor configs
-    TalonFXConfiguration leaderConfig = new TalonFXConfiguration();
-    leaderConfig.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
-    leaderConfig.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
-    leaderConfig.MotorOutput.Inverted =
-        leaderInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
-    leaderConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-
-    // Set up controller
-    controllerConfig = new Slot0Configs().withKP(gains.kP()).withKI(gains.kI()).withKD(gains.kD());
-    leaderConfig.Slot0 = controllerConfig;
-
-    // Follower configs
-    TalonFXConfiguration followerConfig = new TalonFXConfiguration();
-    followerConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    config.Slot0.kP = ArmConstants.gains.kP();
+    config.Slot0.kI = ArmConstants.gains.kI();
+    config.Slot0.kD = ArmConstants.gains.kD();
+    config.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
+    config.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
+    config.MotorOutput.Inverted =
+        ArmConstants.leaderInverted
+            ? InvertedValue.Clockwise_Positive
+            : InvertedValue.CounterClockwise_Positive;
+    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    config.Feedback.FeedbackRemoteSensorID = ArmConstants.armEncoderID;
+    config.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
+    config.Feedback.RotorToSensorRatio = ArmConstants.reduction;
+    config.Feedback.SensorToMechanismRatio = 1.0;
+    leaderTalon.getConfigurator().apply(config, 1.0);
 
     // Status signals
     internalPositionRotations = leaderTalon.getPosition();
-    absolutePositionRotations = absoluteEncoder.getAbsolutePosition();
+    encoderAbsolutePositionRotations = absoluteEncoder.getAbsolutePosition();
+    encoderRelativePositionRotations = absoluteEncoder.getPosition();
     velocityRps = leaderTalon.getVelocity();
     appliedVoltage = List.of(leaderTalon.getMotorVoltage(), followerTalon.getMotorVoltage());
     supplyCurrent = List.of(leaderTalon.getSupplyCurrent(), followerTalon.getSupplyCurrent());
     torqueCurrent = List.of(leaderTalon.getTorqueCurrent(), followerTalon.getTorqueCurrent());
     tempCelsius = List.of(leaderTalon.getDeviceTemp(), followerTalon.getDeviceTemp());
-
     BaseStatusSignal.setUpdateFrequencyForAll(
         100,
         internalPositionRotations,
-        absolutePositionRotations,
         velocityRps,
         appliedVoltage.get(0),
         appliedVoltage.get(1),
@@ -97,19 +97,13 @@ public class ArmIOKrakenFOC implements ArmIO {
         tempCelsius.get(0),
         tempCelsius.get(1));
 
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        1000, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
+
     // Optimize bus utilization
     leaderTalon.optimizeBusUtilization(1.0);
     followerTalon.optimizeBusUtilization(1.0);
-
-    // Set position of talon
-    absolutePositionRotations.waitForUpdate(1.0);
-    leaderTalon.setPosition(
-        Units.radiansToRotations(
-                MathUtil.angleModulus(
-                    Units.rotationsToRadians(absolutePositionRotations.getValueAsDouble())
-                        - armEncoderOffsetRads))
-            * reduction,
-        1.0);
+    absoluteEncoder.optimizeBusUtilization(1.0);
   }
 
   public void updateInputs(ArmIOInputs inputs) {
@@ -129,13 +123,19 @@ public class ArmIOKrakenFOC implements ArmIO {
                 torqueCurrent.get(1),
                 tempCelsius.get(1))
             .isOK();
-    inputs.absoluteEncoderConnected = BaseStatusSignal.refreshAll(absolutePositionRotations).isOK();
+    inputs.absoluteEncoderConnected =
+        BaseStatusSignal.refreshAll(
+                encoderAbsolutePositionRotations, encoderRelativePositionRotations)
+            .isOK();
 
-    inputs.positionRads =
-        Units.rotationsToRadians(internalPositionRotations.getValueAsDouble() / reduction);
+    inputs.positionRads = Units.rotationsToRadians(internalPositionRotations.getValueAsDouble());
     inputs.absoluteEncoderPositionRads =
-        Units.rotationsToRadians(absolutePositionRotations.getValueAsDouble());
-    inputs.velocityRadsPerSec = Units.rotationsToRadians(velocityRps.getValue() / reduction);
+        Units.rotationsToRadians(encoderAbsolutePositionRotations.getValueAsDouble())
+            - ArmConstants.armEncoderOffsetRads; // Negate internal offset
+    inputs.relativeEncoderPositionRads =
+        Units.rotationsToRadians(encoderRelativePositionRotations.getValueAsDouble())
+            - ArmConstants.armEncoderOffsetRads;
+    inputs.velocityRadsPerSec = Units.rotationsToRadians(velocityRps.getValue());
     inputs.appliedVolts =
         appliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();
     inputs.supplyCurrentAmps =
@@ -149,7 +149,7 @@ public class ArmIOKrakenFOC implements ArmIO {
   public void runSetpoint(double setpointRads, double feedforward) {
     leaderTalon.setControl(
         positionControl
-            .withPosition(Units.radiansToRotations(setpointRads) * reduction)
+            .withPosition(Units.radiansToRotations(setpointRads))
             .withFeedForward(feedforward));
   }
 
@@ -171,10 +171,10 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   @Override
   public void setPID(double p, double i, double d) {
-    controllerConfig.kP = p;
-    controllerConfig.kI = i;
-    controllerConfig.kD = d;
-    leaderTalon.getConfigurator().apply(controllerConfig);
+    config.Slot0.kP = p;
+    config.Slot0.kI = i;
+    config.Slot0.kD = d;
+    leaderTalon.getConfigurator().apply(config, 0.01);
   }
 
   @Override

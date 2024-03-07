@@ -23,7 +23,8 @@ public class Intake extends GenericRollerSystem<Intake.Goal> {
   public enum Goal implements VoltageGoal {
     IDLING(() -> 0.0),
     FLOOR_INTAKING(new LoggedTunableNumber("Intake/FloorIntakingVoltage", 10.0)),
-    EJECTING(new LoggedTunableNumber("Intake/EjectingVoltage", -8.0));
+    EJECTING(new LoggedTunableNumber("Intake/EjectingVoltage", -8.0)),
+    DIAGNOSING(new LoggedTunableNumber("Backpack/DiagnosingVoltage", 0.0));
 
     private final DoubleSupplier voltageSupplier;
   }

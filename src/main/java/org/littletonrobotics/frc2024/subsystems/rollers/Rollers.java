@@ -13,6 +13,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
@@ -47,7 +49,8 @@ public class Rollers extends SubsystemBase {
     TRAP_PRESCORE,
     TRAP_SCORE,
     SHUFFLE_BACKPACK,
-    SHUFFLE_SHOOTER
+    SHUFFLE_SHOOTER,
+    DIAGNOSE
   }
 
   public enum GamepieceState {
@@ -190,6 +193,12 @@ public class Rollers extends SubsystemBase {
         } else {
           indexer.setGoal(Indexer.Goal.IDLING);
         }
+      }
+      case DIAGNOSE -> {
+        feeder.setGoal(Feeder.Goal.DIAGNOSING);
+        indexer.setGoal(Indexer.Goal.DIAGNOSING);
+        intake.setGoal(Intake.Goal.DIAGNOSING);
+        backpack.setGoal(Backpack.Goal.DIAGNOSING);
       }
     }
 

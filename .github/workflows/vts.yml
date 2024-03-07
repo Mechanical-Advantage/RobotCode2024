@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: vts
+
 jobs:
   build:
     name: Build

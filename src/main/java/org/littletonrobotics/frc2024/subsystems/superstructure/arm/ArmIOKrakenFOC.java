@@ -25,7 +25,8 @@ public class ArmIOKrakenFOC implements ArmIO {
 
   // Status Signals
   private final StatusSignal<Double> internalPositionRotations;
-  private final StatusSignal<Double> absolutePositionRotations;
+  private final StatusSignal<Double> encoderAbsolutePositionRotations;
+  private final StatusSignal<Double> encoderRelativePositionRotations;
   private final StatusSignal<Double> velocityRps;
   private final List<StatusSignal<Double>> appliedVoltage;
   private final List<StatusSignal<Double>> supplyCurrent;
@@ -58,6 +59,9 @@ public class ArmIOKrakenFOC implements ArmIO {
     absoluteEncoder.getConfigurator().apply(armEncoderConfig, 1.0);
 
     // Leader motor configs
+    config.Slot0.kP = ArmConstants.gains.kP();
+    config.Slot0.kI = ArmConstants.gains.kI();
+    config.Slot0.kD = ArmConstants.gains.kD();
     config.TorqueCurrent.PeakForwardTorqueCurrent = 80.0;
     config.TorqueCurrent.PeakReverseTorqueCurrent = -80.0;
     config.MotorOutput.Inverted =
@@ -73,7 +77,8 @@ public class ArmIOKrakenFOC implements ArmIO {
 
     // Status signals
     internalPositionRotations = leaderTalon.getPosition();
-    absolutePositionRotations = absoluteEncoder.getAbsolutePosition();
+    encoderAbsolutePositionRotations = absoluteEncoder.getAbsolutePosition();
+    encoderRelativePositionRotations = absoluteEncoder.getPosition();
     velocityRps = leaderTalon.getVelocity();
     appliedVoltage = List.of(leaderTalon.getMotorVoltage(), followerTalon.getMotorVoltage());
     supplyCurrent = List.of(leaderTalon.getSupplyCurrent(), followerTalon.getSupplyCurrent());
@@ -82,7 +87,6 @@ public class ArmIOKrakenFOC implements ArmIO {
     BaseStatusSignal.setUpdateFrequencyForAll(
         100,
         internalPositionRotations,
-        absolutePositionRotations,
         velocityRps,
         appliedVoltage.get(0),
         appliedVoltage.get(1),
@@ -92,6 +96,9 @@ public class ArmIOKrakenFOC implements ArmIO {
         torqueCurrent.get(1),
         tempCelsius.get(0),
         tempCelsius.get(1));
+
+    BaseStatusSignal.setUpdateFrequencyForAll(
+        1000, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
 
     // Optimize bus utilization
     leaderTalon.optimizeBusUtilization(1.0);
@@ -116,12 +123,18 @@ public class ArmIOKrakenFOC implements ArmIO {
                 torqueCurrent.get(1),
                 tempCelsius.get(1))
             .isOK();
-    inputs.absoluteEncoderConnected = BaseStatusSignal.refreshAll(absolutePositionRotations).isOK();
+    inputs.absoluteEncoderConnected =
+        BaseStatusSignal.refreshAll(
+                encoderAbsolutePositionRotations, encoderRelativePositionRotations)
+            .isOK();
 
     inputs.positionRads = Units.rotationsToRadians(internalPositionRotations.getValueAsDouble());
     inputs.absoluteEncoderPositionRads =
-        Units.rotationsToRadians(absolutePositionRotations.getValueAsDouble())
+        Units.rotationsToRadians(encoderAbsolutePositionRotations.getValueAsDouble())
             - ArmConstants.armEncoderOffsetRads; // Negate internal offset
+    inputs.relativeEncoderPositionRads =
+        Units.rotationsToRadians(encoderRelativePositionRotations.getValueAsDouble())
+            - ArmConstants.armEncoderOffsetRads;
     inputs.velocityRadsPerSec = Units.rotationsToRadians(velocityRps.getValue());
     inputs.appliedVolts =
         appliedVoltage.stream().mapToDouble(StatusSignal::getValueAsDouble).toArray();

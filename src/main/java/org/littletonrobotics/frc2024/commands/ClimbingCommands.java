@@ -215,7 +215,7 @@ public class ClimbingCommands {
                         .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
             // Retract backpack
-            superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+            superstructure.setGoalCommand(Superstructure.Goal.UNTRAP))
 
         // If cancelled, go to safe state
         .finallyDo(
@@ -230,6 +230,9 @@ public class ClimbingCommands {
                 case TRAP ->
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
+                case UNTRAP ->
+                    superstructure.setDefaultCommand(
+                            superstructure.setGoalCommand(Superstructure.Goal.TRAP));
               }
             });
   }

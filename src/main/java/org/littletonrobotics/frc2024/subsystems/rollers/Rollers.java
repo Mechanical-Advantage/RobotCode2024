@@ -13,8 +13,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import java.util.function.BooleanSupplier;
-import java.util.function.IntSupplier;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;

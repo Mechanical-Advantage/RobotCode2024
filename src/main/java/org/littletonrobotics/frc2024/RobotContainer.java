@@ -99,7 +99,7 @@ public class RobotContainer {
   private final OverrideSwitches overrides = new OverrideSwitches(5);
   private final Trigger robotRelative = overrides.driverSwitch(0);
   private final Trigger armDisable = overrides.driverSwitch(1);
-  private final Trigger armCoast = overrides.driverSwitch(2);
+  private final Trigger coast = overrides.driverSwitch(2);
   private final Trigger shootPresets = overrides.operatorSwitch(0);
   private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
@@ -257,9 +257,10 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Set up subsystems
-    arm.setOverrides(armDisable, armCoast);
+    arm.setOverrides(armDisable, coast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
-    climber.setCoastOverride(armCoast);
+    climber.setCoastOverride(coast);
+    backpackActuator.setCoastOverride(coast);
     flywheels.setPrepareShootSupplier(
         () -> {
           return DriverStation.isTeleopEnabled()

@@ -444,6 +444,9 @@ public class RobotContainer {
                   driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
                 }));
 
+    // Poop.
+    driver.y().whileTrue(flywheels.poopCommand());
+
     // ------------- Intake Controls -------------
     // Intake Floor
     driver

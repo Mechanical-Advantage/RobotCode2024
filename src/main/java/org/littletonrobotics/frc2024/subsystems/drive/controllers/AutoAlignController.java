@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.RobotState;
@@ -25,7 +26,7 @@ import org.littletonrobotics.junction.Logger;
 @ExtensionMethod({GeomUtil.class})
 public class AutoAlignController {
   private static final LoggedTunableNumber linearkP =
-      new LoggedTunableNumber("AutoAlign/drivekP", 2.0);
+      new LoggedTunableNumber("AutoAlign/drivekP", 1.5);
   private static final LoggedTunableNumber linearkD =
       new LoggedTunableNumber("AutoAlign/drivekD", 0.0);
   private static final LoggedTunableNumber thetakP =
@@ -33,9 +34,11 @@ public class AutoAlignController {
   private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("AutoAlign/thetakD", 0.0);
   private static final LoggedTunableNumber linearTolerance =
-      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.04);
+      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.05);
   private static final LoggedTunableNumber thetaTolerance =
-      new LoggedTunableNumber("AutoAlign/controllerThetaTolerance", Units.degreesToRadians(3.0));
+      new LoggedTunableNumber("AutoAlign/controllerThetaTolerance", Units.degreesToRadians(2.0));
+  private static final LoggedTunableNumber toleranceTime =
+      new LoggedTunableNumber("AutoAlign/controllerToleranceSecs", 0.4);
   private static final LoggedTunableNumber maxLinearVelocity =
       new LoggedTunableNumber(
           "AutoAlign/maxLinearVelocity", DriveConstants.driveConfig.maxLinearVelocity());
@@ -70,6 +73,7 @@ public class AutoAlignController {
   // Controllers for translation and rotation
   private final ProfiledPIDController linearController;
   private final ProfiledPIDController thetaController;
+  private final Timer toleranceTimer = new Timer();
 
   public AutoAlignController(Supplier<Pose2d> poseSupplier, boolean slowMode) {
     this.poseSupplier = poseSupplier;
@@ -84,6 +88,7 @@ public class AutoAlignController {
             thetakP.get(), 0, thetakD.get(), new TrapezoidProfile.Constraints(0, 0));
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
     thetaController.setTolerance(thetaTolerance.get());
+    toleranceTimer.restart();
     updateConstraints();
     resetControllers();
   }
@@ -183,6 +188,11 @@ public class AutoAlignController {
                 currentPose.getRotation().getRadians(), targetPose.getRotation().getRadians());
     if (thetaController.atGoal()) thetaVelocity = 0.0;
 
+    // Reset tolerance timer
+    if (!linearController.atGoal() || !thetaController.atGoal()) {
+      toleranceTimer.reset();
+    }
+
     // Log data
     Logger.recordOutput("AutoAlign/DistanceMeasured", currentDistance);
     Logger.recordOutput("AutoAlign/DistanceSetpoint", linearController.getSetpoint().position);
@@ -207,6 +217,6 @@ public class AutoAlignController {
 
   @AutoLogOutput(key = "AutoAlign/AtGoal")
   public boolean atGoal() {
-    return linearController.atGoal() && thetaController.atGoal();
+    return toleranceTimer.hasElapsed(toleranceTime.get());
   }
 }

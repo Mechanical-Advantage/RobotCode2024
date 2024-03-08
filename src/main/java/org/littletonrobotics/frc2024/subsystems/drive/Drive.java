@@ -368,9 +368,9 @@ public class Drive extends SubsystemBase {
   }
 
   /** Runs forwards at the commanded voltage or amps. */
-  public void runCharacterization(double volts) {
+  public void runCharacterization(double input) {
     currentDriveMode = DriveMode.CHARACTERIZATION;
-    characterizationInput = volts;
+    characterizationInput = input;
   }
 
   /** Disables the characterization mode. */

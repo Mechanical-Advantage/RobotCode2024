@@ -379,6 +379,11 @@ public class RobotContainer {
 
     // Set up feedforward characterization
     autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
+            .finallyDo(drive::endCharacterization));
+    autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
                 drive, drive::runCharacterization, drive::getCharacterizationVelocity)

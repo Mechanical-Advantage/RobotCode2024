@@ -36,10 +36,11 @@ public class AutoBuilder {
     this.rollers = rollers;
   }
 
-  public Command N4_S012() {
-    var grabSpike0 = new HolonomicTrajectory("N4-S012_grabSpike0");
-    var grabSpike1 = new HolonomicTrajectory("N4-S012_grabSpike1");
-    var grabSpike2 = new HolonomicTrajectory("N4-S012_grabSpike2");
+  public Command sourceFRC6328Auto() {
+    var grabSpike0 = new HolonomicTrajectory("sourceFRC6328_grabSpike0");
+    var grabSpike1 = new HolonomicTrajectory("sourceFRC6328_grabSpike1");
+    var grabSpike2 = new HolonomicTrajectory("sourceFRC6328_grabSpike2");
+
 
     final double preloadDelay = 1.0;
 
@@ -47,7 +48,7 @@ public class AutoBuilder {
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             Commands.sequence(
-                    resetPose(DriveTrajectories.startingLinePodium),
+                    resetPose(grabSpike0),
                     Commands.startEnd(
                             () ->
                                 drive.setHeadingGoal(
@@ -58,7 +59,9 @@ public class AutoBuilder {
                             drive::clearHeadingGoal)
                         .withTimeout(preloadDelay),
                     followTrajectory(drive, grabSpike0),
+                    Commands.waitSeconds(shootTimeoutSecs.get()),
                     followTrajectory(drive, grabSpike1),
+                    Commands.waitSeconds(shootTimeoutSecs.get()),
                     followTrajectory(drive, grabSpike2))
                 .alongWith(
                     // Shoot preloaded note

@@ -244,6 +244,68 @@ public class DriveTrajectories {
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));
+
+    paths.put(
+        "sourceFRC6328_grabSpike0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingSourceFace)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.spikeTranslations[0],
+                            new Rotation2d(Math.PI))
+                        .transformBy(new Translation2d(0.4, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    getShootingPose(
+                        new Translation2d(
+                            FieldConstants.StagingLocations.spikeTranslations[0].getX() - 0.5,
+                            FieldConstants.StagingLocations.spikeTranslations[0].getY())))
+                .build()));
+    paths.put(
+        "sourceFRC6328_grabSpike1",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("sourceFRC6328_grabSpike0"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.spikeTranslations[1],
+                            Rotation2d.fromDegrees(-160.0))
+                        .transformBy(new Translation2d(0.4, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1])
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                //                .addTranslationWaypoint(
+                //                    new Translation2d(
+                //                        FieldConstants.startingLineX,
+                //
+                // (FieldConstants.StagingLocations.spikeTranslations[2].getY()
+                //                                +
+                // FieldConstants.StagingLocations.spikeTranslations[1].getY())
+                //                            / 2))
+                .build()));
+    paths.put(
+        "sourceFRC6328_grabSpike2",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("sourceFRC6328_grabSpike1"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.spikeTranslations[2],
+                            Rotation2d.fromDegrees(-130.0))
+                        .transformBy(new Translation2d(0.4, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                //                .addPoseWaypoint(
+                //                    getShootingPose(
+                //                        new Translation2d(
+                //                            FieldConstants.startingLineX,
+                //
+                // (FieldConstants.StagingLocations.spikeTranslations[2].getY()
+                //                                    +
+                // FieldConstants.StagingLocations.spikeTranslations[1].getY())
+                //                                / 2)))
+                .build()));
   }
 
   // calculate Pose2d of robot given a translation

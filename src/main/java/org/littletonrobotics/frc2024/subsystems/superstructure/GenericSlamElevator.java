@@ -134,9 +134,13 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       // Reset
       io.stop();
       lastGoal = null;
-      atGoal = false;
       staticTimer.stop();
       staticTimer.reset();
+      if (Math.abs(inputs.velocityRadsPerSec) > minVelocityThresh) {
+        // If we don't move when disabled, assume we are still at goal
+        atGoal = false;
+      }
+      
       // Set to coast mode
       setBrakeMode(!coastModeSupplier.getAsBoolean());
     }

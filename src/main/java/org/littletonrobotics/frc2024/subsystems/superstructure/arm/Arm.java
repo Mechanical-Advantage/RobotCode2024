@@ -83,6 +83,7 @@ public class Arm {
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
     PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 105.0)),
     CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
+    RESET_CLIMB(new LoggedTunableNumber("Arm/ResetClimbDegrees", 30.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;

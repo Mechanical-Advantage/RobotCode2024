@@ -77,6 +77,12 @@ public class RobotState {
     armAngleMap.put(5.373669, 24.25);
   }
 
+  /** Robot measured distance at podium */
+  private static final double podiumDistance = 2.0;
+
+  private static final double degreesCompensationPerMeter = 0.5;
+
+  /** Compensation applied at podium distance */
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
@@ -241,10 +247,12 @@ public class RobotState {
         robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
             - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
+    double compensation = shotCompensationDegrees * (targetDistance / podiumDistance);
+    compensation *= degreesCompensationPerMeter;
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            Rotation2d.fromDegrees(armAngleMap.get(targetDistance) + shotCompensationDegrees),
+            Rotation2d.fromDegrees(armAngleMap.get(targetDistance) + compensation),
             targetDistance,
             feedVelocity);
     return latestParameters;

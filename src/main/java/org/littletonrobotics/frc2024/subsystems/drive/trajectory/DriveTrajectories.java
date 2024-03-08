@@ -78,6 +78,49 @@ public class DriveTrajectories {
             .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
 
     paths.put(
+        "N4-S012_grabSpike0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(getShootingPose(startingLinePodium.getTranslation()))
+                .addPoseWaypoint(
+                    getShootingPose(
+                        new Pose2d(
+                                FieldConstants.StagingLocations.spikeTranslations[0],
+                                new Rotation2d(Math.PI))
+                            .transformBy(new Transform2d(0.4, -0.15, new Rotation2d()))
+                            .getTranslation()))
+                .build()));
+    paths.put(
+        "N4-S012_grabSpike1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        new Pose2d(
+                                FieldConstants.StagingLocations.spikeTranslations[0],
+                                new Rotation2d(Math.PI))
+                            .transformBy(new Transform2d(0.4, -0.15, new Rotation2d()))
+                            .getTranslation()))
+                .addTranslationWaypoint(
+                    FieldConstants.StagingLocations.spikeTranslations[1].plus(
+                        new Translation2d(-0.75, -0.25)))
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
+                .build()));
+    paths.put(
+        "N4-S012_grabSpike2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
+                .addTranslationWaypoint(
+                    FieldConstants.StagingLocations.spikeTranslations[2].plus(
+                        new Translation2d(-0.75, -1)))
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
+                .build()));
+
+    paths.put(
         "davisEthicalAuto_grabCenterline0",
         List.of(
             PathSegment.newBuilder()

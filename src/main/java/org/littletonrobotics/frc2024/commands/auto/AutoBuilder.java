@@ -36,6 +36,30 @@ public class AutoBuilder {
     this.rollers = rollers;
   }
 
+  public Command N4_S012() {
+    var grabSpike0 = new HolonomicTrajectory("N4-S012_grabSpike0");
+    var grabSpike1 = new HolonomicTrajectory("N4-S012_grabSpike1");
+    var grabSpike2 = new HolonomicTrajectory("N4-S012_grabSpike2");
+
+    final double preloadDelay = 1.0;
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.sequence(
+                resetPose(DriveTrajectories.startingLinePodium),
+                Commands.startEnd(
+                        () ->
+                            drive.setHeadingGoal(
+                                () ->
+                                    RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive::clearHeadingGoal)
+                    .withTimeout(preloadDelay),
+                followTrajectory(drive, grabSpike0),
+                followTrajectory(drive, grabSpike1),
+                followTrajectory(drive, grabSpike2)));
+  }
+
   public Command davisEthicalAuto() {
     var grabCenterline0 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline0");
     var grabCenterline1 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline1");

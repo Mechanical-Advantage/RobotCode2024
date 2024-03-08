@@ -11,7 +11,6 @@ import static org.littletonrobotics.frc2024.RobotState.VisionObservation;
 import static org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants.*;
 import static org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO.AprilTagVisionIOInputs;
 
-import edu.wpi.first.apriltag.AprilTag;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -52,16 +51,6 @@ public class AprilTagVision extends VirtualSubsystem {
     for (int i = 0; i < io.length; i++) {
       lastFrameTimes.put(i, 0.0);
     }
-
-    // Create map of last detection times for tags
-    aprilTagTypeSupplier
-        .get()
-        .getLayout()
-        .getTags()
-        .forEach(
-            (AprilTag tag) -> {
-              lastTagDetectionTimes.put(tag.ID, 0.0);
-            });
   }
 
   public void periodic() {
@@ -169,6 +158,7 @@ public class AprilTagVision extends VirtualSubsystem {
               aprilTagTypeSupplier.get().getLayout().getTagPose((int) values[i]);
           tagPose.ifPresent(tagPoses::add);
         }
+        if (tagPoses.size() == 0) continue;
 
         // Calculate average distance to tag
         double totalDistance = 0.0;
@@ -227,8 +217,11 @@ public class AprilTagVision extends VirtualSubsystem {
     List<Pose3d> allTagPoses = new ArrayList<>();
     for (Map.Entry<Integer, Double> detectionEntry : lastTagDetectionTimes.entrySet()) {
       if (Timer.getFPGATimestamp() - detectionEntry.getValue() < targetLogTimeSecs) {
-        allTagPoses.add(
-            aprilTagTypeSupplier.get().getLayout().getTagPose(detectionEntry.getKey()).get());
+        aprilTagTypeSupplier
+            .get()
+            .getLayout()
+            .getTagPose(detectionEntry.getKey())
+            .ifPresent(allTagPoses::add);
       }
     }
     Logger.recordOutput("AprilTagVision/TagPoses", allTagPoses.toArray(Pose3d[]::new));

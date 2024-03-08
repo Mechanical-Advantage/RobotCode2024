@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.math.util.Units;
@@ -164,8 +166,19 @@ public class FieldConstants {
           throw new RuntimeException(e);
         }
       }
+      if (layout == null) {
+        layoutString = "";
+      } else {
+        try {
+          layoutString = new ObjectMapper().writeValueAsString(layout);
+        } catch (JsonProcessingException e) {
+          throw new RuntimeException(
+              "Failed to serialize AprilTag layout JSON " + toString() + "for Northstar");
+        }
+      }
     }
 
     private final AprilTagFieldLayout layout;
+    private final String layoutString;
   }
 }

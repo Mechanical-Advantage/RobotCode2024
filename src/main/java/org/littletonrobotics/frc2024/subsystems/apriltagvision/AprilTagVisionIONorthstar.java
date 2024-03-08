@@ -9,8 +9,6 @@ package org.littletonrobotics.frc2024.subsystems.apriltagvision;
 
 import static org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionConstants.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.IntegerSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -77,11 +75,7 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
     var aprilTagType = aprilTagTypeSupplier.get();
     if (aprilTagType != lastAprilTagType) {
       lastAprilTagType = aprilTagType;
-      try {
-        tagLayoutPublisher.set(new ObjectMapper().writeValueAsString(aprilTagType.getLayout()));
-      } catch (JsonProcessingException e) {
-        throw new RuntimeException("Failed to serialize AprilTag layout JSON for Northstar");
-      }
+      tagLayoutPublisher.set(aprilTagType.getLayoutString());
     }
 
     // Get observations

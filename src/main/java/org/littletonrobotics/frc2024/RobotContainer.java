@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -543,11 +544,15 @@ public class RobotContainer {
           Pose2d ampCenterRotated =
               AllianceFlipUtil.apply(
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
-          return ampCenterRotated.transformBy(
-              GeomUtil.toTransform2d(
-                  Units.inchesToMeters(20.0) // End of intake bumper to center robot
-                      + Units.inchesToMeters(9.0),
-                  0));
+          var finalPose =
+              ampCenterRotated.transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0));
+          double distance =
+              RobotState.getInstance()
+                  .getEstimatedPose()
+                  .getTranslation()
+                  .getDistance(finalPose.getTranslation());
+          double offsetT = MathUtil.clamp((distance - 0.5) / 2.5, 0.0, 1.0);
+          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.5, 0.0));
         };
     driver
         .b()

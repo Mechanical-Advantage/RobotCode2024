@@ -26,7 +26,7 @@ import org.littletonrobotics.junction.Logger;
 @ExtensionMethod({GeomUtil.class})
 public class AutoAlignController {
   private static final LoggedTunableNumber linearkP =
-      new LoggedTunableNumber("AutoAlign/drivekP", 2.0);
+      new LoggedTunableNumber("AutoAlign/drivekP", 1.5);
   private static final LoggedTunableNumber linearkD =
       new LoggedTunableNumber("AutoAlign/drivekD", 0.0);
   private static final LoggedTunableNumber thetakP =
@@ -34,7 +34,7 @@ public class AutoAlignController {
   private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("AutoAlign/thetakD", 0.0);
   private static final LoggedTunableNumber linearTolerance =
-      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.02);
+      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.05);
   private static final LoggedTunableNumber thetaTolerance =
       new LoggedTunableNumber("AutoAlign/controllerThetaTolerance", Units.degreesToRadians(2.0));
   private static final LoggedTunableNumber toleranceTime =

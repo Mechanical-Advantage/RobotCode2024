@@ -445,7 +445,14 @@ public class RobotContainer {
                 }));
 
     // Poop.
-    driver.y().whileTrue(flywheels.poopCommand());
+    driver
+        .y()
+        .whileTrue(
+            flywheels
+                .poopCommand()
+                .alongWith(
+                    Commands.waitUntil(flywheels::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
 
     // ------------- Intake Controls -------------
     // Intake Floor

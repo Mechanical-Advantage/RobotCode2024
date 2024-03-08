@@ -23,7 +23,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.commands.ClimbingCommands;
@@ -290,41 +289,31 @@ public class RobotContainer {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
 
-    // Endgame alert trigger
-    Function<Double, Command> controllerRumbleCommandFactory =
-        time ->
-            Commands.sequence(
-                Commands.runOnce(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      Leds.getInstance().endgameAlert = true;
-                    }),
-                Commands.waitSeconds(time),
-                Commands.runOnce(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      Leds.getInstance().endgameAlert = false;
-                    }));
+    // Endgame alert triggers
     new Trigger(
             () ->
                 DriverStation.isTeleopEnabled()
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
-        .onTrue(controllerRumbleCommandFactory.apply(0.5));
+        .onTrue(
+            controllerRumbleCommand(true, true, true)
+                .withTimeout(0.5)
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
     new Trigger(
             () ->
                 DriverStation.isTeleopEnabled()
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
         .onTrue(
-            Commands.sequence(
-                controllerRumbleCommandFactory.apply(0.2),
-                Commands.waitSeconds(0.1),
-                controllerRumbleCommandFactory.apply(0.2),
-                Commands.waitSeconds(0.1),
-                controllerRumbleCommandFactory.apply(0.2)));
+            controllerRumbleCommand(true, true, true)
+                .withTimeout(0.2)
+                .andThen(
+                    Commands.waitSeconds(0.1)
+                        .repeatedly()
+                        .withTimeout(0.9) // Rumble three times
+                        .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                        .finallyDo(() -> Leds.getInstance().endgameAlert = false)));
   }
 
   private void configureAutos() {
@@ -435,14 +424,7 @@ public class RobotContainer {
     driver
         .a()
         .and(readyToShoot)
-        .whileTrue(
-            Commands.startEnd(
-                () -> {
-                  driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-                },
-                () -> {
-                  driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                }));
+        .whileTrue(controllerRumbleCommand(true, true, false));
 
     // ------------- Intake Controls -------------
     // Intake Floor
@@ -660,6 +642,32 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(),
                                 AllianceFlipUtil.apply(new Rotation2d()))))
                 .ignoringDisable(true));
+  }
+
+  /** Creates a controller rumble command with specified rumble and controllers */
+  private Command controllerRumbleCommand(
+      boolean useRight, boolean rumbleDriver, boolean rumbleOperator) {
+    return Commands.startEnd(
+        () -> {
+          if (rumbleDriver) {
+            if (useRight) {
+              driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+            } else {
+              driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+            }
+          }
+          if (rumbleOperator) {
+            if (useRight) {
+              operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+            } else {
+              operator.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+            }
+          }
+        },
+        () -> {
+          driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+          operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+        });
   }
 
   /** Updates the alerts for disconnected controllers. */

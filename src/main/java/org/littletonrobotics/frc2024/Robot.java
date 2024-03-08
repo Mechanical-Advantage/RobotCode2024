@@ -82,9 +82,7 @@ public class Robot extends LoggedRobot {
   public void robotInit() {
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
-    System.out.println("[Init] Scanning battery");
     Logger.recordMetadata("BatteryName", "BAT-" + BatteryTracker.scanBattery(1.5));
-    System.out.println("[Init] Starting AdvantageKit");
     Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
     Logger.recordMetadata("RuntimeType", getRuntimeType().toString());
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);

@@ -187,6 +187,13 @@ public class Superstructure extends SubsystemBase {
         .finallyDo(() -> arm.setProfileConstraints(Arm.maxProfileConstraints.get()));
   }
 
+  /** Command to aim the superstructure with a compensation value in degrees */
+  public Command aimWithCompensation(double compensation) {
+    return setGoalCommand(Goal.AIM)
+        .beforeStarting(() -> arm.setCurrentCompensation(compensation))
+        .finallyDo(() -> arm.setCurrentCompensation(0.0));
+  }
+
   @AutoLogOutput(key = "Superstructure/CompletedGoal")
   public boolean atGoal() {
     return currentGoal == desiredGoal && arm.atGoal() && climber.atGoal();

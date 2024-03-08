@@ -110,12 +110,14 @@ public class Rollers extends SubsystemBase {
     switch (goal) {
       case IDLE -> {}
       case FLOOR_INTAKE -> {
-        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
-        intake.setGoal(Intake.Goal.FLOOR_INTAKING);
         if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
+          feeder.setGoal(Feeder.Goal.IDLING);
           indexer.setGoal(Indexer.Goal.IDLING);
+          intake.setGoal(Intake.Goal.IDLING);
         } else {
+          feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
           indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
+          intake.setGoal(Intake.Goal.FLOOR_INTAKING);
         }
       }
       case UNTACO -> {
@@ -136,7 +138,7 @@ public class Rollers extends SubsystemBase {
       }
       case EJECT_TO_FLOOR -> {
         feeder.setGoal(Feeder.Goal.EJECTING);
-        indexer.setGoal(Indexer.Goal.EJECTING);
+        indexer.setGoal(Indexer.Goal.IDLING);
         intake.setGoal(Intake.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.IDLING);
       }

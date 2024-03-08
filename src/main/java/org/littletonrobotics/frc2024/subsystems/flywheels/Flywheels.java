@@ -43,6 +43,8 @@ public class Flywheels extends SubsystemBase {
       new LoggedTunableNumber("Flywheels/IntakingRpm", -3000.0);
   private static final LoggedTunableNumber ejectingRpm =
       new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
+  private static final LoggedTunableNumber poopingRpm =
+      new LoggedTunableNumber("Flywheels/PoopingRpm", 2000.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
@@ -69,6 +71,7 @@ public class Flywheels extends SubsystemBase {
     SHOOT(shootingLeftRpm, shootingRightRpm),
     INTAKE(intakingRpm, intakingRpm),
     EJECT(ejectingRpm, ejectingRpm),
+    POOP(poopingRpm, poopingRpm),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftGoal;
@@ -219,8 +222,7 @@ public class Flywheels extends SubsystemBase {
         .withName("Flywheels Intake");
   }
 
-  public Command ejectCommand() {
-    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
-        .withName("Flywheels Eject");
+  public Command poopCommand() {
+    return startEnd(() -> setGoal(Goal.POOP), () -> setGoal(Goal.POOP)).withName("Flywheels Poop");
   }
 }

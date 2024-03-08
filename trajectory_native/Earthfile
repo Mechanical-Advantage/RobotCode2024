@@ -1,25 +1,17 @@
 VERSION 0.8
-FROM alpine:3.19.1
-WORKDIR /RobotCode2024/trajectory_native
-
-APK_ADD:
-    FUNCTION
-    ARG pkgs
-    ARG TARGETARCH
-    RUN mkdir -p /var/cache/apk
-    RUN ln -s /var/cache/apk /etc/apk/cache
-    RUN --mount=type=cache,id=apk-cache-$TARGETARCH,sharing=locked,target=/var/cache/apk apk add --update $pkgs
-    RUN rm -rf /var/cache/apk/*
+FROM scratch
 
 apk-deps:
-    DO +APK_ADD --pkgs="grpc-dev protobuf-dev blas-dev lapack-dev"
+    FROM alpine:3.19.1
+    WORKDIR /RobotCode2024/trajectory_native
+    RUN apk add --no-cache --update grpc-dev protobuf-dev blas-dev lapack-dev tinyxml2-dev
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-apk-deps:latest
 
 ipopt:
     FROM +apk-deps
     ENV CC=clang
     ENV CXX=clang++
-    DO +APK_ADD --pkgs="clang make patch gfortran"
+    RUN apk add --no-cache --update clang make patch gfortran
     RUN mkdir ipopt-mumps-build
     WORKDIR ipopt-mumps-build
     RUN wget -c https://github.com/coin-or-tools/ThirdParty-Mumps/archive/refs/tags/releases/3.0.5.tar.gz -O - | tar -xz
@@ -40,29 +32,26 @@ ipopt:
     RUN ../configure
     RUN make -j8
     RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-ipopt:latest
     SAVE ARTIFACT /RobotCode2024/trajectory_native/ipopt-mumps-build/installroot
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-ipopt:latest
 
 casadi:
     FROM +apk-deps
-    BUILD +ipopt
     COPY +ipopt/installroot/usr/local /usr/local/
     RUN wget -c https://github.com/casadi/casadi/archive/refs/tags/3.6.4.tar.gz -O - | tar -xz
     RUN mkdir casadi-3.6.4/build
     WORKDIR casadi-3.6.4/build
-    DO +APK_ADD --pkgs="clang make cmake tinyxml2-dev"
+    RUN apk add --no-cache --update clang make cmake
     ENV CC=clang
     ENV CXX=clang++
     RUN cmake -DWITH_IPOPT=ON -DWITH_DEEPBIND=OFF -DWITH_BUILD_TINYXML=OFF ..
     RUN make -j8
     RUN make DESTDIR=$(pwd)/installroot install
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-casadi:latest
     SAVE ARTIFACT installroot
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-casadi:latest
 
 trajoptlib:
     FROM +apk-deps
-    BUILD +ipopt
-    BUILD +casadi
     COPY +ipopt/installroot/usr/local /usr/local/
     COPY +casadi/installroot/usr/local /usr/local/
     LET TRAJOPT_COMMIT=f6cf3d42359f6f41f311f848a4e7f51c3f88c2ca
@@ -72,24 +61,21 @@ trajoptlib:
     # Use our CMakeLists.txt (uses system casadi install)
     RUN rm ../CMakeLists.txt
     COPY trajoptlib-CMakeLists.txt ../CMakeLists.txt
-    DO +APK_ADD --pkgs="clang make cmake git tinyxml2-dev"
+    RUN apk add --no-cache --update clang make cmake git
     ENV CC=clang
     ENV CXX=clang++
     RUN cmake -DOPTIMIZER_BACKEND=casadi ..
     RUN make -j8
     RUN make DESTDIR=$(pwd)/installroot install
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-trajoptlib:latest
     SAVE ARTIFACT installroot
+    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-trajoptlib:latest
 
 dev-image:
     FROM +apk-deps
-    BUILD +ipopt
-    BUILD +casadi
-    BUILD +trajoptlib
     COPY +ipopt/installroot/usr/local /usr/local/
     COPY +casadi/installroot/usr/local /usr/local/
     COPY +trajoptlib/installroot/usr/local /usr/local/
-    DO +APK_ADD --pkgs="clang make cmake git gdb tinyxml2-dev nlohmann-json fmt-dev"
+    RUN apk add --no-cache --update clang make cmake git gdb nlohmann-json fmt-dev
     ENV CC=clang
     ENV CXX=clang++
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-dev-image:latest

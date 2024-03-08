@@ -24,6 +24,7 @@ public class Superstructure extends SubsystemBase {
     STOW,
     BACKPACK_OUT_UNJAM,
     AIM,
+    SUPER_POOP,
     INTAKE,
     UNJAM_INTAKE,
     STATION_INTAKE,
@@ -95,6 +96,11 @@ public class Superstructure extends SubsystemBase {
       }
       case AIM -> {
         arm.setGoal(Arm.Goal.AIM);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case SUPER_POOP -> {
+        arm.setGoal(Arm.Goal.SUPER_POOP);
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }

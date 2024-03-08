@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -121,6 +122,7 @@ public class RobotContainer {
 
   private boolean podiumShotMode = false;
   private boolean trapScoreMode = true;
+  private boolean armCoastOverride = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -279,10 +281,22 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Set up subsystems
-    arm.setOverrides(armDisable, armCoast);
+    armCoast
+        .onTrue(
+            Commands.runOnce(
+                    () -> {
+                      if (DriverStation.isDisabled()) {
+                        armCoastOverride = true;
+                      }
+                    })
+                .ignoringDisable(true))
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    RobotModeTriggers.disabled()
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    arm.setOverrides(armDisable, () -> armCoastOverride);
+    climber.setCoastOverride(() -> armCoastOverride);
+    backpackActuator.setCoastOverride(() -> armCoastOverride);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
-    climber.setCoastOverride(armCoast);
-    backpackActuator.setCoastOverride(armCoast);
     flywheels.setPrepareShootSupplier(
         () -> {
           return DriverStation.isTeleopEnabled()

@@ -137,9 +137,10 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       atGoal = false;
       staticTimer.stop();
       staticTimer.reset();
-      // Set to coast mode
-      setBrakeMode(!coastModeSupplier.getAsBoolean());
     }
+
+    // Update coast mode
+    setBrakeMode(!coastModeSupplier.getAsBoolean());
 
     Logger.recordOutput("Superstructure/" + name + "/Goal", getGoal().toString());
   }

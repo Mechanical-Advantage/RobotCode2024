@@ -47,7 +47,8 @@ public class Rollers extends SubsystemBase {
     TRAP_PRESCORE,
     TRAP_SCORE,
     SHUFFLE_BACKPACK,
-    SHUFFLE_SHOOTER
+    SHUFFLE_SHOOTER,
+    DIAGNOSE
   }
 
   public enum GamepieceState {
@@ -192,6 +193,12 @@ public class Rollers extends SubsystemBase {
         } else {
           indexer.setGoal(Indexer.Goal.IDLING);
         }
+      }
+      case DIAGNOSE -> {
+        feeder.setGoal(Feeder.Goal.DIAGNOSING);
+        indexer.setGoal(Indexer.Goal.DIAGNOSING);
+        intake.setGoal(Intake.Goal.DIAGNOSING);
+        backpack.setGoal(Backpack.Goal.DIAGNOSING);
       }
     }
 

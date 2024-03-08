@@ -421,10 +421,7 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
-    driver
-        .a()
-        .and(readyToShoot)
-        .whileTrue(controllerRumbleCommand(true, true, false));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, true, false));
 
     // ------------- Intake Controls -------------
     // Intake Floor

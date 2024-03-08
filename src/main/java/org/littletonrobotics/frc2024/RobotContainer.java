@@ -260,6 +260,7 @@ public class RobotContainer {
     arm.setOverrides(armDisable, armCoast);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
     climber.setCoastOverride(armCoast);
+    backpackActuator.setCoastOverride(armCoast);
     flywheels.setPrepareShootSupplier(
         () -> {
           return DriverStation.isTeleopEnabled()

@@ -445,13 +445,29 @@ public class RobotContainer {
                             () -> RobotState.getInstance().getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
+    Trigger inWing =
+        new Trigger(
+            () ->
+                AllianceFlipUtil.apply(RobotState.getInstance().getEstimatedPose().getX())
+                    < FieldConstants.wingX);
     driver
         .a()
+        .and(inWing)
         .whileTrue(
             driveAimCommand
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
+    driver
+        .a()
+        .and(inWing.negate())
+        .whileTrue(
+            driveAimCommand
+                .get()
+                .alongWith(
+                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                    flywheels.superPoopCommand())
+                .withName("Super Poop"));
     Trigger readyToShoot =
         new Trigger(
             () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());

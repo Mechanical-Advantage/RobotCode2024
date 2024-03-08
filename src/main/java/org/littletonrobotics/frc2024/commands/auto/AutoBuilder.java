@@ -47,17 +47,89 @@ public class AutoBuilder {
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             Commands.sequence(
-                resetPose(DriveTrajectories.startingLinePodium),
-                Commands.startEnd(
-                        () ->
-                            drive.setHeadingGoal(
+                    resetPose(DriveTrajectories.startingLinePodium),
+                    Commands.startEnd(
+                            () ->
+                                drive.setHeadingGoal(
+                                    () ->
+                                        RobotState.getInstance()
+                                            .getAimingParameters()
+                                            .driveHeading()),
+                            drive::clearHeadingGoal)
+                        .withTimeout(preloadDelay),
+                    followTrajectory(drive, grabSpike0),
+                    followTrajectory(drive, grabSpike1),
+                    followTrajectory(drive, grabSpike2))
+                .alongWith(
+                    // Shoot preloaded note
+                    Commands.sequence(
+                        Commands.waitUntil(flywheels::atGoal)
+                            .andThen(
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                                    .until(() -> autoTimer.hasElapsed(preloadDelay)))
+                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+
+                        // Intake spike 0
+                        Commands.parallel(
+                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            .withTimeout(grabSpike0.getDuration()),
+
+                        // Shoot spike 0
+                        Commands.waitUntil(
                                 () ->
-                                    RobotState.getInstance().getAimingParameters().driveHeading()),
-                        drive::clearHeadingGoal)
-                    .withTimeout(preloadDelay),
-                followTrajectory(drive, grabSpike0),
-                followTrajectory(drive, grabSpike1),
-                followTrajectory(drive, grabSpike2)));
+                                    autoTimer.hasElapsed(
+                                        preloadDelay
+                                            + grabSpike0.getDuration()
+                                            - shootTimeoutSecs.get()))
+                            .andThen(
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                                    .withTimeout(shootTimeoutSecs.get()))
+                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+
+                        // Intake Spike 1
+                        Commands.parallel(
+                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            .withTimeout(grabSpike1.getDuration()),
+
+                        // Shoot spike 1
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadDelay
+                                            + grabSpike0.getDuration()
+                                            + grabSpike1.getDuration()
+                                            - shootTimeoutSecs.get()))
+                            .andThen(
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                                    .withTimeout(shootTimeoutSecs.get()))
+                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+
+                        // Intake spike 2
+                        Commands.parallel(
+                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            .withTimeout(grabSpike2.getDuration()),
+
+                        // Shoot spike 2
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadDelay
+                                            + grabSpike0.getDuration()
+                                            + grabSpike1.getDuration()
+                                            + grabSpike2.getDuration()
+                                            - shootTimeoutSecs.get()))
+                            .andThen(
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                                    .withTimeout(shootTimeoutSecs.get()))
+                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
+                .deadlineWith(flywheels.shootCommand()));
   }
 
   public Command davisEthicalAuto() {

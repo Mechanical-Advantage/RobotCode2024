@@ -232,7 +232,7 @@ public class ClimbingCommands {
                         superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
                 case UNTRAP ->
                     superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.TRAP));
+                        superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
               }
             });
   }

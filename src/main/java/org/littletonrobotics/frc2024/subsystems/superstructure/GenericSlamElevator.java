@@ -113,7 +113,8 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
         staticTimer.reset();
       }
       // If we are finished with timer, finish goal.
-      atGoal = staticTimer.hasElapsed(staticTimeSecs);
+      // Also assume we are at the goal if auto was started
+      atGoal = staticTimer.hasElapsed(staticTimeSecs) || DriverStation.isAutonomousEnabled();
     } else {
       staticTimer.stop();
       staticTimer.reset();

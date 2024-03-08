@@ -140,7 +140,7 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
         // If we don't move when disabled, assume we are still at goal
         atGoal = false;
       }
-      
+
       // Set to coast mode
       setBrakeMode(!coastModeSupplier.getAsBoolean());
     }

@@ -121,7 +121,7 @@ public class RobotContainer {
 
   private boolean podiumShotMode = false;
   private boolean trapScoreMode = true;
-  private boolean coastOverride = false;
+  private boolean armCoastOverride = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -282,14 +282,14 @@ public class RobotContainer {
     // Set up subsystems
     armCoast
         .and(DriverStation::isDisabled)
-        .onTrue(Commands.runOnce(() -> coastOverride = true).ignoringDisable(true));
+        .onTrue(Commands.runOnce(() -> armCoastOverride = true).ignoringDisable(true));
     armCoast
         .negate()
         .or(DriverStation::isEnabled)
-        .onTrue(Commands.runOnce(() -> coastOverride = false).ignoringDisable(true));
-    arm.setOverrides(armDisable, () -> coastOverride);
-    climber.setCoastOverride(() -> coastOverride);
-    backpackActuator.setCoastOverride(() -> coastOverride);
+        .onTrue(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    arm.setOverrides(armDisable, () -> armCoastOverride);
+    climber.setCoastOverride(() -> armCoastOverride);
+    backpackActuator.setCoastOverride(() -> armCoastOverride);
     RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
         () -> {

@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -281,12 +282,17 @@ public class RobotContainer {
 
     // Set up subsystems
     armCoast
-        .and(DriverStation::isDisabled)
-        .onTrue(Commands.runOnce(() -> armCoastOverride = true).ignoringDisable(true));
-    armCoast
-        .negate()
-        .or(DriverStation::isEnabled)
-        .onTrue(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+        .onTrue(
+            Commands.runOnce(
+                    () -> {
+                      if (DriverStation.isDisabled()) {
+                        armCoastOverride = true;
+                      }
+                    })
+                .ignoringDisable(true))
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    RobotModeTriggers.disabled()
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
     arm.setOverrides(armDisable, () -> armCoastOverride);
     climber.setCoastOverride(() -> armCoastOverride);
     backpackActuator.setCoastOverride(() -> armCoastOverride);

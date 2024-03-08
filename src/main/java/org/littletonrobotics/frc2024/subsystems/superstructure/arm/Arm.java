@@ -170,8 +170,8 @@ public class Arm {
     Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
 
     // Set coast mode with override
-    setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
-    Leds.getInstance().armCoast = coastSupplier.getAsBoolean() && disableSupplier.getAsBoolean();
+    setBrakeMode(!coastSupplier.getAsBoolean());
+    Leds.getInstance().armCoast = coastSupplier.getAsBoolean();
 
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing

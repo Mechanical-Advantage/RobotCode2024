@@ -135,7 +135,10 @@ public class Leds extends VirtualSubsystem {
     if (estopped) {
       solid(Color.kRed);
     } else if (DriverStation.isDisabled()) {
-      if (lastEnabledAuto && Timer.getFPGATimestamp() - lastEnabledTime < autoFadeMaxTime) {
+      if (armCoast) {
+        // Arm coast alert
+        solid(Color.kWhite);
+      } else if (lastEnabledAuto && Timer.getFPGATimestamp() - lastEnabledTime < autoFadeMaxTime) {
         // Auto fade
         solid(1.0 - ((Timer.getFPGATimestamp() - lastEnabledTime) / autoFadeTime), Color.kGreen);
       } else if (lowBatteryAlert) {
@@ -188,11 +191,6 @@ public class Leds extends VirtualSubsystem {
       if (endgameAlert) {
         strobe(Color.kRed, strobeFastDuration);
       }
-    }
-
-    // Arm coast alert
-    if (armCoast) {
-      solid(Color.kWhite);
     }
 
     // Arm estop alert

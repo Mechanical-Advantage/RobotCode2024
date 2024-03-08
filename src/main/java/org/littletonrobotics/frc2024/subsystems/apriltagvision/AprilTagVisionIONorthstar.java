@@ -15,8 +15,11 @@ import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.IntegerSubscriber;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.PubSubOption;
+import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.wpilibj.Timer;
+import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.FieldConstants;
+import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
 import org.littletonrobotics.frc2024.util.Alert;
 
 public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
@@ -26,6 +29,10 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private static final int cameraExposure = 10;
   private static final int cameraGain = 25;
 
+  private final Supplier<AprilTagLayoutType> aprilTagTypeSupplier;
+  private AprilTagLayoutType lastAprilTagType = null;
+
+  private final StringPublisher tagLayoutPublisher;
   private final DoubleArraySubscriber observationSubscriber;
   private final DoubleArraySubscriber demoObservationSubscriber;
   private final IntegerSubscriber fpsSubscriber;
@@ -34,9 +41,9 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   private final Alert disconnectedAlert;
   private final Timer disconnectedTimer = new Timer();
 
-  public AprilTagVisionIONorthstar(int index) {
+  public AprilTagVisionIONorthstar(Supplier<AprilTagLayoutType> aprilTagTypeSupplier, int index) {
+    this.aprilTagTypeSupplier = aprilTagTypeSupplier;
     var northstarTable = NetworkTableInstance.getDefault().getTable(instanceNames[index]);
-
     var configTable = northstarTable.getSubTable("config");
     configTable.getStringTopic("camera_id").publish().set(cameraIds[index]);
     configTable.getIntegerTopic("camera_resolution_width").publish().set(cameraResolutionWidth);
@@ -45,14 +52,7 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
     configTable.getIntegerTopic("camera_exposure").publish().set(cameraExposure);
     configTable.getIntegerTopic("camera_gain").publish().set(cameraGain);
     configTable.getDoubleTopic("fiducial_size_m").publish().set(FieldConstants.aprilTagWidth);
-    try {
-      configTable
-          .getStringTopic("tag_layout")
-          .publish()
-          .set(new ObjectMapper().writeValueAsString(FieldConstants.aprilTags));
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException("Failed to serialize AprilTag layout JSON for Northstar");
-    }
+    tagLayoutPublisher = configTable.getStringTopic("tag_layout").publish();
 
     var outputTable = northstarTable.getSubTable("output");
     observationSubscriber =
@@ -73,6 +73,18 @@ public class AprilTagVisionIONorthstar implements AprilTagVisionIO {
   }
 
   public void updateInputs(AprilTagVisionIOInputs inputs) {
+    // Publish tag layout
+    var aprilTagType = aprilTagTypeSupplier.get();
+    if (aprilTagType != lastAprilTagType) {
+      lastAprilTagType = aprilTagType;
+      try {
+        tagLayoutPublisher.set(new ObjectMapper().writeValueAsString(aprilTagType.getLayout()));
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException("Failed to serialize AprilTag layout JSON for Northstar");
+      }
+    }
+
+    // Get observations
     var queue = observationSubscriber.readQueue();
     inputs.timestamps = new double[queue.length];
     inputs.frames = new double[queue.length][];

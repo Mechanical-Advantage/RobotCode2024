@@ -20,8 +20,10 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.*;
+import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
+import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
@@ -31,13 +33,15 @@ import org.littletonrobotics.junction.Logger;
 @ExtensionMethod({GeomUtil.class})
 public class AprilTagVision extends VirtualSubsystem {
 
+  private final Supplier<AprilTagLayoutType> aprilTagTypeSupplier;
   private final AprilTagVisionIO[] io;
   private final AprilTagVisionIOInputs[] inputs;
 
   private final Map<Integer, Double> lastFrameTimes = new HashMap<>();
   private final Map<Integer, Double> lastTagDetectionTimes = new HashMap<>();
 
-  public AprilTagVision(AprilTagVisionIO... io) {
+  public AprilTagVision(Supplier<AprilTagLayoutType> aprilTagTypeSupplier, AprilTagVisionIO... io) {
+    this.aprilTagTypeSupplier = aprilTagTypeSupplier;
     this.io = io;
     inputs = new AprilTagVisionIOInputs[io.length];
     for (int i = 0; i < io.length; i++) {
@@ -50,7 +54,9 @@ public class AprilTagVision extends VirtualSubsystem {
     }
 
     // Create map of last detection times for tags
-    FieldConstants.aprilTags
+    aprilTagTypeSupplier
+        .get()
+        .getLayout()
         .getTags()
         .forEach(
             (AprilTag tag) -> {
@@ -159,7 +165,8 @@ public class AprilTagVision extends VirtualSubsystem {
         for (int i = (values[0] == 1 ? 9 : 17); i < values.length; i++) {
           int tagId = (int) values[i];
           lastTagDetectionTimes.put(tagId, Timer.getFPGATimestamp());
-          Optional<Pose3d> tagPose = FieldConstants.aprilTags.getTagPose((int) values[i]);
+          Optional<Pose3d> tagPose =
+              aprilTagTypeSupplier.get().getLayout().getTagPose((int) values[i]);
           tagPose.ifPresent(tagPoses::add);
         }
 
@@ -220,7 +227,8 @@ public class AprilTagVision extends VirtualSubsystem {
     List<Pose3d> allTagPoses = new ArrayList<>();
     for (Map.Entry<Integer, Double> detectionEntry : lastTagDetectionTimes.entrySet()) {
       if (Timer.getFPGATimestamp() - detectionEntry.getValue() < targetLogTimeSecs) {
-        allTagPoses.add(FieldConstants.aprilTags.getTagPose(detectionEntry.getKey()).get());
+        allTagPoses.add(
+            aprilTagTypeSupplier.get().getLayout().getTagPose(detectionEntry.getKey()).get());
       }
     }
     Logger.recordOutput("AprilTagVision/TagPoses", allTagPoses.toArray(Pose3d[]::new));

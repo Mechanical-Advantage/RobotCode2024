@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
@@ -164,7 +165,9 @@ public class ClimbingCommands {
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
               }
-            });
+              Leds.getInstance().climbing = false;
+            })
+        .beforeStarting(() -> Leds.getInstance().climbing = true);
   }
 
   /** Runs the climbing sequence and then scores in the trap when the trapScore button is pressed */
@@ -231,6 +234,8 @@ public class ClimbingCommands {
                     superstructure.setDefaultCommand(
                         superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
               }
-            });
+              Leds.getInstance().climbing = false;
+            })
+        .beforeStarting(() -> Leds.getInstance().climbing = true);
   }
 }

@@ -453,7 +453,9 @@ public class RobotContainer {
                 .setGoalCommand(Superstructure.Goal.INTAKE)
                 .alongWith(
                     Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                        .beforeStarting(() -> Leds.getInstance().intaking = true)
+                        .finallyDo(() -> Leds.getInstance().intaking = false))
                 .withName("Floor Intake"));
 
     // Eject Floor

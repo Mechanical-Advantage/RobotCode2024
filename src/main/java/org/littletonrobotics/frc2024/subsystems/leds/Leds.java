@@ -34,10 +34,8 @@ public class Leds extends VirtualSubsystem {
   public boolean requestAmp = false;
   public boolean intaking = false;
   public boolean hasNote = false;
-  public boolean autoShoot = false;
   public boolean autoDrive = false;
   public boolean climbing = false;
-  public boolean trapping = false;
   public boolean endgameAlert = false;
   public boolean sameBattery = false;
   public boolean armCoast = false;
@@ -177,10 +175,14 @@ public class Leds extends VirtualSubsystem {
         solid((Timer.getFPGATimestamp() - autoFinishedTime) / fullTime, Color.kGreen);
       }
     } else { // Enabled
-      if (requestAmp) {
+      if (requestAmp) { // Request amp in any state
         strobe(Color.kWhite, strobeFastDuration);
-      } else if (trapping || climbing || autoDrive || autoShoot) {
+      } else if (autoDrive) {
         rainbow(rainbowCycleLength, rainbowDuration);
+      } else if (climbing) {
+        wave(allianceColor, Color.kBlack, waveFastCycleLength, waveFastDuration);
+      } else if (intaking) {
+        strobe(Color.kWhite, strobeFastDuration);
       } else if (hasNote) {
         solid(Color.kGreen);
       }

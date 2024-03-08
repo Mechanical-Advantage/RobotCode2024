@@ -544,10 +544,10 @@ public class RobotContainer {
             () ->
                 superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
                     && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
-        .whileTrue(
+        .toggleOnTrue(
             Commands.either(
                 superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
-                Commands.none(),
+                Commands.none(), // No function yet
                 () -> trapScoreMode));
 
     // ------------- Operator Controls -------------

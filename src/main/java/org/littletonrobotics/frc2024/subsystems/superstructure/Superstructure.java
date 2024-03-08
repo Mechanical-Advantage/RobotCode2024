@@ -164,6 +164,10 @@ public class Superstructure extends SubsystemBase {
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
     }
+    if (DriverStation.isAutonomousEnabled()) {
+      // Climber reset sequence disabled in auto, don't try to move while at an unsafe arm angle
+      climber.setGoal(Climber.Goal.STOP);
+    }
 
     arm.periodic();
     climber.periodic();

@@ -34,7 +34,7 @@ public class ClimbingCommands {
   private static final LoggedTunableNumber climbedXOffset =
       new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
-      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.65);
+      new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.3);
   private static final LoggedTunableNumber chainToFront =
       new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.9);
 

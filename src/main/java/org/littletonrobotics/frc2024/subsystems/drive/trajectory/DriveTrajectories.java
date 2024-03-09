@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024.subsystems.drive.trajectory;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -76,49 +77,11 @@ public class DriveTrajectories {
         FieldConstants.Stage.sourceLeg
             .getTranslation()
             .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
-
-    paths.put(
-        "N4-S012_grabSpike0",
-        List.of(
-            PathSegment.newBuilder()
-                .addPoseWaypoint(getShootingPose(startingLinePodium.getTranslation()))
-                .addPoseWaypoint(
-                    getShootingPose(
-                        new Pose2d(
-                                FieldConstants.StagingLocations.spikeTranslations[0],
-                                new Rotation2d(Math.PI))
-                            .transformBy(new Transform2d(0.4, -0.15, new Rotation2d()))
-                            .getTranslation()))
-                .build()));
-    paths.put(
-        "N4-S012_grabSpike1",
-        List.of(
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    getShootingPose(
-                        new Pose2d(
-                                FieldConstants.StagingLocations.spikeTranslations[0],
-                                new Rotation2d(Math.PI))
-                            .transformBy(new Transform2d(0.4, -0.15, new Rotation2d()))
-                            .getTranslation()))
-                .addTranslationWaypoint(
-                    FieldConstants.StagingLocations.spikeTranslations[1].plus(
-                        new Translation2d(-0.75, -0.25)))
-                .addPoseWaypoint(
-                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
-                .build()));
-    paths.put(
-        "N4-S012_grabSpike2",
-        List.of(
-            PathSegment.newBuilder()
-                .addPoseWaypoint(
-                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
-                .addTranslationWaypoint(
-                    FieldConstants.StagingLocations.spikeTranslations[2].plus(
-                        new Translation2d(-0.75, -1)))
-                .addPoseWaypoint(
-                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
-                .build()));
+    Translation2d wingLeftAvoidance =
+        new Translation2d(
+            FieldConstants.wingX,
+            MathUtil.interpolate(
+                FieldConstants.Stage.ampLeg.getY(), FieldConstants.fieldWidth, 0.5));
 
     paths.put(
         "davisEthicalAuto_grabCenterline0",
@@ -245,21 +208,20 @@ public class DriveTrajectories {
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));
 
+    Pose2d spike0ShootingPose =
+        getShootingPose(
+            new Translation2d(
+                FieldConstants.StagingLocations.spikeTranslations[0].getX(),
+                FieldConstants.StagingLocations.spikeTranslations[0].getY()));
     paths.put(
         "sourceFRC6328_grabSpike0",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceFace)
                 .addPoseWaypoint(
-                    new Pose2d(
-                            FieldConstants.StagingLocations.spikeTranslations[0],
-                            new Rotation2d(Math.PI))
-                        .transformBy(new Translation2d(0.4, 0.0).toTransform2d()))
+                    spike0ShootingPose.transformBy(new Translation2d(0.8, 0.0).toTransform2d()))
                 .addPoseWaypoint(
-                    getShootingPose(
-                        new Translation2d(
-                            FieldConstants.StagingLocations.spikeTranslations[0].getX() - 0.5,
-                            FieldConstants.StagingLocations.spikeTranslations[0].getY())))
+                    spike0ShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
                 .build()));
     paths.put(
         "sourceFRC6328_grabSpike1",
@@ -288,6 +250,29 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .build()));
+    paths.put(
+        "sourceFRC6328_grabCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("sourceFRC6328_grabSpike2"))
+                .addTranslationWaypoint(wingLeftAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addTranslationWaypoint(wingLeftAvoidance)
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.podiumLeg
+                            .getTranslation()
+                            .plus(new Translation2d(0.5, 2.5))))
                 .build()));
   }
 

@@ -212,7 +212,8 @@ public class RobotState {
     Transform2d fieldToTarget =
         AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening)
             .toTranslation2d()
-            .toTransform2d();
+            .toTransform2d()
+            .plus(FudgeFactors.speaker.getTransform());
     Pose2d fieldToPredictedVehicle =
         lookaheadDisable.getAsBoolean()
             ? getEstimatedPose()

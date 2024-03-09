@@ -208,24 +208,31 @@ public class ClimbingCommands {
                     Commands.waitUntil(trapScoreTrigger)
                         .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
-            // Extend backpack
-            superstructure
-                .setGoalCommand(Superstructure.Goal.TRAP)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE))
-                .raceWith(
-                    Commands.waitUntil(trapScoreTrigger)
-                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
+            // Repeat trap sequence forever and ever
+            Commands.sequence(
+                    // Extend backpack
+                    superstructure
+                        .setGoalCommand(Superstructure.Goal.TRAP)
+                        .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE))
+                        .raceWith(
+                            Commands.waitUntil(trapScoreTrigger)
+                                .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
-            // Score in trap and wait
-            rollers
-                .setGoalCommand(Rollers.Goal.TRAP_SCORE)
-                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP))
-                .raceWith(
-                    Commands.waitUntil(trapScoreTrigger)
-                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
+                    // Score in trap and wait
+                    rollers
+                        .setGoalCommand(Rollers.Goal.TRAP_SCORE)
+                        .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP))
+                        .raceWith(
+                            Commands.waitUntil(trapScoreTrigger)
+                                .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
 
-            // Retract backpack
-            superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
+                    // Retract backpack
+                    superstructure
+                        .setGoalCommand(Superstructure.Goal.CLIMB)
+                        .raceWith(
+                            Commands.waitUntil(trapScoreTrigger)
+                                .andThen(Commands.waitUntil(trapScoreTrigger.negate()))))
+                .repeatedly())
 
         // If cancelled, go to safe state
         .finallyDo(

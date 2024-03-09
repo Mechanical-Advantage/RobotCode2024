@@ -25,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
@@ -333,7 +332,7 @@ public class RobotContainer {
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
         .onTrue(
-            controllerRumbleCommand(true, true, true)
+            controllerRumbleCommand(true, true)
                 .withTimeout(0.5)
                 .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
                 .finallyDo(() -> Leds.getInstance().endgameAlert = false));
@@ -343,14 +342,13 @@ public class RobotContainer {
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
         .onTrue(
-            controllerRumbleCommand(true, true, true)
+            controllerRumbleCommand(true, true)
                 .withTimeout(0.2)
-                .andThen(
-                    Commands.waitSeconds(0.1)
-                        .repeatedly()
-                        .withTimeout(0.9) // Rumble three times
-                        .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
-                        .finallyDo(() -> Leds.getInstance().endgameAlert = false)));
+                .andThen(Commands.waitSeconds(0.1))
+                .repeatedly()
+                .withTimeout(0.9) // Rumble three times
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
   }
 
   private void configureAutos() {
@@ -477,7 +475,7 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
-    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, true, false));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, false));
 
     // Poop.
     driver
@@ -701,23 +699,16 @@ public class RobotContainer {
   }
 
   /** Creates a controller rumble command with specified rumble and controllers */
-  private Command controllerRumbleCommand(
-      boolean useRight, boolean rumbleDriver, boolean rumbleOperator) {
+  private Command controllerRumbleCommand(boolean useRightRumble, boolean rumbleOperator) {
     return Commands.startEnd(
         () -> {
-          if (rumbleDriver) {
-            if (useRight) {
-              driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-            } else {
-              driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-            }
-          }
+          driver
+              .getHID()
+              .setRumble(useRightRumble ? RumbleType.kBothRumble : RumbleType.kLeftRumble, 1.0);
           if (rumbleOperator) {
-            if (useRight) {
-              operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-            } else {
-              operator.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-            }
+            operator
+                .getHID()
+                .setRumble(useRightRumble ? RumbleType.kBothRumble : RumbleType.kLeftRumble, 1.0);
           }
         },
         () -> {

@@ -156,7 +156,7 @@ public class AutoBuilder {
                                 rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
                             .withTimeout(grabCenterline2.getDuration() - 1.0),
 
-                        // Shoot centerline 2
+                        // Shoot centerline 2l
                         Commands.waitUntil(
                                 () ->
                                     autoTimer.hasElapsed(
@@ -498,7 +498,7 @@ public class AutoBuilder {
         .andThen(
             // Drive sequence
             Commands.sequence(
-                    resetPose(DriveTrajectories.startingLinePodium),
+                    resetPose(DriveTrajectories.startingLineSpike0),
                     Commands.startEnd(
                             () ->
                                 drive.setHeadingGoal(

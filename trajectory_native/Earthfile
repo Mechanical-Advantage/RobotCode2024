@@ -11,14 +11,14 @@ vts:
     COPY --chmod=001 build_casadi.sh .
     RUN ./build_casadi.sh
 
-    COPY trajoptlib-CMakeLists.txt .
+    COPY --chmod=755 trajoptlib-CMakeLists.txt .
     COPY --chmod=001 build_trajoptlib.sh .
     RUN ./build_trajoptlib.sh
 
     WORKDIR vts
-    COPY src src
-    COPY proto proto
-    COPY CMakeLists.txt CMakeLists.txt
+    COPY --chmod=755 src src
+    COPY --chmod=755 proto proto
+    COPY --chmod=755 CMakeLists.txt CMakeLists.txt
     COPY --chmod=001 build_vts.sh build_vts.sh
     RUN ./build_vts.sh
 

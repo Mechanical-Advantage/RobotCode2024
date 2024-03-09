@@ -51,12 +51,10 @@ public class DriveTrajectories {
           FieldConstants.startingLineX - 0.5,
           FieldConstants.StagingLocations.spikeTranslations[2].getY(),
           Rotation2d.fromDegrees(180.0));
-  public static final Pose2d startingLineSpike12 =
+  public static final Pose2d startingLineSpike1 =
       new Pose2d(
           FieldConstants.startingLineX - 0.5,
-          (FieldConstants.StagingLocations.spikeTranslations[1].getY()
-                  + FieldConstants.StagingLocations.spikeTranslations[2].getY())
-              / 2.0,
+          FieldConstants.StagingLocations.spikeTranslations[1].getY(),
           Rotation2d.fromDegrees(180.0));
 
   static {
@@ -200,6 +198,78 @@ public class DriveTrajectories {
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+  }
+
+  static {
+    // Davis Unusual Auto (S1 -> C23 -> S2)
+    Pose2d spike1ShootingPose =
+        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]);
+    Pose2d underStageShootingPose =
+        getShootingPose(
+            FieldConstants.Stage.podiumLeg
+                .interpolate(FieldConstants.Stage.ampLeg, 0.5)
+                .getTranslation()
+                .plus(new Translation2d(-0.3, 0.2)));
+    Translation2d stageAmpInsideAvoidance =
+        new Translation2d(
+            FieldConstants.Stage.ampLeg.getX(),
+            FieldConstants.StagingLocations.centerlineTranslations[2].getY());
+    Translation2d stageAmpOutsideAvoidance =
+        FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.1, 1.0));
+    Translation2d spike2Pass =
+        FieldConstants.StagingLocations.spikeTranslations[2].plus(new Translation2d(0.5, -1.0));
+    Translation2d spike2PassFront = spike2Pass.plus(new Translation2d(-1.0, 0.0));
+    Pose2d spike2FrontShootingPose =
+        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
+            .transformBy(GeomUtil.toTransform2d(0.5, 0.0));
+    Pose2d spike2ShootingPose =
+        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
+            .transformBy(GeomUtil.toTransform2d(0.1, 0.0));
+
+    paths.put(
+        "davisUnusualAuto_grabSpike1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingLineSpike1)
+                .addPoseWaypoint(spike1ShootingPose)
+                .build()));
+    paths.put(
+        "davisUnusualAuto_grabCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(spike1ShootingPose)
+                .addTranslationWaypoint(stageAmpInsideAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(180.0))
+                        .transformBy(GeomUtil.toTransform2d(0.1, 0.0)))
+                .addTranslationWaypoint(stageAmpInsideAvoidance)
+                .addPoseWaypoint(underStageShootingPose)
+                .build()));
+    paths.put(
+        "davisUnusualAuto_grabCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(underStageShootingPose)
+                .addTranslationWaypoint(stageAmpOutsideAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(160.0))
+                        .transformBy(GeomUtil.toTransform2d(0.1, 0.2)))
+                .addTranslationWaypoint(stageAmpOutsideAvoidance)
+                .addTranslationWaypoint(spike2Pass)
+                .addTranslationWaypoint(spike2PassFront)
+                .addPoseWaypoint(spike2FrontShootingPose)
+                .build()));
+    paths.put(
+        "davisUnusualAuto_grabSpike2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(spike2FrontShootingPose)
+                .addPoseWaypoint(spike2ShootingPose)
                 .build()));
   }
 

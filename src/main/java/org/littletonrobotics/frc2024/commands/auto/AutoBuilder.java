@@ -320,4 +320,52 @@ public class AutoBuilder {
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
   }
+
+  public Command davisUnusualAuto() {
+    var grabSpike1 = new HolonomicTrajectory("davisUnusualAuto_grabSpike1");
+    var grabCenterline2 = new HolonomicTrajectory("davisUnusualAuto_grabCenterline2");
+    var grabCenterline3 = new HolonomicTrajectory("davisUnusualAuto_grabCenterline3");
+    var grabSpike2 = new HolonomicTrajectory("davisUnusualAuto_grabSpike2");
+
+    final double preloadDelay = 1.0;
+    final double spikeIntakeDelay = 0.05;
+    final double spike1AimDelay = 0.62;
+
+    Timer autoTimer = new Timer();
+    return Commands.parallel(
+            Commands.sequence(
+                resetPose(DriveTrajectories.startingLineSpike1),
+                Commands.waitSeconds(preloadDelay),
+                followTrajectory(drive, grabSpike1),
+                Commands.waitSeconds(shootTimeoutSecs.get()),
+                followTrajectory(drive, grabCenterline2),
+                followTrajectory(drive, grabCenterline3),
+                followTrajectory(drive, grabSpike2)),
+            Commands.sequence(
+                // Shoot preload
+                Commands.waitUntil(flywheels::atGoal)
+                    .andThen(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                            .until(() -> autoTimer.hasElapsed(preloadDelay)))
+                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+
+                // Intake spike
+                Commands.parallel(
+                        superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                        rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                    .until(
+                        () ->
+                            autoTimer.hasElapsed(
+                                preloadDelay + grabSpike1.getDuration() + spikeIntakeDelay)),
+
+                // Shoot spike 1
+                Commands.parallel(
+                    superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                    Commands.waitSeconds(spike1AimDelay)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)))))
+        .deadlineWith(flywheels.shootCommand()) // Run flywheels
+        .beforeStarting(autoTimer::restart)
+        .finallyDo(autoTimer::stop);
+  }
 }

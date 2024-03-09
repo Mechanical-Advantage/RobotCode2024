@@ -374,10 +374,10 @@ public class RobotContainer {
                         new Pose2d(
                             new Translation2d(),
                             AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
-    //    autoChooser.addOption("N4 S012", autoBuilder.N4_S012());
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
     autoChooser.addOption("Source FRC6328 Auto", autoBuilder.sourceFRC6328Auto());
+    autoChooser.addOption("Center Spike Auto", autoBuilder.centerSpike());
 
     // Set up feedforward characterization
     autoChooser.addOption(

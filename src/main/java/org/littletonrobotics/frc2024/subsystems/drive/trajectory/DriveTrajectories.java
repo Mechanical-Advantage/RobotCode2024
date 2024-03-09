@@ -60,6 +60,14 @@ public class DriveTrajectories {
               / 2.0,
           Rotation2d.fromDegrees(180.0));
 
+  // Shooting positions
+  public static final Pose2d spike0ShootingPose =
+      getShootingPose(FieldConstants.StagingLocations.spikeTranslations[0]);
+  public static final Pose2d spike1ShootingPose =
+      getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]);
+  public static final Pose2d spike2ShootingPose =
+      getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]);
+
   static {
     // Davis Ethical Auto (4 Note)
     Pose2d stageRightShootingPose =
@@ -135,8 +143,6 @@ public class DriveTrajectories {
                 .build()));
 
     // Davis Alternative Auto (5 Note)
-    Pose2d spike2ShootingPose =
-        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]);
     Pose2d stageLeftShootingPose =
         getShootingPose(
             FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.7, 1.15)));
@@ -208,11 +214,6 @@ public class DriveTrajectories {
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));
 
-    Pose2d spike0ShootingPose =
-        getShootingPose(
-            new Translation2d(
-                FieldConstants.StagingLocations.spikeTranslations[0].getX(),
-                FieldConstants.StagingLocations.spikeTranslations[0].getY()));
     paths.put(
         "sourceFRC6328_grabSpike0",
         List.of(
@@ -273,6 +274,17 @@ public class DriveTrajectories {
                         FieldConstants.Stage.podiumLeg
                             .getTranslation()
                             .plus(new Translation2d(0.5, 2.5))))
+                .build()));
+
+    paths.put(
+        "centerSpike_grabSpike0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingCenterFace)
+                .addPoseWaypoint(
+                    spike0ShootingPose.transformBy(new Translation2d(0.8, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    spike0ShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
                 .build()));
   }
 

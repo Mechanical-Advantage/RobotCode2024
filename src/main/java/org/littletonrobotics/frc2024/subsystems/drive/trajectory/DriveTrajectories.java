@@ -274,6 +274,62 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
                 .build()));
+
+    // Davis Unusual Auto Flipped (S2 -> C32 -> S1)
+    spike2IntakePose = new Pose2d(FieldConstants.StagingLocations.spikeTranslations[2], Rotation2d.fromDegrees(180.0)).transformBy(GeomUtil.toTransform2d(0.1, 0.0));
+    Pose2d spike1SideShootingPose = getShootingPose(
+            FieldConstants.StagingLocations.spikeTranslations[1].plus(new Translation2d(-0.2, 0.8)));
+    Pose2d spike1IntakePose = new Pose2d(
+            FieldConstants.StagingLocations.spikeTranslations[1],
+            spike1SideShootingPose.getTranslation()
+                    .minus(FieldConstants.StagingLocations.spikeTranslations[1])
+                    .getAngle())
+            .transformBy(GeomUtil.toTransform2d(0.4, 0.0));
+    paths.put(
+            "davisUnusualAutoFlipped_grabSpike2",
+            List.of(
+                    PathSegment.newBuilder()
+                            .addPoseWaypoint(getShootingPose(startingLineSpike2.getTranslation()))
+                            .addPoseWaypoint(spike2IntakePose)
+                            .build()));
+    paths.put(
+            "davisUnusualAutoFlipped_grabCenterline3",
+            List.of(PathSegment.newBuilder()
+                            .addPoseWaypoint(getShootingPose(spike2IntakePose.getTranslation()))
+                            .addPoseWaypoint(new Pose2d(
+                                    FieldConstants.StagingLocations.centerlineTranslations[3],
+                                    Rotation2d.fromDegrees(-150.0))
+                                    .transformBy(GeomUtil.toTransform2d(0.2, 0)))
+                            .addPoseWaypoint(new Pose2d(
+                                    FieldConstants.StagingLocations.centerlineTranslations[3],
+                                    Rotation2d.fromDegrees(170))
+                                    .transformBy(GeomUtil.toTransform2d(0.15, 0.0)))
+                            .addTranslationWaypoint(stageAmpInsideAvoidance.plus(new Translation2d(0.0, -0.2)))
+                            .addPoseWaypoint(underStageShootingPose)
+                    .build()));
+    paths.put(
+            "davisUnusualAutoFlipped_grabCenterline2",
+            List.of(
+                    PathSegment.newBuilder()
+                            .addPoseWaypoint(underStageShootingPose)
+                            .addTranslationWaypoint(stageAmpInsideAvoidance)
+                            .addPoseWaypoint(
+                                    new Pose2d(
+                                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                                            Rotation2d.fromDegrees(180.0))
+                                            .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
+                            .addTranslationWaypoint(stageAmpInsideAvoidance)
+                            .addTranslationWaypoint(underStageShootingPose.getTranslation().plus(new Translation2d(0.3, 0.4)))
+                            .addPoseWaypoint(spike1SideShootingPose)
+                            .build()));
+    paths.put(
+            "davisUnusualAutoFlipped_grabSpike1",
+            List.of(
+                    PathSegment.newBuilder()
+                            .addPoseWaypoint(spike1SideShootingPose)
+                            .addPoseWaypoint(spike1IntakePose)
+                            .addPoseWaypoint(getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1]))
+                            .build()));
   }
 
   // calculate Pose2d of robot given a translation

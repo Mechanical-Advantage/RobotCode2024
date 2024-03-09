@@ -456,4 +456,18 @@ public class AutoBuilder {
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
   }
+
+  public Command davisUnusualAutoFlipped() {
+    var grabSpike2 = new HolonomicTrajectory("davisUnusualAutoFlipped_grabSpike2");
+    var grabCenterline3 = new HolonomicTrajectory("davisUnusualAutoFlipped_grabCenterline3");
+    var grabCenterline2 = new HolonomicTrajectory("davisUnusualAutoFlipped_grabCenterline2");
+    var grabSpike1 = new HolonomicTrajectory("davisUnusualAutoFlipped_grabSpike1");
+
+    return Commands.sequence(
+            resetPose(grabSpike2),
+            followTrajectory(drive, grabSpike2),
+            followTrajectory(drive, grabCenterline3),
+            followTrajectory(drive, grabCenterline2),
+            followTrajectory(drive, grabSpike1));
+  }
 }

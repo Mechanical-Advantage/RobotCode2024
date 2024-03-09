@@ -34,11 +34,11 @@ public class AutoAlignController {
   private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("AutoAlign/thetakD", 0.0);
   private static final LoggedTunableNumber linearTolerance =
-      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.05);
+      new LoggedTunableNumber("AutoAlign/controllerLinearTolerance", 0.08);
   private static final LoggedTunableNumber thetaTolerance =
       new LoggedTunableNumber("AutoAlign/controllerThetaTolerance", Units.degreesToRadians(2.0));
   private static final LoggedTunableNumber toleranceTime =
-      new LoggedTunableNumber("AutoAlign/controllerToleranceSecs", 0.4);
+      new LoggedTunableNumber("AutoAlign/controllerToleranceSecs", 0.5);
   private static final LoggedTunableNumber maxLinearVelocity =
       new LoggedTunableNumber(
           "AutoAlign/maxLinearVelocity", DriveConstants.driveConfig.maxLinearVelocity());

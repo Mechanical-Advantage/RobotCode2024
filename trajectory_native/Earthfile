@@ -9,29 +9,25 @@ apk-deps:
 
 ipopt:
     FROM +apk-deps
-    ENV CC=clang
-    ENV CXX=clang++
     RUN apk add --no-cache --update clang make patch gfortran
     RUN mkdir ipopt-mumps-build
     WORKDIR ipopt-mumps-build
     RUN wget -c https://github.com/coin-or-tools/ThirdParty-Mumps/archive/refs/tags/releases/3.0.5.tar.gz -O - | tar -xz
     WORKDIR ThirdParty-Mumps-releases-3.0.5
     RUN ./get.Mumps
-    RUN ./configure
-    RUN make -j8
+    RUN CC=clang CXX=clang++ ./configure
+    RUN CC=clang CXX=clang++ make -j8
     # Install to both system (for subsequent ipopt build) and installroot (to copy out as artifacts)
-    RUN make install
-    RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
+    RUN CC=clang CXX=clang++ make install
+    RUN CC=clang CXX=clang++ make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
     WORKDIR ..
 
     RUN wget -c https://github.com/coin-or/Ipopt/archive/refs/tags/releases/3.14.14.tar.gz -O - | tar -xz
     RUN mkdir Ipopt-releases-3.14.14/build
     WORKDIR Ipopt-releases-3.14.14/build
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN ../configure
-    RUN make -j8
-    RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
+    RUN CC=clang CXX=clang++ ../configure
+    RUN CC=clang CXX=clang++ make -j8
+    RUN CC=clang CXX=clang++ make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
     SAVE ARTIFACT /RobotCode2024/trajectory_native/ipopt-mumps-build/installroot
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-ipopt:latest
 
@@ -42,11 +38,9 @@ casadi:
     RUN mkdir casadi-3.6.4/build
     WORKDIR casadi-3.6.4/build
     RUN apk add --no-cache --update clang make cmake
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN cmake -DWITH_IPOPT=ON -DWITH_DEEPBIND=OFF -DWITH_BUILD_TINYXML=OFF ..
-    RUN make -j8
-    RUN make DESTDIR=$(pwd)/installroot install
+    RUN CC=clang CXX=clang++ cmake -DWITH_IPOPT=ON -DWITH_DEEPBIND=OFF -DWITH_BUILD_TINYXML=OFF ..
+    RUN CC=clang CXX=clang++ make -j8
+    RUN CC=clang CXX=clang++ make DESTDIR=$(pwd)/installroot install
     SAVE ARTIFACT installroot
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-casadi:latest
 
@@ -62,11 +56,9 @@ trajoptlib:
     RUN rm ../CMakeLists.txt
     COPY trajoptlib-CMakeLists.txt ../CMakeLists.txt
     RUN apk add --no-cache --update clang make cmake git
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN cmake -DOPTIMIZER_BACKEND=casadi ..
-    RUN make -j8
-    RUN make DESTDIR=$(pwd)/installroot install
+    RUN CC=clang CXX=clang++ cmake -DOPTIMIZER_BACKEND=casadi ..
+    RUN CC=clang CXX=clang++ make -j8
+    RUN CC=clang CXX=clang++ make DESTDIR=$(pwd)/installroot install
     SAVE ARTIFACT installroot
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-trajoptlib:latest
 
@@ -76,8 +68,8 @@ dev-image:
     COPY +casadi/installroot/usr/local /usr/local/
     COPY +trajoptlib/installroot/usr/local /usr/local/
     RUN apk add --no-cache --update clang make cmake git gdb nlohmann-json fmt-dev
-    ENV CC=clang
-    ENV CXX=clang++
+    ENV CC="clang"
+    ENV CXX="clang++"
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-dev-image:latest
 
 vts:
@@ -87,10 +79,8 @@ vts:
     COPY CMakeLists.txt CMakeLists.txt
     RUN mkdir build
     WORKDIR build
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN cmake ..
-    RUN make -j8
+    RUN CC=clang CXX=clang++ cmake ..
+    RUN CC=clang CXX=clang++ make -j8
     EXPOSE 56328
     ENV GRPC_VERBOSITY=info
     ENTRYPOINT ["./trajectory_native"]

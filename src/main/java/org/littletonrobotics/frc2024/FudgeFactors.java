@@ -11,9 +11,7 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import lombok.Builder;
 
-/**
- * Fudge factors for critical field locations which can be tuned per alliance at events.
- */
+/** Fudge factors for critical field locations which can be tuned per alliance at events. */
 public final class FudgeFactors {
   @Builder
   public static class FudgedTransform {

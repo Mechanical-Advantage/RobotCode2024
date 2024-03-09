@@ -11,6 +11,8 @@ import static org.littletonrobotics.frc2024.util.Alert.AlertType;
 
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.hal.AllianceStationID;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Threads;
@@ -30,7 +32,6 @@ import java.util.function.BiConsumer;
 import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
-import org.littletonrobotics.frc2024.util.BatteryTracker;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -57,11 +58,18 @@ public class Robot extends LoggedRobot {
   private RobotContainer robotContainer;
   private double autoStart;
   private boolean autoMessagePrinted;
-  private boolean batteryNameWritten = false;
   private final Timer disabledTimer = new Timer();
   private final Timer canErrorTimer = new Timer();
   private final Timer canInitialErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
+
+  private static final String defaultBatteryName = "BAT-0000-000";
+  private final StringSubscriber batteryNameSubscriber =
+      NetworkTableInstance.getDefault()
+          .getStringTopic("/battery_name")
+          .subscribe(defaultBatteryName);
+  private boolean batteryNameChecked = false;
+  private boolean batteryNameWritten = false;
 
   private final Alert canErrorAlert =
       new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
@@ -82,9 +90,6 @@ public class Robot extends LoggedRobot {
   public void robotInit() {
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
-    System.out.println("[Init] Scanning battery");
-    Logger.recordMetadata("BatteryName", "BAT-" + BatteryTracker.scanBattery(1.5));
-    System.out.println("[Init] Starting AdvantageKit");
     Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
     Logger.recordMetadata("RuntimeType", getRuntimeType().toString());
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -167,30 +172,6 @@ public class Robot extends LoggedRobot {
     canivoreErrorTimer.restart();
     disabledTimer.restart();
 
-    // Check for battery alert
-    if (Constants.getMode() == Mode.REAL
-        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)) {
-      File file = new File(batteryNameFile);
-      if (file.exists()) {
-        // Read previous battery name
-        String previousBatteryName = "";
-        try {
-          previousBatteryName =
-              new String(Files.readAllBytes(Paths.get(batteryNameFile)), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-        if (previousBatteryName.equals(BatteryTracker.getName())) {
-          // Same battery, set alert
-          sameBatteryAlert.set(true);
-          Leds.getInstance().sameBattery = true;
-        } else {
-          // New battery, delete file
-          file.delete();
-        }
-      }
-    }
-
     RobotController.setBrownoutVoltage(6.0);
 
     // Instantiate our RobotContainer. This will perform all our button bindings,
@@ -234,6 +215,7 @@ public class Robot extends LoggedRobot {
     // Robot container periodic methods
     robotContainer.checkControllers();
     robotContainer.updateDashboardOutputs();
+    robotContainer.updateAprilTagAlert();
 
     // Update NoteVisualizer
     NoteVisualizer.showHeldNotes();
@@ -275,18 +257,44 @@ public class Robot extends LoggedRobot {
       Leds.getInstance().lowBatteryAlert = true;
     }
 
-    // Write battery name if connected to field
-    if (Constants.getMode() == Mode.REAL
-        && !batteryNameWritten
-        && !BatteryTracker.getName().equals(BatteryTracker.defaultName)
-        && DriverStation.isFMSAttached()) {
-      batteryNameWritten = true;
-      try {
-        FileWriter fileWriter = new FileWriter(batteryNameFile);
-        fileWriter.write(BatteryTracker.getName());
-        fileWriter.close();
-      } catch (IOException e) {
-        e.printStackTrace();
+    // Update battery alert
+    String batteryName = batteryNameSubscriber.get();
+    Logger.recordOutput("BatteryName", batteryName);
+    if (Constants.getMode() == Mode.REAL && !batteryName.equals(defaultBatteryName)) {
+      // Check for battery alert
+      if (!batteryNameChecked) {
+        batteryNameChecked = true;
+        File file = new File(batteryNameFile);
+        if (file.exists()) {
+          // Read previous battery name
+          String previousBatteryName = "";
+          try {
+            previousBatteryName =
+                new String(Files.readAllBytes(Paths.get(batteryNameFile)), StandardCharsets.UTF_8);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          if (previousBatteryName.equals(batteryName)) {
+            // Same battery, set alert
+            sameBatteryAlert.set(true);
+            Leds.getInstance().sameBattery = true;
+          } else {
+            // New battery, delete file
+            file.delete();
+          }
+        }
+      }
+
+      // Write battery name if connected to FMS
+      if (!batteryNameWritten && DriverStation.isFMSAttached()) {
+        batteryNameWritten = true;
+        try {
+          FileWriter fileWriter = new FileWriter(batteryNameFile);
+          fileWriter.write(batteryName);
+          fileWriter.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
     }
 

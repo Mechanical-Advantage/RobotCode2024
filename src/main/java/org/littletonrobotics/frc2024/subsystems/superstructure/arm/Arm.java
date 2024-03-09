@@ -101,6 +101,7 @@ public class Arm {
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
+  @AutoLogOutput @Setter private double currentCompensation = 0.0;
   private TrapezoidProfile.Constraints currentConstraints = maxProfileConstraints.get();
   private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
@@ -188,7 +189,8 @@ public class Arm {
               setpointState,
               new TrapezoidProfile.State(
                   MathUtil.clamp(
-                      goal.getRads(),
+                      goal.getRads()
+                          + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0),
                       Units.degreesToRadians(lowerLimitDegrees.get()),
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));

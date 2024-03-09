@@ -378,7 +378,8 @@ public class RobotContainer {
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
     autoChooser.addOption("Source FRC6328 Auto", autoBuilder.sourceFRC6328Auto());
-    autoChooser.addOption("Center Spike Auto", autoBuilder.centerSpike());
+    autoChooser.addOption("Center Spike Auto", autoBuilder.centerSpikeAuto());
+    autoChooser.addOption("Amp Spike Auto", autoBuilder.ampSpikeAuto());
 
     // Set up feedforward characterization
     autoChooser.addOption(

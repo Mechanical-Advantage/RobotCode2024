@@ -117,9 +117,9 @@ public class RobotContainer {
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =
-      new LoggedDashboardNumber("Endgame alert 1", 30.0);
+      new LoggedDashboardNumber("Endgame Alert #1", 30.0);
   private final LoggedDashboardNumber endgameAlert2 =
-      new LoggedDashboardNumber("Endgame alert 2", 10.0);
+      new LoggedDashboardNumber("Endgame Alert #2", 15.0);
 
   private boolean podiumShotMode = false;
   private boolean trapScoreMode = true;

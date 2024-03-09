@@ -85,7 +85,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
  */
 @ExtensionMethod({DoublePressTracker.class})
 public class RobotContainer {
-  // Load robot state
+  // Load static objects
   private final RobotState robotState = RobotState.getInstance();
   private final Leds leds = Leds.getInstance();
 
@@ -297,11 +297,11 @@ public class RobotContainer {
     arm.setOverrides(armDisable, () -> armCoastOverride);
     climber.setCoastOverride(() -> armCoastOverride);
     backpackActuator.setCoastOverride(() -> armCoastOverride);
-    RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
+    robotState.setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
         () -> {
           return DriverStation.isTeleopEnabled()
-              && RobotState.getInstance()
+              && robotState
                       .getEstimatedPose()
                       .getTranslation()
                       .getDistance(
@@ -334,14 +334,14 @@ public class RobotContainer {
                     () -> {
                       driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
                       operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      Leds.getInstance().endgameAlert = true;
+                      leds.endgameAlert = true;
                     }),
                 Commands.waitSeconds(time),
                 Commands.runOnce(
                     () -> {
                       driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
                       operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      Leds.getInstance().endgameAlert = false;
+                      leds.endgameAlert = false;
                     }));
     new Trigger(
             () ->
@@ -370,11 +370,10 @@ public class RobotContainer {
         "Do Nothing",
         Commands.runOnce(
             () ->
-                RobotState.getInstance()
-                    .resetPose(
-                        new Pose2d(
-                            new Translation2d(),
-                            AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
+                robotState.resetPose(
+                    new Pose2d(
+                        new Translation2d(),
+                        AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
@@ -443,14 +442,13 @@ public class RobotContainer {
                 Commands.none(),
                 Commands.startEnd(
                     () ->
-                        drive.setHeadingGoal(
-                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
     Trigger inWing =
         new Trigger(
             () ->
-                AllianceFlipUtil.apply(RobotState.getInstance().getEstimatedPose().getX())
+                AllianceFlipUtil.apply(robotState.getEstimatedPose().getX())
                     < FieldConstants.wingX);
     driver
         .a()
@@ -548,7 +546,7 @@ public class RobotContainer {
           var finalPose =
               ampCenterRotated.transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0));
           double distance =
-              RobotState.getInstance()
+              robotState
                   .getEstimatedPose()
                   .getTranslation()
                   .getDistance(finalPose.getTranslation());
@@ -585,9 +583,7 @@ public class RobotContainer {
                             () -> {
                               if (autoDriveDisable.getAsBoolean()) return true;
                               Pose2d poseError =
-                                  RobotState.getInstance()
-                                      .getEstimatedPose()
-                                      .relativeTo(ampAlignedPose.get());
+                                  robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
                               return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
                                   && Math.abs(poseError.getRotation().getDegrees()) <= 120;
                             })
@@ -621,14 +617,14 @@ public class RobotContainer {
     operator
         .povUp()
         .whileTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
+            Commands.runOnce(() -> robotState.adjustShotCompensationDegrees(0.1))
                 .andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true)
                 .repeatedly());
     operator
         .povDown()
         .whileTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
+            Commands.runOnce(() -> robotState.adjustShotCompensationDegrees(-0.1))
                 .andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true)
                 .repeatedly());
@@ -667,10 +663,7 @@ public class RobotContainer {
     // Request amp
     operator
         .b()
-        .whileTrue(
-            Commands.startEnd(
-                () -> Leds.getInstance().requestAmp = true,
-                () -> Leds.getInstance().requestAmp = false));
+        .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
     operator.a().whileTrue(rollers.shuffle());
@@ -735,7 +728,7 @@ public class RobotContainer {
   public void updateDashboardOutputs() {
     SmartDashboard.putString(
         "Shot Compensation Degrees",
-        String.format("%.1f", RobotState.getInstance().getShotCompensationDegrees()));
+        String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
     SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
   }

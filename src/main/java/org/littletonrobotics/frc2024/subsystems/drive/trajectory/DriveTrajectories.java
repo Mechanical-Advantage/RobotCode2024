@@ -274,14 +274,6 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[1])
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
-                //                .addTranslationWaypoint(
-                //                    new Translation2d(
-                //                        FieldConstants.startingLineX,
-                //
-                // (FieldConstants.StagingLocations.spikeTranslations[2].getY()
-                //                                +
-                // FieldConstants.StagingLocations.spikeTranslations[1].getY())
-                //                            / 2))
                 .build()));
     paths.put(
         "sourceFRC6328_grabSpike2",
@@ -296,15 +288,6 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
-                //                .addPoseWaypoint(
-                //                    getShootingPose(
-                //                        new Translation2d(
-                //                            FieldConstants.startingLineX,
-                //
-                // (FieldConstants.StagingLocations.spikeTranslations[2].getY()
-                //                                    +
-                // FieldConstants.StagingLocations.spikeTranslations[1].getY())
-                //                                / 2)))
                 .build()));
   }
 

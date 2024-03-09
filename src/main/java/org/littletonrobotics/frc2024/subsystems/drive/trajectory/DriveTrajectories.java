@@ -217,15 +217,18 @@ public class DriveTrajectories {
             FieldConstants.StagingLocations.centerlineTranslations[2].getY());
     Translation2d stageAmpOutsideAvoidance =
         FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.1, 1.0));
-    Translation2d spike2Pass =
-        FieldConstants.StagingLocations.spikeTranslations[2].plus(new Translation2d(0.5, -1.0));
-    Translation2d spike2PassFront = spike2Pass.plus(new Translation2d(-1.0, 0.0));
-    Pose2d spike2FrontShootingPose =
-        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
-            .transformBy(GeomUtil.toTransform2d(0.5, 0.0));
-    Pose2d spike2ShootingPose =
-        getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2])
-            .transformBy(GeomUtil.toTransform2d(0.1, 0.0));
+    Pose2d spike2SideShootingPose =
+        getShootingPose(
+            FieldConstants.StagingLocations.spikeTranslations[2].plus(
+                new Translation2d(-0.4, -0.8)));
+    Pose2d spike2IntakePose =
+        new Pose2d(
+                FieldConstants.StagingLocations.spikeTranslations[2],
+                spike2SideShootingPose
+                    .getTranslation()
+                    .minus(FieldConstants.StagingLocations.spikeTranslations[2])
+                    .getAngle())
+            .transformBy(GeomUtil.toTransform2d(0.3, 0.0));
 
     paths.put(
         "davisUnusualAuto_grabSpike1",
@@ -260,16 +263,16 @@ public class DriveTrajectories {
                             Rotation2d.fromDegrees(160.0))
                         .transformBy(GeomUtil.toTransform2d(0.1, 0.2)))
                 .addTranslationWaypoint(stageAmpOutsideAvoidance)
-                .addTranslationWaypoint(spike2Pass)
-                .addTranslationWaypoint(spike2PassFront)
-                .addPoseWaypoint(spike2FrontShootingPose)
+                .addPoseWaypoint(spike2SideShootingPose)
                 .build()));
     paths.put(
         "davisUnusualAuto_grabSpike2",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(spike2FrontShootingPose)
-                .addPoseWaypoint(spike2ShootingPose)
+                .addPoseWaypoint(spike2SideShootingPose)
+                .addPoseWaypoint(spike2IntakePose)
+                .addPoseWaypoint(
+                    getShootingPose(FieldConstants.StagingLocations.spikeTranslations[2]))
                 .build()));
   }
 

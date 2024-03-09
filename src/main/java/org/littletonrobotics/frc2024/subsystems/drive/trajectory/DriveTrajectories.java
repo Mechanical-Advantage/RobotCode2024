@@ -345,13 +345,37 @@ public class DriveTrajectories {
                 .build()));
 
     // N5_S01_C2_S2
-    /*paths.put("N5_S01_C2_S2"),
-    List.of(
+    paths.put(
+        "N5_S01_C2_S2_grabCenterline2",
+        List.of(
             PathSegment.newBuilder()
-                    .addWaypoints(getLastWaypoint("sourceFRC6328_grabSpike1"))
-                    .addPoseWaypoint()
+                .addWaypoints(getLastWaypoint("sourceFRC6328_grabSpike1"))
+                .addTranslationWaypoint(
+                    new Translation2d(
+                        stageCenterAvoidance.getX(),
+                        FieldConstants.StagingLocations.centerlineTranslations[2].getY()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(180))
+                        .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
+                .addTranslationWaypoint(
+                    new Translation2d(
+                        stageCenterAvoidance.getX(),
+                        FieldConstants.StagingLocations.centerlineTranslations[2].getY()))
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
 
-    )*/
+    paths.put(
+        "N5_S01_C2_S2_grabSpike2",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("N5_S01_C2_S2_grabCenterline2"))
+                .addTranslationWaypoint(FieldConstants.StagingLocations.spikeTranslations[1])
+                .addPoseWaypoint(
+                    spike2ShootingPose.transformBy(new Translation2d(0.5, 0).toTransform2d()))
+                .addPoseWaypoint(spike2ShootingPose)
+                .build()));
   }
 
   // calculate Pose2d of robot given a translation

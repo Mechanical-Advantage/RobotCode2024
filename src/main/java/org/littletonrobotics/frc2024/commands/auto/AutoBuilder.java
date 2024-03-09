@@ -486,6 +486,55 @@ public class AutoBuilder {
                 .deadlineWith(flywheels.shootCommand()));
   }
 
+  public Command N5_S01_C2_S2() {
+    var grabSpike0 = new HolonomicTrajectory("sourceFRC6328_grabSpike0");
+    var grabSpike1 = new HolonomicTrajectory("sourceFRC6328_grabSpike1");
+    var grabCenterline2 = new HolonomicTrajectory("N5_S01_C2_S2_grabCenterline2");
+    var grabSpike2 = new HolonomicTrajectory("N5_S01_C2_S2_grabSpike2");
+
+    final double preloadDelay = 1.0;
+    final double spikeIntakeDelay = 0.3;
+    final double aimDelay = 0.45;
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.sequence(
+                resetPose(grabSpike0),
+                Commands.startEnd(
+                        () ->
+                            drive.setHeadingGoal(
+                                () ->
+                                    RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive::clearHeadingGoal)
+                    .withTimeout(preloadDelay),
+                followTrajectory(drive, grabSpike0),
+                Commands.startEnd(
+                        () ->
+                            drive.setHeadingGoal(
+                                () ->
+                                    RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive::clearHeadingGoal)
+                    .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
+                followTrajectory(drive, grabSpike1),
+                Commands.startEnd(
+                        () ->
+                            drive.setHeadingGoal(
+                                () ->
+                                    RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive::clearHeadingGoal)
+                    .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
+                followTrajectory(drive, grabCenterline2),
+                Commands.startEnd(
+                        () ->
+                            drive.setHeadingGoal(
+                                () ->
+                                    RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive::clearHeadingGoal)
+                    .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
+                followTrajectory(drive, grabSpike2)));
+  }
+
   public Command davisEthicalAuto() {
     var grabCenterline0 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline0");
     var grabCenterline1 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline1");

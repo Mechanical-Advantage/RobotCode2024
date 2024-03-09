@@ -57,14 +57,14 @@ public class Robot extends LoggedRobot {
   private boolean autoMessagePrinted;
   private boolean batteryNameWritten = false;
   private final Timer disabledTimer = new Timer();
-  private final Timer canErrorTimer = new Timer();
   private final Timer canInitialErrorTimer = new Timer();
+  private final Timer canErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
 
   private final Alert canErrorAlert =
       new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert canivoreErrorAlert =
-      new Alert("CANivore error detected, robot may no tbe controllable.", AlertType.ERROR);
+      new Alert("CANivore error detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert lowBatteryAlert =
       new Alert(
           "Battery voltage is very low, consider turning off the robot or replacing the battery.",
@@ -153,8 +153,8 @@ public class Robot extends LoggedRobot {
             });
 
     // Reset alert timers
-    canErrorTimer.restart();
     canInitialErrorTimer.restart();
+    canErrorTimer.restart();
     canivoreErrorTimer.restart();
     disabledTimer.restart();
 
@@ -245,13 +245,14 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
-      // Alerts
-      if (!canivoreStatus.Status.isOK()) {
+      if (!canivoreStatus.Status.isOK()
+          || canStatus.transmitErrorCount > 0
+          || canStatus.receiveErrorCount > 0) {
         canivoreErrorTimer.restart();
       }
       canivoreErrorAlert.set(
-          !canivoreStatus.Status.isOK()
-              || !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold));
+          !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold)
+              && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
     }
 
     // Low battery alert

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.FudgeFactors;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
@@ -38,16 +39,25 @@ public class ClimbingCommands {
   private static final LoggedTunableNumber chainToFront =
       new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.9);
 
-  private static final List<Pose2d> centeredClimbedPosesNoOffset =
+  private static final List<Supplier<Pose2d>> centeredClimbedPosesNoOffset =
       List.of(
-          Stage.centerPodiumAmpChain, Stage.centerAmpSourceChain, Stage.centerSourcePodiumChain);
+          () ->
+              Stage.centerPodiumAmpChain.transformBy(
+                  FudgeFactors.centerPodiumAmpChain.getTransform()),
+          () ->
+              Stage.centerAmpSourceChain.transformBy(
+                  FudgeFactors.centerAmpSourceChain.getTransform()),
+          () ->
+              Stage.centerSourcePodiumChain.transformBy(
+                  FudgeFactors.centerSourcePodiumChain.getTransform()));
 
   private static final Supplier<Pose2d> nearestClimbedPose =
       () -> {
         Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
         List<Pose2d> climbedPoses =
             centeredClimbedPosesNoOffset.stream()
-                .map(pose -> AllianceFlipUtil.apply(pose))
+                .map(Supplier::get)
+                .map(AllianceFlipUtil::apply)
                 .toList();
         return currentPose.nearest(climbedPoses);
       };

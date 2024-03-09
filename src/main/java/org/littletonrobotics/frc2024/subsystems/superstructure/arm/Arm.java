@@ -77,6 +77,7 @@ public class Arm {
     UNJAM_INTAKE(new LoggedTunableNumber("Arm/UnjamDegrees", 40.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
+    SUPER_POOP(new LoggedTunableNumber("Arm/SuperPoopDegrees", 48.0)),
     STOW(new LoggedTunableNumber("Arm/StowDegrees", 0.0)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
@@ -84,6 +85,7 @@ public class Arm {
     PREPARE_PREPARE_TRAP_CLIMB(new LoggedTunableNumber("Arm/PreparePrepareTrapClimbDegrees", 40.0)),
     PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 105.0)),
     CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
+    RESET_CLIMB(new LoggedTunableNumber("Arm/ResetClimbDegrees", 30.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
@@ -171,8 +173,8 @@ public class Arm {
     Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
 
     // Set coast mode with override
-    setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
-    Leds.getInstance().armCoast = coastSupplier.getAsBoolean() && disableSupplier.getAsBoolean();
+    setBrakeMode(!coastSupplier.getAsBoolean());
+    Leds.getInstance().armCoast = coastSupplier.getAsBoolean();
 
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing

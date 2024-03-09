@@ -24,6 +24,7 @@ public class Superstructure extends SubsystemBase {
     STOW,
     BACKPACK_OUT_UNJAM,
     AIM,
+    SUPER_POOP,
     INTAKE,
     UNJAM_INTAKE,
     STATION_INTAKE,
@@ -99,6 +100,11 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
+      case SUPER_POOP -> {
+        arm.setGoal(Arm.Goal.SUPER_POOP);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
       case INTAKE -> {
         arm.setGoal(Arm.Goal.FLOOR_INTAKE);
         climber.setGoal(Climber.Goal.IDLE);
@@ -120,8 +126,14 @@ public class Superstructure extends SubsystemBase {
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case RESET_CLIMB -> {
-        arm.setGoal(Arm.Goal.STOP);
-        climber.setGoal(Climber.Goal.IDLE);
+        arm.setGoal(Arm.Goal.RESET_CLIMB);
+        if (arm.atGoal()) {
+          // Retract and then stop
+          climber.setGoal(Climber.Goal.IDLE);
+        } else {
+          // Arm in unsafe state to retract, apply no current
+          climber.setGoal(Climber.Goal.STOP);
+        }
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case PREPARE_PREPARE_TRAP_CLIMB -> {

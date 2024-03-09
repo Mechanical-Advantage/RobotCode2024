@@ -7,15 +7,7 @@
 
 package org.littletonrobotics.frc2024;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.function.Supplier;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 
@@ -32,8 +24,6 @@ public final class Constants {
   private static RobotType robotType = RobotType.COMPBOT;
   public static final boolean tuningMode = false;
 
-  public static final AprilTagType aprilTagType = AprilTagType.OFFICIAL;
-
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {
       new Alert("Invalid robot selected, using competition robot as default.", AlertType.ERROR)
@@ -48,27 +38,6 @@ public final class Constants {
       case DEVBOT, COMPBOT -> RobotBase.isReal() ? Mode.REAL : Mode.REPLAY;
       case SIMBOT -> Mode.SIM;
     };
-  }
-
-  @Getter
-  @RequiredArgsConstructor
-  public enum AprilTagType {
-    OFFICIAL(() -> AprilTagFieldLayout.loadField(AprilTagFields.k2024Crescendo)),
-    WPI(
-        () -> {
-          if (disableHAL) return null;
-          try {
-            return new AprilTagFieldLayout(
-                Path.of(
-                    Filesystem.getDeployDirectory().getPath(),
-                    "apriltags",
-                    "2024-wpi-custom.json"));
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        });
-
-    private final Supplier<AprilTagFieldLayout> layoutSupplier;
   }
 
   public enum Mode {

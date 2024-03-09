@@ -75,6 +75,11 @@ public class ModuleIOSim implements ModuleIO {
   }
 
   @Override
+  public void runCharacterization(double input) {
+    runDriveVolts(input);
+  }
+
+  @Override
   public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
     runDriveVolts(
         driveFeedback.calculate(driveSim.getAngularVelocityRadPerSec(), velocityRadsPerSec)

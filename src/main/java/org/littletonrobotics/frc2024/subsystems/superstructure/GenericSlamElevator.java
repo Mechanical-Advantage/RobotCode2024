@@ -113,7 +113,8 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
         staticTimer.reset();
       }
       // If we are finished with timer, finish goal.
-      atGoal = staticTimer.hasElapsed(staticTimeSecs);
+      // Also assume we are at the goal if auto was started
+      atGoal = staticTimer.hasElapsed(staticTimeSecs) || DriverStation.isAutonomousEnabled();
     } else {
       staticTimer.stop();
       staticTimer.reset();
@@ -134,12 +135,16 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
       // Reset
       io.stop();
       lastGoal = null;
-      atGoal = false;
       staticTimer.stop();
       staticTimer.reset();
-      // Set to coast mode
-      setBrakeMode(!coastModeSupplier.getAsBoolean());
+      if (Math.abs(inputs.velocityRadsPerSec) > minVelocityThresh) {
+        // If we don't move when disabled, assume we are still at goal
+        atGoal = false;
+      }
     }
+
+    // Update coast mode
+    setBrakeMode(!coastModeSupplier.getAsBoolean());
 
     Logger.recordOutput("Superstructure/" + name + "/Goal", getGoal().toString());
   }

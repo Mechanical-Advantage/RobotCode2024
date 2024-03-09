@@ -43,11 +43,8 @@ public interface ModuleIO {
   /** Run turn motor at volts */
   default void runTurnVolts(double volts) {}
 
-  /** Run drive motor at current */
-  default void runDriveCurrent(double current) {}
-
-  /** Run turn motor at current */
-  default void runTurnCurrent(double current) {}
+  /** Run characterization input (amps or volts) into drive motor */
+  default void runCharacterization(double input) {}
 
   /** Run to drive velocity setpoint with feedforward */
   default void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {}

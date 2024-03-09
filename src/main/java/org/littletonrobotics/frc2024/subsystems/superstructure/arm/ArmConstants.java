@@ -60,7 +60,7 @@ public class ArmConstants {
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         case DEVBOT -> new Gains(75.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0);
-        case COMPBOT -> new Gains(50.0 * reduction, 0.0, 2.5 * reduction, 8.4, 0.0, 0.0, 22.9);
+        case COMPBOT -> new Gains(6000.0, 0.0, 250.0, 8.4, 0.0, 0.0, 22.9);
       };
 
   public static TrapezoidProfile.Constraints profileConstraints =

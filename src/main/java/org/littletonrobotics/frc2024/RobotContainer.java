@@ -7,6 +7,7 @@
 
 package org.littletonrobotics.frc2024;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -22,9 +23,12 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
 import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
 import org.littletonrobotics.frc2024.commands.StaticCharacterization;
@@ -81,7 +85,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
  */
 @ExtensionMethod({DoublePressTracker.class})
 public class RobotContainer {
-  // Load robot state
+  // Load static objects
   private final RobotState robotState = RobotState.getInstance();
   private final Leds leds = Leds.getInstance();
 
@@ -99,10 +103,13 @@ public class RobotContainer {
   private final Trigger robotRelative = overrides.driverSwitch(0);
   private final Trigger armDisable = overrides.driverSwitch(1);
   private final Trigger armCoast = overrides.driverSwitch(2);
+  private final Trigger aprilTagsSpeakerOnly = overrides.multiDirectionSwitchLeft();
+  private final Trigger aprilTagsAmpOnly = overrides.multiDirectionSwitchRight();
   private final Trigger shootPresets = overrides.operatorSwitch(0);
   private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
+  private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
@@ -110,16 +117,28 @@ public class RobotContainer {
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =
-      new LoggedDashboardNumber("Endgame alert 1", 30.0);
+      new LoggedDashboardNumber("Endgame Alert #1", 30.0);
   private final LoggedDashboardNumber endgameAlert2 =
-      new LoggedDashboardNumber("Endgame alert 2", 10.0);
+      new LoggedDashboardNumber("Endgame Alert #2", 15.0);
 
   private boolean podiumShotMode = false;
   private boolean trapScoreMode = true;
+  private boolean armCoastOverride = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
       new LoggedDashboardChooser<>("Auto Choices");
+
+  /** Returns the current AprilTag layout type. */
+  public AprilTagLayoutType getAprilTagLayoutType() {
+    if (aprilTagsSpeakerOnly.getAsBoolean()) {
+      return FieldConstants.AprilTagLayoutType.SPEAKERS_ONLY;
+    } else if (aprilTagsAmpOnly.getAsBoolean()) {
+      return FieldConstants.AprilTagLayoutType.AMPS_ONLY;
+    } else {
+      return FieldConstants.defaultAprilTagType;
+    }
+  }
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -146,10 +165,11 @@ public class RobotContainer {
                   new ModuleIOKrakenFOC(DriveConstants.moduleConfigs[3]));
           aprilTagVision =
               new AprilTagVision(
-                  new AprilTagVisionIONorthstar(0),
-                  new AprilTagVisionIONorthstar(1),
-                  new AprilTagVisionIONorthstar(2),
-                  new AprilTagVisionIONorthstar(3));
+                  this::getAprilTagLayoutType,
+                  new AprilTagVisionIONorthstar(this::getAprilTagLayoutType, 0),
+                  new AprilTagVisionIONorthstar(this::getAprilTagLayoutType, 1),
+                  new AprilTagVisionIONorthstar(this::getAprilTagLayoutType, 2),
+                  new AprilTagVisionIONorthstar(this::getAprilTagLayoutType, 3));
           flywheels = new Flywheels(new FlywheelsIOKrakenFOC());
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIOCompbot());
@@ -170,7 +190,9 @@ public class RobotContainer {
                   new ModuleIOSparkMax(DriveConstants.moduleConfigs[3]));
           aprilTagVision =
               new AprilTagVision(
-                  new AprilTagVisionIONorthstar(0), new AprilTagVisionIONorthstar(1));
+                  this::getAprilTagLayoutType,
+                  new AprilTagVisionIONorthstar(this::getAprilTagLayoutType, 0),
+                  new AprilTagVisionIONorthstar(this::getAprilTagLayoutType, 1));
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
@@ -215,14 +237,18 @@ public class RobotContainer {
         case COMPBOT ->
             aprilTagVision =
                 new AprilTagVision(
+                    this::getAprilTagLayoutType,
                     new AprilTagVisionIO() {},
                     new AprilTagVisionIO() {},
                     new AprilTagVisionIO() {},
                     new AprilTagVisionIO() {});
         case DEVBOT ->
             aprilTagVision =
-                new AprilTagVision(new AprilTagVisionIO() {}, new AprilTagVisionIO() {});
-        default -> aprilTagVision = new AprilTagVision();
+                new AprilTagVision(
+                    this::getAprilTagLayoutType,
+                    new AprilTagVisionIO() {},
+                    new AprilTagVisionIO() {});
+        default -> aprilTagVision = new AprilTagVision(this::getAprilTagLayoutType);
       }
     }
     if (flywheels == null) {
@@ -256,13 +282,26 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Set up subsystems
-    arm.setOverrides(armDisable, armCoast);
-    RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
-    climber.setCoastOverride(armCoast);
+    armCoast
+        .onTrue(
+            Commands.runOnce(
+                    () -> {
+                      if (DriverStation.isDisabled()) {
+                        armCoastOverride = true;
+                      }
+                    })
+                .ignoringDisable(true))
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    RobotModeTriggers.disabled()
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    arm.setOverrides(armDisable, () -> armCoastOverride);
+    climber.setCoastOverride(() -> armCoastOverride);
+    backpackActuator.setCoastOverride(() -> armCoastOverride);
+    robotState.setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
         () -> {
           return DriverStation.isTeleopEnabled()
-              && RobotState.getInstance()
+              && robotState
                       .getEstimatedPose()
                       .getTranslation()
                       .getDistance(
@@ -271,6 +310,7 @@ public class RobotContainer {
                   < Units.feetToMeters(25.0)
               && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
               && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
+              && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
               && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
               && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
               && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
@@ -282,9 +322,6 @@ public class RobotContainer {
     configureButtonBindings();
 
     // Alerts for constants
-    if (Constants.aprilTagType != Constants.AprilTagType.OFFICIAL) {
-      new Alert("Non-official AprilTag layout selected", AlertType.INFO).set(true);
-    }
     if (Constants.tuningMode) {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
@@ -323,15 +360,19 @@ public class RobotContainer {
         "Do Nothing",
         Commands.runOnce(
             () ->
-                RobotState.getInstance()
-                    .resetPose(
-                        new Pose2d(
-                            new Translation2d(),
-                            AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
+                robotState.resetPose(
+                    new Pose2d(
+                        new Translation2d(),
+                        AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
     // Set up feedforward characterization
+    autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
+            .finallyDo(drive::endCharacterization));
     autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
@@ -396,17 +437,32 @@ public class RobotContainer {
                 Commands.none(),
                 Commands.startEnd(
                     () ->
-                        drive.setHeadingGoal(
-                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
+    Trigger inWing =
+        new Trigger(
+            () ->
+                AllianceFlipUtil.apply(robotState.getEstimatedPose().getX())
+                    < FieldConstants.wingX);
     driver
         .a()
+        .and(inWing)
         .whileTrue(
             driveAimCommand
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
+    driver
+        .a()
+        .and(inWing.negate())
+        .whileTrue(
+            driveAimCommand
+                .get()
+                .alongWith(
+                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                    flywheels.superPoopCommand())
+                .withName("Super Poop"));
     Trigger readyToShoot =
         new Trigger(
             () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
@@ -422,6 +478,16 @@ public class RobotContainer {
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
     driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, true, false));
+
+    // Poop.
+    driver
+        .y()
+        .whileTrue(
+            flywheels
+                .poopCommand()
+                .alongWith(
+                    Commands.waitUntil(flywheels::atGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
 
     // ------------- Intake Controls -------------
     // Intake Floor
@@ -462,11 +528,17 @@ public class RobotContainer {
           Pose2d ampCenterRotated =
               AllianceFlipUtil.apply(
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
-          return ampCenterRotated.transformBy(
-              GeomUtil.toTransform2d(
-                  Units.inchesToMeters(20.0) // End of intake bumper to center robot
-                      + Units.inchesToMeters(9.0),
-                  0));
+          var finalPose =
+              ampCenterRotated
+                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0))
+                  .transformBy(FudgeFactors.amp.getTransform());
+          double distance =
+              robotState
+                  .getEstimatedPose()
+                  .getTranslation()
+                  .getDistance(finalPose.getTranslation());
+          double offsetT = MathUtil.clamp((distance - 0.5) / 2.5, 0.0, 1.0);
+          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.5, 0.0));
         };
     driver
         .b()
@@ -498,9 +570,7 @@ public class RobotContainer {
                             () -> {
                               if (autoDriveDisable.getAsBoolean()) return true;
                               Pose2d poseError =
-                                  RobotState.getInstance()
-                                      .getEstimatedPose()
-                                      .relativeTo(ampAlignedPose.get());
+                                  robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
                               return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
                                   && Math.abs(poseError.getRotation().getDegrees()) <= 120;
                             })
@@ -523,20 +593,10 @@ public class RobotContainer {
             () ->
                 superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
                     && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
-        .whileTrue(
+        .toggleOnTrue(
             Commands.either(
-                ClimbingCommands.autoDrive(
-                    false,
-                    drive,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    autoDriveDisable),
-                ClimbingCommands.autoDrive(
-                    true,
-                    drive,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    autoDriveDisable),
+                superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
+                Commands.none(), // No function yet
                 () -> trapScoreMode));
 
     // ------------- Operator Controls -------------
@@ -544,14 +604,14 @@ public class RobotContainer {
     operator
         .povUp()
         .whileTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
+            Commands.runOnce(() -> robotState.adjustShotCompensationDegrees(0.1))
                 .andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true)
                 .repeatedly());
     operator
         .povDown()
         .whileTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
+            Commands.runOnce(() -> robotState.adjustShotCompensationDegrees(-0.1))
                 .andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true)
                 .repeatedly());
@@ -563,6 +623,7 @@ public class RobotContainer {
     operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
     operator
         .leftBumper()
+        .doublePress()
         .and(() -> trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.climbNTrapSequence(
@@ -578,6 +639,7 @@ public class RobotContainer {
                 .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     operator
         .leftBumper()
+        .doublePress()
         .and(() -> !trapScoreMode)
         .toggleOnTrue(
             ClimbingCommands.simpleClimbSequence(
@@ -588,10 +650,7 @@ public class RobotContainer {
     // Request amp
     operator
         .b()
-        .whileTrue(
-            Commands.startEnd(
-                () -> Leds.getInstance().requestAmp = true,
-                () -> Leds.getInstance().requestAmp = false));
+        .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
     operator.a().whileTrue(rollers.shuffle());
@@ -682,9 +741,19 @@ public class RobotContainer {
   public void updateDashboardOutputs() {
     SmartDashboard.putString(
         "Shot Compensation Degrees",
-        String.format("%.1f", RobotState.getInstance().getShotCompensationDegrees()));
+        String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
     SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
+  }
+
+  /** Updates the AprilTag alert. */
+  public void updateAprilTagAlert() {
+    boolean active = getAprilTagLayoutType() != AprilTagLayoutType.OFFICIAL;
+    aprilTagLayoutAlert.set(active);
+    if (active) {
+      aprilTagLayoutAlert.setText(
+          "Non-official AprilTag layout in use (" + getAprilTagLayoutType().toString() + ").");
+    }
   }
 
   /**

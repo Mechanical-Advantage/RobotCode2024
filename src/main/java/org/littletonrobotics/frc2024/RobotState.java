@@ -54,27 +54,20 @@ public class RobotState {
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
 
   static {
-    armAngleMap.put(1.026639, 52.0);
-    armAngleMap.put(1.156125, 50.0);
-    armAngleMap.put(1.174623, 50.0);
-    armAngleMap.put(1.38735, 49.0);
-    armAngleMap.put(1.618575, 44.0);
-    armAngleMap.put(1.8498, 40.5);
-    armAngleMap.put(2.081025, 37.5);
-    armAngleMap.put(2.31225, 36.0);
-    armAngleMap.put(2.543475, 34.0);
-    armAngleMap.put(2.7747, 33.0);
-    armAngleMap.put(3.005925, 31.0);
-    armAngleMap.put(3.23715, 30.0);
-    armAngleMap.put(3.468375, 28.0);
-    armAngleMap.put(3.6996, 27.5);
-    armAngleMap.put(3.912327, 26.5);
-    armAngleMap.put(4.16205, 26.25);
-    armAngleMap.put(4.393275, 25.25);
-    armAngleMap.put(4.6245, 25.0);
-    armAngleMap.put(4.855725, 24.75);
-    armAngleMap.put(5.170191, 24.6);
-    armAngleMap.put(5.373669, 24.25);
+    armAngleMap.put(1.22, 52.5);
+    armAngleMap.put(1.39, 47.5);
+    armAngleMap.put(1.66, 43.5);
+    armAngleMap.put(2.0, 40.5);
+    armAngleMap.put(2.13, 38.5);
+    armAngleMap.put(2.51, 33.5);
+    armAngleMap.put(2.79, 31.5);
+    armAngleMap.put(2.94, 29.5);
+    armAngleMap.put(3.38, 26.5);
+    armAngleMap.put(3.75, 24.5);
+    armAngleMap.put(4.06, 23.7);
+    armAngleMap.put(4.42, 22.8);
+    armAngleMap.put(4.89, 22.0);
+    armAngleMap.put(5.2, 21.5);
   }
 
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
@@ -219,7 +212,8 @@ public class RobotState {
     Transform2d fieldToTarget =
         AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening)
             .toTranslation2d()
-            .toTransform2d();
+            .toTransform2d()
+            .plus(FudgeFactors.speaker.getTransform());
     Pose2d fieldToPredictedVehicle =
         lookaheadDisable.getAsBoolean()
             ? getEstimatedPose()

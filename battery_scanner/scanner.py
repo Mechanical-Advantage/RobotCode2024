@@ -1,11 +1,14 @@
 import serial
 import array
+import ntcore
 
 timeout = 5
 prefix = array.array('B', [0x02, 0x00, 0x00, 0x01, 0x00, 0x33, 0x31])
 scan_command = array.array('B',[0x7e, 0x00, 0x08, 0x01, 0x00, 0x02, 0x01, 0xab, 0xcd])
 name_length = 8
 response_length = len(prefix) + name_length
+nt_table = ntcore.NetworkTableInstance.getDefault().getTable(
+                "/" + config_store.local_config.device_id + "/output")
 
 with serial.Serial('COM3', 9600, timeout=timeout) as ser:
     
@@ -17,6 +20,7 @@ with serial.Serial('COM3', 9600, timeout=timeout) as ser:
             if response.startswith(prefix):
                 print(f'prefix matches {response.hex()}')
                 print(f"name: {response[-8:]}")
+                nt_table.append(f"Battery name: {response[-8]}")
                 
             else:
                 print(f'prefix doesnt match {response.hex()}')

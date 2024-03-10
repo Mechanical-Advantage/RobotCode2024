@@ -160,4 +160,26 @@ public class GeomUtil {
   public static Pose2d withRotation(Pose2d pose, Rotation2d rotation) {
     return new Pose2d(pose.getTranslation(), rotation);
   }
+
+  /**
+   * Creates a new {@link Translation2d} with the existing y coordinate and the new x coordinate.
+   *
+   * @param translation The existing translation
+   * @param x The new x coordinate
+   * @return The new translation
+   */
+  public static Translation2d withX(Translation2d translation, double x) {
+    return new Translation2d(x, translation.getY());
+  }
+
+  /**
+   * Creates a new {@link Translation2d} with the existing x coordinate and the new y coordinate.
+   *
+   * @param translation The existing translation
+   * @param y The new y coordinate
+   * @return The new translation
+   */
+  public static Translation2d withY(Translation2d translation, double y) {
+    return new Translation2d(translation.getX(), y);
+  }
 }

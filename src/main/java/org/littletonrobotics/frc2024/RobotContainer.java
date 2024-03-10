@@ -550,7 +550,8 @@ public class RobotContainer {
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           var finalPose =
               ampCenterRotated
-                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0))
+                  .transformBy(
+                      GeomUtil.toTransform2d(DriveConstants.robotCenterToIntakeBumperEdge, 0))
                   .transformBy(FudgeFactors.amp.getTransform());
           double distance =
               robotState

@@ -22,6 +22,8 @@ import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 
 /** All Constants Measured in Meters and Radians (m/s, m/s^2, rad/s, rad/s^2) */
 public final class DriveConstants {
+  public static final double robotCenterToIntakeBumperEdge = Units.inchesToMeters(20.0);
+
   public static final DriveConfig driveConfig =
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->

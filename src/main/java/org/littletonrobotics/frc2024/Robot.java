@@ -182,6 +182,7 @@ public class Robot extends LoggedRobot {
       }
     }
 
+    FudgeFactors.logPoses();
     RobotController.setBrownoutVoltage(6.0);
     robotContainer = new RobotContainer();
   }

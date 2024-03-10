@@ -310,13 +310,13 @@ public class AutoBuilder {
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .until(() -> autoTimer.hasElapsed(preloadDelay)))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
 
                         // Intake centerline 0
                         waitUntilXCrossed(FieldConstants.wingX + 0.05, true)
                             .andThen(waitUntilXCrossed(FieldConstants.wingX, false))
                             .deadlineWith(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+                                superstructure.aimWithCompensation(0.0),
                                 rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)),
 
                         // Shoot centerline 0
@@ -330,7 +330,7 @@ public class AutoBuilder {
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
 
                         // Intake centerline 1
                         waitUntilXCrossed(
@@ -362,8 +362,7 @@ public class AutoBuilder {
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
                                 waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
-                                    .andThen(
-                                        superstructure.setGoalCommand(Superstructure.Goal.AIM))),
+                                    .andThen(superstructure.aimWithCompensation(0.0))),
 
                         // Intake centerline 2
                         waitUntilXCrossed(
@@ -396,8 +395,7 @@ public class AutoBuilder {
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
                                 waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
-                                    .andThen(
-                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
+                                    .andThen(superstructure.aimWithCompensation(0.0)))))
 
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
@@ -439,7 +437,7 @@ public class AutoBuilder {
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .until(() -> autoTimer.hasElapsed(preloadDelay)))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
 
                         // Intake spike
                         Commands.parallel(
@@ -452,7 +450,7 @@ public class AutoBuilder {
 
                         // Shoot spike
                         superstructure
-                            .setGoalCommand(Superstructure.Goal.AIM)
+                            .aimWithCompensation(0.0)
                             .alongWith(
                                 Commands.waitSeconds(aimDelay)
                                     .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)))
@@ -487,7 +485,7 @@ public class AutoBuilder {
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
 
                         // Intake centerline 3
                         waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
@@ -512,7 +510,7 @@ public class AutoBuilder {
                                 rollers
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
 
                         // Intake centerline 2
                         waitUntilXCrossed(
@@ -549,8 +547,7 @@ public class AutoBuilder {
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
                                 waitUntilXCrossed(FieldConstants.Stage.center.getX() + 0.1, false)
-                                    .andThen(
-                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
+                                    .andThen(superstructure.aimWithCompensation(0.0)))))
 
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));

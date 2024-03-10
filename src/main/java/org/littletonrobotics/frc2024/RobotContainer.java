@@ -113,7 +113,7 @@ public class RobotContainer {
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
-      new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
+      new Alert("Operator controller disconnected (port 1).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =
@@ -386,6 +386,11 @@ public class RobotContainer {
     autoChooser.addOption("N5_S01_C2_S2", autoBuilder.N5_S01_C2_S2());
     // Set up feedforward characterization
     autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
+            .finallyDo(drive::endCharacterization));
+    autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
                 drive, drive::runCharacterization, drive::getCharacterizationVelocity)
@@ -551,7 +556,9 @@ public class RobotContainer {
               AllianceFlipUtil.apply(
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           var finalPose =
-              ampCenterRotated.transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0));
+              ampCenterRotated
+                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0))
+                  .transformBy(FudgeFactors.amp.getTransform());
           double distance =
               robotState
                   .getEstimatedPose()

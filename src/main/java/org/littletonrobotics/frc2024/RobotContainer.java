@@ -380,6 +380,7 @@ public class RobotContainer {
     autoChooser.addOption("Center Spike Auto", autoBuilder.centerSpikeAuto());
     autoChooser.addOption("Amp Spike Auto", autoBuilder.ampSpikeAuto());
     autoChooser.addOption("N5_S01_C2_S2", autoBuilder.N5_S01_C2_S2());
+    autoChooser.addOption("Six Note", autoBuilder.sixNote());
 
     // Set up feedforward characterization
     autoChooser.addOption(

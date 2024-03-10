@@ -219,12 +219,7 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingLineSpike0)
                 .addPoseWaypoint(
-                    new Pose2d(
-                        FieldConstants.StagingLocations.spikeTranslations[0].plus(
-                            new Translation2d(-0.6, 0)),
-                        spike0ShootingPose.getRotation()))
-                .addPoseWaypoint(
-                    spike0ShootingPose.transformBy(new Translation2d(0.5, 0.0).toTransform2d()))
+                    spike0ShootingPose.transformBy(new Translation2d(0.4, 0.0).toTransform2d()))
                 .build()));
     paths.put(
         "sourceFRC6328_grabSpike1",
@@ -375,6 +370,50 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     spike2ShootingPose.transformBy(new Translation2d(0.5, 0).toTransform2d()))
                 .addPoseWaypoint(spike2ShootingPose)
+                .build()));
+
+    // 6 note
+
+    paths.put(
+        "sixNote_grabCenterline4",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("sourceFRC6328_grabSpike2"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-135.0))
+                        .transformBy(new Transform2d(1.2, -0.2, Rotation2d.fromDegrees(-20.0))))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-135.0))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    stageLeftShootingPose.transformBy(new Translation2d(-0.8, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    stageLeftShootingPose.plus(new Translation2d(0.6, 0.0).toTransform2d()))
+                .build()));
+
+    paths.put(
+        "sixNote_grabCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("sixNote_grabCenterline4"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(1.2, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    stageLeftShootingPose.transformBy(new Translation2d(-0.8, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    stageLeftShootingPose.plus(new Translation2d(0.6, 0.0).toTransform2d()))
                 .build()));
   }
 

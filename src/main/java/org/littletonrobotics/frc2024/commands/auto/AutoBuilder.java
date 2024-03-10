@@ -9,8 +9,6 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -31,8 +29,8 @@ public class AutoBuilder {
   private final Rollers rollers;
 
   final double preloadDelay = 1.0;
-  final double spikeIntakeDelay = 0.05;
-  final double aimDelay = 0.32;
+  final double spikeIntakeDelay = 0.2;
+  final double aimDelay = 0.5;
 
   public AutoBuilder(
       Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
@@ -42,31 +40,27 @@ public class AutoBuilder {
     this.rollers = rollers;
   }
 
-  /** Shared trajectories */
+  // Shared trajectories
   private final HolonomicTrajectory centerStartToSpike0 =
       new HolonomicTrajectory("centerStartToSpike0");
-
   private final HolonomicTrajectory sourceStartToSpike0 =
       new HolonomicTrajectory("sourceStartToSpike0");
   private final HolonomicTrajectory ampStartToSpike2 = new HolonomicTrajectory("ampStartToSpike2");
 
-  /** Between spikes */
+  // Between spikes
   private final HolonomicTrajectory spike0ToSpike1 = new HolonomicTrajectory("spike0ToSpike1");
-
   private final HolonomicTrajectory spike1ToSpike2 = new HolonomicTrajectory("spike1ToSpike2");
   private final HolonomicTrajectory spike2ToSpike1 = new HolonomicTrajectory("spike2ToSpike1");
   private final HolonomicTrajectory spike1ToSpike0 = new HolonomicTrajectory("spike1ToSpike0");
 
-  /** Spike (0, 2) to centerline 2 and centerline escape */
+  // Spike (0, 2) to centerline 2
   private final HolonomicTrajectory spike2ToCenterline2 =
       new HolonomicTrajectory("spike2ToCenterline2");
-
   private final HolonomicTrajectory spike0ToCenterline2 =
       new HolonomicTrajectory("spike0ToCenterline2");
 
-  /** Drive to center */
+  // Drive to center
   private final HolonomicTrajectory spike2ToCenter = new HolonomicTrajectory("spike2ToCenter");
-
   private final HolonomicTrajectory spike0ToCenter = new HolonomicTrajectory("spike0ToCenter");
   private final HolonomicTrajectory wingShotToCenter = new HolonomicTrajectory("wingShotToCenter");
   private final HolonomicTrajectory underStageShotToCenter =
@@ -74,10 +68,7 @@ public class AutoBuilder {
 
   private Command preloadToFirstSpike(HolonomicTrajectory preloadToFirstSpike) {
     return Commands.sequence(
-            resetPose(
-                new Pose2d(
-                    preloadToFirstSpike.getStartPose().getTranslation(),
-                    Rotation2d.fromDegrees(180.0))),
+            resetPose(preloadToFirstSpike.getStartPose()),
             aim(drive).withTimeout(preloadDelay),
             followTrajectory(drive, preloadToFirstSpike),
             aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()))
@@ -86,7 +77,8 @@ public class AutoBuilder {
                 // Shoot preload
                 Commands.waitUntil(flywheels::atGoal)
                     .andThen(feed(rollers))
-                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))
+                    .withTimeout(preloadDelay),
 
                 // Intake first spike
                 intake(superstructure, rollers)
@@ -129,37 +121,34 @@ public class AutoBuilder {
         .deadlineWith(flywheels.shootCommand());
   }
 
-  private Command thirdSpikeToCenterline2(boolean endsOnSpike2) {
-    Timer autoTimer = new Timer();
-    if (endsOnSpike2) {
-      return Commands.runOnce(autoTimer::restart)
-          .andThen(
-              // Trajectory
-              followTrajectory(drive, spike2ToCenterline2)
+  private Command thirdSpikeToCenterline2(boolean startFromSpike2) {
+    if (startFromSpike2) {
+      return
+      // Trajectory
+      followTrajectory(drive, spike2ToCenterline2)
+          .andThen(aim(drive).withTimeout(shootTimeoutSecs.get()))
 
-                  // Sequence superstructure and rollers
-                  .alongWith(
-                      Commands.sequence(
-                          // Intake centerline 2
-                          intake(superstructure, rollers)
-                              .withTimeout(spike2ToCenterline2.getDuration() - aimDelay * 2.0),
+          // Sequence superstructure and rollers
+          .alongWith(
+              Commands.sequence(
+                  // Intake centerline 2
+                  intake(superstructure, rollers)
+                      .withTimeout(spike2ToCenterline2.getDuration() - aimDelay * 2.0),
 
-                          // Shoot centerline 2
-                          Commands.waitUntil(
-                                  () ->
-                                      autoTimer.hasElapsed(
-                                          spike2ToCenterline2.getDuration()
-                                              + shootTimeoutSecs.get() / 2.0))
-                              .andThen(feed(rollers))
-                              .deadlineWith(
-                                  superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
+                  // Shoot centerline 2
+                  Commands.waitSeconds(aimDelay * 2.0)
+                      .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
+                      .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
+
           // Run flywheels
           .deadlineWith(flywheels.shootCommand());
     } else {
-      return Commands.runOnce(autoTimer::restart)
+      Timer timer = new Timer();
+      return Commands.runOnce(timer::restart)
           .andThen(
               // Trajectory
               followTrajectory(drive, spike0ToCenterline2)
+                  .andThen(aim(drive).withTimeout(shootTimeoutSecs.get()))
 
                   // Sequence superstructure and rollers
                   .alongWith(
@@ -180,11 +169,8 @@ public class AutoBuilder {
 
                           // Shoot centerline 2
                           Commands.waitUntil(
-                                  () ->
-                                      autoTimer.hasElapsed(
-                                          spike0ToCenterline2.getDuration()
-                                              - shootTimeoutSecs.get() / 2.0))
-                              .andThen(feed(rollers))
+                                  () -> timer.hasElapsed(spike0ToCenterline2.getDuration()))
+                              .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
                               .deadlineWith(
                                   waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
                                       .andThen(
@@ -232,49 +218,6 @@ public class AutoBuilder {
         .andThen(firstSpikeToThirdSpike(false))
         .andThen(thirdSpikeToCenterline2(false))
         .andThen(followTrajectory(drive, underStageShotToCenter));
-  }
-
-  public Command N5_S01_C2_S2() {
-    var grabCenterline2 = new HolonomicTrajectory("N5_S01_C2_S2_grabCenterline2");
-    var grabSpike2 = new HolonomicTrajectory("N5_S01_C2_S2_grabSpike2");
-
-    Timer autoTimer = new Timer();
-    return Commands.runOnce(autoTimer::restart)
-        .andThen(
-            Commands.sequence(
-                resetPose(DriveTrajectories.startingLineSpike0),
-                Commands.startEnd(
-                        () ->
-                            drive.setHeadingGoal(
-                                () ->
-                                    RobotState.getInstance().getAimingParameters().driveHeading()),
-                        drive::clearHeadingGoal)
-                    .withTimeout(preloadDelay),
-                followTrajectory(drive, sourceStartToSpike0),
-                Commands.startEnd(
-                        () ->
-                            drive.setHeadingGoal(
-                                () ->
-                                    RobotState.getInstance().getAimingParameters().driveHeading()),
-                        drive::clearHeadingGoal)
-                    .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                followTrajectory(drive, spike0ToSpike1),
-                Commands.startEnd(
-                        () ->
-                            drive.setHeadingGoal(
-                                () ->
-                                    RobotState.getInstance().getAimingParameters().driveHeading()),
-                        drive::clearHeadingGoal)
-                    .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                followTrajectory(drive, grabCenterline2),
-                Commands.startEnd(
-                        () ->
-                            drive.setHeadingGoal(
-                                () ->
-                                    RobotState.getInstance().getAimingParameters().driveHeading()),
-                        drive::clearHeadingGoal)
-                    .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                followTrajectory(drive, grabSpike2)));
   }
 
   public Command davisEthicalAuto() {

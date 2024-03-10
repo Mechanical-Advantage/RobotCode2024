@@ -223,7 +223,7 @@ public class DriveTrajectories {
         "centerStartToSpike0",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(getShootingPose(startingLineSpike1.getTranslation()))
+                .addPoseWaypoint(startingLineSpike1)
                 .addPoseWaypoint(
                     spike0ShootingPose.transformBy(new Translation2d(0.8, 0.0).toTransform2d()))
                 .addPoseWaypoint(
@@ -233,7 +233,7 @@ public class DriveTrajectories {
         "sourceStartToSpike0",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(getShootingPose(startingLineSpike0.getTranslation()))
+                .addPoseWaypoint(startingLineSpike0)
                 .addPoseWaypoint(
                     spike0ShootingPose.transformBy(new Translation2d(0.8, 0.0).toTransform2d()))
                 .addPoseWaypoint(
@@ -243,7 +243,9 @@ public class DriveTrajectories {
         "ampStartToSpike2",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(getShootingPose(startingLineSpike2.getTranslation()))
+                .addPoseWaypoint(startingLineSpike2)
+                .addPoseWaypoint(
+                    spike2ShootingPose.transformBy(new Translation2d(0.8, 0).toTransform2d()))
                 .addPoseWaypoint(
                     spike2ShootingPose.transformBy(new Translation2d(0.5, 0).toTransform2d()))
                 .build()));
@@ -344,38 +346,6 @@ public class DriveTrajectories {
                         .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
-                .build()));
-
-    // N5_S01_C2_S2
-    paths.put(
-        "N5_S01_C2_S2_grabCenterline2",
-        List.of(
-            PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("spike0ToSpike1"))
-                .addTranslationWaypoint(
-                    new Translation2d(
-                        stageCenterAvoidance.getX(),
-                        FieldConstants.StagingLocations.centerlineTranslations[2].getY()))
-                .addPoseWaypoint(
-                    new Pose2d(
-                            FieldConstants.StagingLocations.centerlineTranslations[2],
-                            Rotation2d.fromDegrees(180))
-                        .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
-                .addTranslationWaypoint(
-                    new Translation2d(
-                        stageCenterAvoidance.getX(),
-                        FieldConstants.StagingLocations.centerlineTranslations[2].getY()))
-                .addPoseWaypoint(stageCenterShootingPose)
-                .build()));
-    paths.put(
-        "N5_S01_C2_S2_grabSpike2",
-        List.of(
-            PathSegment.newBuilder()
-                .addWaypoints(getLastWaypoint("N5_S01_C2_S2_grabCenterline2"))
-                .addTranslationWaypoint(FieldConstants.StagingLocations.spikeTranslations[1])
-                .addPoseWaypoint(
-                    spike2ShootingPose.transformBy(new Translation2d(0.5, 0).toTransform2d()))
-                .addPoseWaypoint(spike2ShootingPose)
                 .build()));
 
     // Drive away trajectories

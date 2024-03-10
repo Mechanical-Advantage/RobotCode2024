@@ -376,14 +376,15 @@ public class RobotContainer {
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
+
     // Spike autos
-    autoChooser.addOption("Source 4", autoBuilder.source4());
-    autoChooser.addOption("Center 4", autoBuilder.center4());
-    autoChooser.addOption("Amp 4", autoBuilder.amp4());
-    autoChooser.addOption("Source 5", autoBuilder.source5());
-    autoChooser.addOption("Center 5", autoBuilder.center5());
-    autoChooser.addOption("Amp 5", autoBuilder.amp5());
-    autoChooser.addOption("N5_S01_C2_S2", autoBuilder.N5_S01_C2_S2());
+    autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
+    autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
+    autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());
+    autoChooser.addOption("Spike: Source 5", autoBuilder.source5());
+    autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
+    autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
+
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive Static Characterization",

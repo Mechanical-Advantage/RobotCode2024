@@ -29,7 +29,7 @@ public class AutoBuilder {
   private final Rollers rollers;
 
   final double preloadDelay = 1.0;
-  final double spikeIntakeDelay = 0.2;
+  final double spikeIntakeDelay = 0.35;
   final double aimDelay = 0.5;
 
   public AutoBuilder(
@@ -86,7 +86,7 @@ public class AutoBuilder {
 
                 // Shoot first spike
                 Commands.waitSeconds(aimDelay)
-                    .andThen(feed(rollers))
+                    .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
                     .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
         .deadlineWith(flywheels.shootCommand());
   }
@@ -107,7 +107,7 @@ public class AutoBuilder {
 
                 // Shoot spike 1
                 Commands.waitSeconds(aimDelay)
-                    .andThen(feed(rollers))
+                    .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
                     .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
 
                 // Intake spike 2
@@ -116,7 +116,7 @@ public class AutoBuilder {
 
                 // Shoot spike 2
                 Commands.waitSeconds(aimDelay)
-                    .andThen(feed(rollers))
+                    .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
                     .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
         .deadlineWith(flywheels.shootCommand());
   }
@@ -172,7 +172,8 @@ public class AutoBuilder {
                                   () -> timer.hasElapsed(spike0ToCenterline2.getDuration()))
                               .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
                               .deadlineWith(
-                                  waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
+                                  waitUntilXCrossed(
+                                          FieldConstants.Stage.center.getX() - 0.25, false)
                                       .andThen(
                                           superstructure.setGoalCommand(
                                               Superstructure.Goal.AIM))))))

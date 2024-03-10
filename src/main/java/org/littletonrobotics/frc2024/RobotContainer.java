@@ -113,7 +113,7 @@ public class RobotContainer {
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
-      new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
+      new Alert("Operator controller disconnected (port 1).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =

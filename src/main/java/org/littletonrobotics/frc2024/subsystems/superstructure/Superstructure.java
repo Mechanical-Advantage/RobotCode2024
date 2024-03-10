@@ -171,11 +171,7 @@ public class Superstructure extends SubsystemBase {
       case UNTRAP -> {
         arm.setGoal(Arm.Goal.UNTRAP);
         climber.setGoal(Climber.Goal.RETRACT);
-        if (atArmGoal()) {
-          backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
-        } else {
-          backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
-        }
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case RESET -> {
         desiredGoal = Goal.STOW;

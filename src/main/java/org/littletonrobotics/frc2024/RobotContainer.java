@@ -74,6 +74,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -365,6 +366,8 @@ public class RobotContainer {
 
   private void configureAutos() {
     AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
+    LoggedDashboardBoolean fiveNote = new LoggedDashboardBoolean("Five Note", false);
+    LoggedDashboardBoolean escape = new LoggedDashboardBoolean("Escape", false);
 
     autoChooser.addDefaultOption(
         "Do Nothing",
@@ -376,11 +379,21 @@ public class RobotContainer {
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
-    autoChooser.addOption("Source FRC6328 Auto", autoBuilder.sourceFRC6328Auto());
-    autoChooser.addOption("Center Spike Auto", autoBuilder.centerSpikeAuto());
-    autoChooser.addOption("Amp Spike Auto", autoBuilder.ampSpikeAuto());
-    autoChooser.addOption("N5_S01_C2_S2", autoBuilder.N5_S01_C2_S2());
-
+    // Spike autos
+    autoChooser.addOption(
+        "Source Start",
+        autoBuilder.buildSpikeAuto(AutoBuilder.SpikeAutoSetup.SOURCE, fiveNote::get, escape::get));
+    autoChooser.addOption(
+        "Center Start Source To Amp",
+        autoBuilder.buildSpikeAuto(
+            AutoBuilder.SpikeAutoSetup.CENTER_SOURCE_TO_AMP, fiveNote::get, escape::get));
+    autoChooser.addOption(
+        "Center Start Amp To Source",
+        autoBuilder.buildSpikeAuto(
+            AutoBuilder.SpikeAutoSetup.CENTER_AMP_TO_SOURCE, fiveNote::get, escape::get));
+    autoChooser.addOption(
+        "Amp Start",
+        autoBuilder.buildSpikeAuto(AutoBuilder.SpikeAutoSetup.AMP, fiveNote::get, escape::get));
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive FF Characterization",

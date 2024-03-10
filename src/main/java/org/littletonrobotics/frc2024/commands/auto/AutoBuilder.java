@@ -9,9 +9,12 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import java.util.function.BooleanSupplier;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
@@ -28,6 +31,10 @@ public class AutoBuilder {
   private final Flywheels flywheels;
   private final Rollers rollers;
 
+  final double preloadDelay = 1.0;
+  final double spikeIntakeDelay = 0.05;
+  final double aimDelay = 0.32;
+
   public AutoBuilder(
       Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
     this.drive = drive;
@@ -36,471 +43,217 @@ public class AutoBuilder {
     this.rollers = rollers;
   }
 
-  public Command sourceFRC6328Auto() {
-    var grabSpike0 = new HolonomicTrajectory("sourceFRC6328_grabSpike0");
-    var grabSpike1 = new HolonomicTrajectory("sourceFRC6328_grabSpike1");
-    var grabSpike2 = new HolonomicTrajectory("sourceFRC6328_grabSpike2");
-    var grabCenterline2 = new HolonomicTrajectory("sourceFRC6328_grabCenterline2");
+  /** Shared trajectories */
+  private final HolonomicTrajectory sourceSideStartToSpike0 =
+      new HolonomicTrajectory("sourceSpike_grabSpike0");
 
-    final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.3;
-    final double aimDelay = 0.45;
+  private final HolonomicTrajectory centerSideStartToSpike0 =
+      new HolonomicTrajectory("centerSpike_grabSpike0");
+  private final HolonomicTrajectory centerSideStartToSpike2 =
+      new HolonomicTrajectory("centerSpike_grabSpike2");
+  private final HolonomicTrajectory ampSideStartToSpike2 =
+      new HolonomicTrajectory("ampSpike_grabSpike2");
 
-    Timer autoTimer = new Timer();
-    return Commands.runOnce(autoTimer::restart)
-        .andThen(
+  /** Between spikes */
+  private final HolonomicTrajectory spike0ToSpike1 =
+      new HolonomicTrajectory("sourceToAmp_grabSpike1");
+
+  private final HolonomicTrajectory spike1ToSpike2 =
+      new HolonomicTrajectory("sourceToAmp_grabSpike2");
+  private final HolonomicTrajectory spike2ToSpike1 =
+      new HolonomicTrajectory("ampToSource_grabSpike1");
+  private final HolonomicTrajectory spike1ToSpike0 =
+      new HolonomicTrajectory("ampToSource_grabSpike0");
+
+  /** Spike (0, 2) to centerline 2 and centerline escape */
+  private final HolonomicTrajectory spike2ToCenterline2 =
+      new HolonomicTrajectory("spike2_grabCenterline2");
+
+  private final HolonomicTrajectory spike0ToCenterline2 =
+      new HolonomicTrajectory("spike0_grabCenterline2");
+  private final HolonomicTrajectory spike2Escape = new HolonomicTrajectory("spike2Escape");
+  private final HolonomicTrajectory spike0Escape = new HolonomicTrajectory("spike0Escape");
+  private final HolonomicTrajectory centerline2AroundStageEscape =
+      new HolonomicTrajectory("centerline2AroundStageEscape");
+  private final HolonomicTrajectory centerline2UnderStageEscape =
+      new HolonomicTrajectory("centerline2UnderStageEscape");
+
+  private Command preloadToFirstSpike(HolonomicTrajectory trajectoryFromFace) {
+    return Commands.sequence(
+            resetPose(
+                new Pose2d(
+                    trajectoryFromFace.getStartPose().getTranslation(),
+                    Rotation2d.fromDegrees(180.0))),
+            aim(drive).withTimeout(preloadDelay),
+            followTrajectory(drive, trajectoryFromFace),
+            aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()))
+        .alongWith(
             Commands.sequence(
-                    resetPose(grabSpike0),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(preloadDelay),
-                    followTrajectory(drive, grabSpike0),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabSpike1),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabSpike2),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabCenterline2),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(aimDelay + shootTimeoutSecs.get()))
-                .alongWith(
-                    // Shoot preloaded note
-                    Commands.sequence(
-                        Commands.waitUntil(flywheels::atGoal)
-                            .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))
-                            .withTimeout(preloadDelay),
+                // Shoot preload
+                Commands.waitUntil(flywheels::atGoal)
+                    .andThen(feed(rollers))
+                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
 
-                        // Intake spike 0
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike0.getDuration() + spikeIntakeDelay),
+                // Intake first spike
+                intake(superstructure, rollers)
+                    .withTimeout(trajectoryFromFace.getDuration() + spikeIntakeDelay),
 
-                        // Shoot spike 0
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-
-                        // Intake spike 1
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike1.getDuration() + spikeIntakeDelay),
-
-                        // Shoot spike 1
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-
-                        // Intake spike 2
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike2.getDuration() + spikeIntakeDelay),
-
-                        // Shoot spike 2
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-
-                        // Intake centerline 2
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabCenterline2.getDuration() - 1.0),
-
-                        // Shoot centerline 2l
-                        Commands.waitUntil(
-                                () ->
-                                    autoTimer.hasElapsed(
-                                        preloadDelay
-                                            + grabSpike0.getDuration()
-                                            + grabSpike1.getDuration()
-                                            + grabSpike2.getDuration()
-                                            + (spikeIntakeDelay + aimDelay + shootTimeoutSecs.get())
-                                                * 3.0
-                                            + grabCenterline2.getDuration()
-                                            + aimDelay))
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
-                                    .andThen(
-                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
-                .deadlineWith(flywheels.shootCommand()));
+                // Shoot first spike
+                Commands.waitSeconds(aimDelay)
+                    .andThen(feed(rollers))
+                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
+        .deadlineWith(flywheels.shootCommand());
   }
 
-  public Command
-      centerSpikeAuto() { // Commands and path are identical to source spike auto except for start
-    // position
-    var grabSpike0 = new HolonomicTrajectory("centerSpike_grabSpike0");
-    var grabSpike1 = new HolonomicTrajectory("sourceFRC6328_grabSpike1");
-    var grabSpike2 = new HolonomicTrajectory("sourceFRC6328_grabSpike2");
-    var grabCenterline2 = new HolonomicTrajectory("sourceFRC6328_grabCenterline2");
-
-    final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.3;
-    final double aimDelay = 0.45;
-
-    Timer autoTimer = new Timer();
-    return Commands.runOnce(autoTimer::restart)
-        .andThen(
+  private Command firstSpikeToThirdSpike(boolean endsOnSpike2) {
+    HolonomicTrajectory firstTrajectory = endsOnSpike2 ? spike0ToSpike1 : spike2ToSpike1;
+    HolonomicTrajectory secondTrajectory = endsOnSpike2 ? spike1ToSpike2 : spike1ToSpike0;
+    return Commands.sequence(
+            followTrajectory(drive, firstTrajectory),
+            aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
+            followTrajectory(drive, secondTrajectory),
+            aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()))
+        .alongWith(
             Commands.sequence(
-                    resetPose(grabSpike0),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(preloadDelay),
-                    followTrajectory(drive, grabSpike0),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabSpike1),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabSpike2),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabCenterline2),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(aimDelay + shootTimeoutSecs.get()))
-                .alongWith(
-                    // Shoot preloaded note
-                    Commands.sequence(
-                        Commands.waitUntil(flywheels::atGoal)
-                            .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))
-                            .withTimeout(preloadDelay),
+                // Intake spike 1
+                intake(superstructure, rollers)
+                    .withTimeout(firstTrajectory.getDuration() + spikeIntakeDelay),
 
-                        // Intake spike 0
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike0.getDuration() + spikeIntakeDelay),
+                // Shoot spike 1
+                Commands.waitSeconds(aimDelay)
+                    .andThen(feed(rollers))
+                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
 
-                        // Shoot spike 0
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                // Intake spike 2
+                intake(superstructure, rollers)
+                    .withTimeout(secondTrajectory.getDuration() + spikeIntakeDelay),
 
-                        // Intake spike 1
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike1.getDuration() + spikeIntakeDelay),
-
-                        // Shoot spike 1
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-
-                        // Intake spike 2
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike2.getDuration() + spikeIntakeDelay),
-
-                        // Shoot spike 2
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-
-                        // Intake centerline 2
-                        Commands.parallel(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabCenterline2.getDuration() - 1.0),
-
-                        // Shoot centerline 2
-                        Commands.waitUntil(
-                                () ->
-                                    autoTimer.hasElapsed(
-                                        preloadDelay
-                                            + grabSpike0.getDuration()
-                                            + grabSpike1.getDuration()
-                                            + grabSpike2.getDuration()
-                                            + (spikeIntakeDelay + aimDelay + shootTimeoutSecs.get())
-                                                * 3.0
-                                            + grabCenterline2.getDuration()
-                                            + aimDelay))
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
-                                    .andThen(
-                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
-                .deadlineWith(flywheels.shootCommand()));
+                // Shoot spike 2
+                Commands.waitSeconds(aimDelay)
+                    .andThen(feed(rollers))
+                    .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
+        .deadlineWith(flywheels.shootCommand());
   }
 
-  public Command ampSpikeAuto() {
-    var grabSpike2 = new HolonomicTrajectory("ampSpike_grabSpike2");
-    var grabSpike1 = new HolonomicTrajectory("ampSpike_grabSpike1");
-    var grabSpike0 = new HolonomicTrajectory("ampSpike_grabSpike0");
-    var grabCenterline2 = new HolonomicTrajectory("ampSpike_grabCenterline2");
-
-    final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.3;
-    final double aimDelay = 0.45;
-
+  private Command thirdSpikeToCenterline2(boolean endsOnSpike2) {
     Timer autoTimer = new Timer();
-    return Commands.runOnce(autoTimer::restart)
-        .andThen(
-            // Drive Sequence
-            Commands.sequence(
-                    resetPose(DriveTrajectories.startingAmpFace),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(preloadDelay),
-                    followTrajectory(drive, grabSpike2),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabSpike1),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabSpike0),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                    followTrajectory(drive, grabCenterline2),
-                    Commands.startEnd(
-                            () ->
-                                drive.setHeadingGoal(
-                                    () ->
-                                        RobotState.getInstance()
-                                            .getAimingParameters()
-                                            .driveHeading()),
-                            drive::clearHeadingGoal)
-                        .withTimeout(aimDelay + shootTimeoutSecs.get()))
+    if (endsOnSpike2) {
+      return Commands.runOnce(autoTimer::restart)
+          .andThen(
+              // Trajectory
+              followTrajectory(drive, spike2ToCenterline2)
 
-                // Sequence superstructure and rollers
-                .alongWith(
-                    Commands.sequence(
-                        // Shoot preload
-                        Commands.waitUntil(flywheels::atGoal)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                  // Sequence superstructure and rollers
+                  .alongWith(
+                      Commands.sequence(
+                          // Intake centerline 2
+                          intake(superstructure, rollers)
+                              .withTimeout(spike2ToCenterline2.getDuration() - 2.0),
 
-                        // Intake spike 2
-                        superstructure
-                            .setGoalCommand(Superstructure.Goal.INTAKE)
-                            .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike2.getDuration() + spikeIntakeDelay),
+                          // Shoot centerline 2
+                          Commands.waitUntil(
+                                  () ->
+                                      autoTimer.hasElapsed(
+                                          spike2ToCenterline2.getDuration()
+                                              + shootTimeoutSecs.get() / 2.0))
+                              .andThen(feed(rollers))
+                              .deadlineWith(
+                                  superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
+          // Run flywheels
+          .deadlineWith(flywheels.shootCommand());
+    } else {
+      return Commands.runOnce(autoTimer::restart)
+          .andThen(
+              // Trajectory
+              followTrajectory(drive, spike0ToCenterline2)
 
-                        // Shoot spike 2
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                  // Sequence superstructure and rollers
+                  .alongWith(
+                      Commands.sequence(
+                          // Intake centerline 2
+                          waitUntilXCrossed(
+                                  FieldConstants.wingX
+                                      + DriveConstants.driveConfig.bumperWidthX()
+                                      + 0.25,
+                                  true)
+                              .andThen(
+                                  waitUntilXCrossed(
+                                          FieldConstants.wingX
+                                              + DriveConstants.driveConfig.bumperWidthX()
+                                              + 0.2,
+                                          false)
+                                      .deadlineWith(intake(superstructure, rollers))),
 
-                        // Intake spike 1
-                        superstructure
-                            .setGoalCommand(Superstructure.Goal.INTAKE)
-                            .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike1.getDuration() + spikeIntakeDelay),
+                          // Shoot centerline 2
+                          Commands.waitUntil(
+                                  () ->
+                                      autoTimer.hasElapsed(
+                                          spike0ToCenterline2.getDuration()
+                                              - shootTimeoutSecs.get() / 2.0))
+                              .andThen(feed(rollers))
+                              .deadlineWith(
+                                  waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
+                                      .andThen(
+                                          superstructure.setGoalCommand(
+                                              Superstructure.Goal.AIM))))))
+          // Run flywheels
+          .deadlineWith(flywheels.shootCommand());
+    }
+  }
 
-                        // Shoot spike 1
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+  private Command escapeToCenterlineFromSpike(boolean endsOnSpike2, BooleanSupplier fiveNote) {
+    return Commands.either(
+        // Five Note escape
+        Commands.either(
+            followTrajectory(drive, centerline2AroundStageEscape),
+            followTrajectory(drive, centerline2UnderStageEscape),
+            () -> endsOnSpike2),
+        // Normal escape
+        Commands.either(
+            followTrajectory(drive, spike2Escape),
+            followTrajectory(drive, spike0Escape),
+            () -> endsOnSpike2),
+        fiveNote);
+  }
 
-                        // Intake spike 0
-                        superstructure
-                            .setGoalCommand(Superstructure.Goal.INTAKE)
-                            .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .withTimeout(grabSpike0.getDuration() + spikeIntakeDelay),
+  public Command buildSpikeAuto(
+      SpikeAutoSetup spikeAutoSetup, BooleanSupplier fiveNote, BooleanSupplier escape) {
+    Command preloadWithFirstSpike =
+        switch (spikeAutoSetup) {
+          case SOURCE -> preloadToFirstSpike(sourceSideStartToSpike0);
+          case CENTER_SOURCE_TO_AMP -> preloadToFirstSpike(centerSideStartToSpike0);
+          case CENTER_AMP_TO_SOURCE -> preloadToFirstSpike(centerSideStartToSpike2);
+          case AMP -> preloadToFirstSpike(ampSideStartToSpike2);
+        };
+    boolean endsOnSpike2 =
+        spikeAutoSetup == SpikeAutoSetup.SOURCE
+            || spikeAutoSetup == SpikeAutoSetup.CENTER_SOURCE_TO_AMP;
+    Command firstSpikeToThirdSpike = firstSpikeToThirdSpike(endsOnSpike2);
+    return preloadWithFirstSpike.andThen(
+        firstSpikeToThirdSpike,
+        // Fifth note
+        Commands.either(thirdSpikeToCenterline2(endsOnSpike2), Commands.none(), fiveNote),
+        // Escape to centerline at end
+        Commands.either(
+            escapeToCenterlineFromSpike(endsOnSpike2, fiveNote), Commands.none(), escape));
+  }
 
-                        // Shoot spike 1
-                        Commands.waitSeconds(aimDelay)
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-
-                        // Intake centerline 2
-                        waitUntilXCrossed(
-                                FieldConstants.wingX
-                                    + DriveConstants.driveConfig.bumperWidthX()
-                                    + 0.3,
-                                true)
-                            .andThen(
-                                waitUntilXCrossed(
-                                    FieldConstants.wingX
-                                        + DriveConstants.driveConfig.bumperWidthX()
-                                        + 0.25,
-                                    false))
-                            .deadlineWith(
-                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-                                rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)),
-
-                        // Shoot centerline 2
-                        Commands.waitUntil(
-                                () ->
-                                    autoTimer.hasElapsed(
-                                        preloadDelay
-                                            + grabSpike2.getDuration()
-                                            + grabSpike1.getDuration()
-                                            + grabSpike0.getDuration()
-                                            + ((spikeIntakeDelay
-                                                    + aimDelay
-                                                    + shootTimeoutSecs.get())
-                                                * 3.0)
-                                            + grabCenterline2.getDuration()
-                                            + aimDelay))
-                            .andThen(
-                                rollers
-                                    .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
-                                    .withTimeout(shootTimeoutSecs.get()))
-                            .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX() - 0.1, false)
-                                    .andThen(
-                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
-
-                // Run flywheels
-                .deadlineWith(flywheels.shootCommand()));
+  public enum SpikeAutoSetup {
+    SOURCE,
+    CENTER_SOURCE_TO_AMP,
+    CENTER_AMP_TO_SOURCE,
+    AMP
   }
 
   public Command N5_S01_C2_S2() {
-    var grabSpike0 = new HolonomicTrajectory("sourceFRC6328_grabSpike0");
-    var grabSpike1 = new HolonomicTrajectory("sourceFRC6328_grabSpike1");
     var grabCenterline2 = new HolonomicTrajectory("N5_S01_C2_S2_grabCenterline2");
     var grabSpike2 = new HolonomicTrajectory("N5_S01_C2_S2_grabSpike2");
-
-    final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.3;
-    final double aimDelay = 0.45;
 
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             Commands.sequence(
-                resetPose(grabSpike0),
+                resetPose(DriveTrajectories.startingLineSpike0),
                 Commands.startEnd(
                         () ->
                             drive.setHeadingGoal(
@@ -508,7 +261,7 @@ public class AutoBuilder {
                                     RobotState.getInstance().getAimingParameters().driveHeading()),
                         drive::clearHeadingGoal)
                     .withTimeout(preloadDelay),
-                followTrajectory(drive, grabSpike0),
+                followTrajectory(drive, sourceSideStartToSpike0),
                 Commands.startEnd(
                         () ->
                             drive.setHeadingGoal(
@@ -516,7 +269,7 @@ public class AutoBuilder {
                                     RobotState.getInstance().getAimingParameters().driveHeading()),
                         drive::clearHeadingGoal)
                     .withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
-                followTrajectory(drive, grabSpike1),
+                followTrajectory(drive, spike0ToSpike1),
                 Commands.startEnd(
                         () ->
                             drive.setHeadingGoal(
@@ -539,8 +292,6 @@ public class AutoBuilder {
     var grabCenterline0 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline0");
     var grabCenterline1 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline1");
     var grabCenterline2 = new HolonomicTrajectory("davisEthicalAuto_grabCenterline2");
-
-    final double preloadDelay = 1.0;
 
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)
@@ -669,10 +420,6 @@ public class AutoBuilder {
     var grabCenterline3 = new HolonomicTrajectory("davisAlternativeAuto_grabCenterline3");
     var grabCenterline2 = new HolonomicTrajectory("davisAlternativeAuto_grabCenterline2");
 
-    final double preloadDelay = 1.0;
-    final double spikeIntakeDelay = 0.05;
-    final double spikeAimDelay = 0.32;
-
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)
         .andThen(
@@ -689,7 +436,7 @@ public class AutoBuilder {
                             drive::clearHeadingGoal)
                         .withTimeout(preloadDelay),
                     followTrajectory(drive, grabSpike),
-                    Commands.waitSeconds(spikeIntakeDelay + spikeAimDelay + shootTimeoutSecs.get()),
+                    Commands.waitSeconds(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
                     followTrajectory(drive, grabCenterline4),
                     followTrajectory(drive, grabCenterline3),
                     followTrajectory(drive, grabCenterline2))
@@ -718,7 +465,7 @@ public class AutoBuilder {
                         superstructure
                             .setGoalCommand(Superstructure.Goal.AIM)
                             .alongWith(
-                                Commands.waitSeconds(spikeAimDelay)
+                                Commands.waitSeconds(aimDelay)
                                     .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)))
                             .until(
                                 () ->
@@ -726,7 +473,7 @@ public class AutoBuilder {
                                         preloadDelay
                                             + grabSpike.getDuration()
                                             + spikeIntakeDelay
-                                            + spikeAimDelay
+                                            + aimDelay
                                             + shootTimeoutSecs.get())),
 
                         // Intake centerline 4
@@ -743,7 +490,7 @@ public class AutoBuilder {
                                         preloadDelay
                                             + grabSpike.getDuration()
                                             + spikeIntakeDelay
-                                            + spikeAimDelay
+                                            + aimDelay
                                             + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             - shootTimeoutSecs.get() / 2))
@@ -767,7 +514,7 @@ public class AutoBuilder {
                                         preloadDelay
                                             + grabSpike.getDuration()
                                             + spikeIntakeDelay
-                                            + spikeAimDelay
+                                            + aimDelay
                                             + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             + grabCenterline3.getDuration()
@@ -801,7 +548,7 @@ public class AutoBuilder {
                                         preloadDelay
                                             + grabSpike.getDuration()
                                             + spikeIntakeDelay
-                                            + spikeAimDelay
+                                            + aimDelay
                                             + shootTimeoutSecs.get()
                                             + grabCenterline4.getDuration()
                                             + grabCenterline3.getDuration()

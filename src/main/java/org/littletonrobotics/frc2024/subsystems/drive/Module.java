@@ -89,9 +89,9 @@ public class Module {
   }
 
   /** Runs characterization volts or amps depending on using voltage or current control. */
-  public void runCharacterization(double turnSetpointRads, double volts) {
+  public void runCharacterization(double turnSetpointRads, double input) {
     io.runTurnPositionSetpoint(turnSetpointRads);
-    io.runDriveVolts(volts);
+    io.runCharacterization(input);
   }
 
   /** Stops motors. */

@@ -141,6 +141,11 @@ public class ModuleIOSparkMax implements ModuleIO {
   }
 
   @Override
+  public void runCharacterization(double input) {
+    runDriveVolts(input);
+  }
+
+  @Override
   public void runDriveVelocitySetpoint(double velocityRadsPerSec, double feedForward) {
     double feedback =
         driveController.calculate(

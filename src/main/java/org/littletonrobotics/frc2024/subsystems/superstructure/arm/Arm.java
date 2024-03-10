@@ -77,13 +77,16 @@ public class Arm {
     UNJAM_INTAKE(new LoggedTunableNumber("Arm/UnjamDegrees", 40.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
-    STOW(new LoggedTunableNumber("Arm/StowDegrees", 0.0)),
+    SUPER_POOP(new LoggedTunableNumber("Arm/SuperPoopDegrees", 48.0)),
+    STOW(new LoggedTunableNumber("Arm/StowDegrees", 5.5)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
+    PREPARE_PREPARE_TRAP_CLIMB(new LoggedTunableNumber("Arm/PreparePrepareTrapClimbDegrees", 35.0)),
     PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 105.0)),
     CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 90.0)),
     UNTRAP(new LoggedTunableNumber("Arm/UnTrapDegrees", 70.0)),
+    RESET_CLIMB(new LoggedTunableNumber("Arm/ResetClimbDegrees", 30.0)),
     CUSTOM(new LoggedTunableNumber("Arm/CustomSetpoint", 20.0));
 
     private final DoubleSupplier armSetpointSupplier;
@@ -99,6 +102,7 @@ public class Arm {
   private final ArmIO io;
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
+  @AutoLogOutput @Setter private double currentCompensation = 0.0;
   private TrapezoidProfile.Constraints currentConstraints = maxProfileConstraints.get();
   private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
@@ -171,8 +175,8 @@ public class Arm {
     Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
 
     // Set coast mode with override
-    setBrakeMode(!coastSupplier.getAsBoolean() || DriverStation.isEnabled());
-    Leds.getInstance().armCoast = coastSupplier.getAsBoolean() && disableSupplier.getAsBoolean();
+    setBrakeMode(!coastSupplier.getAsBoolean());
+    Leds.getInstance().armCoast = coastSupplier.getAsBoolean();
 
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing
@@ -186,7 +190,8 @@ public class Arm {
               setpointState,
               new TrapezoidProfile.State(
                   MathUtil.clamp(
-                      goal.getRads(),
+                      goal.getRads()
+                          + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0),
                       Units.degreesToRadians(lowerLimitDegrees.get()),
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));

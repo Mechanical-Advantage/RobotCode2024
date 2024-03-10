@@ -24,6 +24,7 @@ public class Superstructure extends SubsystemBase {
     STOW,
     BACKPACK_OUT_UNJAM,
     AIM,
+    SUPER_POOP,
     INTAKE,
     UNJAM_INTAKE,
     STATION_INTAKE,
@@ -31,6 +32,7 @@ public class Superstructure extends SubsystemBase {
     SUBWOOFER,
     PODIUM,
     RESET_CLIMB,
+    PREPARE_PREPARE_TRAP_CLIMB,
     PREPARE_CLIMB,
     CANCEL_PREPARE_CLIMB,
     CLIMB,
@@ -65,6 +67,7 @@ public class Superstructure extends SubsystemBase {
 
     // Retract climber
     if (!climber.retracted()
+        && desiredGoal != Goal.PREPARE_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.PREPARE_CLIMB
         && desiredGoal != Goal.CLIMB
         && desiredGoal != Goal.TRAP
@@ -99,6 +102,11 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
+      case SUPER_POOP -> {
+        arm.setGoal(Arm.Goal.SUPER_POOP);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
       case INTAKE -> {
         arm.setGoal(Arm.Goal.FLOOR_INTAKE);
         climber.setGoal(Climber.Goal.IDLE);
@@ -120,8 +128,19 @@ public class Superstructure extends SubsystemBase {
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case RESET_CLIMB -> {
-        arm.setGoal(Arm.Goal.STOP);
-        climber.setGoal(Climber.Goal.IDLE);
+        arm.setGoal(Arm.Goal.RESET_CLIMB);
+        if (arm.atGoal()) {
+          // Retract and then stop
+          climber.setGoal(Climber.Goal.IDLE);
+        } else {
+          // Arm in unsafe state to retract, apply no current
+          climber.setGoal(Climber.Goal.STOP);
+        }
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case PREPARE_PREPARE_TRAP_CLIMB -> {
+        arm.setGoal(Arm.Goal.PREPARE_PREPARE_TRAP_CLIMB);
+        climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case PREPARE_CLIMB -> {
@@ -195,6 +214,13 @@ public class Superstructure extends SubsystemBase {
     return setGoalCommand(goal)
         .beforeStarting(() -> arm.setProfileConstraints(armProfileConstraints))
         .finallyDo(() -> arm.setProfileConstraints(Arm.maxProfileConstraints.get()));
+  }
+
+  /** Command to aim the superstructure with a compensation value in degrees */
+  public Command aimWithCompensation(double compensation) {
+    return setGoalCommand(Goal.AIM)
+        .beforeStarting(() -> arm.setCurrentCompensation(compensation))
+        .finallyDo(() -> arm.setCurrentCompensation(0.0));
   }
 
   @AutoLogOutput(key = "Superstructure/CompletedGoal")

@@ -14,7 +14,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import java.util.function.BooleanSupplier;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
@@ -44,48 +43,43 @@ public class AutoBuilder {
   }
 
   /** Shared trajectories */
-  private final HolonomicTrajectory sourceSideStartToSpike0 =
-      new HolonomicTrajectory("sourceSpike_grabSpike0");
+  private final HolonomicTrajectory centerStartToSpike0 =
+      new HolonomicTrajectory("centerStartToSpike0");
 
-  private final HolonomicTrajectory centerSideStartToSpike0 =
-      new HolonomicTrajectory("centerSpike_grabSpike0");
-  private final HolonomicTrajectory centerSideStartToSpike2 =
-      new HolonomicTrajectory("centerSpike_grabSpike2");
-  private final HolonomicTrajectory ampSideStartToSpike2 =
-      new HolonomicTrajectory("ampSpike_grabSpike2");
+  private final HolonomicTrajectory sourceStartToSpike0 =
+      new HolonomicTrajectory("sourceStartToSpike0");
+  private final HolonomicTrajectory ampStartToSpike2 = new HolonomicTrajectory("ampStartToSpike2");
 
   /** Between spikes */
-  private final HolonomicTrajectory spike0ToSpike1 =
-      new HolonomicTrajectory("sourceToAmp_grabSpike1");
+  private final HolonomicTrajectory spike0ToSpike1 = new HolonomicTrajectory("spike0ToSpike1");
 
-  private final HolonomicTrajectory spike1ToSpike2 =
-      new HolonomicTrajectory("sourceToAmp_grabSpike2");
-  private final HolonomicTrajectory spike2ToSpike1 =
-      new HolonomicTrajectory("ampToSource_grabSpike1");
-  private final HolonomicTrajectory spike1ToSpike0 =
-      new HolonomicTrajectory("ampToSource_grabSpike0");
+  private final HolonomicTrajectory spike1ToSpike2 = new HolonomicTrajectory("spike1ToSpike2");
+  private final HolonomicTrajectory spike2ToSpike1 = new HolonomicTrajectory("spike2ToSpike1");
+  private final HolonomicTrajectory spike1ToSpike0 = new HolonomicTrajectory("spike1ToSpike0");
 
   /** Spike (0, 2) to centerline 2 and centerline escape */
   private final HolonomicTrajectory spike2ToCenterline2 =
-      new HolonomicTrajectory("spike2_grabCenterline2");
+      new HolonomicTrajectory("spike2ToCenterline2");
 
   private final HolonomicTrajectory spike0ToCenterline2 =
-      new HolonomicTrajectory("spike0_grabCenterline2");
-  private final HolonomicTrajectory spike2Escape = new HolonomicTrajectory("spike2Escape");
-  private final HolonomicTrajectory spike0Escape = new HolonomicTrajectory("spike0Escape");
-  private final HolonomicTrajectory centerline2AroundStageEscape =
-      new HolonomicTrajectory("centerline2AroundStageEscape");
-  private final HolonomicTrajectory centerline2UnderStageEscape =
-      new HolonomicTrajectory("centerline2UnderStageEscape");
+      new HolonomicTrajectory("spike0ToCenterline2");
 
-  private Command preloadToFirstSpike(HolonomicTrajectory trajectoryFromFace) {
+  /** Drive to center */
+  private final HolonomicTrajectory spike2ToCenter = new HolonomicTrajectory("spike2ToCenter");
+
+  private final HolonomicTrajectory spike0ToCenter = new HolonomicTrajectory("spike0ToCenter");
+  private final HolonomicTrajectory wingShotToCenter = new HolonomicTrajectory("wingShotToCenter");
+  private final HolonomicTrajectory underStageShotToCenter =
+      new HolonomicTrajectory("underStageShotToCenter");
+
+  private Command preloadToFirstSpike(HolonomicTrajectory preloadToFirstSpike) {
     return Commands.sequence(
             resetPose(
                 new Pose2d(
-                    trajectoryFromFace.getStartPose().getTranslation(),
+                    preloadToFirstSpike.getStartPose().getTranslation(),
                     Rotation2d.fromDegrees(180.0))),
             aim(drive).withTimeout(preloadDelay),
-            followTrajectory(drive, trajectoryFromFace),
+            followTrajectory(drive, preloadToFirstSpike),
             aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()))
         .alongWith(
             Commands.sequence(
@@ -96,7 +90,7 @@ public class AutoBuilder {
 
                 // Intake first spike
                 intake(superstructure, rollers)
-                    .withTimeout(trajectoryFromFace.getDuration() + spikeIntakeDelay),
+                    .withTimeout(preloadToFirstSpike.getDuration() + spikeIntakeDelay),
 
                 // Shoot first spike
                 Commands.waitSeconds(aimDelay)
@@ -105,9 +99,9 @@ public class AutoBuilder {
         .deadlineWith(flywheels.shootCommand());
   }
 
-  private Command firstSpikeToThirdSpike(boolean endsOnSpike2) {
-    HolonomicTrajectory firstTrajectory = endsOnSpike2 ? spike0ToSpike1 : spike2ToSpike1;
-    HolonomicTrajectory secondTrajectory = endsOnSpike2 ? spike1ToSpike2 : spike1ToSpike0;
+  private Command firstSpikeToThirdSpike(boolean startWithSpike0) {
+    HolonomicTrajectory firstTrajectory = startWithSpike0 ? spike0ToSpike1 : spike2ToSpike1;
+    HolonomicTrajectory secondTrajectory = startWithSpike0 ? spike1ToSpike2 : spike1ToSpike0;
     return Commands.sequence(
             followTrajectory(drive, firstTrajectory),
             aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
@@ -148,7 +142,7 @@ public class AutoBuilder {
                       Commands.sequence(
                           // Intake centerline 2
                           intake(superstructure, rollers)
-                              .withTimeout(spike2ToCenterline2.getDuration() - 2.0),
+                              .withTimeout(spike2ToCenterline2.getDuration() - aimDelay * 2.0),
 
                           // Shoot centerline 2
                           Commands.waitUntil(
@@ -201,48 +195,43 @@ public class AutoBuilder {
     }
   }
 
-  private Command escapeToCenterlineFromSpike(boolean endsOnSpike2, BooleanSupplier fiveNote) {
-    return Commands.either(
-        // Five Note escape
-        Commands.either(
-            followTrajectory(drive, centerline2AroundStageEscape),
-            followTrajectory(drive, centerline2UnderStageEscape),
-            () -> endsOnSpike2),
-        // Normal escape
-        Commands.either(
-            followTrajectory(drive, spike2Escape),
-            followTrajectory(drive, spike0Escape),
-            () -> endsOnSpike2),
-        fiveNote);
+  public Command source4() {
+    return preloadToFirstSpike(sourceStartToSpike0)
+        .andThen(firstSpikeToThirdSpike(true))
+        .andThen(followTrajectory(drive, spike2ToCenter));
   }
 
-  public Command buildSpikeAuto(
-      SpikeAutoSetup spikeAutoSetup, BooleanSupplier fiveNote, BooleanSupplier escape) {
-    Command preloadWithFirstSpike =
-        switch (spikeAutoSetup) {
-          case SOURCE -> preloadToFirstSpike(sourceSideStartToSpike0);
-          case CENTER_SOURCE_TO_AMP -> preloadToFirstSpike(centerSideStartToSpike0);
-          case CENTER_AMP_TO_SOURCE -> preloadToFirstSpike(centerSideStartToSpike2);
-          case AMP -> preloadToFirstSpike(ampSideStartToSpike2);
-        };
-    boolean endsOnSpike2 =
-        spikeAutoSetup == SpikeAutoSetup.SOURCE
-            || spikeAutoSetup == SpikeAutoSetup.CENTER_SOURCE_TO_AMP;
-    Command firstSpikeToThirdSpike = firstSpikeToThirdSpike(endsOnSpike2);
-    return preloadWithFirstSpike.andThen(
-        firstSpikeToThirdSpike,
-        // Fifth note
-        Commands.either(thirdSpikeToCenterline2(endsOnSpike2), Commands.none(), fiveNote),
-        // Escape to centerline at end
-        Commands.either(
-            escapeToCenterlineFromSpike(endsOnSpike2, fiveNote), Commands.none(), escape));
+  public Command source5() {
+    return preloadToFirstSpike(sourceStartToSpike0)
+        .andThen(firstSpikeToThirdSpike(true))
+        .andThen(thirdSpikeToCenterline2(true))
+        .andThen(followTrajectory(drive, wingShotToCenter));
   }
 
-  public enum SpikeAutoSetup {
-    SOURCE,
-    CENTER_SOURCE_TO_AMP,
-    CENTER_AMP_TO_SOURCE,
-    AMP
+  public Command center4() {
+    return preloadToFirstSpike(centerStartToSpike0)
+        .andThen(firstSpikeToThirdSpike(true))
+        .andThen(followTrajectory(drive, spike2ToCenter));
+  }
+
+  public Command center5() {
+    return preloadToFirstSpike(centerStartToSpike0)
+        .andThen(firstSpikeToThirdSpike(true))
+        .andThen(thirdSpikeToCenterline2(true))
+        .andThen(followTrajectory(drive, wingShotToCenter));
+  }
+
+  public Command amp4() {
+    return preloadToFirstSpike(ampStartToSpike2)
+        .andThen(firstSpikeToThirdSpike(false))
+        .andThen(followTrajectory(drive, spike0ToCenter));
+  }
+
+  public Command amp5() {
+    return preloadToFirstSpike(ampStartToSpike2)
+        .andThen(firstSpikeToThirdSpike(false))
+        .andThen(thirdSpikeToCenterline2(false))
+        .andThen(followTrajectory(drive, underStageShotToCenter));
   }
 
   public Command N5_S01_C2_S2() {
@@ -261,7 +250,7 @@ public class AutoBuilder {
                                     RobotState.getInstance().getAimingParameters().driveHeading()),
                         drive::clearHeadingGoal)
                     .withTimeout(preloadDelay),
-                followTrajectory(drive, sourceSideStartToSpike0),
+                followTrajectory(drive, sourceStartToSpike0),
                 Commands.startEnd(
                         () ->
                             drive.setHeadingGoal(

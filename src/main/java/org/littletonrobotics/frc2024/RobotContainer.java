@@ -74,7 +74,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
-import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -366,8 +365,6 @@ public class RobotContainer {
 
   private void configureAutos() {
     AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
-    LoggedDashboardBoolean fiveNote = new LoggedDashboardBoolean("Five Note", false);
-    LoggedDashboardBoolean escape = new LoggedDashboardBoolean("Escape", false);
 
     autoChooser.addDefaultOption(
         "Do Nothing",
@@ -380,20 +377,13 @@ public class RobotContainer {
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
     // Spike autos
-    autoChooser.addOption(
-        "Source Start",
-        autoBuilder.buildSpikeAuto(AutoBuilder.SpikeAutoSetup.SOURCE, fiveNote::get, escape::get));
-    autoChooser.addOption(
-        "Center Start Source To Amp",
-        autoBuilder.buildSpikeAuto(
-            AutoBuilder.SpikeAutoSetup.CENTER_SOURCE_TO_AMP, fiveNote::get, escape::get));
-    autoChooser.addOption(
-        "Center Start Amp To Source",
-        autoBuilder.buildSpikeAuto(
-            AutoBuilder.SpikeAutoSetup.CENTER_AMP_TO_SOURCE, fiveNote::get, escape::get));
-    autoChooser.addOption(
-        "Amp Start",
-        autoBuilder.buildSpikeAuto(AutoBuilder.SpikeAutoSetup.AMP, fiveNote::get, escape::get));
+    autoChooser.addOption("Source 4", autoBuilder.source4());
+    autoChooser.addOption("Center 4", autoBuilder.center4());
+    autoChooser.addOption("Amp 4", autoBuilder.amp4());
+    autoChooser.addOption("Source 5", autoBuilder.source5());
+    autoChooser.addOption("Center 5", autoBuilder.center5());
+    autoChooser.addOption("Amp 5", autoBuilder.amp5());
+    autoChooser.addOption("N5_S01_C2_S2", autoBuilder.N5_S01_C2_S2());
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive FF Characterization",

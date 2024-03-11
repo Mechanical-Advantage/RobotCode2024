@@ -28,7 +28,7 @@ args = parser.parse_args()
 
 
 #------------------
-#-- Setup Network Tables
+#-- Setup NetworkTables
 #------------------
 client = ntcore.NetworkTableInstance.getDefault()
 client.startClient4(f'battery-scanner')

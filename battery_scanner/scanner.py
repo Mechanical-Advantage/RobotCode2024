@@ -12,6 +12,7 @@ import re
 #-- Parameters
 #------------------
 logging.basicConfig(level=logging.INFO)
+
 timeout = 5
 prefix = array.array('B', [0x02, 0x00, 0x00, 0x01, 0x00, 0x33, 0x31])
 scan_command = array.array('B',[0x7e, 0x00, 0x08, 0x01, 0x00, 0x02, 0x01, 0xab, 0xcd])
@@ -66,7 +67,7 @@ except Exception as e:
 #-- Publish name
 #------------------
 if name is not None:
-  pub.set(name)
+  pub.set(f"BAT-{name}")
 else:
   logging.error("Unable to read battery code")
 

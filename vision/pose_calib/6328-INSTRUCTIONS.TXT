@@ -1,0 +1,14 @@
+1. Buy this charuco board: https://calib.io/collections/products/products/charuco-targets?variant=9400454873135
+   400 x 300 mm, Coarse Pattern
+2. pip3 install numpy==1.23.1
+   pip3 install opencv-python==4.5.5.64
+   pip3 install opencv-contrib-python==4.5.5.64
+3. Modify data/calib_config.yml to match your camera's resolution, and change board parameters if using a different charuco board.
+   Find a list of dictionary numbers here: https://docs.opencv.org/4.x/de/d67/group__objdetect__aruco.html#ga4e13135a118f497c6172311d601ce00d
+   Indices start at 0 from the top of the list
+4. Modify pose_calib.py, set cam_id to your camera's ID. This section of code will need to be modified for non Linux systems. In theory the config file should allow setting this index but it wasn't working for us.
+5. Run the calibration command: python3 pose_calib.py -m
+   -m mirrors the image, which was easier for us to use
+6. Move the charuco board to the poses indicated on the image preview
+7. Once calibration is complete, the image stream will freeze. Ctrl+C after the calib_default.yml file appears in the working directory
+8. Run python3 convert_calib.py to convert the yml file to json (needs to be edited first to set the input file path). You could also modify the pose_calib.py to directly output JSON, we just didn't bother.

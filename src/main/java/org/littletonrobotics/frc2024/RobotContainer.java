@@ -679,8 +679,13 @@ public class RobotContainer {
                 .ignoringDisable(true)
                 .repeatedly());
 
-    // Adjust arm preset
-    operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+    // Switch arm preset
+    operator
+        .y()
+        .onTrue(Commands.runOnce(() -> podiumShotMode = true)); //  set preset mode to podium
+    operator
+        .a()
+        .onTrue(Commands.runOnce(() -> podiumShotMode = false)); // set preset mode to subwoofer
 
     // Climber controls
     operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
@@ -712,18 +717,15 @@ public class RobotContainer {
 
     // Request amp
     operator
-        .b()
+        .x()
         .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
-    operator.a().whileTrue(rollers.shuffle());
-
-    // Start flywheels
-    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
+    operator.b().whileTrue(rollers.shuffle());
 
     // Unjam folded to shooter
     operator
-        .leftTrigger()
+        .rightTrigger()
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.AMP)
@@ -734,7 +736,7 @@ public class RobotContainer {
 
     // Unjam intake
     operator
-        .y()
+        .rightBumper()
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
@@ -750,9 +752,9 @@ public class RobotContainer {
                 .withName("Backpack Out Unjam"));
 
     // Reset heading
-    driver
+    operator
         .start()
-        .and(driver.back())
+        .and(operator.back())
         .onTrue(
             Commands.runOnce(
                     () ->

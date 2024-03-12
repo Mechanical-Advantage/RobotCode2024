@@ -223,7 +223,7 @@ public class DriveTrajectories {
         "centerStartToSpike0",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingLineSpike1)
+                .addPoseWaypoint(getShootingPose(startingLineSpike1.getTranslation()))
                 .addPoseWaypoint(
                     spike0ShootingPose.transformBy(new Translation2d(0.8, 0.0).toTransform2d()))
                 .addPoseWaypoint(
@@ -233,7 +233,7 @@ public class DriveTrajectories {
         "sourceStartToSpike0",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingLineSpike0)
+                .addPoseWaypoint(getShootingPose(startingLineSpike0.getTranslation()))
                 .addPoseWaypoint(
                     spike0ShootingPose.transformBy(new Translation2d(0.8, 0.0).toTransform2d()))
                 .addPoseWaypoint(
@@ -243,7 +243,7 @@ public class DriveTrajectories {
         "ampStartToSpike2",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingLineSpike2)
+                .addPoseWaypoint(getShootingPose(startingLineSpike2.getTranslation()))
                 .addPoseWaypoint(
                     spike2ShootingPose.transformBy(new Translation2d(0.8, 0).toTransform2d()))
                 .addPoseWaypoint(

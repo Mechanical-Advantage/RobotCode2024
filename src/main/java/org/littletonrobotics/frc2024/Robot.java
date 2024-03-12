@@ -25,6 +25,9 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import lombok.Getter;
 import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
@@ -60,7 +63,9 @@ public class Robot extends LoggedRobot {
   private final Timer canInitialErrorTimer = new Timer();
   private final Timer canErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
+  private double teleStart;
 
+  @Getter private static double teleElapsedTime = 0.0;
   private final Alert canErrorAlert =
       new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert canivoreErrorAlert =
@@ -72,6 +77,9 @@ public class Robot extends LoggedRobot {
   private final Alert sameBatteryAlert =
       new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
 
+  public static Trigger getClimbTrigger(){
+    return new Trigger(() -> teleElapsedTime > 130.0);
+  }
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -283,6 +291,8 @@ public class Robot extends LoggedRobot {
     Threads.setCurrentThreadPriority(true, 10);
   }
 
+
+
   /** This function is called once when the robot is disabled. */
   @Override
   public void disabledInit() {}
@@ -323,11 +333,16 @@ public class Robot extends LoggedRobot {
     }
     NoteVisualizer.clearAutoNotes();
     NoteVisualizer.showAutoNotes();
+
+    teleStart = Timer.getFPGATimestamp();
   }
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    teleElapsedTime = Timer.getFPGATimestamp() - teleStart;
+    System.out.println("Teleop Elapsed Time: " + teleElapsedTime);
+  }
 
   /** This function is called once when test mode is enabled. */
   @Override

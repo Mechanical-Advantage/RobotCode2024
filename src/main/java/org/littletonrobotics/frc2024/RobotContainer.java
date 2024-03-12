@@ -463,12 +463,22 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
+    Translation2d superPoopTarget =
+        FieldConstants.Speaker.centerSpeakerOpening
+            .toTranslation2d()
+            .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
         .and(inWing.negate())
         .whileTrue(
-            driveAimCommand
-                .get()
+            Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () ->
+                                AllianceFlipUtil.apply(superPoopTarget)
+                                    .minus(robotState.getEstimatedPose().getTranslation())
+                                    .getAngle()),
+                    drive::clearHeadingGoal)
                 .alongWith(
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand())
@@ -479,6 +489,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
+        .and(inWing)
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -487,6 +498,18 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
+    driver
+        .rightTrigger()
+        .and(driver.a())
+        .and(inWing.negate())
+        .and(readyToShoot)
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
+                .deadlineWith(
+                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                    flywheels.superPoopCommand()));
     driver
         .a()
         .and(readyToShoot)
@@ -520,6 +543,18 @@ public class RobotContainer {
                     Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
+    driver
+        .leftTrigger()
+        .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
+        .onTrue(
+            Commands.startEnd(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+                    },
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                    })
+                .withTimeout(0.5));
 
     // Eject Floor
     driver
@@ -557,8 +592,8 @@ public class RobotContainer {
                   .getEstimatedPose()
                   .getTranslation()
                   .getDistance(finalPose.getTranslation());
-          double offsetT = MathUtil.clamp((distance - 0.5) / 2.5, 0.0, 1.0);
-          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.5, 0.0));
+          double offsetT = MathUtil.clamp((distance - 0.3) / 2.5, 0.0, 1.0);
+          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.75, 0.0));
         };
     driver
         .b()

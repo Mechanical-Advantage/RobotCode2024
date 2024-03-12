@@ -65,6 +65,7 @@ deploy {
 
                 frcJava(getArtifactTypeClass('FRCJavaArtifact')) {
                     gcType = edu.wpi.first.gradlerio.deploy.roborio.GarbageCollectorType.G1_Base
+                    jvmArgs.add("-Xms256m")
                 }
 
                 // Static files artifact

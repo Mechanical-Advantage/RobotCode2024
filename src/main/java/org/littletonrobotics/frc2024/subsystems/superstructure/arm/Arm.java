@@ -174,6 +174,11 @@ public class Arm {
     }
     Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
 
+    // Don't power arm if at hard stop
+    if (goal == Goal.STOW && atGoal()) {
+      io.stop();
+    }
+
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean());
     Leds.getInstance().armCoast = coastSupplier.getAsBoolean();

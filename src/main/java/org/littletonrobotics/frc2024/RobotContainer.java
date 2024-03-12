@@ -332,7 +332,7 @@ public class RobotContainer {
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
         .onTrue(
-            controllerRumbleCommand(true, true)
+            controllerRumbleCommand()
                 .withTimeout(0.5)
                 .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
                 .finallyDo(() -> Leds.getInstance().endgameAlert = false));
@@ -342,7 +342,7 @@ public class RobotContainer {
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
         .onTrue(
-            controllerRumbleCommand(true, true)
+            controllerRumbleCommand()
                 .withTimeout(0.2)
                 .andThen(Commands.waitSeconds(0.1))
                 .repeatedly()
@@ -494,7 +494,7 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
-    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, true));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
     driver
         .rightTrigger()
         .and(driver.a())
@@ -507,7 +507,7 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand()));
-    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, true));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
 
     // Poop.
     driver
@@ -533,7 +533,7 @@ public class RobotContainer {
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
-        .onTrue(controllerRumbleCommand(true, true).withTimeout(0.5));
+        .onTrue(controllerRumbleCommand().withTimeout(0.5));
 
     // Eject Floor
     driver
@@ -735,17 +735,11 @@ public class RobotContainer {
   }
 
   /** Creates a controller rumble command with specified rumble and controllers */
-  private Command controllerRumbleCommand(boolean useRightRumble, boolean rumbleOperator) {
+  private Command controllerRumbleCommand() {
     return Commands.startEnd(
         () -> {
-          driver
-              .getHID()
-              .setRumble(useRightRumble ? RumbleType.kBothRumble : RumbleType.kLeftRumble, 1.0);
-          if (rumbleOperator) {
-            operator
-                .getHID()
-                .setRumble(useRightRumble ? RumbleType.kBothRumble : RumbleType.kLeftRumble, 1.0);
-          }
+          driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+          operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
         },
         () -> {
           driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);

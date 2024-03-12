@@ -20,7 +20,7 @@ public class ArmConstants {
   public static final Translation2d armOrigin = new Translation2d(-0.238, 0.298);
   public static final Rotation2d minAngle =
       switch (Constants.getRobot()) {
-        default -> Rotation2d.fromDegrees(0.0);
+        default -> Rotation2d.fromDegrees(6.85); // Measured from hardstop 6/12/24
         case DEVBOT -> Rotation2d.fromDegrees(10.0);
       };
   public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);

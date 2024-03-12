@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -123,7 +122,6 @@ public class RobotContainer {
       new LoggedDashboardNumber("Endgame Alert #2", 15.0);
 
   private boolean podiumShotMode = false;
-  private boolean trapScoreMode = true;
   private boolean armCoastOverride = false;
 
   // Dashboard inputs
@@ -427,17 +425,14 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // ------------- Driver Controls -------------
-    // Drive command
     drive.setDefaultCommand(
-        drive
-            .run(
-                () ->
-                    drive.acceptTeleopInput(
-                        -driver.getLeftY(),
-                        -driver.getLeftX(),
-                        -driver.getRightX(),
-                        robotRelative.getAsBoolean()))
-            .withName("Drive Teleop Input"));
+        drive.run(
+            () ->
+                drive.acceptTeleopInput(
+                    -driver.getLeftY(),
+                    -driver.getLeftX(),
+                    -driver.getRightX(),
+                    robotRelative.getAsBoolean())));
 
     // ------------- Shooting Controls -------------
     // Aim and rev flywheels
@@ -651,17 +646,22 @@ public class RobotContainer {
         .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
     // ------------- Climbing Controls -------------
+    Command trapSequence =
+        ClimbingCommands.trapSequence(
+            drive, superstructure, rollers, driver.povUp(), driver.povDown());
+    Command simpleSequence =
+        ClimbingCommands.simpleSequence(superstructure, driver.povUp(), driver.povDown());
     driver
-        .x()
-        .and(
-            () ->
-                superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
-                    && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
-        .toggleOnTrue(
-            Commands.either(
-                superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
-                Commands.none(), // No function yet
-                () -> trapScoreMode));
+        .start()
+        .and(driver.back())
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  simpleSequence.cancel();
+                  trapSequence.cancel();
+                }));
+    driver.x().doublePress().toggleOnTrue(trapSequence);
+    driver.y().doublePress().toggleOnTrue(simpleSequence);
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -682,34 +682,6 @@ public class RobotContainer {
 
     // Adjust arm preset
     operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
-
-    // Climber controls
-    operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
-    operator
-        .leftBumper()
-        .doublePress()
-        .and(() -> trapScoreMode)
-        .toggleOnTrue(
-            ClimbingCommands.climbNTrapSequence(
-                    drive,
-                    superstructure,
-                    rollers,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    () -> -driver.getRightX(),
-                    operator.rightBumper().doublePress(),
-                    operator.start().doublePress().or(operator.back().doublePress()),
-                    autoDriveDisable)
-                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
-    operator
-        .leftBumper()
-        .doublePress()
-        .and(() -> !trapScoreMode)
-        .toggleOnTrue(
-            ClimbingCommands.simpleClimbSequence(
-                    superstructure, operator.rightBumper().doublePress())
-                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
-    operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
 
     // Request amp
     operator
@@ -749,19 +721,6 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.BACKPACK_OUT_UNJAM)
                 .withName("Backpack Out Unjam"));
-
-    // Reset heading
-    driver
-        .start()
-        .and(driver.back())
-        .onTrue(
-            Commands.runOnce(
-                    () ->
-                        robotState.resetPose(
-                            new Pose2d(
-                                robotState.getEstimatedPose().getTranslation(),
-                                AllianceFlipUtil.apply(new Rotation2d()))))
-                .ignoringDisable(true));
   }
 
   /** Updates the alerts for disconnected controllers. */
@@ -781,7 +740,6 @@ public class RobotContainer {
         "Shot Compensation Degrees",
         String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
-    SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
   }
 
   /** Updates the AprilTag alert. */

@@ -377,6 +377,14 @@ public class RobotContainer {
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
+    // Spike autos
+    autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
+    autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
+    autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());
+    autoChooser.addOption("Spike: Source 5", autoBuilder.source5());
+    autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
+    autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
+
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive Static Characterization",

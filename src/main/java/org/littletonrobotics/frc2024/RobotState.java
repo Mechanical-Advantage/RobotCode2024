@@ -18,6 +18,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.DriverStation;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
@@ -245,7 +246,7 @@ public class RobotState {
   }
 
   public ModuleLimits getModuleLimits() {
-    return flywheelAccelerating
+    return flywheelAccelerating && !DriverStation.isAutonomousEnabled()
         ? DriveConstants.moduleLimitsFlywheelSpinup
         : DriveConstants.moduleLimitsFree;
   }

@@ -507,10 +507,7 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand()));
-    driver
-        .a()
-        .and(readyToShoot)
-        .whileTrue(controllerRumbleCommand(true, true));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, true));
 
     // Poop.
     driver
@@ -536,8 +533,7 @@ public class RobotContainer {
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
-        .onTrue(controllerRumbleCommand(true, true)
-                .withTimeout(0.5));
+        .onTrue(controllerRumbleCommand(true, true).withTimeout(0.5));
 
     // Eject Floor
     driver

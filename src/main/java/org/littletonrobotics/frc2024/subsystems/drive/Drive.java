@@ -254,16 +254,16 @@ public class Drive extends SubsystemBase {
       default -> {}
     }
 
-    // Run robot at desiredSpeeds
-    // Generate feasible next setpoint
-    currentSetpoint =
-        setpointGenerator.generateSetpoint(
-            currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
-
-    // run modules
+    // Run modules
     if (currentDriveMode != DriveMode.CHARACTERIZATION && !modulesOrienting) {
+      // Run robot at desiredSpeeds
+      // Generate feasible next setpoint
+      currentSetpoint =
+          setpointGenerator.generateSetpoint(
+              currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
       SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
       SwerveModuleState[] optimizedSetpointTorques = new SwerveModuleState[4];
+
       for (int i = 0; i < modules.length; i++) {
         // Optimize setpoints
         optimizedSetpointStates[i] =
@@ -412,11 +412,14 @@ public class Drive extends SubsystemBase {
    */
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
+          SwerveModuleState[] states = new SwerveModuleState[4];
           for (int i = 0; i < orientations.length; i++) {
             modules[i].runSetpoint(
                 new SwerveModuleState(0.0, orientations[i]),
                 new SwerveModuleState(0.0, new Rotation2d()));
+            states[i] = new SwerveModuleState(0.0, modules[i].getAngle());
           }
+          currentSetpoint = new SwerveSetpoint(new ChassisSpeeds(), states);
         })
         .until(
             () ->

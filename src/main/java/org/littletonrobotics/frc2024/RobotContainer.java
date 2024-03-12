@@ -112,7 +112,7 @@ public class RobotContainer {
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
-      new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
+      new Alert("Operator controller disconnected (port 1).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =
@@ -365,6 +365,14 @@ public class RobotContainer {
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
+    // Spike autos
+    autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
+    autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
+    autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());
+    autoChooser.addOption("Spike: Source 5", autoBuilder.source5());
+    autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
+    autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
+
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive Static Characterization",
@@ -451,12 +459,22 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
+    Translation2d superPoopTarget =
+        FieldConstants.Speaker.centerSpeakerOpening
+            .toTranslation2d()
+            .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
         .and(inWing.negate())
         .whileTrue(
-            driveAimCommand
-                .get()
+            Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () ->
+                                AllianceFlipUtil.apply(superPoopTarget)
+                                    .minus(robotState.getEstimatedPose().getTranslation())
+                                    .getAngle()),
+                    drive::clearHeadingGoal)
                 .alongWith(
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand())
@@ -467,6 +485,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
+        .and(inWing)
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -476,6 +495,29 @@ public class RobotContainer {
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
     driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand(true, false));
+    driver
+        .rightTrigger()
+        .and(driver.a())
+        .and(inWing.negate())
+        .and(readyToShoot)
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
+                .deadlineWith(
+                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                    flywheels.superPoopCommand()));
+    driver
+        .a()
+        .and(readyToShoot)
+        .whileTrue(
+            Commands.startEnd(
+                () -> {
+                  driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+                },
+                () -> {
+                  driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                }));
 
     // Poop.
     driver
@@ -498,6 +540,18 @@ public class RobotContainer {
                     Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
+    driver
+        .leftTrigger()
+        .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
+        .onTrue(
+            Commands.startEnd(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+                    },
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                    })
+                .withTimeout(0.5));
 
     // Eject Floor
     driver
@@ -535,8 +589,8 @@ public class RobotContainer {
                   .getEstimatedPose()
                   .getTranslation()
                   .getDistance(finalPose.getTranslation());
-          double offsetT = MathUtil.clamp((distance - 0.5) / 2.5, 0.0, 1.0);
-          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.5, 0.0));
+          double offsetT = MathUtil.clamp((distance - 0.3) / 2.5, 0.0, 1.0);
+          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.75, 0.0));
         };
     driver
         .b()

@@ -1,0 +1,11 @@
+%YAML:1.0
+---
+terminate_var: 0.1
+image_width: 1600
+image_height: 1200
+board_x: 12
+board_y: 9
+square_len: 30
+marker_len: 23
+dictionary: 7
+pt_min_markers: 1

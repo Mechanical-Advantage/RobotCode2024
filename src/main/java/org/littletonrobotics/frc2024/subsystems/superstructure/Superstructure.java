@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.superstructure;
 
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
@@ -38,16 +39,20 @@ public class Superstructure extends SubsystemBase {
     CLIMB,
     CANCEL_CLIMB,
     TRAP,
+    UNTRAP,
     RESET,
     DIAGNOSTIC_ARM
   }
 
   @Getter private Goal currentGoal = Goal.STOW;
   @Getter private Goal desiredGoal = Goal.STOW;
+  private Goal lastGoal = Goal.STOW;
 
   private final Arm arm;
   private final Climber climber;
   private final BackpackActuator backpackActuator;
+
+  private Timer goalTimer = new Timer();
 
   public Superstructure(Arm arm, Climber climber, BackpackActuator backpackActuator) {
     this.arm = arm;
@@ -55,6 +60,7 @@ public class Superstructure extends SubsystemBase {
     this.backpackActuator = backpackActuator;
 
     setDefaultCommand(setGoalCommand(Goal.STOW));
+    goalTimer.start();
   }
 
   @Override
@@ -75,10 +81,15 @@ public class Superstructure extends SubsystemBase {
     } else {
       currentGoal = desiredGoal;
     }
-
     if (desiredGoal == Goal.CANCEL_CLIMB || desiredGoal == Goal.CANCEL_PREPARE_CLIMB) {
       currentGoal = desiredGoal;
     }
+
+    // Reset timer
+    if (currentGoal != lastGoal) {
+      goalTimer.reset();
+    }
+    lastGoal = currentGoal;
 
     switch (currentGoal) {
       case STOW -> {
@@ -166,6 +177,15 @@ public class Superstructure extends SubsystemBase {
         arm.setGoal(Arm.Goal.CLIMB);
         climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
+      }
+      case UNTRAP -> {
+        arm.setGoal(Arm.Goal.UNTRAP);
+        climber.setGoal(Climber.Goal.RETRACT);
+        if (goalTimer.hasElapsed(0.1)) {
+          backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+        } else {
+          backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
+        }
       }
       case RESET -> {
         desiredGoal = Goal.STOW;

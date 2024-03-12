@@ -25,7 +25,7 @@ public class BackpackActuator extends GenericSlamElevator<BackpackActuator.Goal>
         true,
         SlamElevatorState.RETRACTING),
     EXTEND(
-        new LoggedTunableNumber("BackpackActuator/ExtendingCurrent", 25.0),
+        new LoggedTunableNumber("BackpackActuator/ExtendingCurrent", 35.0),
         false,
         SlamElevatorState.EXTENDING);
 

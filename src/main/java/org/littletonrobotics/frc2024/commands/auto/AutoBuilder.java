@@ -514,6 +514,7 @@ public class AutoBuilder {
                     aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
                     followTrajectory(drive, grabCenterline3),
                     followTrajectory(drive, grabCenterline2),
+                    Commands.waitSeconds(shootTimeoutSecs.get()),
                     followTrajectory(drive, underStageShotToCenter))
                 .alongWith(
                     // Superstructure and rollers sequence
@@ -543,8 +544,7 @@ public class AutoBuilder {
 
                             // Intake centerline 3
                             intake(superstructure, rollers)
-                                .withTimeout(grabCenterline3.getDuration() - 1.0)
-                                .andThen(superstructure.aimWithCompensation(0.0)),
+                                .withTimeout(grabCenterline3.getDuration() - 1.0),
 
                             // Shoot centerline 3
                             Commands.waitUntil(
@@ -570,11 +570,11 @@ public class AutoBuilder {
                                     true)
                                 .andThen(
                                     waitUntilXCrossed(
-                                        FieldConstants.wingX
-                                            + DriveConstants.driveConfig.bumperWidthX()
-                                            + 0.25,
-                                        false))
-                                .deadlineWith(intake(superstructure, rollers)),
+                                            FieldConstants.wingX
+                                                + DriveConstants.driveConfig.bumperWidthX()
+                                                + 0.25,
+                                            false)
+                                        .deadlineWith(intake(superstructure, rollers))),
 
                             // Shoot centerline 2
                             Commands.waitUntil(

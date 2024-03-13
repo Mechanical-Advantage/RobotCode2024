@@ -100,8 +100,6 @@ public class Rollers extends SubsystemBase {
     }
     lastGamepieceState = gamepieceState;
 
-    NoteVisualizer.setHasNote(gamepieceState != GamepieceState.NONE);
-
     // Reset idle and wait for other input
     feeder.setGoal(Feeder.Goal.IDLING);
     indexer.setGoal(Indexer.Goal.IDLING);
@@ -202,10 +200,16 @@ public class Rollers extends SubsystemBase {
 
     Leds.getInstance().hasNote = gamepieceState != GamepieceState.NONE;
     Leds.getInstance().intaking = goal == Goal.FLOOR_INTAKE || goal == Goal.STATION_INTAKE;
+    NoteVisualizer.setHasNote(gamepieceState != GamepieceState.NONE);
   }
 
   public Command setGoalCommand(Goal goal) {
     return startEnd(() -> this.goal = goal, () -> this.goal = Goal.IDLE)
+        .alongWith(
+            Commands.either(
+                Commands.waitSeconds(0.15).andThen(NoteVisualizer.shoot()),
+                Commands.none(),
+                () -> goal == Goal.FEED_TO_SHOOTER))
         .withName("Rollers " + goal);
   }
 

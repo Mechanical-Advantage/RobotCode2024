@@ -432,7 +432,8 @@ public class RobotContainer {
                     -driver.getLeftY(),
                     -driver.getLeftX(),
                     -driver.getRightX(),
-                    robotRelative.getAsBoolean())));
+                    robotRelative.getAsBoolean()))
+                .withName("Drive Teleop Input"));
 
     // ------------- Shooting Controls -------------
     // Aim and rev flywheels
@@ -660,8 +661,8 @@ public class RobotContainer {
                   simpleSequence.cancel();
                   trapSequence.cancel();
                 }));
-    driver.x().doublePress().toggleOnTrue(trapSequence);
-    driver.y().doublePress().toggleOnTrue(simpleSequence);
+    driver.x().doublePress().onTrue(trapSequence);
+    driver.y().doublePress().onTrue(simpleSequence);
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation

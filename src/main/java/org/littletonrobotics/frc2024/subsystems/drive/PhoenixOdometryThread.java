@@ -14,6 +14,7 @@ import com.ctre.phoenix6.hardware.ParentDevice;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.junction.Logger;
 
 /**
@@ -71,7 +72,7 @@ public class PhoenixOdometryThread extends Thread {
       signalsLock.lock();
       try {
         if (isCANFD) {
-          BaseStatusSignal.waitForAll(2.0 / DriveConstants.odometryFrequency, signals);
+          BaseStatusSignal.waitForAll(Constants.loopPeriodSecs, signals);
         } else {
           Thread.sleep((long) (1000.0 / DriveConstants.odometryFrequency));
           if (signals.length > 0) BaseStatusSignal.refreshAll(signals);

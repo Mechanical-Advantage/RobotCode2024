@@ -495,7 +495,6 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
-    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
     driver
         .rightTrigger()
         .and(driver.a())

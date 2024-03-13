@@ -377,6 +377,7 @@ public class RobotContainer {
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
+    autoChooser.addOption("Davis FRC 6328 Auto", autoBuilder.davisFRC6328Auto());
 
     // Spike autos
     autoChooser.addOption("Spike: Source 4", autoBuilder.source4());

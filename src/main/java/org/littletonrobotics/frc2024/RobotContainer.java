@@ -108,6 +108,7 @@ public class RobotContainer {
   private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
+  private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
@@ -298,23 +299,23 @@ public class RobotContainer {
     backpackActuator.setCoastOverride(() -> armCoastOverride);
     robotState.setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
-        () -> {
-          return DriverStation.isTeleopEnabled()
-              && robotState
-                      .getEstimatedPose()
-                      .getTranslation()
-                      .getDistance(
-                          AllianceFlipUtil.apply(
-                              FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-                  < Units.feetToMeters(25.0)
-              && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
-              && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB;
-        });
+        () ->
+            autoFlywheelSpinupDisable.negate().getAsBoolean()
+                && DriverStation.isTeleopEnabled()
+                && robotState
+                        .getEstimatedPose()
+                        .getTranslation()
+                        .getDistance(
+                            AllianceFlipUtil.apply(
+                                FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+                    < Units.feetToMeters(25.0)
+                && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
+                && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB);
 
     // Configure autos and buttons
     configureAutos();

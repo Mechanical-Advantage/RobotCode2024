@@ -78,7 +78,7 @@ public class Arm {
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     SUPER_POOP(new LoggedTunableNumber("Arm/SuperPoopDegrees", 48.0)),
-    STOW(new LoggedTunableNumber("Arm/StowDegrees", 5.5)),
+    STOW(new LoggedTunableNumber("Arm/StowDegrees", minAngle.getDegrees())),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
@@ -196,8 +196,13 @@ public class Arm {
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));
 
-      io.runSetpoint(
-          setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
+      if (goal == Goal.STOW && atGoal()) {
+        // Stop applying power against the hardstop
+        io.stop();
+      } else {
+        io.runSetpoint(
+            setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
+      }
     }
 
     // Logs

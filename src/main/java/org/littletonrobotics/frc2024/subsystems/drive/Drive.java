@@ -74,7 +74,7 @@ public class Drive extends SubsystemBase {
   }
 
   public static final Lock odometryLock = new ReentrantLock();
-  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
+  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(20);
 
   private final OdometryTimestampInputsAutoLogged odometryTimestampInputs =
       new OdometryTimestampInputsAutoLogged();

@@ -33,7 +33,7 @@ import org.littletonrobotics.junction.Logger;
 @ExtensionMethod({GeomUtil.class})
 public class AprilTagVision extends VirtualSubsystem {
   private static final LoggedTunableNumber timestampOffset =
-      new LoggedTunableNumber("AprilTagVision/TimestampOffset", -(1.0 / 60.0));
+      new LoggedTunableNumber("AprilTagVision/TimestampOffset", -(1.0 / 50.0));
 
   private final Supplier<AprilTagLayoutType> aprilTagTypeSupplier;
   private final AprilTagVisionIO[] io;

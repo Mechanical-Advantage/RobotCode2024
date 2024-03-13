@@ -633,7 +633,13 @@ public class RobotContainer {
                     Commands.waitUntil(
                             () -> {
                               if (autoDriveDisable.getAsBoolean()) {
-                                return drive.atHeadingGoal();
+                                double rotationDiff =
+                                    robotState
+                                        .getEstimatedPose()
+                                        .getRotation()
+                                        .minus(Rotation2d.fromDegrees(-90.0))
+                                        .getDegrees();
+                                return Math.abs(rotationDiff) <= 120.0;
                               }
                               Pose2d poseError =
                                   robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());

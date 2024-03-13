@@ -426,14 +426,15 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // ------------- Driver Controls -------------
     drive.setDefaultCommand(
-        drive.run(
-            () ->
-                drive.acceptTeleopInput(
-                    -driver.getLeftY(),
-                    -driver.getLeftX(),
-                    -driver.getRightX(),
-                    robotRelative.getAsBoolean()))
-                .withName("Drive Teleop Input"));
+        drive
+            .run(
+                () ->
+                    drive.acceptTeleopInput(
+                        -driver.getLeftY(),
+                        -driver.getLeftX(),
+                        -driver.getRightX(),
+                        robotRelative.getAsBoolean()))
+            .withName("Drive Teleop Input"));
 
     // ------------- Shooting Controls -------------
     // Aim and rev flywheels

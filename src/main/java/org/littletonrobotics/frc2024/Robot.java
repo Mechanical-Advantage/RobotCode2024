@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -25,9 +26,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
-
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import lombok.Getter;
 import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
@@ -64,8 +62,8 @@ public class Robot extends LoggedRobot {
   private final Timer canErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
   private double teleStart;
+  private static double teleElapsedTime = 0.0;
 
-  @Getter private static double teleElapsedTime = 0.0;
   private final Alert canErrorAlert =
       new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert canivoreErrorAlert =
@@ -77,9 +75,11 @@ public class Robot extends LoggedRobot {
   private final Alert sameBatteryAlert =
       new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
 
-  public static Trigger getClimbTrigger(){
-    return new Trigger(() -> teleElapsedTime > 130.0);
+  public static Trigger createTeleopTimeTrigger(double teleElapsedTime) {
+    return new Trigger(
+        () -> DriverStation.isFMSAttached() && Robot.teleElapsedTime > teleElapsedTime);
   }
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -290,8 +290,6 @@ public class Robot extends LoggedRobot {
 
     Threads.setCurrentThreadPriority(true, 10);
   }
-
-
 
   /** This function is called once when the robot is disabled. */
   @Override

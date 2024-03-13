@@ -78,6 +78,8 @@ public class Robot extends LoggedRobot {
    */
   @Override
   public void robotInit() {
+    Leds.getInstance();
+
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
     Logger.recordMetadata("BatteryName", "BAT-" + BatteryTracker.scanBattery(1.5));

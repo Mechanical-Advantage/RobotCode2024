@@ -793,6 +793,7 @@ public class RobotContainer {
         String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
     SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
+    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
   }
 
   /** Updates the AprilTag alert. */

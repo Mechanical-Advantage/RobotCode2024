@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.io.File;
 import java.io.FileWriter;
@@ -339,7 +340,6 @@ public class Robot extends LoggedRobot {
   @Override
   public void teleopPeriodic() {
     teleElapsedTime = Timer.getFPGATimestamp() - teleStart;
-    System.out.println("Teleop Elapsed Time: " + teleElapsedTime);
   }
 
   /** This function is called once when test mode is enabled. */

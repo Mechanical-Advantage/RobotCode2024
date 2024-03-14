@@ -608,7 +608,7 @@ public class RobotContainer {
                                 drive.acceptTeleopInput(
                                     -driver.getLeftY(),
                                     -driver.getLeftX(),
-                                    -driver.getRightX(),
+                                    0.0,
                                     robotRelative.getAsBoolean()))
                         .alongWith(
                             Commands.startEnd(
@@ -633,13 +633,7 @@ public class RobotContainer {
                     Commands.waitUntil(
                             () -> {
                               if (autoDriveDisable.getAsBoolean()) {
-                                double rotationDiff =
-                                    robotState
-                                        .getEstimatedPose()
-                                        .getRotation()
-                                        .minus(Rotation2d.fromDegrees(-90.0))
-                                        .getDegrees();
-                                return Math.abs(rotationDiff) <= 120.0;
+                                return true;
                               }
                               Pose2d poseError =
                                   robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());

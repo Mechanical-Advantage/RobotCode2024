@@ -283,9 +283,6 @@ public class Robot extends LoggedRobot {
       }
     }
 
-    //publish match time
-    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
-
     Threads.setCurrentThreadPriority(true, 10);
   }
 

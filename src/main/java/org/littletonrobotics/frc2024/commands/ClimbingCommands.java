@@ -31,11 +31,11 @@ public class ClimbingCommands {
       Drive drive,
       Superstructure superstructure,
       Rollers rollers,
-      Trigger forwwardTrigger,
+      Trigger forwardTrigger,
       Trigger reverseTrigger) {
     SteppableCommandGroup sequence =
         new SteppableCommandGroup(
-            forwwardTrigger.and(superstructure::atGoal),
+            forwardTrigger.and(superstructure::atGoal),
             reverseTrigger,
 
             // Move arm to prepare prepare climb setpoint while moving climbers up

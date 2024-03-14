@@ -661,8 +661,13 @@ public class RobotContainer {
                 .ignoringDisable(true)
                 .repeatedly());
 
-    // Adjust arm preset
-    operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
+    // Switch arm preset
+    operator
+        .y()
+        .onTrue(Commands.runOnce(() -> podiumShotMode = true)); //  set preset mode to podium
+    operator
+        .a()
+        .onTrue(Commands.runOnce(() -> podiumShotMode = false)); // set preset mode to subwoofer
 
     // Climber controls
     operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
@@ -694,47 +699,36 @@ public class RobotContainer {
 
     // Request amp
     operator
-        .b()
+        .x()
         .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
-    operator.a().whileTrue(rollers.shuffle());
+    operator.b().whileTrue(rollers.shuffle());
 
-    // Start flywheels
-    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
-
-    // Unjam folded to shooter
+    // Unjam (untaco)
     operator
-        .leftTrigger()
+        .rightTrigger()
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNTACO)))
-                .withName("Untaco"));
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNJAM_UNTACO)))
+                .withName("Unjam (Untaco)"));
 
-    // Unjam intake
+    // Unjam (feeder)
     operator
-        .y()
+        .rightBumper()
         .whileTrue(
             superstructure
-                .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_FROM_FEEDER))
-                .withName("Unjam From Feeder"));
-
-    operator
-        .povLeft()
-        .or(operator.povRight())
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.BACKPACK_OUT_UNJAM)
-                .withName("Backpack Out Unjam"));
+                .setGoalCommand(Superstructure.Goal.UNJAM_FEEDER)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.UNJAM_FEEDER))
+                .withName("Unjam (Feeder)"));
 
     // Reset heading
-    driver
+    operator
         .start()
-        .and(driver.back())
+        .and(operator.back())
         .onTrue(
             Commands.runOnce(
                     () ->

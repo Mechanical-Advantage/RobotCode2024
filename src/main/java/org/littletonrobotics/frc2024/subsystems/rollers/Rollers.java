@@ -130,7 +130,7 @@ public class Rollers extends SubsystemBase {
         }
       }
       case STATION_INTAKE -> {
-        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.08)) {
+        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.06)) {
           indexer.setGoal(Indexer.Goal.IDLING);
         } else {
           indexer.setGoal(Indexer.Goal.STATION_INTAKING);

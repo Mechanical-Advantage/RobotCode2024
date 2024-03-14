@@ -25,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
@@ -327,41 +326,30 @@ public class RobotContainer {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
 
-    // Endgame alert trigger
-    Function<Double, Command> controllerRumbleCommandFactory =
-        time ->
-            Commands.sequence(
-                Commands.runOnce(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      leds.endgameAlert = true;
-                    }),
-                Commands.waitSeconds(time),
-                Commands.runOnce(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      leds.endgameAlert = false;
-                    }));
+    // Endgame alert triggers
     new Trigger(
             () ->
                 DriverStation.isTeleopEnabled()
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
-        .onTrue(controllerRumbleCommandFactory.apply(0.5));
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.5)
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
     new Trigger(
             () ->
                 DriverStation.isTeleopEnabled()
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
         .onTrue(
-            Commands.sequence(
-                controllerRumbleCommandFactory.apply(0.2),
-                Commands.waitSeconds(0.1),
-                controllerRumbleCommandFactory.apply(0.2),
-                Commands.waitSeconds(0.1),
-                controllerRumbleCommandFactory.apply(0.2)));
+            controllerRumbleCommand()
+                .withTimeout(0.2)
+                .andThen(Commands.waitSeconds(0.1))
+                .repeatedly()
+                .withTimeout(0.9) // Rumble three times
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
   }
 
   private void configureAutos() {
@@ -519,17 +507,7 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand()));
-    driver
-        .a()
-        .and(readyToShoot)
-        .whileTrue(
-            Commands.startEnd(
-                () -> {
-                  driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-                },
-                () -> {
-                  driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                }));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
 
     // Poop.
     driver
@@ -557,15 +535,7 @@ public class RobotContainer {
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
-        .onTrue(
-            Commands.startEnd(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-                    },
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                    })
-                .withTimeout(0.5));
+        .onTrue(controllerRumbleCommand().withTimeout(0.5));
 
     // Eject Floor
     driver
@@ -769,6 +739,19 @@ public class RobotContainer {
                 .ignoringDisable(true));
   }
 
+  /** Creates a controller rumble command with specified rumble and controllers */
+  private Command controllerRumbleCommand() {
+    return Commands.startEnd(
+        () -> {
+          driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+          operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+        },
+        () -> {
+          driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+          operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+        });
+  }
+
   /** Updates the alerts for disconnected controllers. */
   public void checkControllers() {
     driverDisconnected.set(
@@ -787,6 +770,7 @@ public class RobotContainer {
         String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
     SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
+    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
   }
 
   /** Updates the AprilTag alert. */

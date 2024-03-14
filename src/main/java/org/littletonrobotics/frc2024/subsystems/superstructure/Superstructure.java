@@ -137,6 +137,11 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
+      case PODIUM -> {
+        arm.setGoal(Arm.Goal.PODIUM);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
       case RESET_CLIMB -> {
         arm.setGoal(Arm.Goal.RESET_CLIMB);
         if (arm.atGoal()) {

@@ -260,7 +260,7 @@ public class AutoBuilder {
                         waitUntilXCrossed(FieldConstants.wingX + 0.05, true)
                             .andThen(waitUntilXCrossed(FieldConstants.wingX, false))
                             .deadlineWith(
-                                superstructure.aimWithCompensation(0.0),
+                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
                                 rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)),
 
                         // Shoot centerline 0

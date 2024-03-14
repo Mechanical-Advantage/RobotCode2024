@@ -533,7 +533,9 @@ public class RobotContainer {
 
     // Poop.
     driver
-        .y()
+        .rightTrigger()
+        .and(driver.a().negate())
+        .and(driver.b().negate())
         .whileTrue(
             flywheels
                 .poopCommand()
@@ -608,13 +610,20 @@ public class RobotContainer {
         .b()
         .whileTrue(
             Commands.either(
-                    drive.run(
-                        () ->
-                            drive.acceptTeleopInput(
-                                -driver.getLeftY(),
-                                -driver.getLeftX(),
-                                -driver.getRightX(),
-                                robotRelative.getAsBoolean())),
+                    // Drive while heading is being controlled
+                    drive
+                        .run(
+                            () ->
+                                drive.acceptTeleopInput(
+                                    -driver.getLeftY(),
+                                    -driver.getLeftX(),
+                                    0.0,
+                                    robotRelative.getAsBoolean()))
+                        .alongWith(
+                            Commands.startEnd(
+                                () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
+                                drive::clearHeadingGoal)),
+                    // Auto drive to amp aligned
                     drive
                         .startEnd(
                             () -> drive.setAutoAlignGoal(ampAlignedPose, false),
@@ -632,7 +641,9 @@ public class RobotContainer {
                 .alongWith(
                     Commands.waitUntil(
                             () -> {
-                              if (autoDriveDisable.getAsBoolean()) return true;
+                              if (autoDriveDisable.getAsBoolean()) {
+                                return true;
+                              }
                               Pose2d poseError =
                                   robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
                               return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)

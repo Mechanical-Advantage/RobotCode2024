@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -60,6 +61,8 @@ public class Robot extends LoggedRobot {
   private final Timer canInitialErrorTimer = new Timer();
   private final Timer canErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
+  private double teleStart;
+  private static double teleElapsedTime = 0.0;
 
   private final Alert canErrorAlert =
       new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
@@ -71,6 +74,14 @@ public class Robot extends LoggedRobot {
           AlertType.WARNING);
   private final Alert sameBatteryAlert =
       new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
+
+  public static Trigger createTeleopTimeTrigger(double teleElapsedTime) {
+    return new Trigger(
+        () ->
+            DriverStation.isFMSAttached()
+                && DriverStation.isTeleopEnabled()
+                && Robot.teleElapsedTime > teleElapsedTime);
+  }
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -325,11 +336,15 @@ public class Robot extends LoggedRobot {
     }
     NoteVisualizer.clearAutoNotes();
     NoteVisualizer.showAutoNotes();
+
+    teleStart = Timer.getFPGATimestamp();
   }
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    teleElapsedTime = Timer.getFPGATimestamp() - teleStart;
+  }
 
   /** This function is called once when test mode is enabled. */
   @Override

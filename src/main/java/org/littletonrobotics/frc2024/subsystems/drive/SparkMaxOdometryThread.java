@@ -41,7 +41,7 @@ public class SparkMaxOdometryThread {
   }
 
   public Queue<Double> registerSignal(DoubleSupplier signal) {
-    Queue<Double> queue = new ArrayBlockingQueue<>(100);
+    Queue<Double> queue = new ArrayBlockingQueue<>(20);
     Drive.odometryLock.lock();
     try {
       signals.add(signal);

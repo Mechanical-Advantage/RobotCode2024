@@ -188,7 +188,7 @@ public class Leds extends VirtualSubsystem {
       }
 
       if (endgameAlert) {
-        strobe(Color.kRed, strobeFastDuration);
+        strobe(Color.kRed, Color.kGold, strobeFastDuration);
       }
     }
 
@@ -215,9 +215,13 @@ public class Leds extends VirtualSubsystem {
     }
   }
 
+  private void strobe(Color c1, Color c2, double duration) {
+    boolean c1On = ((Timer.getFPGATimestamp() % duration) / duration) > 0.5;
+    solid(c1On ? c1 : c2);
+  }
+
   private void strobe(Color color, double duration) {
-    boolean on = ((Timer.getFPGATimestamp() % duration) / duration) > 0.5;
-    solid(on ? color : Color.kBlack);
+    strobe(color, Color.kBlack, duration);
   }
 
   private void breath(Color c1, Color c2) {

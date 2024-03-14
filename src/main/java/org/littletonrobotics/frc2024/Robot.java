@@ -77,7 +77,10 @@ public class Robot extends LoggedRobot {
 
   public static Trigger createTeleopTimeTrigger(double teleElapsedTime) {
     return new Trigger(
-        () -> DriverStation.isFMSAttached() && Robot.teleElapsedTime > teleElapsedTime);
+        () ->
+            DriverStation.isFMSAttached()
+                && DriverStation.isTeleopEnabled()
+                && Robot.teleElapsedTime > teleElapsedTime);
   }
 
   /**

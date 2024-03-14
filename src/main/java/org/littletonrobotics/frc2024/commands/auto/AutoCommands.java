@@ -31,7 +31,11 @@ public class AutoCommands {
    * @param pose Pose to reset to.
    */
   public static Command resetPose(Pose2d pose) {
-    return Commands.runOnce(() -> RobotState.getInstance().resetPose(AllianceFlipUtil.apply(pose)));
+    return Commands.runOnce(
+        () -> {
+          RobotState.getInstance().resetPose(AllianceFlipUtil.apply(pose));
+          RobotState.getInstance().setTrajectorySetpoint(AllianceFlipUtil.apply(pose));
+        });
   }
 
   /**

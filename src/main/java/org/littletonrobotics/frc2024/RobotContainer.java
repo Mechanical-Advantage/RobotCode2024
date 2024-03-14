@@ -735,7 +735,7 @@ public class RobotContainer {
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());
 
-    // Unjam folded to shooter
+    // Unjam (untaco)
     operator
         .rightTrigger()
         .whileTrue(
@@ -743,25 +743,17 @@ public class RobotContainer {
                 .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNTACO)))
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNJAM_UNTACO)))
                 .withName("Untaco"));
 
-    // Unjam intake
+    // Unjam (feeder)
     operator
         .rightBumper()
         .whileTrue(
             superstructure
-                .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_FROM_FEEDER))
+                .setGoalCommand(Superstructure.Goal.UNJAM_FEEDER)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.UNJAM_FEEDER))
                 .withName("Unjam From Feeder"));
-
-    operator
-        .povLeft()
-        .or(operator.povRight())
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.BACKPACK_OUT_UNJAM)
-                .withName("Backpack Out Unjam"));
 
     // Reset heading
     operator

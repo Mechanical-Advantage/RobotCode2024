@@ -37,10 +37,10 @@ public class Rollers extends SubsystemBase {
   public enum Goal {
     IDLE,
     FLOOR_INTAKE,
-    UNTACO,
     STATION_INTAKE,
     EJECT_TO_FLOOR,
-    EJECT_FROM_FEEDER,
+    UNJAM_UNTACO,
+    UNJAM_FEEDER,
     QUICK_INTAKE_TO_FEED,
     FEED_TO_SHOOTER,
     AMP_SCORE,
@@ -120,17 +120,8 @@ public class Rollers extends SubsystemBase {
           indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
         }
       }
-      case UNTACO -> {
-        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
-        intake.setGoal(Intake.Goal.IDLING);
-        if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
-          indexer.setGoal(Indexer.Goal.IDLING);
-        } else {
-          indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
-        }
-      }
       case STATION_INTAKE -> {
-        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.08)) {
+        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.06)) {
           indexer.setGoal(Indexer.Goal.IDLING);
         } else {
           indexer.setGoal(Indexer.Goal.STATION_INTAKING);
@@ -142,7 +133,16 @@ public class Rollers extends SubsystemBase {
         intake.setGoal(Intake.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.IDLING);
       }
-      case EJECT_FROM_FEEDER -> {
+      case UNJAM_UNTACO -> {
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        intake.setGoal(Intake.Goal.IDLING);
+        if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
+          indexer.setGoal(Indexer.Goal.IDLING);
+        } else {
+          indexer.setGoal(Indexer.Goal.FLOOR_INTAKING);
+        }
+      }
+      case UNJAM_FEEDER -> {
         feeder.setGoal(Feeder.Goal.EJECTING);
         indexer.setGoal(Indexer.Goal.IDLING);
         intake.setGoal(Intake.Goal.FLOOR_INTAKING);

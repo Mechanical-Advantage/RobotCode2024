@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.DoubleSupplier;
 import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
@@ -83,12 +84,12 @@ public class Robot extends LoggedRobot {
   private final Alert sameBatteryAlert =
       new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
 
-  public static Trigger createTeleopTimeTrigger(double teleElapsedTime) {
+  public static Trigger createTeleopTimeTrigger(DoubleSupplier teleElapsedTime) {
     return new Trigger(
         () ->
             DriverStation.isFMSAttached()
                 && DriverStation.isTeleopEnabled()
-                && Robot.teleElapsedTime > teleElapsedTime);
+                && Robot.teleElapsedTime > teleElapsedTime.getAsDouble());
   }
 
   /**

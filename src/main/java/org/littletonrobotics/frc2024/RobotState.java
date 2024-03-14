@@ -18,6 +18,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.wpilibj.DriverStation;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
@@ -45,7 +46,7 @@ public class RobotState {
       double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber lookahead =
-      new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
+      new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
   private static final double poseBufferSizeSeconds = 2.0;
 
   /** Arm angle look up table key: meters, values: degrees */
@@ -212,7 +213,8 @@ public class RobotState {
     Transform2d fieldToTarget =
         AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening)
             .toTranslation2d()
-            .toTransform2d();
+            .toTransform2d()
+            .plus(FudgeFactors.speaker.getTransform());
     Pose2d fieldToPredictedVehicle =
         lookaheadDisable.getAsBoolean()
             ? getEstimatedPose()
@@ -244,7 +246,7 @@ public class RobotState {
   }
 
   public ModuleLimits getModuleLimits() {
-    return flywheelAccelerating
+    return flywheelAccelerating && !DriverStation.isAutonomousEnabled()
         ? DriveConstants.moduleLimitsFlywheelSpinup
         : DriveConstants.moduleLimitsFree;
   }

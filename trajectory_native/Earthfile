@@ -1,105 +1,39 @@
 VERSION 0.8
 FROM scratch
 
-apk-deps:
+vts:
     FROM alpine:3.19.1
     WORKDIR /RobotCode2024/trajectory_native
-    RUN apk add --no-cache --update grpc-dev protobuf-dev blas-dev lapack-dev tinyxml2-dev
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-apk-deps:latest
 
-ipopt:
-    FROM +apk-deps
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN apk add --no-cache --update clang make patch gfortran
-    RUN mkdir ipopt-mumps-build
-    WORKDIR ipopt-mumps-build
-    RUN wget -c https://github.com/coin-or-tools/ThirdParty-Mumps/archive/refs/tags/releases/3.0.5.tar.gz -O - | tar -xz
-    WORKDIR ThirdParty-Mumps-releases-3.0.5
-    RUN ./get.Mumps
-    RUN ./configure
-    RUN make -j8
-    # Install to both system (for subsequent ipopt build) and installroot (to copy out as artifacts)
-    RUN make install
-    RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
-    WORKDIR ..
+    COPY --chmod=001 build_ipopt.sh build_ipopt.sh
+    RUN ./build_ipopt.sh
 
-    RUN wget -c https://github.com/coin-or/Ipopt/archive/refs/tags/releases/3.14.14.tar.gz -O - | tar -xz
-    RUN mkdir Ipopt-releases-3.14.14/build
-    WORKDIR Ipopt-releases-3.14.14/build
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN ../configure
-    RUN make -j8
-    RUN make DESTDIR=/RobotCode2024/trajectory_native/ipopt-mumps-build/installroot install
-    SAVE ARTIFACT /RobotCode2024/trajectory_native/ipopt-mumps-build/installroot
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-ipopt:latest
+    COPY --chmod=001 build_casadi.sh .
+    RUN ./build_casadi.sh
 
-casadi:
-    FROM +apk-deps
-    COPY +ipopt/installroot/usr/local /usr/local/
-    RUN wget -c https://github.com/casadi/casadi/archive/refs/tags/3.6.4.tar.gz -O - | tar -xz
-    RUN mkdir casadi-3.6.4/build
-    WORKDIR casadi-3.6.4/build
-    RUN apk add --no-cache --update clang make cmake
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN cmake -DWITH_IPOPT=ON -DWITH_DEEPBIND=OFF -DWITH_BUILD_TINYXML=OFF ..
-    RUN make -j8
-    RUN make DESTDIR=$(pwd)/installroot install
-    SAVE ARTIFACT installroot
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-casadi:latest
+    COPY --chmod=755 trajoptlib-CMakeLists.txt .
+    COPY --chmod=001 build_trajoptlib.sh .
+    RUN ./build_trajoptlib.sh
 
-trajoptlib:
-    FROM +apk-deps
-    COPY +ipopt/installroot/usr/local /usr/local/
-    COPY +casadi/installroot/usr/local /usr/local/
-    LET TRAJOPT_COMMIT=f6cf3d42359f6f41f311f848a4e7f51c3f88c2ca
-    RUN wget -c https://github.com/SleipnirGroup/TrajoptLib/archive/$TRAJOPT_COMMIT.tar.gz -O - | tar -xz
-    RUN mkdir TrajoptLib-$TRAJOPT_COMMIT/build
-    WORKDIR TrajoptLib-$TRAJOPT_COMMIT/build
-    # Use our CMakeLists.txt (uses system casadi install)
-    RUN rm ../CMakeLists.txt
-    COPY trajoptlib-CMakeLists.txt ../CMakeLists.txt
-    RUN apk add --no-cache --update clang make cmake git
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN cmake -DOPTIMIZER_BACKEND=casadi ..
-    RUN make -j8
-    RUN make DESTDIR=$(pwd)/installroot install
-    SAVE ARTIFACT installroot
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-trajoptlib:latest
+    WORKDIR vts
+    COPY --chmod=755 src src
+    COPY --chmod=755 proto proto
+    COPY --chmod=755 CMakeLists.txt CMakeLists.txt
+    COPY --chmod=001 build_vts.sh build_vts.sh
+    RUN ./build_vts.sh
 
-dev-image:
-    FROM +apk-deps
-    COPY +ipopt/installroot/usr/local /usr/local/
-    COPY +casadi/installroot/usr/local /usr/local/
-    COPY +trajoptlib/installroot/usr/local /usr/local/
-    RUN apk add --no-cache --update clang make cmake git gdb nlohmann-json fmt-dev
-    ENV CC=clang
-    ENV CXX=clang++
-    SAVE IMAGE --push ghcr.io/mechanical-advantage/vts-dev-image:latest
-
-vts:
-    FROM +dev-image
-    COPY src src
-    COPY proto proto
-    COPY CMakeLists.txt CMakeLists.txt
-    RUN mkdir build
-    WORKDIR build
-    ENV CC=clang
-    ENV CXX=clang++
-    RUN cmake ..
-    RUN make -j8
     EXPOSE 56328
     ENV GRPC_VERBOSITY=info
+    WORKDIR /RobotCode2024/trajectory_native/vts/build
     ENTRYPOINT ["./trajectory_native"]
     SAVE IMAGE --push ghcr.io/mechanical-advantage/vts:latest
 
+dev-image:
+    FROM +vts
+    RUN apk add --no-cache --update clang make cmake git gdb
+    ENV CC="clang"
+    ENV CXX="clang++"
+    SAVE IMAGE frc6328/vts-dev
+
 vts-all-platforms:
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +apk-deps
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +ipopt
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +casadi
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +trajoptlib
-    BUILD --platform=linux/amd64 --platform=linux/arm64 +dev-image
     BUILD --platform=linux/amd64 --platform=linux/arm64 +vts

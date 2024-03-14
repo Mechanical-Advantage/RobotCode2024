@@ -74,7 +74,7 @@ public class Drive extends SubsystemBase {
   }
 
   public static final Lock odometryLock = new ReentrantLock();
-  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
+  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(20);
 
   private final OdometryTimestampInputsAutoLogged odometryTimestampInputs =
       new OdometryTimestampInputsAutoLogged();
@@ -368,9 +368,9 @@ public class Drive extends SubsystemBase {
   }
 
   /** Runs forwards at the commanded voltage or amps. */
-  public void runCharacterization(double volts) {
+  public void runCharacterization(double input) {
     currentDriveMode = DriveMode.CHARACTERIZATION;
-    characterizationInput = volts;
+    characterizationInput = input;
   }
 
   /** Disables the characterization mode. */

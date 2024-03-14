@@ -55,8 +55,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   // Control
   private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0);
-  private final VelocityVoltage velocityControl =
-      new VelocityVoltage(0).withEnableFOC(true).withUpdateFreqHz(0);
+  private final TorqueCurrentFOC currentControl = new TorqueCurrentFOC(0).withUpdateFreqHz(0);
   private final VelocityTorqueCurrentFOC velocityTorqueCurrentFOC =
       new VelocityTorqueCurrentFOC(0).withUpdateFreqHz(0);
   private final PositionTorqueCurrentFOC positionControl =
@@ -190,6 +189,11 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   @Override
   public void runTurnVolts(double volts) {
     turnTalon.setControl(voltageControl.withOutput(volts));
+  }
+
+  @Override
+  public void runCharacterization(double input) {
+    driveTalon.setControl(currentControl.withOutput(input));
   }
 
   @Override

@@ -85,7 +85,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
  */
 @ExtensionMethod({DoublePressTracker.class})
 public class RobotContainer {
-  // Load robot state
+  // Load static objects
   private final RobotState robotState = RobotState.getInstance();
   private final Leds leds = Leds.getInstance();
 
@@ -109,17 +109,18 @@ public class RobotContainer {
   private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
+  private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
-      new Alert("Operator controller disconnected (port 0).", AlertType.WARNING);
+      new Alert("Operator controller disconnected (port 1).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =
-      new LoggedDashboardNumber("Endgame alert 1", 30.0);
+      new LoggedDashboardNumber("Endgame Alert #1", 30.0);
   private final LoggedDashboardNumber endgameAlert2 =
-      new LoggedDashboardNumber("Endgame alert 2", 10.0);
+      new LoggedDashboardNumber("Endgame Alert #2", 15.0);
 
   private boolean podiumShotMode = false;
   private boolean trapScoreMode = true;
@@ -297,24 +298,25 @@ public class RobotContainer {
     arm.setOverrides(armDisable, () -> armCoastOverride);
     climber.setCoastOverride(() -> armCoastOverride);
     backpackActuator.setCoastOverride(() -> armCoastOverride);
-    RobotState.getInstance().setLookaheadDisable(lookaheadDisable);
+    robotState.setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
-        () -> {
-          return DriverStation.isTeleopEnabled()
-              && RobotState.getInstance()
-                      .getEstimatedPose()
-                      .getTranslation()
-                      .getDistance(
-                          AllianceFlipUtil.apply(
-                              FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-                  < Units.feetToMeters(25.0)
-              && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
-              && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
-              && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB;
-        });
+        () ->
+            autoFlywheelSpinupDisable.negate().getAsBoolean()
+                && DriverStation.isTeleopEnabled()
+                && robotState
+                        .getEstimatedPose()
+                        .getTranslation()
+                        .getDistance(
+                            AllianceFlipUtil.apply(
+                                FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+                    < Units.feetToMeters(25.0)
+                && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
+                && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB);
 
     // Configure autos and buttons
     configureAutos();
@@ -333,14 +335,14 @@ public class RobotContainer {
                     () -> {
                       driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
                       operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      Leds.getInstance().endgameAlert = true;
+                      leds.endgameAlert = true;
                     }),
                 Commands.waitSeconds(time),
                 Commands.runOnce(
                     () -> {
                       driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
                       operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      Leds.getInstance().endgameAlert = false;
+                      leds.endgameAlert = false;
                     }));
     new Trigger(
             () ->
@@ -369,15 +371,27 @@ public class RobotContainer {
         "Do Nothing",
         Commands.runOnce(
             () ->
-                RobotState.getInstance()
-                    .resetPose(
-                        new Pose2d(
-                            new Translation2d(),
-                            AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
+                robotState.resetPose(
+                    new Pose2d(
+                        new Translation2d(),
+                        AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
 
+    // Spike autos
+    autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
+    autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
+    autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());
+    autoChooser.addOption("Spike: Source 5", autoBuilder.source5());
+    autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
+    autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
+
     // Set up feedforward characterization
+    autoChooser.addOption(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
+            .finallyDo(drive::endCharacterization));
     autoChooser.addOption(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
@@ -442,14 +456,13 @@ public class RobotContainer {
                 Commands.none(),
                 Commands.startEnd(
                     () ->
-                        drive.setHeadingGoal(
-                            () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+                        drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
     Trigger inWing =
         new Trigger(
             () ->
-                AllianceFlipUtil.apply(RobotState.getInstance().getEstimatedPose().getX())
+                AllianceFlipUtil.apply(robotState.getEstimatedPose().getX())
                     < FieldConstants.wingX);
     driver
         .a()
@@ -459,12 +472,22 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
+    Translation2d superPoopTarget =
+        FieldConstants.Speaker.centerSpeakerOpening
+            .toTranslation2d()
+            .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
         .and(inWing.negate())
         .whileTrue(
-            driveAimCommand
-                .get()
+            Commands.startEnd(
+                    () ->
+                        drive.setHeadingGoal(
+                            () ->
+                                AllianceFlipUtil.apply(superPoopTarget)
+                                    .minus(robotState.getEstimatedPose().getTranslation())
+                                    .getAngle()),
+                    drive::clearHeadingGoal)
                 .alongWith(
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand())
@@ -475,6 +498,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
+        .and(inWing)
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -483,6 +507,18 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
                     flywheels.shootCommand()));
+    driver
+        .rightTrigger()
+        .and(driver.a())
+        .and(inWing.negate())
+        .and(readyToShoot)
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
+                .deadlineWith(
+                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
+                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                    flywheels.superPoopCommand()));
     driver
         .a()
         .and(readyToShoot)
@@ -497,7 +533,9 @@ public class RobotContainer {
 
     // Poop.
     driver
-        .y()
+        .rightTrigger()
+        .and(driver.a().negate())
+        .and(driver.b().negate())
         .whileTrue(
             flywheels
                 .poopCommand()
@@ -516,6 +554,18 @@ public class RobotContainer {
                     Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
                 .withName("Floor Intake"));
+    driver
+        .leftTrigger()
+        .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
+        .onTrue(
+            Commands.startEnd(
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
+                    },
+                    () -> {
+                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+                    })
+                .withTimeout(0.5));
 
     // Eject Floor
     driver
@@ -545,26 +595,35 @@ public class RobotContainer {
               AllianceFlipUtil.apply(
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           var finalPose =
-              ampCenterRotated.transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0));
+              ampCenterRotated
+                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0))
+                  .transformBy(FudgeFactors.amp.getTransform());
           double distance =
-              RobotState.getInstance()
+              robotState
                   .getEstimatedPose()
                   .getTranslation()
                   .getDistance(finalPose.getTranslation());
-          double offsetT = MathUtil.clamp((distance - 0.5) / 2.5, 0.0, 1.0);
-          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.5, 0.0));
+          double offsetT = MathUtil.clamp((distance - 0.3) / 2.5, 0.0, 1.0);
+          return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.75, 0.0));
         };
     driver
         .b()
         .whileTrue(
             Commands.either(
-                    drive.run(
-                        () ->
-                            drive.acceptTeleopInput(
-                                -driver.getLeftY(),
-                                -driver.getLeftX(),
-                                -driver.getRightX(),
-                                robotRelative.getAsBoolean())),
+                    // Drive while heading is being controlled
+                    drive
+                        .run(
+                            () ->
+                                drive.acceptTeleopInput(
+                                    -driver.getLeftY(),
+                                    -driver.getLeftX(),
+                                    0.0,
+                                    robotRelative.getAsBoolean()))
+                        .alongWith(
+                            Commands.startEnd(
+                                () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
+                                drive::clearHeadingGoal)),
+                    // Auto drive to amp aligned
                     drive
                         .startEnd(
                             () -> drive.setAutoAlignGoal(ampAlignedPose, false),
@@ -582,11 +641,11 @@ public class RobotContainer {
                 .alongWith(
                     Commands.waitUntil(
                             () -> {
-                              if (autoDriveDisable.getAsBoolean()) return true;
+                              if (autoDriveDisable.getAsBoolean()) {
+                                return true;
+                              }
                               Pose2d poseError =
-                                  RobotState.getInstance()
-                                      .getEstimatedPose()
-                                      .relativeTo(ampAlignedPose.get());
+                                  robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
                               return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
                                   && Math.abs(poseError.getRotation().getDegrees()) <= 120;
                             })
@@ -609,20 +668,10 @@ public class RobotContainer {
             () ->
                 superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
                     && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
-        .whileTrue(
+        .toggleOnTrue(
             Commands.either(
-                ClimbingCommands.autoDrive(
-                    false,
-                    drive,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    autoDriveDisable),
-                ClimbingCommands.autoDrive(
-                    true,
-                    drive,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    autoDriveDisable),
+                superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
+                Commands.none(), // No function yet
                 () -> trapScoreMode));
 
     // ------------- Operator Controls -------------
@@ -630,14 +679,14 @@ public class RobotContainer {
     operator
         .povUp()
         .whileTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(0.1))
+            Commands.runOnce(() -> robotState.adjustShotCompensationDegrees(0.1))
                 .andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true)
                 .repeatedly());
     operator
         .povDown()
         .whileTrue(
-            Commands.runOnce(() -> RobotState.getInstance().adjustShotCompensationDegrees(-0.1))
+            Commands.runOnce(() -> robotState.adjustShotCompensationDegrees(-0.1))
                 .andThen(Commands.waitSeconds(0.05))
                 .ignoringDisable(true)
                 .repeatedly());
@@ -676,10 +725,7 @@ public class RobotContainer {
     // Request amp
     operator
         .b()
-        .whileTrue(
-            Commands.startEnd(
-                () -> Leds.getInstance().requestAmp = true,
-                () -> Leds.getInstance().requestAmp = false));
+        .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
     operator.a().whileTrue(rollers.shuffle());
@@ -744,7 +790,7 @@ public class RobotContainer {
   public void updateDashboardOutputs() {
     SmartDashboard.putString(
         "Shot Compensation Degrees",
-        String.format("%.1f", RobotState.getInstance().getShotCompensationDegrees()));
+        String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
     SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
   }

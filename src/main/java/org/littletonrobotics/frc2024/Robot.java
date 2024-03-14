@@ -10,14 +10,12 @@ package org.littletonrobotics.frc2024;
 import static org.littletonrobotics.frc2024.util.Alert.AlertType;
 
 import com.ctre.phoenix6.CANBus;
-import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Threads;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.io.File;
@@ -37,7 +35,7 @@ import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.rlog.RLOGServer;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
@@ -59,8 +57,8 @@ public class Robot extends LoggedRobot {
   private double autoStart;
   private boolean autoMessagePrinted;
   private final Timer disabledTimer = new Timer();
-  private final Timer canErrorTimer = new Timer();
   private final Timer canInitialErrorTimer = new Timer();
+  private final Timer canErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
 
   private static final String defaultBatteryName = "BAT-0000-000";
@@ -74,7 +72,7 @@ public class Robot extends LoggedRobot {
   private final Alert canErrorAlert =
       new Alert("CAN errors detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert canivoreErrorAlert =
-      new Alert("CANivore error detected, robot may no tbe controllable.", AlertType.ERROR);
+      new Alert("CANivore error detected, robot may not be controllable.", AlertType.ERROR);
   private final Alert lowBatteryAlert =
       new Alert(
           "Battery voltage is very low, consider turning off the robot or replacing the battery.",
@@ -88,6 +86,8 @@ public class Robot extends LoggedRobot {
    */
   @Override
   public void robotInit() {
+    Leds.getInstance();
+
     // Record metadata
     Logger.recordMetadata("Robot", Constants.getRobot().toString());
     Logger.recordMetadata("TuningMode", Boolean.toString(Constants.tuningMode));
@@ -114,12 +114,12 @@ public class Robot extends LoggedRobot {
       case REAL:
         // Running on a real robot, log to a USB stick ("/U/logs")
         Logger.addDataReceiver(new WPILOGWriter());
-        Logger.addDataReceiver(new NT4Publisher());
+        Logger.addDataReceiver(new RLOGServer());
         break;
 
       case SIM:
         // Running a physics simulator, log to NT
-        Logger.addDataReceiver(new NT4Publisher());
+        Logger.addDataReceiver(new RLOGServer());
         break;
 
       case REPLAY:
@@ -133,7 +133,6 @@ public class Robot extends LoggedRobot {
 
     // Start AdvantageKit logger
     Logger.start();
-    Leds.getInstance();
 
     // Log active commands
     Map<String, Integer> commandCounts = new HashMap<>();
@@ -162,20 +161,13 @@ public class Robot extends LoggedRobot {
               logCommandFunction.accept(command, false);
             });
 
-    // Default to blue alliance in sim
-    if (Constants.getMode() == Constants.Mode.SIM) {
-      DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
-    }
-
-    canErrorTimer.restart();
+    // Reset alert timers
     canInitialErrorTimer.restart();
+    canErrorTimer.restart();
     canivoreErrorTimer.restart();
     disabledTimer.restart();
 
     RobotController.setBrownoutVoltage(6.0);
-
-    // Instantiate our RobotContainer. This will perform all our button bindings,
-    // and put our autonomous chooser on the dashboard.
     robotContainer = new RobotContainer();
   }
 
@@ -238,13 +230,14 @@ public class Robot extends LoggedRobot {
       Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
       Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
       Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
-      // Alerts
-      if (!canivoreStatus.Status.isOK()) {
+      if (!canivoreStatus.Status.isOK()
+          || canStatus.transmitErrorCount > 0
+          || canStatus.receiveErrorCount > 0) {
         canivoreErrorTimer.restart();
       }
       canivoreErrorAlert.set(
-          !canivoreStatus.Status.isOK()
-              || !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold));
+          !canivoreErrorTimer.hasElapsed(canivoreErrorTimeThreshold)
+              && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
     }
 
     // Low battery alert

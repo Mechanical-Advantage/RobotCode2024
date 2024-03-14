@@ -25,12 +25,15 @@ import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.GeomUtil;
+import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.Logger;
 
 /** Vision subsystem for AprilTag vision. */
 @ExtensionMethod({GeomUtil.class})
 public class AprilTagVision extends VirtualSubsystem {
+  private static final LoggedTunableNumber timestampOffset =
+      new LoggedTunableNumber("AprilTagVision/TimestampOffset", -(1.0 / 50.0));
 
   private final Supplier<AprilTagLayoutType> aprilTagTypeSupplier;
   private final AprilTagVisionIO[] io;
@@ -67,7 +70,7 @@ public class AprilTagVision extends VirtualSubsystem {
       // Loop over frames
       for (int frameIndex = 0; frameIndex < inputs[instanceIndex].timestamps.length; frameIndex++) {
         lastFrameTimes.put(instanceIndex, Timer.getFPGATimestamp());
-        var timestamp = inputs[instanceIndex].timestamps[frameIndex];
+        var timestamp = inputs[instanceIndex].timestamps[frameIndex] + timestampOffset.get();
         var values = inputs[instanceIndex].frames[frameIndex];
 
         // Exit if blank frame

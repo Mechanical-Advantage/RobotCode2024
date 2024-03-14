@@ -16,6 +16,8 @@ import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
+import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
+import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
@@ -29,7 +31,11 @@ public class AutoCommands {
    * @param pose Pose to reset to.
    */
   public static Command resetPose(Pose2d pose) {
-    return Commands.runOnce(() -> RobotState.getInstance().resetPose(AllianceFlipUtil.apply(pose)));
+    return Commands.runOnce(
+        () -> {
+          RobotState.getInstance().resetPose(AllianceFlipUtil.apply(pose));
+          RobotState.getInstance().setTrajectorySetpoint(AllianceFlipUtil.apply(pose));
+        });
   }
 
   /**
@@ -77,8 +83,24 @@ public class AutoCommands {
     return Commands.waitUntil(() -> xCrossed(xPosition, towardsCenterline));
   }
 
-  // reset Path and call followTrajectory
-  public static Command resetAndFollow(Drive drive, HolonomicTrajectory trajectory) {
-    return sequence(resetPose(trajectory), followTrajectory(drive, trajectory));
+  /** Command that points drive at speaker, does not end */
+  public static Command aim(Drive drive) {
+    return Commands.startEnd(
+        () ->
+            drive.setHeadingGoal(
+                () -> RobotState.getInstance().getAimingParameters().driveHeading()),
+        drive::clearHeadingGoal);
+  }
+
+  /** Command that intakes using the superstrucure and rollers, does not end */
+  public static Command intake(Superstructure superstructure, Rollers rollers) {
+    return Commands.parallel(
+        superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+        rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE));
+  }
+
+  /** Feeds flywheels with shootTimeoutSecs timeout */
+  public static Command feed(Rollers rollers) {
+    return rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER).withTimeout(shootTimeoutSecs.get());
   }
 }

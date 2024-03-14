@@ -34,9 +34,9 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
   private static final LoggedTunableNumber shootingLeftRpm =
-      new LoggedTunableNumber("Flywheels/ShootingLeftRpm", 6000.0);
+      new LoggedTunableNumber("Flywheels/ShootingLeftRpm", 7000.0);
   private static final LoggedTunableNumber shootingRightRpm =
-      new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4000.0);
+      new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4500.0);
   private static final LoggedTunableNumber prepareShootMultiplier =
       new LoggedTunableNumber("Flywheels/PrepareShootMultiplier", 0.75);
   private static final LoggedTunableNumber intakingRpm =
@@ -44,9 +44,9 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber ejectingRpm =
       new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
   private static final LoggedTunableNumber poopingRpm =
-      new LoggedTunableNumber("Flywheels/PoopingRpm", 2000.0);
+      new LoggedTunableNumber("Flywheels/PoopingRpm", 3000.0);
   private static final LoggedTunableNumber superPoopRpm =
-      new LoggedTunableNumber("Flywheels/SuperPoopingRpm", 2500.0);
+      new LoggedTunableNumber("Flywheels/SuperPoopingRpm", 2750.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());

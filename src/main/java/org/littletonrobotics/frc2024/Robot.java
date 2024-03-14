@@ -283,10 +283,10 @@ public class Robot extends LoggedRobot {
       }
     }
 
-    Threads.setCurrentThreadPriority(true, 10);
-
     //publish match time
     SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
+
+    Threads.setCurrentThreadPriority(true, 10);
   }
 
   /** This function is called once when the robot is disabled. */

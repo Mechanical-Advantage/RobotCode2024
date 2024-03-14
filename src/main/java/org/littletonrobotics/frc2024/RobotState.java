@@ -46,7 +46,7 @@ public class RobotState {
       double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber lookahead =
-      new LoggedTunableNumber("RobotState/lookaheadS", 0.0);
+      new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
   private static final double poseBufferSizeSeconds = 2.0;
 
   /** Arm angle look up table key: meters, values: degrees */

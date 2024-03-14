@@ -714,7 +714,7 @@ public class RobotContainer {
                 .alongWith(
                     Commands.waitUntil(superstructure::atArmGoal)
                         .andThen(rollers.setGoalCommand(Rollers.Goal.UNJAM_UNTACO)))
-                .withName("Untaco"));
+                .withName("Unjam (Untaco)"));
 
     // Unjam (feeder)
     operator
@@ -723,7 +723,7 @@ public class RobotContainer {
             superstructure
                 .setGoalCommand(Superstructure.Goal.UNJAM_FEEDER)
                 .alongWith(rollers.setGoalCommand(Rollers.Goal.UNJAM_FEEDER))
-                .withName("Unjam From Feeder"));
+                .withName("Unjam (Feeder)"));
 
     // Reset heading
     operator

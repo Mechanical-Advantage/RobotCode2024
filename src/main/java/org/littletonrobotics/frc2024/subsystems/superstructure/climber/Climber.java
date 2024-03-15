@@ -45,6 +45,6 @@ public class Climber extends GenericSlamElevator<Climber.Goal> {
   private Goal goal = Goal.IDLE;
 
   public Climber(ClimberIO io) {
-    super("Climber", io, 0.4, 0.1);
+    super("Climber", io, 0.4, 1.5);
   }
 }

@@ -8,6 +8,7 @@
 package org.littletonrobotics.frc2024.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.WrapperCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -58,7 +59,7 @@ public class ClimbingCommands {
                       Pose2d robot = RobotState.getInstance().getEstimatedPose();
                       Pose2d target =
                           robot.transformBy(GeomUtil.toTransform2d(chainToBack.get(), 0.0));
-                      drive.setAutoAlignGoal(() -> target, true);
+                      drive.setAutoAlignGoal(() -> target, () -> new Translation2d(), true);
                     },
                     drive::clearAutoAlignGoal)
                 .asProxy()

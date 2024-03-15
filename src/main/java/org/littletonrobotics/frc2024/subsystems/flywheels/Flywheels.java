@@ -46,7 +46,7 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber poopingRpm =
       new LoggedTunableNumber("Flywheels/PoopingRpm", 3000.0);
   private static final LoggedTunableNumber superPoopRpm =
-      new LoggedTunableNumber("Flywheels/SuperPoopingRpm", 2750.0);
+      new LoggedTunableNumber("Flywheels/SuperPoopingRpm", 3000.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());

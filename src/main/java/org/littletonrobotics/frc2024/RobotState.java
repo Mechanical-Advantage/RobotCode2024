@@ -55,20 +55,21 @@ public class RobotState {
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
 
   static {
-    armAngleMap.put(1.22, 52.5);
-    armAngleMap.put(1.39, 47.5);
-    armAngleMap.put(1.66, 43.5);
-    armAngleMap.put(2.0, 40.5);
-    armAngleMap.put(2.13, 38.5);
-    armAngleMap.put(2.51, 33.5);
-    armAngleMap.put(2.79, 31.5);
-    armAngleMap.put(2.94, 29.5);
-    armAngleMap.put(3.38, 26.5);
-    armAngleMap.put(3.75, 24.5);
-    armAngleMap.put(4.06, 23.7);
-    armAngleMap.put(4.42, 22.8);
-    armAngleMap.put(4.89, 22.0);
-    armAngleMap.put(5.2, 21.5);
+    armAngleMap.put(1.04, 55.0);
+    armAngleMap.put(1.25, 52.0);
+    armAngleMap.put(1.5, 46.0);
+    armAngleMap.put(1.75, 42.0);
+    armAngleMap.put(2.0, 40.0);
+    armAngleMap.put(2.25, 37.5);
+    armAngleMap.put(2.5, 35.5);
+    armAngleMap.put(2.75, 33.25);
+    armAngleMap.put(2.94, 32.15);
+    armAngleMap.put(3.15, 30.65);
+    armAngleMap.put(3.55, 28.75);
+    armAngleMap.put(3.75, 28.1);
+    armAngleMap.put(4.0, 27.75);
+    armAngleMap.put(4.25, 26.8);
+    armAngleMap.put(4.5, 25.6);
   }
 
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
@@ -216,7 +217,7 @@ public class RobotState {
             .toTransform2d()
             .plus(FudgeFactors.speaker.getTransform());
     Pose2d fieldToPredictedVehicle =
-        lookaheadDisable.getAsBoolean()
+        lookaheadDisable.getAsBoolean() || DriverStation.isAutonomousEnabled()
             ? getEstimatedPose()
             : getPredictedPose(lookahead.get(), lookahead.get());
     Pose2d fieldToPredictedVehicleFixed =

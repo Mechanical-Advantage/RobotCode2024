@@ -36,6 +36,7 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
+import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
@@ -72,6 +73,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -312,8 +314,7 @@ public class RobotContainer {
                 && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
-                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
-                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB);
+                && superstructure.getCurrentGoal() != Superstructure.Goal.UNTRAP);
 
     // Configure autos and buttons
     configureAutos();
@@ -557,6 +558,8 @@ public class RobotContainer {
                 .withName("Source Intake"));
 
     // ------------- Amp Scoring Controls -------------
+    Container<Translation2d> ampAlignedDriverTranslation = new Container<>();
+    Container<Translation2d> ampAlignedDriverFeedforward = new Container<>();
     Supplier<Pose2d> ampAlignedPose =
         () -> {
           Pose2d ampCenterRotated =
@@ -564,16 +567,61 @@ public class RobotContainer {
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           var finalPose =
               ampCenterRotated
-                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0))
+                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(38.0), 0))
                   .transformBy(FudgeFactors.amp.getTransform());
           double distance =
               robotState
                   .getEstimatedPose()
                   .getTranslation()
+                  .minus(ampAlignedDriverTranslation.value)
                   .getDistance(finalPose.getTranslation());
           double offsetT = MathUtil.clamp((distance - 0.3) / 2.5, 0.0, 1.0);
           return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.75, 0.0));
         };
+    Command ampAutoDrive =
+        Commands.runOnce(
+                () -> {
+                  ampAlignedDriverTranslation.value = new Translation2d();
+                  ampAlignedDriverFeedforward.value = new Translation2d();
+                })
+            .andThen(
+                Commands.parallel(
+                    drive.startEnd(
+                        () ->
+                            drive.setAutoAlignGoal(
+                                () -> {
+                                  Pose2d goal = ampAlignedPose.get();
+                                  Logger.recordOutput("AmpAlign/UnadjustedGoal", goal);
+                                  goal =
+                                      new Pose2d(
+                                          goal.getTranslation()
+                                              .plus(ampAlignedDriverTranslation.value),
+                                          goal.getRotation());
+                                  Logger.recordOutput("AmpAlign/Goal", goal);
+                                  return goal;
+                                },
+                                () -> ampAlignedDriverFeedforward.value,
+                                false),
+                        drive::clearAutoAlignGoal),
+                    Commands.waitSeconds(0.5)
+                        .andThen(
+                            Commands.run(
+                                () -> {
+                                  final double maxVelocity = 1.5;
+                                  ampAlignedDriverFeedforward.value =
+                                      TeleopDriveController.calcLinearVelocity(
+                                              -driver.getLeftY() * 0.5, -driver.getLeftX())
+                                          .times(maxVelocity)
+                                          .rotateBy(
+                                              AllianceFlipUtil.shouldFlip()
+                                                  ? new Rotation2d(Math.PI)
+                                                  : new Rotation2d());
+                                  ampAlignedDriverTranslation.value =
+                                      ampAlignedDriverTranslation.value.plus(
+                                          ampAlignedDriverFeedforward.value.times(
+                                              Constants.loopPeriodSecs));
+                                }))));
+
     driver
         .b()
         .whileTrue(
@@ -591,20 +639,9 @@ public class RobotContainer {
                             Commands.startEnd(
                                 () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
                                 drive::clearHeadingGoal)),
-                    // Auto drive to amp aligned
-                    drive
-                        .startEnd(
-                            () -> drive.setAutoAlignGoal(ampAlignedPose, false),
-                            drive::clearAutoAlignGoal)
-                        .until(drive::isAutoAlignGoalCompleted)
-                        .andThen(
-                            drive.run(
-                                () ->
-                                    drive.acceptTeleopInput(
-                                        -driver.getLeftY() * 0.5,
-                                        -driver.getLeftX() * 0.5,
-                                        0.0,
-                                        robotRelative.getAsBoolean()))),
+
+                    // Auto drive to amp
+                    ampAutoDrive,
                     autoDriveDisable)
                 .alongWith(
                     Commands.waitUntil(

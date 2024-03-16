@@ -73,6 +73,7 @@ public class Superstructure extends SubsystemBase {
     if (!climber.retracted()
         && desiredGoal != Goal.PREPARE_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.PREPARE_CLIMB
+        && desiredGoal != Goal.POST_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.CLIMB
         && desiredGoal != Goal.TRAP
         && desiredGoal != Goal.UNTRAP

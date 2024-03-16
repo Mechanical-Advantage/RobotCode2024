@@ -7,9 +7,7 @@
 
 package org.littletonrobotics.frc2024;
 
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import lombok.Builder;
 
@@ -32,10 +30,7 @@ public final class FudgeFactors {
 
   public static final FudgedTransform speaker = FudgedTransform.builder().build();
 
-  public static final FudgedTransform amp =
-      FudgedTransform.builder()
-          .red(new Transform2d(0.0, Units.inchesToMeters(2.0), new Rotation2d()))
-          .build();
+  public static final FudgedTransform amp = FudgedTransform.builder().build();
 
   public static final FudgedTransform centerPodiumAmpChain = FudgedTransform.builder().build();
 

@@ -525,6 +525,9 @@ public class RobotContainer {
     // Intake Floor
     driver
         .leftTrigger()
+        .and(
+            DriverStation
+                ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)

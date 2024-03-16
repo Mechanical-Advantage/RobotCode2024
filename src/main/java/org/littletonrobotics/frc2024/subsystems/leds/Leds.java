@@ -170,7 +170,7 @@ public class Leds extends VirtualSubsystem {
 
       // Same battery alert
       if (sameBattery) {
-        breath(Color.kRed, Color.kBlack, breathDuration / 2.0);
+        breath(Color.kRed, Color.kBlack);
       }
     } else if (DriverStation.isAutonomous()) {
       wave(Color.kGold, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);

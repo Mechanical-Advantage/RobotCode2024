@@ -34,7 +34,6 @@ public final class FudgeFactors {
 
   public static final FudgedTransform amp =
       FudgedTransform.builder()
-          .blue(new Transform2d(0.0, Units.inchesToMeters(-2.0), new Rotation2d()))
           .red(new Transform2d(0.0, Units.inchesToMeters(2.0), new Rotation2d()))
           .build();
 

@@ -71,6 +71,9 @@ public class ClimbingCommands {
                         Arm.prepareClimbProfileConstraints.get()),
                     rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)),
 
+            // Pre-move arm to climb position to help with alignment and prevent wedging
+            superstructure.setGoalCommand(Superstructure.Goal.POST_PREPARE_TRAP_CLIMB),
+
             // Allow driver to line up and climb
             superstructure.setGoalCommand(Superstructure.Goal.CLIMB),
 

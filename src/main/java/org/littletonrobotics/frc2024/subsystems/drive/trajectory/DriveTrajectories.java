@@ -307,23 +307,23 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addWaypoints(getLastWaypoint("spike1ToSpike2"))
-                .addTranslationWaypoint(wingLeftAvoidance)
+                //                .addTranslationWaypoint(wingLeftAvoidance)
                 .addPoseWaypoint(
                     new Pose2d(
-                            FieldConstants.StagingLocations.centerlineTranslations[2],
-                            Rotation2d.fromDegrees(135.0))
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-165))
                         .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
-                            FieldConstants.StagingLocations.centerlineTranslations[2],
-                            Rotation2d.fromDegrees(135.0))
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-165))
                         .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
-                            FieldConstants.StagingLocations.centerlineTranslations[2],
-                            Rotation2d.fromDegrees(135.0))
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-165))
                         .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
-                .addTranslationWaypoint(wingLeftAvoidance)
+                //                .addTranslationWaypoint(wingLeftAvoidance)
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.podiumLeg

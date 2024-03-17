@@ -74,7 +74,7 @@ public class RobotState {
   }
 
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
-  private double hiddenShotCompensationDegrees = -1.0;
+  private double hiddenShotCompensationDegrees = -1.3;
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
     shotCompensationDegrees += deltaDegrees;

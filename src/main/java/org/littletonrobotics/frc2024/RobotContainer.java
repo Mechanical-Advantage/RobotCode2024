@@ -656,7 +656,7 @@ public class RobotContainer {
                             })
                         .andThen(
                             superstructure.setGoalWithConstraintsCommand(
-                                Superstructure.Goal.AMP, Arm.smoothProfileConstraints.get()))));
+                                Superstructure.Goal.AMP, Arm.smoothConstraints))));
     driver
         .rightTrigger()
         .and(driver.b())

@@ -67,8 +67,7 @@ public class ClimbingCommands {
                 .withTimeout(5.0)
                 .alongWith(
                     superstructure.setGoalWithConstraintsCommand(
-                        Superstructure.Goal.PREPARE_CLIMB,
-                        Arm.prepareClimbProfileConstraints.get()),
+                        Superstructure.Goal.PREPARE_CLIMB, Arm.prepareClimbConstraints),
                     rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)),
 
             // Allow driver to line up and climb

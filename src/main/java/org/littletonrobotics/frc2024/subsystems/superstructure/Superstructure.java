@@ -13,6 +13,8 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
 import org.littletonrobotics.frc2024.subsystems.superstructure.backpackactuator.BackpackActuator;
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.Climber;
@@ -21,6 +23,9 @@ import org.littletonrobotics.junction.Logger;
 
 public class Superstructure extends SubsystemBase {
 
+  @NoArgsConstructor(force = true)
+  @RequiredArgsConstructor
+  @Getter
   public enum Goal {
     STOW,
     BACKPACK_OUT_UNJAM,
@@ -32,14 +37,16 @@ public class Superstructure extends SubsystemBase {
     AMP,
     SUBWOOFER,
     PODIUM,
-    RESET_CLIMB,
-    PREPARE_PREPARE_TRAP_CLIMB,
-    PREPARE_CLIMB,
-    CLIMB,
-    TRAP,
-    UNTRAP,
+    RESET_CLIMB(true),
+    PREPARE_PREPARE_TRAP_CLIMB(true),
+    PREPARE_CLIMB(true),
+    CLIMB(true),
+    TRAP(true),
+    UNTRAP(true),
     RESET,
-    DIAGNOSTIC_ARM
+    DIAGNOSTIC_ARM;
+
+    private final boolean climbingGoal;
   }
 
   @Getter private Goal currentGoal = Goal.STOW;
@@ -70,11 +77,7 @@ public class Superstructure extends SubsystemBase {
 
     // Retract climber
     if (!climber.retracted()
-        && desiredGoal != Goal.PREPARE_PREPARE_TRAP_CLIMB
-        && desiredGoal != Goal.PREPARE_CLIMB
-        && desiredGoal != Goal.CLIMB
-        && desiredGoal != Goal.TRAP
-        && desiredGoal != Goal.UNTRAP
+        && !desiredGoal.isClimbingGoal()
         && !DriverStation.isAutonomousEnabled()) {
       currentGoal = Goal.RESET_CLIMB;
     } else {

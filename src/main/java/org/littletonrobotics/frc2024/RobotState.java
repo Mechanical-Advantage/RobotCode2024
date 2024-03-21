@@ -19,18 +19,21 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class RobotState {
@@ -46,7 +49,7 @@ public class RobotState {
       double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber lookahead =
-      new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
+      new LoggedTunableNumber("RobotState/lookaheadS", 0.5);
   private static final double poseBufferSizeSeconds = 2.0;
 
   /** Arm angle look up table key: meters, values: degrees */
@@ -91,6 +94,8 @@ public class RobotState {
   private final TimeInterpolatableBuffer<Pose2d> poseBuffer =
       TimeInterpolatableBuffer.createBuffer(poseBufferSizeSeconds);
   @Getter @Setter private Pose2d trajectorySetpoint = new Pose2d();
+  private HolonomicTrajectory currentTrajectory = null;
+  private Timer trajectoryTimer = new Timer();
   private final Matrix<N3, N1> qStdDevs = new Matrix<>(Nat.N3(), Nat.N1());
   // Odometry
   private final SwerveDriveKinematics kinematics;
@@ -217,9 +222,10 @@ public class RobotState {
             .toTransform2d()
             .plus(FudgeFactors.speaker.getTransform());
     Pose2d fieldToPredictedVehicle =
-        lookaheadDisable.getAsBoolean() || DriverStation.isAutonomousEnabled()
+        lookaheadDisable.getAsBoolean()
             ? getEstimatedPose()
             : getPredictedPose(lookahead.get(), lookahead.get());
+    Logger.recordOutput("AimingParameters/PredictedRobot", fieldToPredictedVehicle);
     Pose2d fieldToPredictedVehicleFixed =
         new Pose2d(fieldToPredictedVehicle.getTranslation(), new Rotation2d());
 
@@ -275,6 +281,17 @@ public class RobotState {
     return estimatedPose;
   }
 
+  public void setCurrentTrajectory(HolonomicTrajectory trajectory) {
+    if (trajectory != null) {
+      currentTrajectory = trajectory;
+      trajectoryTimer.restart();
+    } else {
+      currentTrajectory = null;
+      trajectoryTimer.stop();
+      trajectoryTimer.reset();
+    }
+  }
+
   /**
    * Predicts what our pose will be in the future. Allows separate translation and rotation
    * lookaheads to account for varying latencies in the different measurements.
@@ -284,6 +301,15 @@ public class RobotState {
    * @return The predicted pose.
    */
   public Pose2d getPredictedPose(double translationLookaheadS, double rotationLookaheadS) {
+    if (currentTrajectory != null) {
+      var translationLookahead =
+          currentTrajectory.sample(trajectoryTimer.get() + translationLookaheadS);
+      var rotationLookahead = currentTrajectory.sample(trajectoryTimer.get() + rotationLookaheadS);
+      return AllianceFlipUtil.apply(
+          new Pose2d(
+              new Translation2d(translationLookahead.getX(), translationLookahead.getY()),
+              Rotation2d.fromRadians(rotationLookahead.getTheta())));
+    }
     return getEstimatedPose()
         .exp(
             new Twist2d(

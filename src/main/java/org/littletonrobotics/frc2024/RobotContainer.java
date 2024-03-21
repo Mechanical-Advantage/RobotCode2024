@@ -367,6 +367,7 @@ public class RobotContainer {
     autoChooser.addOption("Davis Super Alternative Auto", autoBuilder.davisSuperAlternativeAuto());
 
     // Spike autos
+    autoChooser.addOption("Quick 4", autoBuilder.quick4());
     autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
     autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
     autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());

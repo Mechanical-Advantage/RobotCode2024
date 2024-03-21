@@ -21,8 +21,8 @@ import org.littletonrobotics.frc2024.util.Alert.AlertType;
  */
 public final class Constants {
   public static final double loopPeriodSecs = 0.02;
-  private static RobotType robotType = RobotType.COMPBOT;
-  public static final boolean tuningMode = false;
+  private static RobotType robotType = RobotType.SIMBOT;
+  public static final boolean tuningMode = true;
 
   public static RobotType getRobot() {
     if (!disableHAL && RobotBase.isReal() && robotType == RobotType.SIMBOT) {

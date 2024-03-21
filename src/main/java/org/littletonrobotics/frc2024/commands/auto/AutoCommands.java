@@ -62,18 +62,18 @@ public class AutoCommands {
    *     from center line
    */
   public static boolean xCrossed(double xPosition, boolean towardsCenterline) {
-    Pose2d robotPose = RobotState.getInstance().getTrajectorySetpoint();
+    double robotX = RobotState.getInstance().getTrajectorySetpoint().getX();
     if (AllianceFlipUtil.shouldFlip()) {
       if (towardsCenterline) {
-        return robotPose.getX() < FieldConstants.fieldLength - xPosition;
+        return robotX < FieldConstants.fieldLength - xPosition;
       } else {
-        return robotPose.getX() > FieldConstants.fieldLength - xPosition;
+        return robotX > FieldConstants.fieldLength - xPosition;
       }
     } else {
       if (towardsCenterline) {
-        return robotPose.getX() > xPosition;
+        return robotX > xPosition;
       } else {
-        return robotPose.getX() < xPosition;
+        return robotX < xPosition;
       }
     }
   }

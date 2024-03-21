@@ -601,4 +601,110 @@ public class AutoBuilder {
                         // Run flywheels
                         .deadlineWith(flywheels.shootCommand())));
   }
+
+  public Command quick4() {
+    var trajectory = new HolonomicTrajectory("quick4");
+
+    double moveArmDelay = 0.55;
+
+    double timeAtFirstSpike = 1.5;
+    double timeAtSecondSpike = 3.1;
+    double timeAtThirdSpike = trajectory.getDuration();
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.parallel(
+                    Commands.sequence(
+                            // Drive sequence
+                            resetPose(DriveTrajectories.startingLineSpike1),
+                            aim(drive).withTimeout(preloadDelay),
+                            followTrajectory(drive, trajectory))
+                        .alongWith(
+                            Commands.sequence(
+                                // Sequence aiming portions
+                                // Aim first spike shot
+                                Commands.waitUntil(
+                                        () -> autoTimer.hasElapsed(preloadDelay + timeAtFirstSpike))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                preloadDelay
+                                                    + timeAtFirstSpike
+                                                    + moveArmDelay
+                                                    + shootTimeoutSecs.get())),
+
+                                // Aim second spike shot
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(preloadDelay + timeAtSecondSpike))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                preloadDelay
+                                                    + timeAtSecondSpike
+                                                    + moveArmDelay
+                                                    + shootTimeoutSecs.get())),
+
+                                // Aim third spike shot
+                                Commands.waitUntil(
+                                        () -> autoTimer.hasElapsed(preloadDelay + timeAtThirdSpike))
+                                    .andThen(
+                                        aim(drive)
+                                            .withTimeout(
+                                                spikeIntakeDelay
+                                                    + aimDelay
+                                                    + shootTimeoutSecs.get() * 4.0)))),
+
+                    // Sequence superstructure and rollers
+                    Commands.sequence(
+                        // Preload
+                        Commands.waitUntil(flywheels::atGoal)
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0))
+                            .withTimeout(preloadDelay),
+
+                        // Intake spike 0
+                        intake(superstructure, rollers)
+                            .until(() -> autoTimer.hasElapsed(preloadDelay + timeAtFirstSpike)),
+
+                        // Shoot spike 0
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadDelay + timeAtFirstSpike + moveArmDelay))
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                        // Intake spike 1
+                        intake(superstructure, rollers)
+                            .until(() -> autoTimer.hasElapsed(preloadDelay + timeAtSecondSpike)),
+
+                        // Shoot spike 1
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadDelay + timeAtSecondSpike + moveArmDelay))
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                        // Intake spike 2
+                        intake(superstructure, rollers)
+                            .until(() -> autoTimer.hasElapsed(preloadDelay + timeAtThirdSpike)),
+
+                        // Shoot spike 2
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadDelay
+                                            + timeAtThirdSpike
+                                            + spikeIntakeDelay
+                                            + aimDelay))
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0))))
+                // Run flywheels for auto
+                .deadlineWith(flywheels.shootCommand()));
+  }
 }

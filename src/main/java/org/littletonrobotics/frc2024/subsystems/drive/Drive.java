@@ -213,6 +213,7 @@ public class Drive extends SubsystemBase {
             ? gyroInputs.yawVelocityRadPerSec
             : robotRelativeVelocity.omegaRadiansPerSecond;
     RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
+    Logger.recordOutput("Drive/MeasuredSpeeds", robotRelativeVelocity);
 
     // Update brake mode
     // Reset movement timer if moved
@@ -222,12 +223,12 @@ public class Drive extends SubsystemBase {
     }
 
     // Run drive based on current mode
-    ChassisSpeeds teleopSpeeds = teleopDriveController.update();
     Leds.getInstance().autoDrive = false;
+    desiredSpeeds = new ChassisSpeeds();
     switch (currentDriveMode) {
       case TELEOP -> {
         // Plain teleop drive
-        desiredSpeeds = teleopSpeeds;
+        desiredSpeeds = teleopDriveController.update();
         // Add auto aim if present
         if (headingController != null) {
           desiredSpeeds.omegaRadiansPerSecond = headingController.update();
@@ -236,6 +237,9 @@ public class Drive extends SubsystemBase {
       case TRAJECTORY -> {
         // Run trajectory
         desiredSpeeds = trajectoryController.update();
+        if (headingController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = headingController.update();
+        }
       }
       case AUTO_ALIGN -> {
         // Run auto align with drive input
@@ -253,6 +257,8 @@ public class Drive extends SubsystemBase {
       }
       default -> {}
     }
+    Logger.recordOutput("Drive/HeadingControlled", headingController != null);
+    Logger.recordOutput("Drive/DriveMode", currentDriveMode);
 
     // Run robot at desiredSpeeds
     // Generate feasible next setpoint
@@ -296,7 +302,6 @@ public class Drive extends SubsystemBase {
         DriveConstants.kinematics.toSwerveModuleStates(desiredSpeeds));
     Logger.recordOutput("Drive/DesiredSpeeds", desiredSpeeds);
     Logger.recordOutput("Drive/SetpointSpeeds", currentSetpoint.chassisSpeeds());
-    Logger.recordOutput("Drive/DriveMode", currentDriveMode);
   }
 
   /** Pass controller input into teleopDriveController in field relative input */
@@ -316,6 +321,7 @@ public class Drive extends SubsystemBase {
     if (DriverStation.isAutonomousEnabled()) {
       currentDriveMode = DriveMode.TRAJECTORY;
       trajectoryController = new TrajectoryController(trajectory);
+      RobotState.getInstance().setCurrentTrajectory(trajectory);
     }
   }
 
@@ -323,6 +329,7 @@ public class Drive extends SubsystemBase {
   public void clearTrajectory() {
     trajectoryController = null;
     currentDriveMode = DriveMode.TELEOP;
+    RobotState.getInstance().setCurrentTrajectory(null);
   }
 
   /** Returns true if the robot is done with trajectory. */

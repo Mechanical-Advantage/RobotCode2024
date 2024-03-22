@@ -63,7 +63,7 @@ public final class Constants {
     disableHAL = true;
   }
 
-  /** Checks whether the robot the correct robot is selected when deploying. */
+  /** Checks whether the correct robot is selected when deploying. */
   public static void main(String... args) {
     if (robotType == RobotType.SIMBOT) {
       System.err.println("Cannot deploy, invalid robot selected: " + robotType);

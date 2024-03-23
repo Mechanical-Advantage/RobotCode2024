@@ -672,7 +672,9 @@ public class AutoBuilder {
                             .until(() -> autoTimer.hasElapsed(preloadDelay + timeAtFirstSpike)),
 
                         // Shoot spike 0
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         preloadDelay + timeAtFirstSpike + moveArmDelay))
@@ -684,7 +686,9 @@ public class AutoBuilder {
                             .until(() -> autoTimer.hasElapsed(preloadDelay + timeAtSecondSpike)),
 
                         // Shoot spike 1
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         preloadDelay + timeAtSecondSpike + moveArmDelay))
@@ -696,7 +700,9 @@ public class AutoBuilder {
                             .until(() -> autoTimer.hasElapsed(preloadDelay + timeAtThirdSpike)),
 
                         // Shoot spike 2
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         preloadDelay
@@ -709,7 +715,7 @@ public class AutoBuilder {
                 .deadlineWith(flywheels.shootCommand()));
   }
 
-  public Command sixNote() {
+  public Command quick6() {
     HolonomicTrajectory trajectory = new HolonomicTrajectory("sixNote43");
 
     double shortPreloadDelay = 0.6;
@@ -822,7 +828,9 @@ public class AutoBuilder {
                                 () -> autoTimer.hasElapsed(shortPreloadDelay + timeAtFirstSpike)),
 
                         // Shoot spike 0
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         shortPreloadDelay + timeAtFirstSpike + moveArmDelay))
@@ -835,7 +843,9 @@ public class AutoBuilder {
                                 () -> autoTimer.hasElapsed(shortPreloadDelay + timeAtSecondSpike)),
 
                         // Shoot spike 1
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         shortPreloadDelay + timeAtSecondSpike + moveArmDelay))
@@ -848,7 +858,9 @@ public class AutoBuilder {
                                 () -> autoTimer.hasElapsed(shortPreloadDelay + timeAtThirdSpike)),
 
                         // Shoot spike 2
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         shortPreloadDelay + timeAtThirdSpike + moveArmDelay))
@@ -862,7 +874,9 @@ public class AutoBuilder {
                                     .deadlineWith(intake(superstructure, rollers))),
 
                         // Shoot centerline 4
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         shortPreloadDelay + timeAtCenterline4Shot - moveArmDelay))
@@ -876,7 +890,9 @@ public class AutoBuilder {
                                     .deadlineWith(intake(superstructure, rollers))),
 
                         // Shoot centerline 3
-                        Commands.waitUntil(
+                        rollers
+                            .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         shortPreloadDelay + timeAtCenterline3Shot - moveArmDelay))

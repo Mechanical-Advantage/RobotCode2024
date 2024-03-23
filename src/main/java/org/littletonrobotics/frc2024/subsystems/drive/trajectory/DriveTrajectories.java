@@ -370,6 +370,30 @@ public class DriveTrajectories {
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));
+    paths.put(
+        "spike0ToCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("spike1ToSpike0"))
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.podiumLeg
+                        .getTranslation()
+                        .plus(new Translation2d(-0.2, 0.9)))
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.2, 0.9)))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(180))
+                        .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.2, 0.9)))
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.ampLeg
+                            .getTranslation()
+                            .plus(new Translation2d(-1.5, 0.2))))
+                .build()));
 
     // Between centerline for super alternative auto
     paths.put(

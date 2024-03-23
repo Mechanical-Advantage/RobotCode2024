@@ -73,12 +73,15 @@ public class DriveTrajectories {
               .getTranslation()
               .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
               .plus(new Translation2d(-0.4, 0.2)));
+  public static final Pose2d stageRightShootingPose =
+      getShootingPose(
+          FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
+  public static Pose2d stageLeftShootingPose =
+      getShootingPose(
+          FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.7, 1.15)));
 
   static {
     // Davis Ethical Auto (4 Note)
-    Pose2d stageRightShootingPose =
-        getShootingPose(
-            FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
     Translation2d stageRightAvoidance =
         FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
     Translation2d stageCenterAvoidance =
@@ -138,9 +141,6 @@ public class DriveTrajectories {
                 .build()));
 
     // Davis Alternative Auto (5 Note)
-    Pose2d stageLeftShootingPose =
-        getShootingPose(
-            FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.7, 1.15)));
     paths.put(
         "davisAlternativeAuto_grabSpike",
         List.of(
@@ -427,17 +427,14 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(stageCenterShootingPose)
-                .addTranslationWaypoint(stageCenterAvoidance)
+                .addTranslationWaypoint(stageCenterAvoidance.plus(new Translation2d(0.0, -0.2)))
                 .addTranslationWaypoint(
                     new Translation2d(
                         FieldConstants.StagingLocations.centerlineX - 0.8,
-                        stageCenterAvoidance.getY()))
+                        FieldConstants.StagingLocations.centerlineTranslations[2].getY()))
                 .build()));
-  }
 
-  static {
     final double shootingVelocity = 0.8;
-
     Pose2d spike0IntakePose =
         new Pose2d(
             FieldConstants.StagingLocations.spikeTranslations[0], Rotation2d.fromDegrees(170.0));
@@ -483,6 +480,81 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(spike2IntakePose.transformBy(GeomUtil.toTransform2d(0.6, 0.0)))
                 .addPoseWaypoint(spike2IntakePose.transformBy(GeomUtil.toTransform2d(0.35, 0.0)))
+                .build()));
+
+    // Six note with centerline 4 --> 3
+    Pose2d centerline4IntakePose =
+        new Pose2d(
+                FieldConstants.StagingLocations.centerlineTranslations[4],
+                Rotation2d.fromDegrees(-170.0))
+            .transformBy(GeomUtil.toTransform2d(0.25, 0.0));
+    Pose2d centerline3IntakePose =
+        new Pose2d(
+                FieldConstants.StagingLocations.centerlineTranslations[3],
+                Rotation2d.fromDegrees(140.0))
+            .transformBy(GeomUtil.toTransform2d(0.25, 0.0));
+    stageLeftShootingPose = stageLeftShootingPose.transformBy(GeomUtil.toTransform2d(0.5, 0.0));
+
+    paths.put(
+        "sixNote43",
+        List.of(
+            // Center to spike 0 intake
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingLineSpike1)
+                .addPoseWaypoint(spike0ShootingPose.transformBy(GeomUtil.toTransform2d(0.8, 0.0)))
+                .addPoseWaypoint(spike0ShootingPose.transformBy(GeomUtil.toTransform2d(0.5, 0.0)))
+                .addPoseWaypoint(spike0IntakePose.transformBy(GeomUtil.toTransform2d(0.4, 0.0)))
+                .build(),
+            // Spike 0 to spike 1 shoot and intake
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.StagingLocations.spikeTranslations[0]
+                            .interpolate(FieldConstants.StagingLocations.spikeTranslations[1], 0.4)
+                            .plus(new Translation2d(-0.65, 0.0))))
+                .setMaxVelocity(shootingVelocity)
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(spike1IntakePose.transformBy(GeomUtil.toTransform2d(0.6, 0.0)))
+                .addPoseWaypoint(spike1IntakePose.transformBy(GeomUtil.toTransform2d(0.35, 0.0)))
+                .build(),
+            // Spike 1 to 2 shoot and intake
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.StagingLocations.spikeTranslations[1]
+                            .interpolate(FieldConstants.StagingLocations.spikeTranslations[2], 0.4)
+                            .plus(new Translation2d(-0.5, 0.0))))
+                .setMaxVelocity(shootingVelocity)
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(spike2IntakePose.transformBy(GeomUtil.toTransform2d(0.6, 0.0)))
+                .addPoseWaypoint(spike2IntakePose.transformBy(GeomUtil.toTransform2d(0.35, 0.0)))
+                .build(),
+            // Spike 2 to centerline 4 shoot
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        spike2IntakePose.interpolate(centerline4IntakePose, 0.15).getTranslation()))
+                .setMaxVelocity(shootingVelocity)
+                .build(),
+            // Centerline 4 intake into shot
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    centerline4IntakePose.transformBy(GeomUtil.toTransform2d(0.3, 0.0)))
+                .addPoseWaypoint(centerline4IntakePose)
+                .addPoseWaypoint(
+                    stageLeftShootingPose.transformBy(GeomUtil.toTransform2d(-0.3, 0.0)))
+                .addPoseWaypoint(stageLeftShootingPose)
+                .build(),
+            // Centerline 3 intake into shot
+            PathSegment.newBuilder()
+                .addTranslationWaypoint(wingLeftAvoidance)
+                .addPoseWaypoint(
+                    centerline3IntakePose.transformBy(GeomUtil.toTransform2d(0.3, 0.0)))
+                .addPoseWaypoint(centerline3IntakePose)
+                .addTranslationWaypoint(wingLeftAvoidance)
+                .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
   }
 

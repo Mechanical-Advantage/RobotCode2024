@@ -607,6 +607,7 @@ public class AutoBuilder {
 
     double moveArmDelay = 0.55;
 
+    // Use time relative to spikes to ensure intake
     double timeAtFirstSpike = 1.5;
     double timeAtSecondSpike = 3.1;
     double timeAtThirdSpike = trajectory.getDuration();
@@ -623,7 +624,7 @@ public class AutoBuilder {
                         .alongWith(
                             Commands.sequence(
                                 // Sequence aiming portions
-                                // Aim first spike shot
+                                // Aim spike 0 shot
                                 Commands.waitUntil(
                                         () -> autoTimer.hasElapsed(preloadDelay + timeAtFirstSpike))
                                     .andThen(aim(drive))
@@ -635,7 +636,7 @@ public class AutoBuilder {
                                                     + moveArmDelay
                                                     + shootTimeoutSecs.get())),
 
-                                // Aim second spike shot
+                                // Aim spike 1 shot
                                 Commands.waitUntil(
                                         () ->
                                             autoTimer.hasElapsed(preloadDelay + timeAtSecondSpike))
@@ -648,7 +649,7 @@ public class AutoBuilder {
                                                     + moveArmDelay
                                                     + shootTimeoutSecs.get())),
 
-                                // Aim third spike shot
+                                // Aim spike 2 shot
                                 Commands.waitUntil(
                                         () -> autoTimer.hasElapsed(preloadDelay + timeAtThirdSpike))
                                     .andThen(
@@ -703,6 +704,183 @@ public class AutoBuilder {
                                             + spikeIntakeDelay
                                             + aimDelay))
                             .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0))))
+                // Run flywheels for auto
+                .deadlineWith(flywheels.shootCommand()));
+  }
+
+  public Command sixNote() {
+    HolonomicTrajectory trajectory = new HolonomicTrajectory("sixNote43");
+
+    double shortPreloadDelay = 0.6;
+    double moveArmDelay = 0.55;
+    double driveAimDelay = 1.0;
+
+    // Use time relative to spikes to ensure intake
+    double timeAtFirstSpike = 1.5;
+    double timeAtSecondSpike = 3.1;
+    double timeAtThirdSpike = 5.0;
+
+    double timeAtCenterline4Shot = 10.1;
+    double timeAtCenterline3Shot = trajectory.getDuration();
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.parallel(
+                    Commands.sequence(
+                            // Drive sequence
+                            resetPose(DriveTrajectories.startingLineSpike1),
+                            aim(drive).withTimeout(shortPreloadDelay),
+                            followTrajectory(drive, trajectory))
+                        .alongWith(
+                            Commands.sequence(
+                                // Sequence aiming portions
+                                // Aim spike 0 shot
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay + timeAtFirstSpike))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtFirstSpike
+                                                    + moveArmDelay
+                                                    + shootTimeoutSecs.get())),
+
+                                // Aim spike 1 shot
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay + timeAtSecondSpike))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtSecondSpike
+                                                    + moveArmDelay
+                                                    + shootTimeoutSecs.get())),
+
+                                // Aim spike 2 shot
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay + timeAtThirdSpike))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtThirdSpike
+                                                    + moveArmDelay
+                                                    + shootTimeoutSecs.get())),
+
+                                // Aim centerline 4 shot
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtCenterline4Shot
+                                                    - driveAimDelay))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtCenterline4Shot
+                                                    + shootTimeoutSecs.get())),
+
+                                // Aim centerline 3 shot
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtCenterline3Shot
+                                                    - driveAimDelay))
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                shortPreloadDelay
+                                                    + timeAtCenterline3Shot
+                                                    + shootTimeoutSecs.get())))),
+
+                    // Sequence superstructure and rollers
+                    Commands.sequence(
+                        // Preload
+                        Commands.waitSeconds(shortPreloadDelay - shootTimeoutSecs.get() / 2.0)
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0))
+                            .withTimeout(shortPreloadDelay),
+
+                        // Intake spike 0
+                        intake(superstructure, rollers)
+                            .until(
+                                () -> autoTimer.hasElapsed(shortPreloadDelay + timeAtFirstSpike)),
+
+                        // Shoot spike 0
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        shortPreloadDelay + timeAtFirstSpike + moveArmDelay))
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                        // Intake spike 1
+                        intake(superstructure, rollers)
+                            .until(
+                                () -> autoTimer.hasElapsed(shortPreloadDelay + timeAtSecondSpike)),
+
+                        // Shoot spike 1
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        shortPreloadDelay + timeAtSecondSpike + moveArmDelay))
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                        // Intake spike 2
+                        intake(superstructure, rollers)
+                            .until(
+                                () -> autoTimer.hasElapsed(shortPreloadDelay + timeAtThirdSpike)),
+
+                        // Shoot spike 2
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        shortPreloadDelay + timeAtThirdSpike + moveArmDelay))
+                            .andThen(feed(rollers))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                        // Intake centerline 4
+                        waitUntilXCrossed(FieldConstants.wingX + 0.5, true)
+                            .andThen(
+                                waitUntilXCrossed(FieldConstants.wingX + 0.25, false)
+                                    .deadlineWith(intake(superstructure, rollers))),
+
+                        // Shoot centerline 4
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        shortPreloadDelay + timeAtCenterline4Shot - moveArmDelay))
+                            .andThen(Commands.waitSeconds(moveArmDelay).andThen(feed(rollers)))
+                            .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                        // Intake centerline 3
+                        waitUntilXCrossed(FieldConstants.wingX + 0.5, true)
+                            .andThen(
+                                waitUntilXCrossed(FieldConstants.wingX + 0.25, false)
+                                    .deadlineWith(intake(superstructure, rollers))),
+
+                        // Shoot centerline 3
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        shortPreloadDelay + timeAtCenterline3Shot - moveArmDelay))
+                            .andThen(Commands.waitSeconds(moveArmDelay).andThen(feed(rollers)))
                             .deadlineWith(superstructure.aimWithCompensation(0.0))))
                 // Run flywheels for auto
                 .deadlineWith(flywheels.shootCommand()));

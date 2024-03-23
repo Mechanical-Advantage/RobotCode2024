@@ -225,7 +225,7 @@ public class RobotState {
         lookaheadDisable.getAsBoolean()
             ? getEstimatedPose()
             : getPredictedPose(lookahead.get(), lookahead.get());
-    Logger.recordOutput("AimingParameters/PredictedRobot", fieldToPredictedVehicle);
+    Logger.recordOutput("RobotState/AimingParameters/PredictedRobot", fieldToPredictedVehicle);
     Pose2d fieldToPredictedVehicleFixed =
         new Pose2d(fieldToPredictedVehicle.getTranslation(), new Rotation2d());
 

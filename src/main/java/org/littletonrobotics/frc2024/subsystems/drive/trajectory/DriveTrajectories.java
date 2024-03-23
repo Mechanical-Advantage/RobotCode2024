@@ -461,7 +461,7 @@ public class DriveTrajectories {
                     getShootingPose(
                         FieldConstants.StagingLocations.spikeTranslations[0]
                             .interpolate(FieldConstants.StagingLocations.spikeTranslations[1], 0.4)
-                            .plus(new Translation2d(-0.5, 0.0))))
+                            .plus(new Translation2d(-0.65, 0.0))))
                 .setMaxVelocity(shootingVelocity)
                 .build(),
             PathSegment.newBuilder()

@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024;
 
+import static org.littletonrobotics.frc2024.AutoSelector.*;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -24,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.List;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
@@ -74,7 +77,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
@@ -126,8 +128,7 @@ public class RobotContainer {
   private boolean armCoastOverride = false;
 
   // Dashboard inputs
-  private final LoggedDashboardChooser<Command> autoChooser =
-      new LoggedDashboardChooser<>("Auto Choices");
+  private final AutoSelector autoSelector = new AutoSelector("Auto");
 
   /** Returns the current AprilTag layout type. */
   public AprilTagLayoutType getAprilTagLayoutType() {
@@ -352,60 +353,94 @@ public class RobotContainer {
   }
 
   private void configureAutos() {
-    AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
-
-    autoChooser.addDefaultOption(
-        "Do Nothing",
+    // Set up auto routines
+    AutoBuilder autoBuilder =
+        new AutoBuilder(drive, superstructure, flywheels, rollers, autoSelector::getResponses);
+    autoSelector.addDefaultRoutine(
         Commands.runOnce(
             () ->
                 robotState.resetPose(
                     new Pose2d(
                         new Translation2d(),
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
-    autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
-    autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
-    autoChooser.addOption("Davis Super Alternative Auto", autoBuilder.davisSuperAlternativeAuto());
+    autoSelector.addRoutine("Davis Alternative", List.of(), autoBuilder.davisAlternativeAuto());
+    autoSelector.addRoutine("Davis Ethical", List.of(), autoBuilder.davisEthicalAuto());
+    autoSelector.addRoutine(
+        "Davis Super Alternative", List.of(), autoBuilder.davisSuperAlternativeAuto());
+    autoSelector.addRoutine(
+        "Spike: 4 Note",
+        List.of(
+            new AutoQuestion(
+                "Starting Location?",
+                List.of(
+                    AutoQuestionResponse.SOURCE,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.AMP))),
+        autoBuilder.spike4(true));
+    autoSelector.addRoutine(
+        "Spike: 5 Note",
+        List.of(
+            new AutoQuestion(
+                "Starting Location?",
+                List.of(
+                    AutoQuestionResponse.SOURCE,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.AMP)),
+            new AutoQuestion(
+                "Centerline Note",
+                List.of(
+                    AutoQuestionResponse.ZERO,
+                    AutoQuestionResponse.ONE,
+                    AutoQuestionResponse.TWO,
+                    AutoQuestionResponse.THREE,
+                    AutoQuestionResponse.FOUR))),
+        autoBuilder.spike5());
 
-    // Spike autos
-    autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
-    autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
-    autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());
-    autoChooser.addOption("Spike: Source 5", autoBuilder.source5());
-    autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
-    autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
-
-    // Set up feedforward characterization
-    autoChooser.addOption(
+    // Set up characterization routines
+    autoSelector.addRoutine(
         "Drive Static Characterization",
+        List.of(),
         new StaticCharacterization(
                 drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Drive FF Characterization",
+        List.of(),
         new FeedForwardCharacterization(
                 drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Flywheels FF Characterization",
+        List.of(),
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Arm Static Characterization",
+        List.of(),
         new StaticCharacterization(
                 superstructure,
                 superstructure::runArmCharacterization,
                 superstructure::getArmCharacterizationVelocity)
             .finallyDo(superstructure::endArmCharacterization));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Drive Wheel Radius Characterization",
+        List.of(
+            new AutoQuestion(
+                "Clockwise?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO))),
         drive
             .orientModules(Drive.getCircleOrientations())
             .andThen(
                 new WheelRadiusCharacterization(
-                    drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
+                    drive,
+                    () ->
+                        autoSelector.getResponses().get(0).equals(AutoQuestionResponse.YES)
+                            ? WheelRadiusCharacterization.Direction.CLOCKWISE
+                            : WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
-    autoChooser.addOption(
-        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
+    autoSelector.addRoutine(
+        "Diagnose Arm",
+        List.of(),
+        superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
   /**
@@ -800,6 +835,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return autoChooser.get();
+    return autoSelector.getCommand();
   }
 }

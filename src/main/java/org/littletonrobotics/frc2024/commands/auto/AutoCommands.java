@@ -12,6 +12,7 @@ import static edu.wpi.first.wpilibj2.command.Commands.*;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import java.util.function.Supplier;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
@@ -49,9 +50,15 @@ public class AutoCommands {
   }
 
   /** Creates a command that follows a trajectory, command ends when the trajectory is finished */
-  public static Command followTrajectory(Drive drive, HolonomicTrajectory trajectory) {
-    return startEnd(() -> drive.setTrajectory(trajectory), drive::clearTrajectory)
+  public static Command followTrajectory(
+      Drive drive, Supplier<HolonomicTrajectory> trajectorySupplier) {
+    return startEnd(() -> drive.setTrajectory(trajectorySupplier.get()), drive::clearTrajectory)
         .until(drive::isTrajectoryCompleted);
+  }
+
+  /** Creates a command that follows a trajectory, command ends when the trajectory is finished */
+  public static Command followTrajectory(Drive drive, HolonomicTrajectory trajectory) {
+    return followTrajectory(drive, () -> trajectory);
   }
 
   /**

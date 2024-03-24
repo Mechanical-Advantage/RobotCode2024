@@ -12,6 +12,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.Command;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
@@ -35,7 +36,7 @@ public class WheelRadiusCharacterization extends Command {
   }
 
   private final Drive drive;
-  private final Direction omegaDirection;
+  private final Supplier<Direction> omegaDirection;
   private final SlewRateLimiter omegaLimiter = new SlewRateLimiter(1.0);
 
   private double lastGyroYawRads = 0.0;
@@ -45,7 +46,7 @@ public class WheelRadiusCharacterization extends Command {
 
   private double currentEffectiveWheelRadius = 0.0;
 
-  public WheelRadiusCharacterization(Drive drive, Direction omegaDirection) {
+  public WheelRadiusCharacterization(Drive drive, Supplier<Direction> omegaDirection) {
     this.drive = drive;
     this.omegaDirection = omegaDirection;
     addRequirements(drive);
@@ -66,7 +67,7 @@ public class WheelRadiusCharacterization extends Command {
   public void execute() {
     // Run drive at velocity
     drive.runWheelRadiusCharacterization(
-        omegaLimiter.calculate(omegaDirection.value * characterizationSpeed.get()));
+        omegaLimiter.calculate(omegaDirection.get().value * characterizationSpeed.get()));
 
     // Get yaw and wheel positions
     accumGyroYawRads += MathUtil.angleModulus(gyroYawRadsSupplier.getAsDouble() - lastGyroYawRads);
@@ -88,6 +89,7 @@ public class WheelRadiusCharacterization extends Command {
 
   @Override
   public void end(boolean interrupted) {
+    drive.endCharacterization();
     if (accumGyroYawRads <= Math.PI * 2.0) {
       System.out.println("Not enough data for characterization");
     } else {

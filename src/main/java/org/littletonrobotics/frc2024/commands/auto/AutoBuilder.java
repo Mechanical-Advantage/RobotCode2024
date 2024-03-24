@@ -7,12 +7,19 @@
 
 package org.littletonrobotics.frc2024.commands.auto;
 
+import static edu.wpi.first.wpilibj2.command.Commands.*;
+import static org.littletonrobotics.frc2024.AutoSelector.*;
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
@@ -22,26 +29,20 @@ import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajec
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
+import org.littletonrobotics.frc2024.util.SuppliedWaitCommand;
 
+@RequiredArgsConstructor
 public class AutoBuilder {
+  private static final double preloadDelay = 1.0;
+  private static final double spikeIntakeDelay = 0.35;
+  private static final double aimDelay = 0.45;
+  private static final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
+
   private final Drive drive;
   private final Superstructure superstructure;
   private final Flywheels flywheels;
   private final Rollers rollers;
-
-  final double preloadDelay = 1.0;
-  final double spikeIntakeDelay = 0.35;
-  final double aimDelay = 0.45;
-
-  final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
-
-  public AutoBuilder(
-      Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
-    this.drive = drive;
-    this.superstructure = superstructure;
-    this.flywheels = flywheels;
-    this.rollers = rollers;
-  }
+  private final Supplier<List<AutoQuestionResponse>> responses;
 
   // Shared trajectories
   private final HolonomicTrajectory centerStartToSpike0 =
@@ -57,17 +58,69 @@ public class AutoBuilder {
   private final HolonomicTrajectory spike1ToSpike0 = new HolonomicTrajectory("spike1ToSpike0");
 
   // Spike (0, 2) to centerline 2
-  private final HolonomicTrajectory spike2ToCenterline2 =
-      new HolonomicTrajectory("spike2ToCenterline2");
-  private final HolonomicTrajectory spike0ToCenterline2 =
-      new HolonomicTrajectory("spike0ToCenterline2");
 
   // Drive to center
   private final HolonomicTrajectory spike2ToCenter = new HolonomicTrajectory("spike2ToCenter");
   private final HolonomicTrajectory spike0ToCenter = new HolonomicTrajectory("spike0ToCenter");
-  private final HolonomicTrajectory wingShotToCenter = new HolonomicTrajectory("wingShotToCenter");
+  private final HolonomicTrajectory wingLeftShotToCenter =
+      new HolonomicTrajectory("wingLeftShotToCenter");
+  private final HolonomicTrajectory wingRightShotToCenter =
+      new HolonomicTrajectory("wingRightShotToCenter");
   private final HolonomicTrajectory underStageShotToCenter =
       new HolonomicTrajectory("underStageShotToCenter");
+
+  public Command spike4(boolean driveToCenter) {
+    return select(
+            Map.of(
+                AutoQuestionResponse.SOURCE,
+                preloadToFirstSpike(DriveTrajectories.startingLineSpike0, sourceStartToSpike0)
+                    .andThen(firstSpikeToThirdSpike(true)),
+                AutoQuestionResponse.CENTER,
+                preloadToFirstSpike(DriveTrajectories.startingLineSpike1, centerStartToSpike0)
+                    .andThen(firstSpikeToThirdSpike(true)),
+                AutoQuestionResponse.AMP,
+                preloadToFirstSpike(DriveTrajectories.startingLineSpike2, ampStartToSpike2)
+                    .andThen(firstSpikeToThirdSpike(false))),
+            () -> responses.get().get(0))
+        .andThen(
+            either(
+                    followTrajectory(drive, spike0ToCenter),
+                    followTrajectory(drive, spike2ToCenter),
+                    () -> responses.get().get(0).equals(AutoQuestionResponse.AMP))
+                .onlyIf(() -> driveToCenter));
+  }
+
+  public Command spike5() {
+    Supplier<CenterlineNote> centerlineNote =
+        () -> CenterlineNote.valueOf(responses.get().get(1).toString());
+    BooleanSupplier startsWithSpike0 =
+        () -> responses.get().get(0).equals(AutoQuestionResponse.AMP);
+    Supplier<CenterlineShot> centerlineShot =
+        () ->
+            startsWithSpike0.getAsBoolean()
+                ? centerlineNote.get().spike0Shot
+                : centerlineNote.get().spike2Shot;
+
+    return spike4(false)
+        .andThen(
+            spikeToCenterline(
+                () ->
+                    new HolonomicTrajectory(
+                        "spike"
+                            + (startsWithSpike0.getAsBoolean() ? 0 : 2)
+                            + "ToCenterline"
+                            + centerlineNote.get().idx),
+                () -> centerlineShot.get().equals(CenterlineShot.UNDER_STAGE)),
+            select(
+                Map.of(
+                    CenterlineShot.WING_LEFT,
+                    followTrajectory(drive, wingLeftShotToCenter),
+                    CenterlineShot.UNDER_STAGE,
+                    followTrajectory(drive, underStageShotToCenter),
+                    CenterlineShot.WING_RIGHT,
+                    followTrajectory(drive, wingRightShotToCenter)),
+                centerlineShot));
+  }
 
   private Command preloadToFirstSpike(Pose2d startPose, HolonomicTrajectory preloadToFirstSpike) {
     return Commands.sequence(
@@ -124,8 +177,79 @@ public class AutoBuilder {
         .deadlineWith(flywheels.shootCommand());
   }
 
+  private Command spikeToCenterline(
+      Supplier<HolonomicTrajectory> trajectory, BooleanSupplier underStageShot) {
+    Timer timer = new Timer();
+    return runOnce(timer::restart)
+        .andThen(
+            // Follow trajectory and aim
+            followTrajectory(drive, trajectory)
+                .andThen(aim(drive).withTimeout(shootTimeoutSecs.get()))
+                .alongWith(
+                    either(
+                        // Does not shoot from under stage
+                        sequence(
+                            // Intake until aiming
+                            intake(superstructure, rollers)
+                                .raceWith(
+                                    new SuppliedWaitCommand(
+                                        () -> trajectory.get().getDuration() - aimDelay * 2.0)),
+
+                            // Shoot
+                            waitSeconds(aimDelay * 2.0)
+                                .andThen(feed(rollers))
+                                .deadlineWith(superstructure.aimWithCompensation(0.0))),
+
+                        // Does shoot from under stage
+                        sequence(
+                            // Intake centerline note
+                            waitUntilXCrossed(
+                                    FieldConstants.wingX
+                                        + DriveConstants.driveConfig.bumperWidthX()
+                                        + 0.25,
+                                    true)
+                                .andThen(
+                                    waitUntilXCrossed(
+                                            FieldConstants.wingX
+                                                + DriveConstants.driveConfig.bumperWidthX()
+                                                + 0.2,
+                                            false)
+                                        .deadlineWith(intake(superstructure, rollers))),
+
+                            // Shoot centerline note
+                            waitUntil(() -> timer.hasElapsed(trajectory.get().getDuration()))
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    waitUntilXCrossed(stageAimX, false)
+                                        .andThen(
+                                            superstructure.setGoalCommand(
+                                                Superstructure.Goal.AIM)))),
+                        underStageShot))
+                .deadlineWith(flywheels.shootCommand()));
+  }
+
+  @RequiredArgsConstructor
+  private enum CenterlineNote {
+    ZERO(0, CenterlineShot.WING_RIGHT, CenterlineShot.WING_RIGHT),
+    ONE(1, CenterlineShot.UNDER_STAGE, CenterlineShot.WING_RIGHT),
+    TWO(2, CenterlineShot.WING_LEFT, CenterlineShot.UNDER_STAGE),
+    THREE(3, CenterlineShot.WING_LEFT, CenterlineShot.WING_LEFT),
+    FOUR(4, CenterlineShot.WING_LEFT, CenterlineShot.WING_LEFT);
+
+    private final int idx;
+    private final CenterlineShot spike2Shot;
+    private final CenterlineShot spike0Shot;
+  }
+
+  private enum CenterlineShot {
+    WING_LEFT,
+    UNDER_STAGE,
+    WING_RIGHT
+  }
+
   private Command thirdSpikeToCenterline2(boolean startFromSpike2) {
     if (startFromSpike2) {
+      HolonomicTrajectory spike2ToCenterline2 = new HolonomicTrajectory("spike2ToCenterline2");
       return
       // Trajectory
       followTrajectory(drive, spike2ToCenterline2)
@@ -146,6 +270,7 @@ public class AutoBuilder {
           // Run flywheels
           .deadlineWith(flywheels.shootCommand());
     } else {
+      HolonomicTrajectory spike0ToCenterline2 = new HolonomicTrajectory("spike0ToCenterline2");
       Timer timer = new Timer();
       return Commands.runOnce(timer::restart)
           .andThen(
@@ -182,45 +307,6 @@ public class AutoBuilder {
           // Run flywheels
           .deadlineWith(flywheels.shootCommand());
     }
-  }
-
-  public Command source4() {
-    return preloadToFirstSpike(DriveTrajectories.startingLineSpike0, sourceStartToSpike0)
-        .andThen(firstSpikeToThirdSpike(true))
-        .andThen(followTrajectory(drive, spike2ToCenter));
-  }
-
-  public Command source5() {
-    return preloadToFirstSpike(DriveTrajectories.startingLineSpike0, sourceStartToSpike0)
-        .andThen(firstSpikeToThirdSpike(true))
-        .andThen(thirdSpikeToCenterline2(true))
-        .andThen(followTrajectory(drive, wingShotToCenter));
-  }
-
-  public Command center4() {
-    return preloadToFirstSpike(DriveTrajectories.startingLineSpike1, centerStartToSpike0)
-        .andThen(firstSpikeToThirdSpike(true))
-        .andThen(followTrajectory(drive, spike2ToCenter));
-  }
-
-  public Command center5() {
-    return preloadToFirstSpike(DriveTrajectories.startingLineSpike1, centerStartToSpike0)
-        .andThen(firstSpikeToThirdSpike(true))
-        .andThen(thirdSpikeToCenterline2(true))
-        .andThen(followTrajectory(drive, wingShotToCenter));
-  }
-
-  public Command amp4() {
-    return preloadToFirstSpike(DriveTrajectories.startingLineSpike2, ampStartToSpike2)
-        .andThen(firstSpikeToThirdSpike(false))
-        .andThen(followTrajectory(drive, spike0ToCenter));
-  }
-
-  public Command amp5() {
-    return preloadToFirstSpike(DriveTrajectories.startingLineSpike2, ampStartToSpike2)
-        .andThen(firstSpikeToThirdSpike(false))
-        .andThen(thirdSpikeToCenterline2(false))
-        .andThen(followTrajectory(drive, underStageShotToCenter));
   }
 
   public Command davisEthicalAuto() {

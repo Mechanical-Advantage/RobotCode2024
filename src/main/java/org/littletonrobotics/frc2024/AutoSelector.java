@@ -46,19 +46,24 @@ public class AutoSelector extends VirtualSubsystem {
               .publish();
       publisher.set("NA");
       questionPublishers.add(publisher);
-      questionChoosers.add(
-          new SwitchableChooser(key + "/Question #" + (i + 1) + " Chooser"));
+      questionChoosers.add(new SwitchableChooser(key + "/Question #" + (i + 1) + " Chooser"));
     }
+  }
+
+  /**
+   * Registers the default auto routine. If none is provided the default routine will be {@code
+   * Commands.none()}.
+   */
+  public void addDefaultRoutine(Command command) {
+    routineChooser.addDefaultOption(
+        defaultRoutine.name(), new AutoRoutine(defaultRoutine.name(), List.of(), command));
   }
 
   /** Registers a new auto routine that can be selected. */
   public void addRoutine(String name, List<AutoQuestion> questions, Command command) {
     if (questions.size() > maxQuestions) {
       throw new RuntimeException(
-          "Auto routine contained more than "
-              + maxQuestions
-              + " questions: "
-              + name);
+          "Auto routine contained more than " + maxQuestions + " questions: " + name);
     }
     routineChooser.addOption(name, new AutoRoutine(name, questions, command));
   }
@@ -92,9 +97,7 @@ public class AutoSelector extends VirtualSubsystem {
           questionChoosers
               .get(i)
               .setOptions(
-                  questions.get(i).responses().stream()
-                      .map((AutoQuestionResponse response) -> response.toString())
-                      .toArray(String[]::new));
+                  questions.get(i).responses().stream().map(Enum::toString).toArray(String[]::new));
         } else {
           questionPublishers.get(i).set("");
           questionChoosers.get(i).setOptions(new String[] {});
@@ -115,12 +118,22 @@ public class AutoSelector extends VirtualSubsystem {
   }
 
   /** A customizable auto routine associated with a single command. */
-  private record AutoRoutine(
-      String name, List<AutoQuestion> questions, Command command) {}
+  private record AutoRoutine(String name, List<AutoQuestion> questions, Command command) {}
 
   /** A question to ask for customizing an auto routine. */
   public record AutoQuestion(String question, List<AutoQuestionResponse> responses) {}
 
   /** Responses to auto routine questions. */
-  public enum AutoQuestionResponse {}
+  public enum AutoQuestionResponse {
+    SOURCE,
+    CENTER,
+    AMP,
+    ZERO,
+    ONE,
+    TWO,
+    THREE,
+    FOUR,
+    YES,
+    NO
+  }
 }

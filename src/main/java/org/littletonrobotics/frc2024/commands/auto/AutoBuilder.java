@@ -56,11 +56,21 @@ public class AutoBuilder {
   private final HolonomicTrajectory spike2ToSpike1 = new HolonomicTrajectory("spike2ToSpike1");
   private final HolonomicTrajectory spike1ToSpike0 = new HolonomicTrajectory("spike1ToSpike0");
 
-  // Spike (0, 2) to centerline 2
-  private final HolonomicTrajectory spike2ToCenterline2 =
-      new HolonomicTrajectory("spike2ToCenterline2");
+  // Spike notes to Centerline notes
+
+  // Spike 0 to Centerline notes
+  private final HolonomicTrajectory spike0ToCenterline0 =
+      new HolonomicTrajectory("spike0ToCenterline0");
+  private final HolonomicTrajectory spike0ToCenterline1 =
+      new HolonomicTrajectory("spike0ToCenterline1");
   private final HolonomicTrajectory spike0ToCenterline2 =
       new HolonomicTrajectory("spike0ToCenterline2");
+  /*private final HolonomicTrajectory spike0ToCenterline3 =
+      new HolonomicTrajectory("spike0ToCenterline3");
+  private final HolonomicTrajectory spike0ToCenterline4 =
+      new HolonomicTrajectory("spike0ToCenterline4");*/
+  private final HolonomicTrajectory spike2ToCenterline2 =
+      new HolonomicTrajectory("spike2ToCenterline2");
 
   // Drive to center
   private final HolonomicTrajectory spike2ToCenter = new HolonomicTrajectory("spike2ToCenter");

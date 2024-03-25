@@ -29,7 +29,6 @@ import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajec
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
-import org.littletonrobotics.frc2024.util.SuppliedWaitCommand;
 
 @RequiredArgsConstructor
 public class AutoBuilder {
@@ -45,6 +44,7 @@ public class AutoBuilder {
   private final Supplier<List<AutoQuestionResponse>> responses;
 
   // Shared trajectories
+  // Starting locations to spikes
   private final HolonomicTrajectory centerStartToSpike0 =
       new HolonomicTrajectory("centerStartToSpike0");
   private final HolonomicTrajectory sourceStartToSpike0 =
@@ -56,8 +56,6 @@ public class AutoBuilder {
   private final HolonomicTrajectory spike1ToSpike2 = new HolonomicTrajectory("spike1ToSpike2");
   private final HolonomicTrajectory spike2ToSpike1 = new HolonomicTrajectory("spike2ToSpike1");
   private final HolonomicTrajectory spike1ToSpike0 = new HolonomicTrajectory("spike1ToSpike0");
-
-  // Spike (0, 2) to centerline 2
 
   // Drive to center
   private final HolonomicTrajectory spike2ToCenter = new HolonomicTrajectory("spike2ToCenter");
@@ -191,9 +189,10 @@ public class AutoBuilder {
                         sequence(
                             // Intake until aiming
                             intake(superstructure, rollers)
-                                .raceWith(
-                                    new SuppliedWaitCommand(
-                                        () -> trajectory.get().getDuration() - aimDelay * 2.0)),
+                                .until(
+                                    () ->
+                                        timer.hasElapsed(
+                                            trajectory.get().getDuration() - aimDelay * 2.0)),
 
                             // Shoot
                             waitSeconds(aimDelay * 2.0)
@@ -245,68 +244,6 @@ public class AutoBuilder {
     WING_LEFT,
     UNDER_STAGE,
     WING_RIGHT
-  }
-
-  private Command thirdSpikeToCenterline2(boolean startFromSpike2) {
-    if (startFromSpike2) {
-      HolonomicTrajectory spike2ToCenterline2 = new HolonomicTrajectory("spike2ToCenterline2");
-      return
-      // Trajectory
-      followTrajectory(drive, spike2ToCenterline2)
-          .andThen(aim(drive).withTimeout(shootTimeoutSecs.get()))
-
-          // Sequence superstructure and rollers
-          .alongWith(
-              Commands.sequence(
-                  // Intake centerline 2
-                  intake(superstructure, rollers)
-                      .withTimeout(spike2ToCenterline2.getDuration() - aimDelay * 2.0),
-
-                  // Shoot centerline 2
-                  Commands.waitSeconds(aimDelay * 2.0)
-                      .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
-                      .deadlineWith(superstructure.setGoalCommand(Superstructure.Goal.AIM))))
-
-          // Run flywheels
-          .deadlineWith(flywheels.shootCommand());
-    } else {
-      HolonomicTrajectory spike0ToCenterline2 = new HolonomicTrajectory("spike0ToCenterline2");
-      Timer timer = new Timer();
-      return Commands.runOnce(timer::restart)
-          .andThen(
-              // Trajectory
-              followTrajectory(drive, spike0ToCenterline2)
-                  .andThen(aim(drive).withTimeout(shootTimeoutSecs.get()))
-
-                  // Sequence superstructure and rollers
-                  .alongWith(
-                      Commands.sequence(
-                          // Intake centerline 2
-                          waitUntilXCrossed(
-                                  FieldConstants.wingX
-                                      + DriveConstants.driveConfig.bumperWidthX()
-                                      + 0.25,
-                                  true)
-                              .andThen(
-                                  waitUntilXCrossed(
-                                          FieldConstants.wingX
-                                              + DriveConstants.driveConfig.bumperWidthX()
-                                              + 0.2,
-                                          false)
-                                      .deadlineWith(intake(superstructure, rollers))),
-
-                          // Shoot centerline 2
-                          Commands.waitUntil(
-                                  () -> timer.hasElapsed(spike0ToCenterline2.getDuration()))
-                              .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
-                              .deadlineWith(
-                                  waitUntilXCrossed(stageAimX, false)
-                                      .andThen(
-                                          superstructure.setGoalCommand(
-                                              Superstructure.Goal.AIM))))))
-          // Run flywheels
-          .deadlineWith(flywheels.shootCommand());
-    }
   }
 
   public Command davisEthicalAuto() {

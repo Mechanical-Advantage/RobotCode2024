@@ -363,8 +363,8 @@ public class RobotContainer {
                     new Pose2d(
                         new Translation2d(),
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
-    autoSelector.addRoutine("Davis Alternative", List.of(), autoBuilder.davisAlternativeAuto());
     autoSelector.addRoutine("Davis Ethical", List.of(), autoBuilder.davisEthicalAuto());
+    autoSelector.addRoutine("Davis Alternative", List.of(), autoBuilder.davisAlternativeAuto());
     autoSelector.addRoutine(
         "Davis Super Alternative", List.of(), autoBuilder.davisSuperAlternativeAuto());
     autoSelector.addRoutine(

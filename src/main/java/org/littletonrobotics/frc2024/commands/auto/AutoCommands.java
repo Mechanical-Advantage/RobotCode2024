@@ -95,7 +95,7 @@ public class AutoCommands {
   /** Command that intakes using the superstrucure and rollers, does not end */
   public static Command intake(Superstructure superstructure, Rollers rollers) {
     return Commands.parallel(
-        superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
+        superstructure.setGoalCommand(Superstructure.Goal.AUTO_INTAKE),
         rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE));
   }
 

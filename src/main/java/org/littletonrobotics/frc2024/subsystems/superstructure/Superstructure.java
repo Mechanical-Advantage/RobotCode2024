@@ -27,6 +27,7 @@ public class Superstructure extends SubsystemBase {
     AIM,
     SUPER_POOP,
     INTAKE,
+    AUTO_INTAKE,
     UNJAM_FEEDER,
     STATION_INTAKE,
     AMP,
@@ -50,7 +51,7 @@ public class Superstructure extends SubsystemBase {
   private final Climber climber;
   private final BackpackActuator backpackActuator;
 
-  private Timer goalTimer = new Timer();
+  private final Timer goalTimer = new Timer();
 
   public Superstructure(Arm arm, Climber climber, BackpackActuator backpackActuator) {
     this.arm = arm;
@@ -115,6 +116,11 @@ public class Superstructure extends SubsystemBase {
       }
       case INTAKE -> {
         arm.setGoal(Arm.Goal.FLOOR_INTAKE);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case AUTO_INTAKE -> {
+        arm.setGoal(Arm.Goal.AUTO_INTAKE);
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }

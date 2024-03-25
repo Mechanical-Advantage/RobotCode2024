@@ -79,6 +79,7 @@ public class Arm {
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     SUPER_POOP(new LoggedTunableNumber("Arm/SuperPoopDegrees", 48.0)),
     STOW(new LoggedTunableNumber("Arm/StowDegrees", minAngle.getDegrees())),
+    AUTO_INTAKE(new LoggedTunableNumber("Arm/AutoIntakeDegrees", 5.0)),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 34.0)),

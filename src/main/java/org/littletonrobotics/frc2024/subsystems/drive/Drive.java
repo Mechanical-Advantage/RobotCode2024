@@ -441,17 +441,14 @@ public class Drive extends SubsystemBase {
           }
         })
         .until(
-            () -> {
-              boolean atOrienation = true;
-              for (int i = 0; i < 4; i++) {
-                atOrienation &=
-                    EqualsUtil.epsilonEquals(
-                        modules[i].getSetpointState().angle.getDegrees(),
-                        orientations[i].getDegrees(),
-                        2.0);
-              }
-              return atOrienation;
-            })
+            () ->
+                Arrays.stream(modules)
+                    .allMatch(
+                        module ->
+                            EqualsUtil.epsilonEquals(
+                                module.getAngle().getDegrees(),
+                                module.getSetpointState().angle.getDegrees(),
+                                2.0)))
         .beforeStarting(() -> modulesOrienting = true)
         .finallyDo(() -> modulesOrienting = false)
         .withName("Orient Modules");

@@ -313,9 +313,17 @@ public class DriveTrajectories {
             FieldConstants.Stage.ampLeg.getX(),
             FieldConstants.StagingLocations.centerlineTranslations[2].getY());
     Translation2d podiumLegRightHug =
-        FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0, -1.25));
+        FieldConstants.StagingLocations.spikeTranslations[0].plus(new Translation2d(0, -0.97));
     Translation2d podiumLegLeftHug =
-        FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0, 1.25));
+        FieldConstants.StagingLocations.spikeTranslations[0].plus(new Translation2d(0, 0.97));
+    Translation2d sourceLegRightHug =
+        FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0, -1.25));
+    Translation2d sourceLegLeftHug =
+        FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0, 1));
+    Translation2d ampLegRightHug =
+        FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(0, -1));
+    Translation2d ampLegLeftHug =
+        FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(0, 1.25));
     paths.put(
         "spike0ToCenterLine0",
         List.of(
@@ -336,7 +344,7 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addWaypoints(getLastWaypoint("spike1ToSpike0"))
                 .addTranslationWaypoint(podiumLegRightHug)
-                .addTranslationWaypoint(stageCenterAvoidance)
+                .addTranslationWaypoint(sourceLegLeftHug)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[1],
@@ -371,6 +379,54 @@ public class DriveTrajectories {
                         .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+    paths.put(
+        "spike0ToCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("spike1ToSpike0"))
+                .addTranslationWaypoint(podiumLegLeftHug)
+                .addTranslationWaypoint(ampLegRightHug)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(210))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(210))
+                        .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(210))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                .addTranslationWaypoint(ampLegRightHug)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+    paths.put(
+        "spike0ToCenterline4",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("spike1ToSpike0"))
+                .addTranslationWaypoint(podiumLegLeftHug)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(190))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(190))
+                        .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(190))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
     paths.put(
         "spike2ToCenterline2",

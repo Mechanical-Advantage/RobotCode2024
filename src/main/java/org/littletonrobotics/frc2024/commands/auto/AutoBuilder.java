@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.FieldConstants;
@@ -91,24 +90,26 @@ public class AutoBuilder {
   public Command spike5() {
     Supplier<CenterlineNote> centerlineNote =
         () -> CenterlineNote.valueOf(responses.get().get(1).toString());
-    BooleanSupplier startsWithSpike0 =
-        () -> responses.get().get(0).equals(AutoQuestionResponse.AMP);
     Supplier<CenterlineShot> centerlineShot =
         () ->
-            startsWithSpike0.getAsBoolean()
-                ? centerlineNote.get().spike0Shot
-                : centerlineNote.get().spike2Shot;
-
+            responses.get().get(0).equals(AutoQuestionResponse.AMP)
+                ? centerlineNote.get().fromSpike0ToCenterlineShot
+                : centerlineNote.get().fromSpike2ToCenterlineShot;
     return spike4(false)
         .andThen(
-            spikeToCenterline(
-                () ->
-                    new HolonomicTrajectory(
-                        "spike"
-                            + (startsWithSpike0.getAsBoolean() ? 0 : 2)
-                            + "ToCenterline"
-                            + centerlineNote.get().idx),
-                () -> centerlineShot.get().equals(CenterlineShot.UNDER_STAGE)),
+            select(
+                Map.of(
+                    CenterlineNote.ZERO,
+                    spikeToCenterline(CenterlineNote.ZERO),
+                    CenterlineNote.ONE,
+                    spikeToCenterline(CenterlineNote.ONE),
+                    CenterlineNote.TWO,
+                    spikeToCenterline(CenterlineNote.TWO),
+                    CenterlineNote.THREE,
+                    spikeToCenterline(CenterlineNote.THREE),
+                    CenterlineNote.FOUR,
+                    spikeToCenterline(CenterlineNote.FOUR)),
+                centerlineNote),
             select(
                 Map.of(
                     CenterlineShot.WING_LEFT,
@@ -175,8 +176,25 @@ public class AutoBuilder {
         .deadlineWith(flywheels.shootCommand());
   }
 
+  private Command spikeToCenterline(CenterlineNote centerlineNote) {
+    return either(
+        spikeToCenterline(
+            true,
+            centerlineNote.index,
+            centerlineNote.fromSpike0ToCenterlineShot.equals(CenterlineShot.UNDER_STAGE)),
+        spikeToCenterline(
+            false,
+            centerlineNote.index,
+            centerlineNote.fromSpike2ToCenterlineShot.equals(CenterlineShot.UNDER_STAGE)),
+        // Starts at amp
+        () -> responses.get().get(0).equals(AutoQuestionResponse.AMP));
+  }
+
   private Command spikeToCenterline(
-      Supplier<HolonomicTrajectory> trajectory, BooleanSupplier underStageShot) {
+      boolean startsWithSpike0, int centerlineIndex, boolean underStageShot) {
+    HolonomicTrajectory trajectory =
+        new HolonomicTrajectory(
+            "spike" + (startsWithSpike0 ? 0 : 2) + "ToCenterline" + centerlineIndex);
     Timer timer = new Timer();
     return runOnce(timer::restart)
         .andThen(
@@ -184,20 +202,19 @@ public class AutoBuilder {
             followTrajectory(drive, trajectory)
                 .andThen(aim(drive).withTimeout(shootTimeoutSecs.get()))
                 .alongWith(
-                    either(
+                    underStageShot
+                        ?
                         // Does not shoot from under stage
                         sequence(
                             // Intake until aiming
                             intake(superstructure, rollers)
-                                .until(
-                                    () ->
-                                        timer.hasElapsed(
-                                            trajectory.get().getDuration() - aimDelay * 2.0)),
+                                .withTimeout(trajectory.getDuration() - aimDelay * 2.0),
 
                             // Shoot
                             waitSeconds(aimDelay * 2.0)
                                 .andThen(feed(rollers))
-                                .deadlineWith(superstructure.aimWithCompensation(0.0))),
+                                .deadlineWith(superstructure.aimWithCompensation(0.0)))
+                        :
 
                         // Does shoot from under stage
                         sequence(
@@ -216,14 +233,13 @@ public class AutoBuilder {
                                         .deadlineWith(intake(superstructure, rollers))),
 
                             // Shoot centerline note
-                            waitUntil(() -> timer.hasElapsed(trajectory.get().getDuration()))
+                            waitUntil(() -> timer.hasElapsed(trajectory.getDuration()))
                                 .andThen(feed(rollers))
                                 .deadlineWith(
                                     waitUntilXCrossed(stageAimX, false)
                                         .andThen(
                                             superstructure.setGoalCommand(
-                                                Superstructure.Goal.AIM)))),
-                        underStageShot))
+                                                Superstructure.Goal.AIM)))))
                 .deadlineWith(flywheels.shootCommand()));
   }
 
@@ -235,9 +251,9 @@ public class AutoBuilder {
     THREE(3, CenterlineShot.WING_LEFT, CenterlineShot.WING_LEFT),
     FOUR(4, CenterlineShot.WING_LEFT, CenterlineShot.WING_LEFT);
 
-    private final int idx;
-    private final CenterlineShot spike2Shot;
-    private final CenterlineShot spike0Shot;
+    private final int index;
+    private final CenterlineShot fromSpike2ToCenterlineShot;
+    private final CenterlineShot fromSpike0ToCenterlineShot;
   }
 
   private enum CenterlineShot {

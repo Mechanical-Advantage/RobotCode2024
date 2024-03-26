@@ -10,18 +10,22 @@ package org.littletonrobotics.frc2024.commands.auto;
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.drive.Drive.CoastRequest;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
+import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 
 public class AutoBuilder {
   private final Drive drive;
@@ -68,6 +72,28 @@ public class AutoBuilder {
   private final HolonomicTrajectory wingShotToCenter = new HolonomicTrajectory("wingShotToCenter");
   private final HolonomicTrajectory underStageShotToCenter =
       new HolonomicTrajectory("underStageShotToCenter");
+
+  public Command coastTest() {
+    var coastTest = new HolonomicTrajectory("coastTest");
+
+    return Commands.sequence(
+            resetPose(coastTest),
+            Commands.waitSeconds(14.0),
+            Commands.runOnce(() -> drive.setCoastRequest(CoastRequest.ALWAYS_COAST)),
+            followTrajectory(drive, coastTest))
+        .alongWith(
+            new ScheduleCommand(
+                Commands.sequence(
+                        Commands.waitUntil(DriverStation::isDisabled),
+                        Commands.waitUntil(
+                                () ->
+                                    AllianceFlipUtil.apply(
+                                            RobotState.getInstance().getEstimatedPose().getX())
+                                        > 4.0)
+                            .andThen(() -> drive.setCoastRequest(CoastRequest.ALWAYS_BRAKE))
+                            .withTimeout(3.0))
+                    .ignoringDisable(true)));
+  }
 
   private Command preloadToFirstSpike(Pose2d startPose, HolonomicTrajectory preloadToFirstSpike) {
     return Commands.sequence(

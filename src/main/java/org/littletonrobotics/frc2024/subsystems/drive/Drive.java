@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
@@ -51,7 +51,7 @@ public class Drive extends SubsystemBase {
   private static final LoggedTunableNumber coastMetersPerSecThreshold =
       new LoggedTunableNumber("Drive/CoastMetersPerSecThreshold", 0.05);
 
-  public enum DriveMode {
+  public static enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
     TELEOP,
 
@@ -66,6 +66,12 @@ public class Drive extends SubsystemBase {
 
     /** Running wheel radius characterization routine (spinning in circle) */
     WHEEL_RADIUS_CHARACTERIZATION
+  }
+
+  public static enum CoastRequest {
+    AUTOMATIC,
+    ALWAYS_BRAKE,
+    ALWAYS_COAST
   }
 
   @AutoLog
@@ -93,9 +99,14 @@ public class Drive extends SubsystemBase {
   private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
-  @Getter
   @AutoLogOutput(key = "Drive/BrakeModeEnabled")
   private boolean brakeModeEnabled = true;
+
+  @Setter
+  @AutoLogOutput(key = "Drive/CoastRequest")
+  private CoastRequest coastRequest = CoastRequest.AUTOMATIC;
+
+  private boolean lastEnabled = false;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
 
@@ -122,6 +133,7 @@ public class Drive extends SubsystemBase {
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
     lastMovementTimer.start();
+    setBrakeMode(true);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -219,6 +231,23 @@ public class Drive extends SubsystemBase {
     if (Arrays.stream(modules)
         .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
       lastMovementTimer.reset();
+    }
+    if (DriverStation.isEnabled() && !lastEnabled) {
+      coastRequest = CoastRequest.AUTOMATIC;
+    }
+
+    lastEnabled = DriverStation.isEnabled();
+    switch (coastRequest) {
+      case AUTOMATIC -> {
+        setBrakeMode(
+            DriverStation.isEnabled() || !lastMovementTimer.hasElapsed(coastWaitTime.get()));
+      }
+      case ALWAYS_BRAKE -> {
+        setBrakeMode(true);
+      }
+      case ALWAYS_COAST -> {
+        setBrakeMode(false);
+      }
     }
 
     // Run drive based on current mode
@@ -399,6 +428,14 @@ public class Drive extends SubsystemBase {
   /** Get the position of all drive wheels in radians. */
   public double[] getWheelRadiusCharacterizationPosition() {
     return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();
+  }
+
+  /** Set brake mode to {@code enabled} doesn't change brake mode if already set. */
+  private void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled != enabled) {
+      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
+    }
+    brakeModeEnabled = enabled;
   }
 
   /**

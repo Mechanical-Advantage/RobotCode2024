@@ -75,6 +75,16 @@ public class DriveTrajectories {
               .plus(new Translation2d(-0.4, 0.2)));
 
   static {
+    paths.put(
+        "coastTest",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(new Pose2d())
+                .addPoseWaypoint(new Pose2d(10.0, 0.0, new Rotation2d()))
+                .build()));
+  }
+
+  static {
     // Davis Ethical Auto (4 Note)
     Pose2d stageRightShootingPose =
         getShootingPose(

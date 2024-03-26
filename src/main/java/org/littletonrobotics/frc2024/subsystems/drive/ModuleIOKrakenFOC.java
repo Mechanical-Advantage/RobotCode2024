@@ -22,6 +22,8 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.RobotController;
 import java.util.Queue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 public class ModuleIOKrakenFOC implements ModuleIO {
@@ -52,6 +54,7 @@ public class ModuleIOKrakenFOC implements ModuleIO {
   // Controller Configs
   private final TalonFXConfiguration driveTalonConfig = new TalonFXConfiguration();
   private final TalonFXConfiguration turnTalonConfig = new TalonFXConfiguration();
+  private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(8);
 
   // Control
   private final VoltageOut voltageControl = new VoltageOut(0).withUpdateFreqHz(0);
@@ -227,16 +230,26 @@ public class ModuleIOKrakenFOC implements ModuleIO {
 
   @Override
   public void setDriveBrakeMode(boolean enable) {
-    driveTalonConfig.MotorOutput.NeutralMode =
-        enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-    driveTalon.getConfigurator().apply(driveTalonConfig);
+    brakeModeExecutor.execute(
+        () -> {
+          synchronized (driveTalonConfig) {
+            driveTalonConfig.MotorOutput.NeutralMode =
+                enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+            driveTalon.getConfigurator().apply(driveTalonConfig, 0.25);
+          }
+        });
   }
 
   @Override
   public void setTurnBrakeMode(boolean enable) {
-    turnTalonConfig.MotorOutput.NeutralMode =
-        enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
-    turnTalon.getConfigurator().apply(turnTalonConfig);
+    brakeModeExecutor.execute(
+        () -> {
+          synchronized (turnTalonConfig) {
+            turnTalonConfig.MotorOutput.NeutralMode =
+                enable ? NeutralModeValue.Brake : NeutralModeValue.Coast;
+            turnTalon.getConfigurator().apply(turnTalonConfig, 0.25);
+          }
+        });
   }
 
   @Override

@@ -83,6 +83,7 @@ public class AutoBuilder {
             either(
                     followTrajectory(drive, spike0ToCenter),
                     followTrajectory(drive, spike2ToCenter),
+                    // Starts at Amp --> Ends on spike 0
                     () -> responses.get().get(0).equals(AutoQuestionResponse.AMP))
                 .onlyIf(() -> driveToCenter));
   }
@@ -186,7 +187,7 @@ public class AutoBuilder {
             false,
             centerlineNote.index,
             centerlineNote.fromSpike2ToCenterlineShot.equals(CenterlineShot.UNDER_STAGE)),
-        // Starts at amp
+        // Starts at amp --> Ends on spike 0
         () -> responses.get().get(0).equals(AutoQuestionResponse.AMP));
   }
 

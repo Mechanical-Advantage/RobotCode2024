@@ -402,6 +402,24 @@ public class Drive extends SubsystemBase {
   }
 
   /**
+   * Returns command that orients all modules to start of {@link HolonomicTrajectory}, ending when
+   * the modules have rotated.
+   */
+  public Command orientModules(HolonomicTrajectory trajectory) {
+    var sample = trajectory.sample(0.05);
+    ChassisSpeeds speeds =
+        ChassisSpeeds.fromFieldRelativeSpeeds(
+            sample.getVx(),
+            sample.getVy(),
+            sample.getOmega(),
+            Rotation2d.fromRadians(sample.getTheta()));
+    return orientModules(
+        Arrays.stream(DriveConstants.kinematics.toSwerveModuleStates(speeds))
+            .map(state -> state.angle)
+            .toArray(Rotation2d[]::new));
+  }
+
+  /**
    * Returns command that orients all modules to {@code orientation}, ending when the modules have
    * rotated.
    */
@@ -423,14 +441,17 @@ public class Drive extends SubsystemBase {
           }
         })
         .until(
-            () ->
-                Arrays.stream(modules)
-                    .allMatch(
-                        module ->
-                            EqualsUtil.epsilonEquals(
-                                module.getAngle().getDegrees(),
-                                module.getSetpointState().angle.getDegrees(),
-                                2.0)))
+            () -> {
+              boolean atOrienation = true;
+              for (int i = 0; i < 4; i++) {
+                atOrienation &=
+                    EqualsUtil.epsilonEquals(
+                        modules[i].getSetpointState().angle.getDegrees(),
+                        orientations[i].getDegrees(),
+                        2.0);
+              }
+              return atOrienation;
+            })
         .beforeStarting(() -> modulesOrienting = true)
         .finallyDo(() -> modulesOrienting = false)
         .withName("Orient Modules");

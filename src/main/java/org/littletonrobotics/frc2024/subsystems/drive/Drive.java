@@ -417,7 +417,8 @@ public class Drive extends SubsystemBase {
     return run(() -> {
           for (int i = 0; i < orientations.length; i++) {
             modules[i].runSetpoint(
-                new SwerveModuleState(0.0, orientations[i]),
+                SwerveModuleState.optimize(
+                    new SwerveModuleState(0.0, orientations[i]), modules[i].getAngle()),
                 new SwerveModuleState(0.0, new Rotation2d()));
           }
         })

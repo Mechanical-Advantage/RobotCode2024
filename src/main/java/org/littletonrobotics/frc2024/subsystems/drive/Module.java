@@ -94,6 +94,12 @@ public class Module {
     io.runCharacterization(input);
   }
 
+  /** Sets brake mode to {@code enabled}. */
+  public void setBrakeMode(boolean enabled) {
+    io.setDriveBrakeMode(enabled);
+    io.setTurnBrakeMode(enabled);
+  }
+
   /** Stops motors. */
   public void stop() {
     io.stop();

@@ -11,11 +11,13 @@ import static org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.*;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants.ModuleConfig;
 
 public class ModuleIOSim implements ModuleIO {
   private final DCMotorSim driveSim =
@@ -32,6 +34,9 @@ public class ModuleIOSim implements ModuleIO {
   private double turnAppliedVolts = 0.0;
   private final Rotation2d turnAbsoluteInitPosition;
 
+  private boolean driveCoast = false;
+  private SlewRateLimiter driveVoltsLimiter = new SlewRateLimiter(4.0);
+
   public ModuleIOSim(ModuleConfig config) {
     turnAbsoluteInitPosition = config.absoluteEncoderOffset();
     turnFeedback.enableContinuousInput(-Math.PI, Math.PI);
@@ -41,6 +46,12 @@ public class ModuleIOSim implements ModuleIO {
   public void updateInputs(ModuleIOInputs inputs) {
     if (DriverStation.isDisabled()) {
       stop();
+    }
+
+    if (driveCoast && DriverStation.isDisabled()) {
+      runDriveVolts(driveVoltsLimiter.calculate(driveAppliedVolts));
+    } else {
+      driveVoltsLimiter.reset(driveAppliedVolts);
     }
 
     driveSim.update(Constants.loopPeriodSecs);
@@ -99,6 +110,11 @@ public class ModuleIOSim implements ModuleIO {
   @Override
   public void setTurnPID(double kP, double kI, double kD) {
     turnFeedback.setPID(kP, kI, kD);
+  }
+
+  @Override
+  public void setDriveBrakeMode(boolean enable) {
+    driveCoast = !enable;
   }
 
   @Override

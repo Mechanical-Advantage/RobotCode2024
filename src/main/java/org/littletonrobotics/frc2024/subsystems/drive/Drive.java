@@ -74,7 +74,7 @@ public class Drive extends SubsystemBase {
   }
 
   public static final Lock odometryLock = new ReentrantLock();
-  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(100);
+  public static final Queue<Double> timestampQueue = new ArrayBlockingQueue<>(20);
 
   private final OdometryTimestampInputsAutoLogged odometryTimestampInputs =
       new OdometryTimestampInputsAutoLogged();
@@ -332,10 +332,13 @@ public class Drive extends SubsystemBase {
   }
 
   /** Sets the goal pose for the robot to drive to */
-  public void setAutoAlignGoal(Supplier<Pose2d> poseSupplier, boolean slowMode) {
+  public void setAutoAlignGoal(
+      Supplier<Pose2d> poseSupplier,
+      Supplier<Translation2d> feedforwardSupplier,
+      boolean slowMode) {
     if (DriverStation.isTeleopEnabled()) {
       currentDriveMode = DriveMode.AUTO_ALIGN;
-      autoAlignController = new AutoAlignController(poseSupplier, slowMode);
+      autoAlignController = new AutoAlignController(poseSupplier, feedforwardSupplier, slowMode);
     }
   }
 

@@ -26,11 +26,11 @@ import org.littletonrobotics.junction.Logger;
 @ExtensionMethod({GeomUtil.class})
 public class AutoAlignController {
   private static final LoggedTunableNumber linearkP =
-      new LoggedTunableNumber("AutoAlign/drivekP", 1.5);
+      new LoggedTunableNumber("AutoAlign/drivekP", 3.5);
   private static final LoggedTunableNumber linearkD =
       new LoggedTunableNumber("AutoAlign/drivekD", 0.0);
   private static final LoggedTunableNumber thetakP =
-      new LoggedTunableNumber("AutoAlign/thetakP", 5.0);
+      new LoggedTunableNumber("AutoAlign/thetakP", 7.0);
   private static final LoggedTunableNumber thetakD =
       new LoggedTunableNumber("AutoAlign/thetakD", 0.0);
   private static final LoggedTunableNumber linearTolerance =
@@ -54,9 +54,9 @@ public class AutoAlignController {
           "AutoAlign/maxAngularAcceleration",
           DriveConstants.driveConfig.maxAngularAcceleration() * 0.8);
   private static final LoggedTunableNumber slowLinearVelocity =
-      new LoggedTunableNumber("AutoAlign/slowLinearVelocity", 1.5);
+      new LoggedTunableNumber("AutoAlign/slowLinearVelocity", 2.0);
   private static final LoggedTunableNumber slowLinearAcceleration =
-      new LoggedTunableNumber("AutoAlign/slowLinearAcceleration", 1.0);
+      new LoggedTunableNumber("AutoAlign/slowLinearAcceleration", 1.25);
   private static final LoggedTunableNumber slowAngularVelocity =
       new LoggedTunableNumber("AutoAlign/slowAngularVelocity", Math.PI / 2.0);
   private static final LoggedTunableNumber slowAngularAcceleration =
@@ -67,6 +67,7 @@ public class AutoAlignController {
       new LoggedTunableNumber("AutoAlign/ffMaxRadius", 0.8);
 
   private final Supplier<Pose2d> poseSupplier;
+  private final Supplier<Translation2d> feedforwardSupplier;
   private final boolean slowMode;
   private Translation2d lastSetpointTranslation;
 
@@ -75,8 +76,12 @@ public class AutoAlignController {
   private final ProfiledPIDController thetaController;
   private final Timer toleranceTimer = new Timer();
 
-  public AutoAlignController(Supplier<Pose2d> poseSupplier, boolean slowMode) {
+  public AutoAlignController(
+      Supplier<Pose2d> poseSupplier,
+      Supplier<Translation2d> feedforwardSupplier,
+      boolean slowMode) {
     this.poseSupplier = poseSupplier;
+    this.feedforwardSupplier = feedforwardSupplier;
     this.slowMode = slowMode;
     // Set up both controllers
     linearController =
@@ -210,7 +215,8 @@ public class AutoAlignController {
                 new Translation2d(),
                 currentPose.getTranslation().minus(targetPose.getTranslation()).getAngle())
             .transformBy(GeomUtil.toTransform2d(driveVelocityScalar, 0.0))
-            .getTranslation();
+            .getTranslation()
+            .plus(feedforwardSupplier.get());
     return ChassisSpeeds.fromFieldRelativeSpeeds(
         driveVelocity.getX(), driveVelocity.getY(), thetaVelocity, currentPose.getRotation());
   }

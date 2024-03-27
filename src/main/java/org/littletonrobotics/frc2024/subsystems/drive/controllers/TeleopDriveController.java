@@ -52,21 +52,9 @@ public class TeleopDriveController {
    * @return {@link ChassisSpeeds} with driver's requested speeds.
    */
   public ChassisSpeeds update() {
-    // Apply deadband
-    double linearMagnitude =
-        MathUtil.applyDeadband(Math.hypot(controllerX, controllerY), controllerDeadband.get());
-    Rotation2d linearDirection = new Rotation2d(controllerX, controllerY);
+    Translation2d linearVelocity = calcLinearVelocity(controllerX, controllerY);
     double omega = MathUtil.applyDeadband(controllerOmega, controllerDeadband.get());
-
-    // Square values
-    linearMagnitude = linearMagnitude * linearMagnitude;
     omega = Math.copySign(omega * omega, omega);
-
-    // Calcaulate new linear velocity
-    Translation2d linearVelocity =
-        new Pose2d(new Translation2d(), linearDirection)
-            .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
-            .getTranslation();
 
     final double maxAngularVelocity =
         driveConfig.maxAngularVelocity() * maxAngularVelocityScalar.get();
@@ -86,5 +74,21 @@ public class TeleopDriveController {
           omega * maxAngularVelocity,
           RobotState.getInstance().getEstimatedPose().getRotation());
     }
+  }
+
+  public static Translation2d calcLinearVelocity(double x, double y) {
+    // Apply deadband
+    double linearMagnitude = MathUtil.applyDeadband(Math.hypot(x, y), controllerDeadband.get());
+    Rotation2d linearDirection = new Rotation2d(x, y);
+
+    // Square magnitude
+    linearMagnitude = linearMagnitude * linearMagnitude;
+
+    // Calcaulate new linear velocity
+    Translation2d linearVelocity =
+        new Pose2d(new Translation2d(), linearDirection)
+            .transformBy(new Transform2d(linearMagnitude, 0.0, new Rotation2d()))
+            .getTranslation();
+    return linearVelocity;
   }
 }

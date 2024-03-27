@@ -20,7 +20,7 @@ public class ArmConstants {
   public static final Translation2d armOrigin = new Translation2d(-0.238, 0.298);
   public static final Rotation2d minAngle =
       switch (Constants.getRobot()) {
-        default -> Rotation2d.fromDegrees(0.0);
+        default -> Rotation2d.fromDegrees(6.85); // Measured from hardstop 3/12/24
         case DEVBOT -> Rotation2d.fromDegrees(10.0);
       };
   public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
@@ -46,7 +46,8 @@ public class ArmConstants {
   /** The offset of the arm encoder in radians. */
   public static final double armEncoderOffsetRads =
       switch (Constants.getRobot()) {
-        default -> 1.1980389953386859; // 1.0753205323078345 rad as measured at hardstop on 3/12/24,
+        default ->
+            1.1980389953386859 + .006; // 1.0753205323078345 rad as measured at hardstop on 3/12/24,
           // corresponding to an arm position of 0.11965050145508001 rad
         case DEVBOT -> -1.233 - Math.PI / 2.0;
       };

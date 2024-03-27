@@ -19,13 +19,11 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
@@ -38,6 +36,7 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
+import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
@@ -74,6 +73,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -123,7 +123,6 @@ public class RobotContainer {
       new LoggedDashboardNumber("Endgame Alert #2", 15.0);
 
   private boolean podiumShotMode = false;
-  private boolean trapScoreMode = true;
   private boolean armCoastOverride = false;
 
   // Dashboard inputs
@@ -313,10 +312,10 @@ public class RobotContainer {
                 && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
                 && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.POST_PREPARE_TRAP_CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
-                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB
-                && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB);
+                && superstructure.getCurrentGoal() != Superstructure.Goal.UNTRAP);
 
     // Configure autos and buttons
     configureAutos();
@@ -327,41 +326,30 @@ public class RobotContainer {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
 
-    // Endgame alert trigger
-    Function<Double, Command> controllerRumbleCommandFactory =
-        time ->
-            Commands.sequence(
-                Commands.runOnce(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
-                      leds.endgameAlert = true;
-                    }),
-                Commands.waitSeconds(time),
-                Commands.runOnce(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                      leds.endgameAlert = false;
-                    }));
+    // Endgame alert triggers
     new Trigger(
             () ->
                 DriverStation.isTeleopEnabled()
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
-        .onTrue(controllerRumbleCommandFactory.apply(0.5));
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.5)
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
     new Trigger(
             () ->
                 DriverStation.isTeleopEnabled()
                     && DriverStation.getMatchTime() > 0
                     && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
         .onTrue(
-            Commands.sequence(
-                controllerRumbleCommandFactory.apply(0.2),
-                Commands.waitSeconds(0.1),
-                controllerRumbleCommandFactory.apply(0.2),
-                Commands.waitSeconds(0.1),
-                controllerRumbleCommandFactory.apply(0.2)));
+            controllerRumbleCommand()
+                .withTimeout(0.2)
+                .andThen(Commands.waitSeconds(0.1))
+                .repeatedly()
+                .withTimeout(0.9) // Rumble three times
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
   }
 
   private void configureAutos() {
@@ -377,6 +365,7 @@ public class RobotContainer {
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
+    autoChooser.addOption("Davis Super Alternative Auto", autoBuilder.davisSuperAlternativeAuto());
 
     // Spike autos
     autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
@@ -427,7 +416,6 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // ------------- Driver Controls -------------
-    // Drive command
     drive.setDefaultCommand(
         drive
             .run(
@@ -519,21 +507,13 @@ public class RobotContainer {
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand()));
-    driver
-        .a()
-        .and(readyToShoot)
-        .whileTrue(
-            Commands.startEnd(
-                () -> {
-                  driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-                },
-                () -> {
-                  driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                }));
+    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
 
     // Poop.
     driver
-        .y()
+        .rightTrigger()
+        .and(driver.a().negate())
+        .and(driver.b().negate())
         .whileTrue(
             flywheels
                 .poopCommand()
@@ -545,6 +525,9 @@ public class RobotContainer {
     // Intake Floor
     driver
         .leftTrigger()
+        .and(
+            DriverStation
+                ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)
@@ -555,15 +538,7 @@ public class RobotContainer {
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
-        .onTrue(
-            Commands.startEnd(
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kLeftRumble, 1.0);
-                    },
-                    () -> {
-                      driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
-                    })
-                .withTimeout(0.5));
+        .onTrue(controllerRumbleCommand().withTimeout(0.5));
 
     // Eject Floor
     driver
@@ -587,6 +562,8 @@ public class RobotContainer {
                 .withName("Source Intake"));
 
     // ------------- Amp Scoring Controls -------------
+    Container<Translation2d> ampAlignedDriverTranslation = new Container<>();
+    Container<Translation2d> ampAlignedDriverFeedforward = new Container<>();
     Supplier<Pose2d> ampAlignedPose =
         () -> {
           Pose2d ampCenterRotated =
@@ -594,45 +571,88 @@ public class RobotContainer {
                   new Pose2d(FieldConstants.ampCenter, new Rotation2d(-Math.PI / 2.0)));
           var finalPose =
               ampCenterRotated
-                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(20.0), 0))
+                  .transformBy(GeomUtil.toTransform2d(Units.inchesToMeters(38.0), 0))
                   .transformBy(FudgeFactors.amp.getTransform());
           double distance =
               robotState
                   .getEstimatedPose()
                   .getTranslation()
+                  .minus(ampAlignedDriverTranslation.value)
                   .getDistance(finalPose.getTranslation());
           double offsetT = MathUtil.clamp((distance - 0.3) / 2.5, 0.0, 1.0);
           return finalPose.transformBy(GeomUtil.toTransform2d(offsetT * 1.75, 0.0));
         };
+    Command ampAutoDrive =
+        Commands.runOnce(
+                () -> {
+                  ampAlignedDriverTranslation.value = new Translation2d();
+                  ampAlignedDriverFeedforward.value = new Translation2d();
+                })
+            .andThen(
+                Commands.parallel(
+                    drive.startEnd(
+                        () ->
+                            drive.setAutoAlignGoal(
+                                () -> {
+                                  Pose2d goal = ampAlignedPose.get();
+                                  Logger.recordOutput("AmpAlign/UnadjustedGoal", goal);
+                                  goal =
+                                      new Pose2d(
+                                          goal.getTranslation()
+                                              .plus(ampAlignedDriverTranslation.value),
+                                          goal.getRotation());
+                                  Logger.recordOutput("AmpAlign/Goal", goal);
+                                  return goal;
+                                },
+                                () -> ampAlignedDriverFeedforward.value,
+                                false),
+                        drive::clearAutoAlignGoal),
+                    Commands.waitSeconds(0.5)
+                        .andThen(
+                            Commands.run(
+                                () -> {
+                                  final double maxVelocity = 1.5;
+                                  ampAlignedDriverFeedforward.value =
+                                      TeleopDriveController.calcLinearVelocity(
+                                              -driver.getLeftY() * 0.5, -driver.getLeftX())
+                                          .times(maxVelocity)
+                                          .rotateBy(
+                                              AllianceFlipUtil.shouldFlip()
+                                                  ? new Rotation2d(Math.PI)
+                                                  : new Rotation2d());
+                                  ampAlignedDriverTranslation.value =
+                                      ampAlignedDriverTranslation.value.plus(
+                                          ampAlignedDriverFeedforward.value.times(
+                                              Constants.loopPeriodSecs));
+                                }))));
+
     driver
         .b()
         .whileTrue(
             Commands.either(
-                    drive.run(
-                        () ->
-                            drive.acceptTeleopInput(
-                                -driver.getLeftY(),
-                                -driver.getLeftX(),
-                                -driver.getRightX(),
-                                robotRelative.getAsBoolean())),
+                    // Drive while heading is being controlled
                     drive
-                        .startEnd(
-                            () -> drive.setAutoAlignGoal(ampAlignedPose, false),
-                            drive::clearAutoAlignGoal)
-                        .until(drive::isAutoAlignGoalCompleted)
-                        .andThen(
-                            drive.run(
-                                () ->
-                                    drive.acceptTeleopInput(
-                                        -driver.getLeftY() * 0.5,
-                                        -driver.getLeftX() * 0.5,
-                                        0.0,
-                                        robotRelative.getAsBoolean()))),
+                        .run(
+                            () ->
+                                drive.acceptTeleopInput(
+                                    -driver.getLeftY(),
+                                    -driver.getLeftX(),
+                                    0.0,
+                                    robotRelative.getAsBoolean()))
+                        .alongWith(
+                            Commands.startEnd(
+                                () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
+                                drive::clearHeadingGoal)),
+
+                    // Auto drive to amp
+                    ampAutoDrive,
                     autoDriveDisable)
                 .alongWith(
                     Commands.waitUntil(
                             () -> {
-                              if (autoDriveDisable.getAsBoolean()) return true;
+                              if (autoDriveDisable.getAsBoolean()) {
+                                return true;
+                              }
                               Pose2d poseError =
                                   robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
                               return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
@@ -651,17 +671,22 @@ public class RobotContainer {
         .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
 
     // ------------- Climbing Controls -------------
+    Command trapSequence =
+        ClimbingCommands.trapSequence(
+            drive, superstructure, rollers, driver.povUp(), driver.povDown());
+    Command simpleSequence =
+        ClimbingCommands.simpleSequence(superstructure, driver.povUp(), driver.povDown());
     driver
-        .x()
-        .and(
-            () ->
-                superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_CLIMB
-                    && superstructure.getCurrentGoal() != Superstructure.Goal.CANCEL_PREPARE_CLIMB)
-        .toggleOnTrue(
-            Commands.either(
-                superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
-                Commands.none(), // No function yet
-                () -> trapScoreMode));
+        .start()
+        .and(driver.back())
+        .onTrue(
+            Commands.runOnce(
+                () -> {
+                  simpleSequence.cancel();
+                  trapSequence.cancel();
+                }));
+    driver.x().doublePress().onTrue(trapSequence);
+    driver.y().doublePress().onTrue(simpleSequence);
 
     // ------------- Operator Controls -------------
     // Adjust shot compensation
@@ -680,80 +705,46 @@ public class RobotContainer {
                 .ignoringDisable(true)
                 .repeatedly());
 
-    // Adjust arm preset
-    operator.x().onTrue(Commands.runOnce(() -> podiumShotMode = !podiumShotMode));
-
-    // Climber controls
-    operator.rightStick().onTrue(Commands.runOnce(() -> trapScoreMode = !trapScoreMode));
+    // Switch arm preset
     operator
-        .leftBumper()
-        .doublePress()
-        .and(() -> trapScoreMode)
-        .toggleOnTrue(
-            ClimbingCommands.climbNTrapSequence(
-                    drive,
-                    superstructure,
-                    rollers,
-                    () -> -driver.getLeftY(),
-                    () -> -driver.getLeftX(),
-                    () -> -driver.getRightX(),
-                    operator.rightBumper().doublePress(),
-                    operator.start().doublePress().or(operator.back().doublePress()),
-                    autoDriveDisable)
-                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
+        .y()
+        .onTrue(Commands.runOnce(() -> podiumShotMode = true)); //  set preset mode to podium
     operator
-        .leftBumper()
-        .doublePress()
-        .and(() -> !trapScoreMode)
-        .toggleOnTrue(
-            ClimbingCommands.simpleClimbSequence(
-                    superstructure, operator.rightBumper().doublePress())
-                .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
-    operator.leftStick().onTrue(superstructure.setGoalCommand(Superstructure.Goal.RESET));
+        .a()
+        .onTrue(Commands.runOnce(() -> podiumShotMode = false)); // set preset mode to subwoofer
 
     // Request amp
     operator
-        .b()
+        .x()
         .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
-    operator.a().whileTrue(rollers.shuffle());
+    operator.b().whileTrue(rollers.shuffle());
 
-    // Start flywheels
-    operator.rightTrigger().and(driver.a().negate()).whileTrue(flywheels.shootCommand());
-
-    // Unjam folded to shooter
+    // Unjam (untaco)
     operator
-        .leftTrigger()
+        .rightTrigger()
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.AMP)
                 .alongWith(
                     Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNTACO)))
-                .withName("Untaco"));
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.UNJAM_UNTACO)))
+                .withName("Unjam (Untaco)"));
 
-    // Unjam intake
+    // Unjam (feeder)
     operator
-        .y()
+        .rightBumper()
         .whileTrue(
             superstructure
-                .setGoalCommand(Superstructure.Goal.UNJAM_INTAKE)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.EJECT_FROM_FEEDER))
-                .withName("Unjam From Feeder"));
-
-    operator
-        .povLeft()
-        .or(operator.povRight())
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.BACKPACK_OUT_UNJAM)
-                .withName("Backpack Out Unjam"));
+                .setGoalCommand(Superstructure.Goal.UNJAM_FEEDER)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.UNJAM_FEEDER))
+                .withName("Unjam (Feeder)"));
 
     // Reset heading
-    driver
+    operator
         .start()
-        .and(driver.back())
+        .and(operator.back())
         .onTrue(
             Commands.runOnce(
                     () ->
@@ -762,6 +753,19 @@ public class RobotContainer {
                                 robotState.getEstimatedPose().getTranslation(),
                                 AllianceFlipUtil.apply(new Rotation2d()))))
                 .ignoringDisable(true));
+  }
+
+  /** Creates a controller rumble command with specified rumble and controllers */
+  private Command controllerRumbleCommand() {
+    return Commands.startEnd(
+        () -> {
+          driver.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+          operator.getHID().setRumble(RumbleType.kBothRumble, 1.0);
+        },
+        () -> {
+          driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+          operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
+        });
   }
 
   /** Updates the alerts for disconnected controllers. */
@@ -781,7 +785,7 @@ public class RobotContainer {
         "Shot Compensation Degrees",
         String.format("%.1f", robotState.getShotCompensationDegrees()));
     SmartDashboard.putBoolean("Podium Preset", podiumShotMode);
-    SmartDashboard.putBoolean("Trap Score Mode", trapScoreMode);
+    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
   }
 
   /** Updates the AprilTag alert. */

@@ -72,7 +72,7 @@ public class DriveTrajectories {
           FieldConstants.Stage.podiumLeg
               .getTranslation()
               .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
-              .plus(new Translation2d(-0.3, 0.2)));
+              .plus(new Translation2d(-0.4, 0.2)));
 
   static {
     // Davis Ethical Auto (4 Note)
@@ -213,7 +213,7 @@ public class DriveTrajectories {
   static {
     // Spike auto trajectories
     // Source, center, amp to first spikes
-    // Center --> podiume spike or amp spike
+    // Center --> podium spike or amp spike
     Translation2d wingLeftAvoidance =
         new Translation2d(
             FieldConstants.wingX,
@@ -301,7 +301,7 @@ public class DriveTrajectories {
                     spike0ShootingPose.transformBy(new Translation2d(0.5, 0).toTransform2d()))
                 .build()));
 
-    // Edge spikes to centerline 2
+    // Edge spikes to centerline
     paths.put(
         "spike2ToCenterline2",
         List.of(
@@ -318,12 +318,35 @@ public class DriveTrajectories {
                             FieldConstants.StagingLocations.centerlineTranslations[2],
                             Rotation2d.fromDegrees(135.0))
                         .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
                 .addTranslationWaypoint(wingLeftAvoidance)
                 .addPoseWaypoint(
                     getShootingPose(
                         FieldConstants.Stage.podiumLeg
                             .getTranslation()
                             .plus(new Translation2d(0.5, 2.5))))
+                .build()));
+    paths.put(
+        "spike1ToCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("spike2ToSpike1"))
+                .addTranslationWaypoint(wingLeftAvoidance.plus(new Translation2d(0.0, -0.3)))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(160.0))
+                        .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addTranslationWaypoint(wingLeftAvoidance.plus(new Translation2d(0.0, -0.1)))
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Stage.ampLeg
+                            .getTranslation()
+                            .plus(new Translation2d(-1.5, 0.2))))
                 .build()));
     Translation2d stageCenterAvoidance =
         new Translation2d(
@@ -344,6 +367,22 @@ public class DriveTrajectories {
                             FieldConstants.StagingLocations.centerlineTranslations[2],
                             Rotation2d.fromDegrees(180))
                         .transformBy(GeomUtil.toTransform2d(0.2, 0.0)))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+
+    // Between centerline for super alternative auto
+    paths.put(
+        "centerline3ToCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("spike1ToCenterline3"))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(180.0))
+                        .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));

@@ -489,7 +489,7 @@ public class DriveTrajectories {
                 .addWaypoints(getLastWaypoint("spike2ToSpike1"))
                 .addTranslationWaypoint(
                     FieldConstants.Stage.ampLeg
-                        .transformBy(new Transform2d(-2, 0, Rotation2d.fromDegrees(180)))
+                        .transformBy(new Transform2d(0, -1, new Rotation2d()))
                         .getTranslation())
                 .addPoseWaypoint(
                     new Pose2d(

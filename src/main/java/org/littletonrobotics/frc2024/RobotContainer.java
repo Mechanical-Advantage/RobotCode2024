@@ -123,7 +123,6 @@ public class RobotContainer {
       new LoggedDashboardNumber("Endgame Alert #2", 15.0);
 
   private boolean podiumShotMode = false;
-  private boolean armCoastOverride = false;
 
   // Dashboard inputs
   private final LoggedDashboardChooser<Command> autoChooser =
@@ -282,21 +281,22 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Set up subsystems
+    Container<Boolean> armCoastOverride = new Container<>();
     armCoast
         .onTrue(
             Commands.runOnce(
                     () -> {
                       if (DriverStation.isDisabled()) {
-                        armCoastOverride = true;
+                        armCoastOverride.value = true;
                       }
                     })
                 .ignoringDisable(true))
-        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+        .onFalse(Commands.runOnce(() -> armCoastOverride.value = false).ignoringDisable(true));
     RobotModeTriggers.disabled()
-        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
-    arm.setOverrides(armDisable, () -> armCoastOverride);
-    climber.setCoastOverride(() -> armCoastOverride);
-    backpackActuator.setCoastOverride(() -> armCoastOverride);
+        .onFalse(Commands.runOnce(() -> armCoastOverride.value = false).ignoringDisable(true));
+    arm.setOverrides(armDisable, () -> armCoastOverride.value);
+    climber.setCoastOverride(() -> armCoastOverride.value);
+    backpackActuator.setCoastOverride(() -> armCoastOverride.value);
     robotState.setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
         () ->

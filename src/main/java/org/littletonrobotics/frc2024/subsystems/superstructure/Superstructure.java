@@ -35,6 +35,7 @@ public class Superstructure extends SubsystemBase {
     RESET_CLIMB,
     PREPARE_PREPARE_TRAP_CLIMB,
     PREPARE_CLIMB,
+    POST_PREPARE_TRAP_CLIMB,
     CLIMB,
     TRAP,
     UNTRAP,
@@ -72,6 +73,7 @@ public class Superstructure extends SubsystemBase {
     if (!climber.retracted()
         && desiredGoal != Goal.PREPARE_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.PREPARE_CLIMB
+        && desiredGoal != Goal.POST_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.CLIMB
         && desiredGoal != Goal.TRAP
         && desiredGoal != Goal.UNTRAP
@@ -156,6 +158,11 @@ public class Superstructure extends SubsystemBase {
       }
       case PREPARE_CLIMB -> {
         arm.setGoal(Arm.Goal.PREPARE_CLIMB);
+        climber.setGoal(Climber.Goal.EXTEND);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case POST_PREPARE_TRAP_CLIMB -> {
+        arm.setGoal(Arm.Goal.CLIMB);
         climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }

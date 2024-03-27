@@ -312,6 +312,7 @@ public class RobotContainer {
                 && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
                 && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB
+                && superstructure.getCurrentGoal() != Superstructure.Goal.POST_PREPARE_TRAP_CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.CLIMB
                 && superstructure.getCurrentGoal() != Superstructure.Goal.TRAP
                 && superstructure.getCurrentGoal() != Superstructure.Goal.UNTRAP);
@@ -524,6 +525,9 @@ public class RobotContainer {
     // Intake Floor
     driver
         .leftTrigger()
+        .and(
+            DriverStation
+                ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
         .whileTrue(
             superstructure
                 .setGoalCommand(Superstructure.Goal.INTAKE)

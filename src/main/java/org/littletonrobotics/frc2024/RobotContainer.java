@@ -363,7 +363,6 @@ public class RobotContainer {
                     new Pose2d(
                         new Translation2d(),
                         AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
-    autoChooser.addOption("Coast Test", autoBuilder.coastTest());
     autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
     autoChooser.addOption("Davis Super Alternative Auto", autoBuilder.davisSuperAlternativeAuto());

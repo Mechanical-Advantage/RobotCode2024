@@ -239,8 +239,11 @@ public class Drive extends SubsystemBase {
     lastEnabled = DriverStation.isEnabled();
     switch (coastRequest) {
       case AUTOMATIC -> {
-        setBrakeMode(
-            DriverStation.isEnabled() || !lastMovementTimer.hasElapsed(coastWaitTime.get()));
+        if (DriverStation.isEnabled()) {
+          setBrakeMode(true);
+        } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
+          setBrakeMode(false);
+        }
       }
       case ALWAYS_BRAKE -> {
         setBrakeMode(true);

@@ -213,7 +213,12 @@ public class DriveTrajectories {
         List.of(
             ampStartToSpike2,
             spike2ToSpike1Shot,
-            PathSegment.newBuilder().addPoseWaypoint(spikeShootingPoses[1]).build()));
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    spikeShootingPoses[1].transformBy(
+                        new Translation2d(spikePrepareIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(spikeShootingPoses[1])
+                .build()));
 
     // Generate trajectories for centerline shots
     PathSegment[][] spikeToCenterlineIntakeSegments = new PathSegment[3][3];
@@ -309,6 +314,18 @@ public class DriveTrajectories {
             List.of(spikeToCenterlineIntakeSegments[spikeIndex][i], centerlineToShotSegments[i]));
       }
     }
+
+    paths.put(
+        "spiky_shotToCenter",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(wingLeftShot)
+                .addPoseWaypoint(
+                    new Pose2d(
+                        StagingLocations.centerlineTranslations[4].interpolate(
+                            StagingLocations.centerlineTranslations[3], 0.5),
+                        Rotation2d.fromDegrees(180.0)))
+                .build()));
   }
 
   // Davis Speedy Auto (named "speedy_XXX")

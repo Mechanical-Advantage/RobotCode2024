@@ -58,17 +58,17 @@ public class AutoBuilder {
     HolonomicTrajectory trajectory =
         new HolonomicTrajectory(
             "spiky_" + startingLocation.toString().toLowerCase() + "Start" + (scoresThree ? 3 : 2));
-    final double lastIntakeTime = trajectory.getDuration() - 0.3;
+    final double lastIntakeTime = trajectory.getDuration() - spikeIntakeDelay / 2.0;
     double firstIntakeTime = 0;
     double secondIntakeTime = lastIntakeTime;
     switch (startingLocation) {
       case SOURCE, AMP -> {
         firstIntakeTime = 1.4;
-        secondIntakeTime = 3.4;
+        secondIntakeTime = 3.1;
       }
       case CENTER -> {
         firstIntakeTime = 1.5;
-        secondIntakeTime = 3.5;
+        secondIntakeTime = 3.3;
       }
     }
 
@@ -169,9 +169,9 @@ public class AutoBuilder {
                 // Sequence superstructure and rollers
                 Commands.sequence(
                     // Intake
-                    waitUntilXCrossed(FieldConstants.wingX + 0.05, true)
+                    waitUntilXCrossed(FieldConstants.wingX + 0.55, true)
                         .andThen(
-                            waitUntilXCrossed(FieldConstants.wingX, false)
+                            waitUntilXCrossed(FieldConstants.wingX + 0.5, false)
                                 .deadlineWith(intake(superstructure, rollers))),
 
                     // Shoot
@@ -180,7 +180,10 @@ public class AutoBuilder {
                                 autoTimer.hasElapsed(
                                     trajectory.getDuration() - shootTimeoutSecs.get() / 2.0))
                         .andThen(feed(rollers))
-                        .deadlineWith(superstructure.aimWithCompensation(0.0)))))
+                        .deadlineWith(
+                            Commands.waitUntil(
+                                    () -> autoTimer.hasElapsed(trajectory.getDuration() - 1.0))
+                                .andThen(superstructure.aimWithCompensation(0.0))))))
         .deadlineWith(flywheels.shootCommand());
   }
 
@@ -275,7 +278,9 @@ public class AutoBuilder {
         // Score first centerline note
         Commands.select(firstCenterlineChooser, () -> responses.get().get(2)),
         // Score second centerline note
-        Commands.select(secondCenterlineChooser, () -> responses.get().get(3)));
+        Commands.select(secondCenterlineChooser, () -> responses.get().get(3)),
+        // Drive to centerline
+        followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenter")));
   }
 
   public Command davisSpeedyAuto() {

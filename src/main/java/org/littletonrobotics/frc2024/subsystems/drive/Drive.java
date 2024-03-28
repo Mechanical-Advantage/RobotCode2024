@@ -442,6 +442,24 @@ public class Drive extends SubsystemBase {
   }
 
   /**
+   * Returns command that orients all modules to start of {@link HolonomicTrajectory}, ending when
+   * the modules have rotated.
+   */
+  public Command orientModules(HolonomicTrajectory trajectory) {
+    var sample = trajectory.sample(0.05);
+    ChassisSpeeds speeds =
+        ChassisSpeeds.fromFieldRelativeSpeeds(
+            sample.getVx(),
+            sample.getVy(),
+            sample.getOmega(),
+            Rotation2d.fromRadians(sample.getTheta()));
+    return orientModules(
+        Arrays.stream(DriveConstants.kinematics.toSwerveModuleStates(speeds))
+            .map(state -> state.angle)
+            .toArray(Rotation2d[]::new));
+  }
+
+  /**
    * Returns command that orients all modules to {@code orientation}, ending when the modules have
    * rotated.
    */
@@ -458,7 +476,8 @@ public class Drive extends SubsystemBase {
           SwerveModuleState[] states = new SwerveModuleState[4];
           for (int i = 0; i < orientations.length; i++) {
             modules[i].runSetpoint(
-                new SwerveModuleState(0.0, orientations[i]),
+                SwerveModuleState.optimize(
+                    new SwerveModuleState(0.0, orientations[i]), modules[i].getAngle()),
                 new SwerveModuleState(0.0, new Rotation2d()));
             states[i] = new SwerveModuleState(0.0, modules[i].getAngle());
           }

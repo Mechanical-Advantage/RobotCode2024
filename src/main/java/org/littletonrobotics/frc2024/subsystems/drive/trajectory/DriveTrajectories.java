@@ -47,7 +47,7 @@ public class DriveTrajectories {
     final double centerlineIntakeOffset = 0.25;
     final double centerlinePrepareIntakeOffset = 1.0;
 
-    final Rotation2d spike0To1IntakeRotation = Rotation2d.fromDegrees(-170.0);
+    final Rotation2d spike0To1IntakeRotation = Rotation2d.fromDegrees(-160.0);
     final Rotation2d spike2To1IntakeRotation =
         new Rotation2d(spike0To1IntakeRotation.getCos(), -spike0To1IntakeRotation.getSin());
 
@@ -98,7 +98,7 @@ public class DriveTrajectories {
 
     // Between spike shooting segments
     final double betweenSpikeShotS = 0.4;
-    final Translation2d betweenSpikeShotTranslation = new Translation2d(-0.9, 0.0);
+    final Translation2d betweenSpikeShotTranslation = new Translation2d(-0.65, 0.0);
     var spike0ToSpike1Shot =
         PathSegment.newBuilder()
             .addPoseWaypoint(

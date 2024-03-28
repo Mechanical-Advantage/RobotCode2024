@@ -88,6 +88,7 @@ public class WheelRadiusCharacterization extends Command {
 
   @Override
   public void end(boolean interrupted) {
+    drive.endCharacterization();
     if (accumGyroYawRads <= Math.PI * 2.0) {
       System.out.println("Not enough data for characterization");
     } else {

@@ -268,6 +268,9 @@ public class Drive extends SubsystemBase {
       case TRAJECTORY -> {
         // Run trajectory
         desiredSpeeds = trajectoryController.update();
+        if (headingController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = headingController.update();
+        }
       }
       case AUTO_ALIGN -> {
         // Run auto align with drive input

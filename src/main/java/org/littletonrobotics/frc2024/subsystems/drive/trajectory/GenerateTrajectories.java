@@ -13,6 +13,7 @@ import io.grpc.InsecureChannelCredentials;
 import java.io.*;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -46,6 +47,24 @@ public class GenerateTrajectories {
                     / DriveConstants.driveConfig.wheelRadius()
                     * 0.75)
             .build();
+
+    // Delete old trajectories
+    try {
+      Files.list(Path.of("src", "main", "deploy", "trajectories"))
+          .forEach(
+              (path) -> {
+                String filename = path.getFileName().toString();
+                if (!filename.endsWith(".pathblob")) return;
+                String[] components = filename.split("\\.");
+                if (components.length == 2
+                    && !DriveTrajectories.paths.keySet().contains(components[0])) {
+                  path.toFile().delete();
+                  System.out.println(components[0] + " - Deleted 💀");
+                }
+              });
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
     // Check hashcodes
     Map<String, List<PathSegment>> pathQueue = new HashMap<>();

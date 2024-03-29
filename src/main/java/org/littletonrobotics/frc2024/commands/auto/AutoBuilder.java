@@ -47,6 +47,11 @@ public class AutoBuilder {
   }
 
   public Command davisUnethicalAuto() {
-    return Commands.none();
+    return Commands.sequence(
+        resetPose(DriveTrajectories.startingSource),
+        followTrajectory(drive, new HolonomicTrajectory("unethical_grabCenterline0")),
+        resetPose(DriveTrajectories.startingSource),
+        followTrajectory(drive, new HolonomicTrajectory("unethical_grabCenterline1")),
+        followTrajectory(drive, new HolonomicTrajectory("unethical_driveToSource")));
   }
 }

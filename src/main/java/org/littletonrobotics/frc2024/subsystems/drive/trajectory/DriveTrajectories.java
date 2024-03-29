@@ -7,8 +7,10 @@
 
 package org.littletonrobotics.frc2024.subsystems.drive.trajectory;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +60,73 @@ public class DriveTrajectories {
 
   // Davis Unethical Auto (named "unethical_XXX")
   static {
+    final Pose2d sourceSideShootingPose =
+        getShootingPose(
+            FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
+    final Translation2d sourceLegAvoidance =
+        new Translation2d(
+            FieldConstants.wingX,
+            MathUtil.interpolate(0, FieldConstants.Stage.sourceLeg.getY(), 0.63));
+    paths.put(
+        "unethical_grabCenterline0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingSource)
+                .addTranslationWaypoint(sourceLegAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[0],
+                            Rotation2d.fromDegrees(152))
+                        .transformBy(new Transform2d(0.5, 0, new Rotation2d())),
+                    10)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[0],
+                            Rotation2d.fromDegrees(160))
+                        .transformBy(new Transform2d(0.3, 0, new Rotation2d())),
+                    10)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[0],
+                            Rotation2d.fromDegrees(168))
+                        .transformBy(new Transform2d(0.5, 0, new Rotation2d())),
+                    10)
+                .addPoseWaypoint(sourceSideShootingPose)
+                .build()));
+    paths.put(
+        "unethical_grabCenterline1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingSource)
+                .addTranslationWaypoint(sourceLegAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(182))
+                        .transformBy(new Transform2d(0.5, 0, new Rotation2d())))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(190))
+                        .transformBy(new Transform2d(0.3, 0, new Rotation2d())),
+                    10)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(198))
+                        .transformBy(new Transform2d(0.4, 0, new Rotation2d())),
+                    10)
+                .addTranslationWaypoint(sourceLegAvoidance)
+                .addPoseWaypoint(sourceSideShootingPose)
+                .build()));
+    paths.put(
+        "unethical_driveToSource",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(sourceSideShootingPose)
+                .addTranslationWaypoint(sourceLegAvoidance)
+                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldWidth * 2) - 4, 1))
+                .build()));
   }
 
   /** Calculates aimed pose from translation. */

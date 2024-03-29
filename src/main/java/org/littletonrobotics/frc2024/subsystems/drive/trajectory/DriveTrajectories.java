@@ -321,16 +321,15 @@ public class DriveTrajectories {
       }
     }
 
+    Translation2d centerField = new Translation2d(fieldLength / 2.0, fieldWidth / 2.0);
     paths.put(
         "spiky_shotToCenter",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(wingLeftShot)
+                .addTranslationWaypoint(wingLeftAvoidance)
                 .addPoseWaypoint(
-                    new Pose2d(
-                        StagingLocations.centerlineTranslations[4].interpolate(
-                            StagingLocations.centerlineTranslations[3], 0.5),
-                        Rotation2d.fromDegrees(180.0)))
+                    new Pose2d(centerField, wingLeftAvoidance.minus(centerField).getAngle()))
                 .build()));
   }
 

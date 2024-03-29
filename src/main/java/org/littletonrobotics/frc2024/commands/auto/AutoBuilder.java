@@ -286,7 +286,7 @@ public class AutoBuilder {
         Commands.runOnce(() -> System.out.println("Centerline 2 shot at: " + autoTimer.get())),
         // Drive to centerline
         followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenter"))
-                .alongWith(intake(superstructure, rollers)));
+            .alongWith(intake(superstructure, rollers)));
   }
 
   public Command davisSpeedyAuto() {

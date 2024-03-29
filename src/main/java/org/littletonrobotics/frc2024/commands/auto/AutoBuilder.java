@@ -37,6 +37,7 @@ public class AutoBuilder {
 
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
+  private static final double spikeFeedThroughDelay = 0.35;
 
   /** Command that scores preload. Times out with preloadDelay. */
   private Command scorePreload() {
@@ -59,7 +60,7 @@ public class AutoBuilder {
     HolonomicTrajectory trajectory =
         new HolonomicTrajectory(
             "spiky_" + startingLocation.toString().toLowerCase() + "Start" + (scoresThree ? 3 : 2));
-    final double lastIntakeTime = trajectory.getDuration() - spikeIntakeDelay / 2.0;
+    final double lastIntakeTime = trajectory.getDuration() - spikeFeedThroughDelay / 2.0;
     double firstIntakeTime = 0;
     double secondIntakeTime = lastIntakeTime;
     switch (startingLocation) {
@@ -130,7 +131,9 @@ public class AutoBuilder {
                             rollers
                                 .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
                                 .until(
-                                    () -> autoTimer.hasElapsed(lastIntakeTime + spikeIntakeDelay))),
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            lastIntakeTime + spikeFeedThroughDelay))),
                         Commands.sequence(
                             // Intake and shoot first spike
                             rollers
@@ -147,9 +150,7 @@ public class AutoBuilder {
                                 .until(
                                     () ->
                                         autoTimer.hasElapsed(
-                                            lastIntakeTime
-                                                + spikeIntakeDelay
-                                                + shootTimeoutSecs.get()))),
+                                            lastIntakeTime + spikeFeedThroughDelay))),
                         () -> scoresThree)))
 
         // Always aim and run flywheels

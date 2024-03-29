@@ -39,6 +39,14 @@ public class AutoBuilder {
   private static final double spikeIntakeDelay = 0.35;
   private static final double spikeFeedThroughDelay = 0.35;
 
+  private static final Map<Integer, Double> centerlineShotCompensations =
+      Map.of(
+          4, 0.0,
+          3, 0.0,
+          2, 0.0,
+          1, 0.0,
+          0, 0.0);
+
   /** Command that scores preload. Times out with preloadDelay. */
   private Command scorePreload() {
     return
@@ -108,6 +116,7 @@ public class AutoBuilder {
 
                     // Sequence feeding and intaking
                     Commands.either(
+                        // If three spike notes
                         Commands.sequence(
                             // Intake and shoot first spike
                             rollers
@@ -117,7 +126,6 @@ public class AutoBuilder {
                                         autoTimer.hasElapsed(
                                             finalFirstIntakeTime + spikeIntakeDelay)),
                             feed(rollers),
-
                             // Intake and shoot second spike
                             rollers
                                 .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
@@ -126,7 +134,6 @@ public class AutoBuilder {
                                         autoTimer.hasElapsed(
                                             finalSecondIntakeTime + spikeIntakeDelay)),
                             feed(rollers),
-
                             // Intake and shoot third spike
                             rollers
                                 .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
@@ -134,6 +141,8 @@ public class AutoBuilder {
                                     () ->
                                         autoTimer.hasElapsed(
                                             lastIntakeTime + spikeFeedThroughDelay))),
+
+                        // If two spike notes
                         Commands.sequence(
                             // Intake and shoot first spike
                             rollers
@@ -143,7 +152,6 @@ public class AutoBuilder {
                                         autoTimer.hasElapsed(
                                             finalFirstIntakeTime + spikeIntakeDelay)),
                             feed(rollers),
-
                             // Intake and shoot second spike
                             rollers
                                 .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
@@ -159,32 +167,56 @@ public class AutoBuilder {
         .finallyDo(() -> RobotState.getInstance().setUseAutoLookahead(false));
   }
 
-  /** Scores a note from the centerline given a trajectory. */
-  private Command scoreCenterline(HolonomicTrajectory trajectory) {
+  /** Scores two centerline notes with the given trajectories */
+  private Command scoreCenterlines(
+      HolonomicTrajectory spikeToCenterline1,
+      HolonomicTrajectory shotToCenterline2,
+      double firstShotCompensation,
+      double secondShotCompensation) {
     Timer autoTimer = new Timer();
     return Commands.runOnce(autoTimer::restart)
         .andThen(
-            Commands.parallel(
-                followTrajectory(drive, trajectory),
-                // Sequence superstructure and rollers
-                Commands.sequence(
-                    // Intake
-                    waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                        .andThen(
-                            waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                .deadlineWith(intake(superstructure, rollers))),
+            // Drive sequence
+            Commands.sequence(
+                    followTrajectory(drive, spikeToCenterline1),
+                    followTrajectory(drive, shotToCenterline2))
+                .alongWith(
+                    // Superstructure and rollers sequence
+                    Commands.sequence(
+                        // Intake centerline 1
+                        waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                            .andThen(
+                                waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                    .deadlineWith(intake(superstructure, rollers))),
 
-                    // Shoot
-                    Commands.waitUntil(
-                            () ->
-                                autoTimer.hasElapsed(
-                                    trajectory.getDuration() - shootTimeoutSecs.get() / 2.0))
-                        .andThen(feed(rollers))
-                        .deadlineWith(
-                            Commands.waitUntil(
-                                    () -> autoTimer.hasElapsed(trajectory.getDuration() - 2.0))
-                                .andThen(superstructure.aimWithCompensation(0.0))))))
-        .deadlineWith(flywheels.shootCommand());
+                        // Shoot centerline 1
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        spikeToCenterline1.getDuration()
+                                            - shootTimeoutSecs.get() / 2.0))
+                            .andThen(feed(rollers))
+                            .deadlineWith(
+                                superstructure.aimWithCompensation(firstShotCompensation)),
+
+                        // Intake centerline 2
+                        waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                            .andThen(
+                                waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                    .deadlineWith(intake(superstructure, rollers))),
+
+                        // Shoot centerline 2
+                        Commands.waitUntil(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        spikeToCenterline1.getDuration()
+                                            + shotToCenterline2.getDuration()
+                                            - shootTimeoutSecs.get() / 2.0))
+                            .andThen(feed(rollers))
+                            .deadlineWith(
+                                superstructure.aimWithCompensation(secondShotCompensation))))
+                // Run flywheels
+                .deadlineWith(flywheels.shootCommand()));
   }
 
   private int calculateFinalSpikeIndex(AutoQuestionResponse startingLocation, boolean scoresThree) {
@@ -213,11 +245,18 @@ public class AutoBuilder {
   }
 
   public Command davisSpikyAuto() {
-    Map<AutoQuestionResponse, Command> spikeChooser = new HashMap<>();
+    List<AutoQuestionResponse> centerlineOptions =
+        List.of(
+            AutoQuestionResponse.AMP_WALL,
+            AutoQuestionResponse.AMP_MIDDLE,
+            AutoQuestionResponse.MIDDLE);
     List<AutoQuestionResponse> startingLocations =
         List.of(AutoQuestionResponse.SOURCE, AutoQuestionResponse.CENTER, AutoQuestionResponse.AMP);
+
+    // Set up spike choices
+    Map<AutoQuestionResponse, Command> spikeChoices = new HashMap<>();
     for (var startingLocation : startingLocations) {
-      spikeChooser.put(
+      spikeChoices.put(
           startingLocation,
           Commands.either(
               scoreSpikes(startingLocation, true),
@@ -225,40 +264,61 @@ public class AutoBuilder {
               () -> responses.get().get(1).equals(AutoQuestionResponse.THREE)));
     }
 
-    Map<AutoQuestionResponse, Command> firstCenterlineChooser = new HashMap<>();
-    Map<AutoQuestionResponse, Command> secondCenterlineChooser = new HashMap<>();
-    List<AutoQuestionResponse> centerlineNotes =
-        List.of(
-            AutoQuestionResponse.AMP_WALL,
-            AutoQuestionResponse.AMP_MIDDLE,
-            AutoQuestionResponse.MIDDLE);
-    for (var centerlineNote : centerlineNotes) {
-      Map<AutoQuestionResponse, Command> spikes = new HashMap<>();
-      for (var startingLocation : startingLocations) {
-        spikes.put(
-            startingLocation,
-            Commands.either(
-                scoreCenterline(
-                    new HolonomicTrajectory(
-                        "spiky_spike"
-                            + calculateFinalSpikeIndex(startingLocation, true)
-                            + "ToCenterline"
-                            + calculateCenterlineIndex(centerlineNote))),
-                scoreCenterline(
-                    new HolonomicTrajectory(
-                        "spiky_spike"
-                            + calculateFinalSpikeIndex(startingLocation, false)
-                            + "ToCenterline"
-                            + calculateCenterlineIndex(centerlineNote))),
-                () -> responses.get().get(1).equals(AutoQuestionResponse.THREE)));
-      }
-      firstCenterlineChooser.put(
-          centerlineNote, Commands.select(spikes, () -> responses.get().get(0)));
-      secondCenterlineChooser.put(
-          centerlineNote,
-          scoreCenterline(
+    // Set up centerline choices
+    Map<AutoQuestionResponse, Command> centerlinesChoices = new HashMap<>();
+    for (var centerline2 : centerlineOptions) {
+      int centerline2Index = calculateCenterlineIndex(centerline2);
+      Map<AutoQuestionResponse, Command> centerline1Choices = new HashMap<>();
+
+      for (var centerline1 : centerlineOptions) {
+        int centerline1Index = calculateCenterlineIndex(centerline1);
+        Map<AutoQuestionResponse, Command> startingLocationChoices = new HashMap<>();
+
+        // Add scoreCenterlines command for each centerline 1 choice and centerline 2 choice
+        for (var startingLocation : startingLocations) {
+          // Get corresponding trajectories
+          HolonomicTrajectory spike3ToCenterline1 =
               new HolonomicTrajectory(
-                  "spiky_shotToCenterline" + calculateCenterlineIndex(centerlineNote))));
+                  "spiky_spike"
+                      + calculateFinalSpikeIndex(startingLocation, true)
+                      + "ToCenterline"
+                      + centerline1Index);
+          HolonomicTrajectory spike2ToCenterline1 =
+              new HolonomicTrajectory(
+                  "spiky_spike"
+                      + calculateFinalSpikeIndex(startingLocation, false)
+                      + "ToCenterline"
+                      + centerline1Index);
+          HolonomicTrajectory shotToCenterline2 =
+              new HolonomicTrajectory("spiky_shotToCenterline" + centerline2Index);
+
+          // Add scoreCenterlines command based on starting location and whether scoring
+          // three or two spike notes
+          startingLocationChoices.put(
+              startingLocation,
+              Commands.either(
+                  scoreCenterlines(
+                      spike3ToCenterline1,
+                      shotToCenterline2,
+                      centerlineShotCompensations.get(centerline1Index),
+                      centerlineShotCompensations.get(centerline2Index)),
+                  scoreCenterlines(
+                      spike2ToCenterline1,
+                      shotToCenterline2,
+                      centerlineShotCompensations.get(centerline1Index),
+                      centerlineShotCompensations.get(centerline2Index)),
+                  () ->
+                      responses
+                          .get()
+                          .get(1)
+                          .equals(AutoQuestionResponse.THREE) // Scores three spikes
+                  ));
+        }
+        centerline1Choices.put(
+            centerline1, Commands.select(startingLocationChoices, () -> responses.get().get(0)));
+      }
+      centerlinesChoices.put(
+          centerline2, Commands.select(centerline1Choices, () -> responses.get().get(2)));
     }
 
     Timer autoTimer = new Timer();
@@ -276,15 +336,15 @@ public class AutoBuilder {
             () -> responses.get().get(0)),
         scorePreload(),
         Commands.runOnce(() -> System.out.println("Preload at: " + autoTimer.get())),
+
         // Score spike notes
-        Commands.select(spikeChooser, () -> responses.get().get(0)),
+        Commands.select(spikeChoices, () -> responses.get().get(0)),
         Commands.runOnce(() -> System.out.println("Spikes finished at: " + autoTimer.get())),
-        // Score first centerline note
-        Commands.select(firstCenterlineChooser, () -> responses.get().get(2)),
-        Commands.runOnce(() -> System.out.println("Centerline 1 shot at: " + autoTimer.get())),
-        // Score second centerline note
-        Commands.select(secondCenterlineChooser, () -> responses.get().get(3)),
-        Commands.runOnce(() -> System.out.println("Centerline 2 shot at: " + autoTimer.get())),
+
+        // Score centerline notes
+        Commands.select(centerlinesChoices, () -> responses.get().get(3)),
+        Commands.runOnce(() -> System.out.println("Centerlines finished at: " + autoTimer.get())),
+
         // Drive to centerline
         followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenter"))
             .deadlineWith(intake(superstructure, rollers)));

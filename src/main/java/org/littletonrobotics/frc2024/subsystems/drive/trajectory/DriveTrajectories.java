@@ -41,8 +41,8 @@ public class DriveTrajectories {
 
   // Davis Spiky Auto (named "spiky_XXX")
   static {
-    final double shootingVelocity = 0.8;
-    final double spikeIntakeOffset = 0.4;
+    final double shootingVelocity = 0.7;
+    final double spikeIntakeOffset = 0.55;
     final double spikePrepareIntakeOffset = 0.3; // Added ontop of spikeIntakeOffset
     final double centerlineIntakeOffset = 0.25;
     final double centerlinePrepareIntakeOffset = 1.0;
@@ -166,7 +166,10 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     spikeShootingPoses[1].transformBy(
                         new Translation2d(spikePrepareIntakeOffset, 0.0).toTransform2d()))
+                .build(),
+            PathSegment.newBuilder()
                 .addPoseWaypoint(spikeShootingPoses[1])
+                .setStraightLine(true)
                 .build()));
     paths.put(
         "spiky_centerStart3",
@@ -217,13 +220,16 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     spikeShootingPoses[1].transformBy(
                         new Translation2d(spikePrepareIntakeOffset, 0.0).toTransform2d()))
+                .build(),
+            PathSegment.newBuilder()
                 .addPoseWaypoint(spikeShootingPoses[1])
+                .setStraightLine(true)
                 .build()));
 
     // Generate trajectories for centerline shots
     PathSegment[][] spikeToCenterlineIntakeSegments = new PathSegment[3][3];
-    PathSegment[] centerlineToShotSegments = new PathSegment[3];
     PathSegment[] shotToCenterlineIntakeSegments = new PathSegment[3];
+    PathSegment[] centerlineToShotSegments = new PathSegment[3];
 
     for (int i = 0; i < 3; i++) {
       int centerlineIndex = 4 - i;
@@ -242,7 +248,7 @@ public class DriveTrajectories {
 
       // Make shot to centerline intake segments
       PathSegment shotToCenterlineIntake;
-      Rotation2d intakingRotation =
+      Rotation2d shotToCenterlineIntakeOrientation =
           (centerlineIndex == 4)
               ? wingLeftShot.getTranslation().minus(centerlineNote).getAngle()
               : wingLeftAvoidance.minus(centerlineNote).getAngle();
@@ -254,13 +260,13 @@ public class DriveTrajectories {
       shotToCenterlineIntake =
           shotToCenterlineIntake.toBuilder()
               .addPoseWaypoint(
-                  new Pose2d(centerlineNote, intakingRotation)
+                  new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
                       .transformBy(
                           new Translation2d(
                                   centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
                               .toTransform2d()))
               .addPoseWaypoint(
-                  new Pose2d(centerlineNote, intakingRotation)
+                  new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
                       .transformBy(new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
               .build();
       shotToCenterlineIntakeSegments[i] = shotToCenterlineIntake;
@@ -268,33 +274,33 @@ public class DriveTrajectories {
       // Segments for all spikes to centerline intake
       for (int spikeIndex = 0; spikeIndex < 3; spikeIndex++) {
         Pose2d spikePose = spikeShootingPoses[spikeIndex];
-        intakingRotation =
-            (centerlineIndex == 4 && spikeIndex != 0)
-                ? spikePose.getTranslation().minus(centerlineNote).getAngle()
-                : wingLeftAvoidance.minus(centerlineNote).getAngle();
+        Rotation2d spikeTocenterlineIntakeOrientation =
+            spikePose.getTranslation().minus(centerlineNote).getAngle();
         // Start segment at spike pose
         var spikeToCenterline = PathSegment.newBuilder().addPoseWaypoint(spikePose).build();
         // Avoid podium leg if spike 0
         if (spikeIndex == 0) {
           spikeToCenterline =
               spikeToCenterline.toBuilder().addTranslationWaypoint(podiumAvoidance).build();
+          spikeTocenterlineIntakeOrientation = podiumAvoidance.minus(centerlineNote).getAngle();
         }
         // Use wing left avoidance if not centerline 4
-        if (4 - i != 4) {
+        if (centerlineIndex != 4) {
           spikeToCenterline =
               spikeToCenterline.toBuilder().addTranslationWaypoint(wingLeftAvoidance).build();
+          spikeTocenterlineIntakeOrientation = wingLeftAvoidance.minus(centerlineNote).getAngle();
         }
         // Add intake to segment
         spikeToCenterline =
             spikeToCenterline.toBuilder()
                 .addPoseWaypoint(
-                    new Pose2d(centerlineNote, intakingRotation)
+                    new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
                         .transformBy(
                             new Translation2d(
                                     centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
                                 .toTransform2d()))
                 .addPoseWaypoint(
-                    new Pose2d(centerlineNote, intakingRotation)
+                    new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
                 .build();

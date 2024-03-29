@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.FieldConstants;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
@@ -63,12 +64,12 @@ public class AutoBuilder {
     double secondIntakeTime = lastIntakeTime;
     switch (startingLocation) {
       case SOURCE, AMP -> {
-        firstIntakeTime = 1.4;
-        secondIntakeTime = 3.1;
+        firstIntakeTime = 1.2;
+        secondIntakeTime = 3.0;
       }
       case CENTER -> {
-        firstIntakeTime = 1.5;
-        secondIntakeTime = 3.3;
+        firstIntakeTime = 1.3;
+        secondIntakeTime = 3.0;
       }
     }
 
@@ -129,11 +130,7 @@ public class AutoBuilder {
                             rollers
                                 .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
                                 .until(
-                                    () ->
-                                        autoTimer.hasElapsed(
-                                            lastIntakeTime
-                                                + spikeIntakeDelay
-                                                + shootTimeoutSecs.get()))),
+                                    () -> autoTimer.hasElapsed(lastIntakeTime + spikeIntakeDelay))),
                         Commands.sequence(
                             // Intake and shoot first spike
                             rollers
@@ -156,7 +153,9 @@ public class AutoBuilder {
                         () -> scoresThree)))
 
         // Always aim and run flywheels
-        .deadlineWith(superstructure.aimWithCompensation(0.0), flywheels.shootCommand());
+        .deadlineWith(superstructure.aimWithCompensation(0.0), flywheels.shootCommand())
+        .beforeStarting(() -> RobotState.getInstance().setUseAutoLookahead(true))
+        .finallyDo(() -> RobotState.getInstance().setUseAutoLookahead(false));
   }
 
   /** Scores a note from the centerline given a trajectory. */
@@ -169,9 +168,9 @@ public class AutoBuilder {
                 // Sequence superstructure and rollers
                 Commands.sequence(
                     // Intake
-                    waitUntilXCrossed(FieldConstants.wingX + 0.55, true)
+                    waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
                         .andThen(
-                            waitUntilXCrossed(FieldConstants.wingX + 0.5, false)
+                            waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
                                 .deadlineWith(intake(superstructure, rollers))),
 
                     // Shoot
@@ -182,7 +181,7 @@ public class AutoBuilder {
                         .andThen(feed(rollers))
                         .deadlineWith(
                             Commands.waitUntil(
-                                    () -> autoTimer.hasElapsed(trajectory.getDuration() - 1.0))
+                                    () -> autoTimer.hasElapsed(trajectory.getDuration() - 2.0))
                                 .andThen(superstructure.aimWithCompensation(0.0))))))
         .deadlineWith(flywheels.shootCommand());
   }
@@ -261,7 +260,9 @@ public class AutoBuilder {
                   "spiky_shotToCenterline" + calculateCenterlineIndex(centerlineNote))));
     }
 
+    Timer autoTimer = new Timer();
     return Commands.sequence(
+        Commands.runOnce(autoTimer::restart),
         // Reset pose and shoot preload
         Commands.select(
             Map.of(
@@ -273,12 +274,16 @@ public class AutoBuilder {
                 resetPose(DriveTrajectories.startingAmp)),
             () -> responses.get().get(0)),
         scorePreload(),
+        Commands.runOnce(() -> System.out.println("Preload at: " + autoTimer.get())),
         // Score spike notes
         Commands.select(spikeChooser, () -> responses.get().get(0)),
+        Commands.runOnce(() -> System.out.println("Spikes finished at: " + autoTimer.get())),
         // Score first centerline note
         Commands.select(firstCenterlineChooser, () -> responses.get().get(2)),
+        Commands.runOnce(() -> System.out.println("Centerline 1 shot at: " + autoTimer.get())),
         // Score second centerline note
         Commands.select(secondCenterlineChooser, () -> responses.get().get(3)),
+        Commands.runOnce(() -> System.out.println("Centerline 2 shot at: " + autoTimer.get())),
         // Drive to centerline
         followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenter")));
   }

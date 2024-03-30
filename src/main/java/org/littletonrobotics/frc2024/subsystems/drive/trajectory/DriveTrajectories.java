@@ -326,10 +326,6 @@ public class DriveTrajectories {
   static {
   }
 
-  // Davis Alternative Speedy Auto (named "speedyAlt_XXX")
-  static {
-  }
-
   // Davis Ethical Auto (named "ethical_XXX")
   static {
   }

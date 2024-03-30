@@ -379,10 +379,6 @@ public class AutoBuilder {
     return Commands.none();
   }
 
-  public Command davisAlternativeSpeedyAuto() {
-    return Commands.none();
-  }
-
   public Command davisEthicalAuto() {
     return Commands.none();
   }

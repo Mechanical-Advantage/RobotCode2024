@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.PathSegment;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.Waypoint;
@@ -39,6 +40,32 @@ public class DriveTrajectories {
           StagingLocations.spikeTranslations[2].getY(),
           Rotation2d.fromDegrees(180.0));
 
+  // Shooting poses
+  public static final Pose2d stageLeftShootingPose =
+      getShootingPose(
+          FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.7, 1.15)));
+  public static final Pose2d stageRightShootingPose =
+      getShootingPose(
+          FieldConstants.Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -1.3)));
+  public static final Pose2d stageCenterShootingPose =
+      getShootingPose(
+          FieldConstants.Stage.podiumLeg
+              .getTranslation()
+              .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.5)
+              .plus(new Translation2d(-0.4, 0.2)));
+
+  // Avoidance points
+  public static final Translation2d stageLeftAvoidance =
+      new Translation2d(
+          FieldConstants.wingX,
+          MathUtil.interpolate(FieldConstants.Stage.ampLeg.getY(), FieldConstants.fieldWidth, 0.3));
+  public static final Translation2d stageRightAvoidance =
+      FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
+  public static final Translation2d stageCenterAvoidance =
+      FieldConstants.Stage.sourceLeg
+          .getTranslation()
+          .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
+
   // Davis Spiky Auto (named "spiky_XXX")
   static {
     final double shootingVelocity = 0.7;
@@ -51,12 +78,8 @@ public class DriveTrajectories {
     final Rotation2d spike2To1IntakeRotation =
         new Rotation2d(spike0To1IntakeRotation.getCos(), -spike0To1IntakeRotation.getSin());
 
-    Translation2d wingLeftAvoidance =
-        new Translation2d(wingX, MathUtil.interpolate(Stage.ampLeg.getY(), fieldWidth, 0.4));
     Translation2d podiumAvoidance =
         StagingLocations.spikeTranslations[0].plus(new Translation2d(-0.5, 0.9));
-    Pose2d wingLeftShot =
-        getShootingPose(Stage.ampLeg.getTranslation().plus(new Translation2d(-0.7, 1.15)));
 
     Pose2d[] spikeShootingPoses = new Pose2d[3];
     for (int i = 0; i < 3; i++) {
@@ -238,24 +261,25 @@ public class DriveTrajectories {
       if (centerlineIndex != 4) {
         centerlineToShotSegments[i] =
             PathSegment.newBuilder()
-                .addTranslationWaypoint(wingLeftAvoidance)
-                .addPoseWaypoint(wingLeftShot)
+                .addTranslationWaypoint(stageLeftAvoidance)
+                .addPoseWaypoint(stageLeftShootingPose)
                 .build();
       } else {
         centerlineToShotSegments[i] =
-            PathSegment.newBuilder().addPoseWaypoint(wingLeftShot).build();
+            PathSegment.newBuilder().addPoseWaypoint(stageLeftShootingPose).build();
       }
 
       // Make shot to centerline intake segments
       PathSegment shotToCenterlineIntake;
       Rotation2d shotToCenterlineIntakeOrientation =
           (centerlineIndex == 4)
-              ? wingLeftShot.getTranslation().minus(centerlineNote).getAngle()
-              : wingLeftAvoidance.minus(centerlineNote).getAngle();
-      shotToCenterlineIntake = PathSegment.newBuilder().addPoseWaypoint(wingLeftShot).build();
+              ? stageLeftShootingPose.getTranslation().minus(centerlineNote).getAngle()
+              : stageLeftAvoidance.minus(centerlineNote).getAngle();
+      shotToCenterlineIntake =
+          PathSegment.newBuilder().addPoseWaypoint(stageLeftShootingPose).build();
       if (centerlineIndex != 4) {
         shotToCenterlineIntake =
-            shotToCenterlineIntake.toBuilder().addTranslationWaypoint(wingLeftAvoidance).build();
+            shotToCenterlineIntake.toBuilder().addTranslationWaypoint(stageLeftAvoidance).build();
       }
       shotToCenterlineIntake =
           shotToCenterlineIntake.toBuilder()
@@ -287,8 +311,8 @@ public class DriveTrajectories {
         // Use wing left avoidance if not centerline 4
         if (centerlineIndex != 4) {
           spikeToCenterline =
-              spikeToCenterline.toBuilder().addTranslationWaypoint(wingLeftAvoidance).build();
-          spikeTocenterlineIntakeOrientation = wingLeftAvoidance.minus(centerlineNote).getAngle();
+              spikeToCenterline.toBuilder().addTranslationWaypoint(stageLeftAvoidance).build();
+          spikeTocenterlineIntakeOrientation = stageLeftAvoidance.minus(centerlineNote).getAngle();
         }
         // Add intake to segment
         spikeToCenterline =

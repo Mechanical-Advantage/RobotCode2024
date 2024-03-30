@@ -390,8 +390,6 @@ public class RobotContainer {
                 "End behavior?",
                 List.of(AutoQuestionResponse.SCORE_POOPED, AutoQuestionResponse.FOURTH_CENTER))),
         autoBuilder.davisSpeedyAuto());
-    autoSelector.addRoutine(
-        "Davis Alternative Speedy Auto", autoBuilder.davisAlternativeSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(
         "Davis Unethical Auto",

@@ -13,6 +13,8 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.revrobotics.CANSparkBase;
+import com.revrobotics.CANSparkMax;
 import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSparkFlex;
 
 public class IndexerIODevbot extends GenericRollerSystemIOSparkFlex implements IndexerIO {
@@ -21,29 +23,25 @@ public class IndexerIODevbot extends GenericRollerSystemIOSparkFlex implements I
   private static final int currentLimitAmps = 40;
   private static final boolean inverted = false;
 
-  private final TalonFX middleMotor;
+  private final CANSparkMax middleMotor;
 
   public IndexerIODevbot() {
     super(id, currentLimitAmps, inverted, true, reduction);
-    middleMotor = new TalonFX(7, "rio");
-
-    TalonFXConfiguration middleConfig = new TalonFXConfiguration();
-    middleConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-    middleConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    middleConfig.CurrentLimits.SupplyCurrentLimit = currentLimitAmps;
-    middleConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
-    middleMotor.getConfigurator().apply(middleConfig);
+    middleMotor = new CANSparkMax(7, CANSparkMax.MotorType.kBrushless);
+    middleMotor.setInverted(false);
+    middleMotor.setSmartCurrentLimit(40);
+    middleMotor.setIdleMode(CANSparkBase.IdleMode.kBrake);
   }
 
   @Override
   public void runVolts(double volts) {
     super.runVolts(volts);
-    middleMotor.setControl(new VoltageOut(volts).withUpdateFreqHz(0.0));
+    middleMotor.setVoltage(volts);
   }
 
   @Override
   public void stop() {
     super.stop();
-    middleMotor.setControl(new NeutralOut());
+    middleMotor.stopMotor();
   }
 }

@@ -39,6 +39,7 @@ public class AutoBuilder {
   private static final double spikeIntakeDelay = 0.35;
   private static final double spikeFeedThroughDelay = 0.35;
 
+  /** All shot compensation values used when shooting corresponding centerline note. */
   private static final Map<Integer, Double> centerlineShotCompensations =
       Map.of(
           0, 0.0,
@@ -167,7 +168,7 @@ public class AutoBuilder {
         .finallyDo(() -> RobotState.getInstance().setUseAutoLookahead(false));
   }
 
-  /** Scores two centerline notes with the given trajectories */
+  /** Scores two centerline notes with the given trajectories. */
   private Command scoreCenterlines(
       HolonomicTrajectory spikeToCenterline1,
       HolonomicTrajectory shotToCenterline2,
@@ -224,6 +225,7 @@ public class AutoBuilder {
                 .deadlineWith(flywheels.shootCommand()));
   }
 
+  /** Returns ending spike index given starting location and whether scoring three spikes or not. */
   private int calculateFinalSpikeIndex(AutoQuestionResponse startingLocation, boolean scoresThree) {
     if (scoresThree) {
       if (startingLocation.equals(AutoQuestionResponse.AMP)) {
@@ -240,6 +242,7 @@ public class AutoBuilder {
     }
   }
 
+  /** Returns centerline index given centerline note response. */
   private int calculateCenterlineIndex(AutoQuestionResponse centerlineNote) {
     return switch (centerlineNote) {
       case AMP_WALL -> 4;

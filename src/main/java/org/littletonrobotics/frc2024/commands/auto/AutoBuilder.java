@@ -133,12 +133,14 @@ public class AutoBuilder {
 
   public Command davisUnethicalAuto() {
     Timer autoTimer = new Timer();
-
+    double sourceDelay = 2.16;
+    double ejectDelay = 1.0;
+    HolonomicTrajectory driveToSource = new HolonomicTrajectory("unethical_driveToSource");
     Map<AutoQuestionResponse, Command> centerlineChoices = new HashMap<>();
+
     centerlineChoices.put(
         AutoQuestionResponse.SOURCE_WALL,
         Commands.sequence(
-            resetPose(DriveTrajectories.startingSource),
             scoreCenterlines(
                 new HolonomicTrajectory("unethical_grabCenterline0"),
                 new HolonomicTrajectory("unethical_centerline0ToCenterline1"),
@@ -147,16 +149,20 @@ public class AutoBuilder {
     centerlineChoices.put(
         AutoQuestionResponse.SOURCE_MIDDLE,
         Commands.sequence(
-            resetPose(DriveTrajectories.startingSource),
             scoreCenterlines(
                 new HolonomicTrajectory("unethical_grabCenterline1"),
                 new HolonomicTrajectory("unethical_centerline1ToCenterline0"),
                 0,
                 0)));
+
     return Commands.sequence(
+        resetPose(DriveTrajectories.startingDriverStation),
         Commands.runOnce(autoTimer::restart),
-        scorePreload(),
+                flywheels.poopCommand()
+            .alongWith(Commands.waitUntil(flywheels::atGoal).andThen(feed(rollers)))
+            .withTimeout(ejectDelay),
         Commands.select(centerlineChoices, () -> responses.get().get(0)),
-        followTrajectory(drive, new HolonomicTrajectory("unethical_driveToSource")));
+        Commands.waitUntil(() -> autoTimer.get() >= 15.3 - sourceDelay),
+        followTrajectory(drive, driveToSource));
   }
 }

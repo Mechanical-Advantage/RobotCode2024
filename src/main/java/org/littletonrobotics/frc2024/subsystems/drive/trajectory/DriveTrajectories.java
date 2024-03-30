@@ -41,6 +41,11 @@ public class DriveTrajectories {
           FieldConstants.startingLineX - 0.5,
           FieldConstants.StagingLocations.spikeTranslations[2].getY(),
           Rotation2d.fromDegrees(180.0));
+  public static final Pose2d startingDriverStation =
+      new Pose2d(
+          FieldConstants.startingLineX - 0.5,
+          FieldConstants.driverStationY,
+          Rotation2d.fromDegrees(180));
 
   // Davis Spiky Auto (named "spiky_XXX")
   static {
@@ -71,14 +76,12 @@ public class DriveTrajectories {
         "unethical_grabCenterline0",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingSource)
-                .addTranslationWaypoint(sourceLegAvoidance)
+                .addPoseWaypoint(startingDriverStation)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[0],
                             Rotation2d.fromDegrees(152))
-                        .transformBy(new Transform2d(0.5, 0, new Rotation2d())),
-                    10)
+                        .transformBy(new Transform2d(0.5, 0, new Rotation2d())))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[0],
@@ -97,7 +100,7 @@ public class DriveTrajectories {
         "unethical_grabCenterline1",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingSource)
+                .addPoseWaypoint(startingDriverStation)
                 .addTranslationWaypoint(sourceLegAvoidance)
                 .addPoseWaypoint(
                     new Pose2d(
@@ -177,8 +180,12 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(sourceSideShootingPose)
-                .addTranslationWaypoint(sourceLegAvoidance)
-                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldWidth * 2) - 4, 1))
+                .addPoseWaypoint(new Pose2d(FieldConstants.wingX, 1, Rotation2d.fromDegrees(180)))
+                .build(),
+            PathSegment.newBuilder()
+                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1))
+                .setStraightLine(true)
+                .setMaxOmega(0)
                 .build()));
   }
 

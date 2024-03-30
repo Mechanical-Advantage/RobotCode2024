@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.subsystems.rollers;
 
 import java.util.function.DoubleSupplier;
 import lombok.RequiredArgsConstructor;
+import org.littletonrobotics.frc2024.Robot;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.junction.Logger;
 
@@ -36,6 +37,7 @@ public abstract class GenericRollerSystem<G extends GenericRollerSystem.VoltageG
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs(name, inputs);
+    Robot.totalCurrent += inputs.supplyCurrentAmps;
     disconnected.set(!inputs.connected);
 
     io.runVolts(getGoal().getVoltageSupplier().getAsDouble());

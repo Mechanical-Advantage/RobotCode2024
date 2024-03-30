@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import lombok.Getter;
+import org.littletonrobotics.frc2024.Robot;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.Logger;
@@ -59,6 +60,7 @@ public class Module {
   public void updateInputs() {
     io.updateInputs(inputs);
     Logger.processInputs("Drive/Module" + index, inputs);
+    Robot.totalCurrent += inputs.driveSupplyCurrentAmps + inputs.turnSupplyCurrentAmps;
 
     // Update ff and controllers
     LoggedTunableNumber.ifChanged(

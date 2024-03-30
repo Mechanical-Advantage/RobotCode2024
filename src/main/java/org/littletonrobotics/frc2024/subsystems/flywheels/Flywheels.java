@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.Robot;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.LinearProfile;
@@ -116,6 +117,7 @@ public class Flywheels extends SubsystemBase {
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs("Flywheels", inputs);
+    Robot.totalCurrent += inputs.leftSupplyCurrentAmps + inputs.rightSupplyCurrentAmps;
 
     // Set alerts
     leftDisconnected.set(!inputs.leftMotorConnected);

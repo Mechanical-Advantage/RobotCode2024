@@ -10,6 +10,7 @@ package org.littletonrobotics.frc2024;
 import static org.littletonrobotics.frc2024.util.Alert.AlertType;
 
 import com.ctre.phoenix6.CANBus;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -185,12 +186,28 @@ public class Robot extends LoggedRobot {
     robotContainer = new RobotContainer();
   }
 
+  public static double totalCurrent = 0.0;
+  private Timer matchTimer = new Timer();
+
   /** This function is called periodically during all modes. */
   @Override
   public void robotPeriodic() {
+    totalCurrent = 0.0;
     Threads.setCurrentThreadPriority(true, 99);
     VirtualSubsystem.periodicAll();
     CommandScheduler.getInstance().run();
+    Logger.recordOutput("BatteryTesting/TotalCurrent", totalCurrent);
+    double nominalVoltsEstimated =
+        MathUtil.interpolate(12.55, 12.2, MathUtil.clamp(matchTimer.get() / 153.0, 0.0, 1.0));
+    if (totalCurrent > 5) {
+      double resistanceEstimated =
+          (nominalVoltsEstimated - RobotController.getBatteryVoltage()) / totalCurrent;
+      Logger.recordOutput("BatteryTesting/ResistanceEstimated", resistanceEstimated);
+    }
+    Logger.recordOutput("BatteryTesting/NominalVoltsEstimated", nominalVoltsEstimated);
+    if (DriverStation.isEnabled()) {
+      matchTimer.start();
+    }
 
     // Print auto duration
     if (autoCommand != null) {

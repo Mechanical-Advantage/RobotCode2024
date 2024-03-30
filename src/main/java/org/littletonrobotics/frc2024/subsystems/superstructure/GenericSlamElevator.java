@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import org.littletonrobotics.frc2024.Robot;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
@@ -85,6 +86,7 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
   public void periodic() {
     io.updateInputs(inputs);
     Logger.processInputs(name, inputs);
+    Robot.totalCurrent += inputs.supplyCurrentAmps;
 
     // Ensure brake mode is enabled
     if (DriverStation.isEnabled()) {

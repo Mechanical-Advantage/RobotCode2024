@@ -19,10 +19,12 @@ import edu.wpi.first.wpilibj.util.Color;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
+import java.util.stream.DoubleStream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.Robot;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
@@ -149,6 +151,7 @@ public class Arm {
     // Process inputs
     io.updateInputs(inputs);
     Logger.processInputs("Arm", inputs);
+    Robot.totalCurrent += DoubleStream.of(inputs.supplyCurrentAmps).sum();
 
     // Set alerts
     leaderMotorDisconnected.set(!inputs.leaderMotorConnected);

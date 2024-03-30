@@ -102,8 +102,7 @@ public class ArmIOSim implements ArmIO {
     sim.setInputVoltage(appliedVoltage);
   }
 
-  @Override
-  public void setPosition(double position) {
+  private void setPosition(double position) {
     positionOffset = position - sim.getAngleRads();
   }
 }

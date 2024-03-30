@@ -68,6 +68,18 @@ public class NoteVisualizer {
     }
   }
 
+  /**
+   * Intakes staged note.
+   *
+   * @param index of staged note (0-2) spikes, (3-7) centerlines
+   */
+  public static void intakeAutoNote(int index) {
+    if (autoNotes.get(index) != null) {
+      setHasNote(true);
+    }
+    autoNotes.set(index, null);
+  }
+
   /** Shows the currently held note if there is one */
   public static void showHeldNotes() {
     if (hasNote) {

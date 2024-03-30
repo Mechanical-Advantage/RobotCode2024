@@ -383,13 +383,7 @@ public class RobotContainer {
                     AutoQuestionResponse.AMP_MIDDLE,
                     AutoQuestionResponse.MIDDLE))),
         autoBuilder.davisSpikyAuto());
-    autoSelector.addRoutine(
-        "Davis Speedy Auto",
-        List.of(
-            new AutoQuestion(
-                "End behavior?",
-                List.of(AutoQuestionResponse.SCORE_POOPED, AutoQuestionResponse.FOURTH_CENTER))),
-        autoBuilder.davisSpeedyAuto());
+    autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(
         "Davis Unethical Auto",

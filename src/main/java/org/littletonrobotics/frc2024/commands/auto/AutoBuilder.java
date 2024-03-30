@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.List;
@@ -16,6 +17,8 @@ import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
@@ -33,7 +36,20 @@ public class AutoBuilder {
   }
 
   public Command davisSpeedyAuto() {
-    return Commands.none();
+    var grabCenterline4 = new HolonomicTrajectory("speedy_ampToCenterline4");
+    var grabCenterline3 = new HolonomicTrajectory("speedy_centerline4ToCenterline3");
+    var grabCenterline2 = new HolonomicTrajectory("speedy_centerline3ToCenterline2");
+    var grabEjected = new HolonomicTrajectory("speedy_centerline2ToEjectedNote");
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.sequence(
+                resetPose(DriveTrajectories.startingAmpWall),
+                followTrajectory(drive, grabCenterline4),
+                followTrajectory(drive, grabCenterline3),
+                followTrajectory(drive, grabCenterline2),
+                followTrajectory(drive, grabEjected)));
   }
 
   public Command davisEthicalAuto() {

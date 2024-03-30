@@ -9,9 +9,9 @@ package org.littletonrobotics.frc2024.subsystems.rollers.indexer;
 
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkMax;
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSparkFlex;
+import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSpark;
 
-public class IndexerIODevbot extends GenericRollerSystemIOSparkFlex implements IndexerIO {
+public class IndexerIODevbot extends GenericRollerSystemIOSpark implements IndexerIO {
   private static final double reduction = (18.0 / 12.0);
   private static final int id = 27;
   private static final int currentLimitAmps = 40;
@@ -20,7 +20,7 @@ public class IndexerIODevbot extends GenericRollerSystemIOSparkFlex implements I
   private final CANSparkMax middleMotor;
 
   public IndexerIODevbot() {
-    super(id, currentLimitAmps, inverted, true, reduction);
+    super(id, currentLimitAmps, inverted, true, reduction, true);
     middleMotor = new CANSparkMax(7, CANSparkMax.MotorType.kBrushless);
     middleMotor.setInverted(false);
     middleMotor.setSmartCurrentLimit(40);

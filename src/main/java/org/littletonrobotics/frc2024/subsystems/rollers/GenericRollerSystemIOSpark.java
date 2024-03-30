@@ -7,27 +7,29 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers;
 
-import com.revrobotics.CANSparkBase;
-import com.revrobotics.CANSparkFlex;
-import com.revrobotics.RelativeEncoder;
+import com.revrobotics.*;
 import edu.wpi.first.math.util.Units;
 
 /** Generic roller IO implementation for a roller or series of rollers using a SPARK Flex. */
-public abstract class GenericRollerSystemIOSparkFlex implements GenericRollerSystemIO {
-  private final CANSparkFlex motor;
+public abstract class GenericRollerSystemIOSpark implements GenericRollerSystemIO {
+  private final CANSparkBase motor;
   private final RelativeEncoder encoder;
 
   private final double reduction;
 
-  public GenericRollerSystemIOSparkFlex(
-      int id, int currentLimitAmps, boolean invert, boolean brake, double reduction) {
+  public GenericRollerSystemIOSpark(
+      int id, int currentLimitAmps, boolean invert, boolean brake, double reduction, boolean isFlex) {
     this.reduction = reduction;
-    motor = new CANSparkFlex(id, CANSparkBase.MotorType.kBrushless);
+
+    if (isFlex) {
+      motor = new CANSparkFlex(id, CANSparkBase.MotorType.kBrushless);
+    } else {
+      motor = new CANSparkMax(id, CANSparkLowLevel.MotorType.kBrushless);
+    }
 
     motor.setSmartCurrentLimit(currentLimitAmps);
     motor.setInverted(invert);
     motor.setIdleMode(brake ? CANSparkBase.IdleMode.kBrake : CANSparkBase.IdleMode.kCoast);
-
     encoder = motor.getEncoder();
   }
 

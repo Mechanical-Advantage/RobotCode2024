@@ -7,16 +7,16 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers.backpack;
 
-import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSparkFlex;
+import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSpark;
 
-public class BackpackIOSparkFlex extends GenericRollerSystemIOSparkFlex implements BackpackIO {
+public class BackpackIOSparkFlex extends GenericRollerSystemIOSpark implements BackpackIO {
   private static final int id = 6;
   private static final int currentLimitAmps = 40;
   private static final boolean invert = true;
   private static final boolean brake = true;
-  private static final double reduction = (1.0 / 1.0);
+  private static final double reduction = (1.0);
 
   public BackpackIOSparkFlex() {
-    super(id, currentLimitAmps, invert, brake, reduction);
+    super(id, currentLimitAmps, invert, brake, reduction, true);
   }
 }

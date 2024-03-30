@@ -64,16 +64,13 @@ public class Leds extends VirtualSubsystem {
   private static final int minLoopCycleCount = 10;
   private static final int length = 12;
   private static final int staticSectionLength = 3;
-  private static final double strobeFastDuration = 0.1;
-  private static final double strobeSlowDuration = 0.2;
+  private static final double strobeDuration = 0.1;
   private static final double breathDuration = 1.0;
   private static final double rainbowCycleLength = 25.0;
   private static final double rainbowDuration = 0.25;
   private static final double waveExponent = 0.4;
   private static final double waveFastCycleLength = 25.0;
   private static final double waveFastDuration = 0.25;
-  private static final double waveSlowCycleLength = 25.0;
-  private static final double waveSlowDuration = 3.0;
   private static final double waveAllianceCycleLength = 15.0;
   private static final double waveAllianceDuration = 2.0;
   private static final double autoFadeTime = 2.5; // 3s nominal
@@ -170,7 +167,7 @@ public class Leds extends VirtualSubsystem {
 
       // Same battery alert
       if (sameBattery) {
-        strobe(Color.kRed, strobeFastDuration);
+        breath(Color.kRed, Color.kBlack);
       }
     } else if (DriverStation.isAutonomous()) {
       wave(Color.kGold, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);
@@ -180,7 +177,7 @@ public class Leds extends VirtualSubsystem {
       }
     } else { // Enabled
       if (requestAmp) {
-        strobe(Color.kWhite, strobeFastDuration);
+        strobe(Color.kWhite, strobeDuration);
       } else if (trapping || climbing || autoDrive || autoShoot) {
         rainbow(rainbowCycleLength, rainbowDuration);
       } else if (hasNote) {
@@ -188,7 +185,7 @@ public class Leds extends VirtualSubsystem {
       }
 
       if (endgameAlert) {
-        strobe(Color.kRed, strobeFastDuration);
+        strobe(Color.kRed, Color.kGold, strobeDuration);
       }
     }
 
@@ -215,9 +212,13 @@ public class Leds extends VirtualSubsystem {
     }
   }
 
+  private void strobe(Color c1, Color c2, double duration) {
+    boolean c1On = ((Timer.getFPGATimestamp() % duration) / duration) > 0.5;
+    solid(c1On ? c1 : c2);
+  }
+
   private void strobe(Color color, double duration) {
-    boolean on = ((Timer.getFPGATimestamp() % duration) / duration) > 0.5;
-    solid(on ? color : Color.kBlack);
+    strobe(color, Color.kBlack, duration);
   }
 
   private void breath(Color c1, Color c2) {

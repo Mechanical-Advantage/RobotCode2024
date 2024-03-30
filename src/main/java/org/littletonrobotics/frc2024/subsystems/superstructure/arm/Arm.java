@@ -81,7 +81,7 @@ public class Arm {
     STOW(new LoggedTunableNumber("Arm/StowDegrees", minAngle.getDegrees())),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
-    PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 30.0)),
+    PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 34.0)),
     PREPARE_PREPARE_TRAP_CLIMB(new LoggedTunableNumber("Arm/PreparePrepareTrapClimbDegrees", 35.0)),
     PREPARE_CLIMB(new LoggedTunableNumber("Arm/PrepareClimbDegrees", 105.0)),
     CLIMB(new LoggedTunableNumber("Arm/ClimbDegrees", 88.0)),
@@ -96,7 +96,7 @@ public class Arm {
     }
   }
 
-  @Getter @Setter private Goal goal = Goal.STOW;
+  @AutoLogOutput @Getter @Setter private Goal goal = Goal.STOW;
   private boolean characterizing = false;
 
   private final ArmIO io;

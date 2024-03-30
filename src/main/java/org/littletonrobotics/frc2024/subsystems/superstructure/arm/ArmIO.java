@@ -43,9 +43,6 @@ public interface ArmIO {
   /** Set PID values */
   default void setPID(double p, double i, double d) {}
 
-  /** Sets position of internal encoder */
-  default void setPosition(double positionRads) {}
-
   /** Stops motors */
   default void stop() {}
 }

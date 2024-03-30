@@ -27,7 +27,7 @@ public class Superstructure extends SubsystemBase {
     AIM,
     SUPER_POOP,
     INTAKE,
-    UNJAM_INTAKE,
+    UNJAM_FEEDER,
     STATION_INTAKE,
     AMP,
     SUBWOOFER,
@@ -35,9 +35,8 @@ public class Superstructure extends SubsystemBase {
     RESET_CLIMB,
     PREPARE_PREPARE_TRAP_CLIMB,
     PREPARE_CLIMB,
-    CANCEL_PREPARE_CLIMB,
+    POST_PREPARE_TRAP_CLIMB,
     CLIMB,
-    CANCEL_CLIMB,
     TRAP,
     UNTRAP,
     RESET,
@@ -74,14 +73,13 @@ public class Superstructure extends SubsystemBase {
     if (!climber.retracted()
         && desiredGoal != Goal.PREPARE_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.PREPARE_CLIMB
+        && desiredGoal != Goal.POST_PREPARE_TRAP_CLIMB
         && desiredGoal != Goal.CLIMB
         && desiredGoal != Goal.TRAP
+        && desiredGoal != Goal.UNTRAP
         && !DriverStation.isAutonomousEnabled()) {
       currentGoal = Goal.RESET_CLIMB;
     } else {
-      currentGoal = desiredGoal;
-    }
-    if (desiredGoal == Goal.CANCEL_CLIMB || desiredGoal == Goal.CANCEL_PREPARE_CLIMB) {
       currentGoal = desiredGoal;
     }
 
@@ -102,7 +100,7 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.EXTEND);
       }
-      case UNJAM_INTAKE -> {
+      case UNJAM_FEEDER -> {
         arm.setGoal(Arm.Goal.UNJAM_INTAKE);
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
@@ -137,6 +135,11 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
+      case PODIUM -> {
+        arm.setGoal(Arm.Goal.PODIUM);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
       case RESET_CLIMB -> {
         arm.setGoal(Arm.Goal.RESET_CLIMB);
         if (arm.atGoal()) {
@@ -158,20 +161,15 @@ public class Superstructure extends SubsystemBase {
         climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
-      case CANCEL_PREPARE_CLIMB -> {
-        arm.setGoal(Arm.Goal.STOP);
-        climber.setGoal(Climber.Goal.STOP);
+      case POST_PREPARE_TRAP_CLIMB -> {
+        arm.setGoal(Arm.Goal.CLIMB);
+        climber.setGoal(Climber.Goal.EXTEND);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }
       case CLIMB -> {
         arm.setGoal(Arm.Goal.CLIMB);
         climber.setGoal(Climber.Goal.RETRACT);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
-      }
-      case CANCEL_CLIMB -> {
-        arm.setGoal(Arm.Goal.CLIMB);
-        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
-        climber.setGoal(Climber.Goal.STOP);
       }
       case TRAP -> {
         arm.setGoal(Arm.Goal.CLIMB);

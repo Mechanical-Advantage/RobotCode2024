@@ -17,7 +17,7 @@ public class RollersSensorsIOCompbot implements RollersSensorsIO {
   private final DigitalGlitchFilter glitchFilter = new DigitalGlitchFilter();
 
   public RollersSensorsIOCompbot() {
-    glitchFilter.setPeriodNanoSeconds(Duration.ofMillis(5).toNanos());
+    glitchFilter.setPeriodNanoSeconds(Duration.ofMillis(1).toNanos());
     glitchFilter.add(shooterStagedSensor);
     glitchFilter.add(backpackStagedSensor);
   }

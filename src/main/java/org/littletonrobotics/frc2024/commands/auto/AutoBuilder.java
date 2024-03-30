@@ -9,6 +9,7 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -30,7 +31,9 @@ public class AutoBuilder {
 
   final double preloadDelay = 1.0;
   final double spikeIntakeDelay = 0.35;
-  final double aimDelay = 0.5;
+  final double aimDelay = 0.45;
+
+  final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
 
   public AutoBuilder(
       Drive drive, Superstructure superstructure, Flywheels flywheels, Rollers rollers) {
@@ -66,9 +69,9 @@ public class AutoBuilder {
   private final HolonomicTrajectory underStageShotToCenter =
       new HolonomicTrajectory("underStageShotToCenter");
 
-  private Command preloadToFirstSpike(HolonomicTrajectory preloadToFirstSpike) {
+  private Command preloadToFirstSpike(Pose2d startPose, HolonomicTrajectory preloadToFirstSpike) {
     return Commands.sequence(
-            resetPose(preloadToFirstSpike.getStartPose()),
+            resetPose(startPose),
             aim(drive).withTimeout(preloadDelay),
             followTrajectory(drive, preloadToFirstSpike),
             aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()))
@@ -172,8 +175,7 @@ public class AutoBuilder {
                                   () -> timer.hasElapsed(spike0ToCenterline2.getDuration()))
                               .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
                               .deadlineWith(
-                                  waitUntilXCrossed(
-                                          FieldConstants.Stage.center.getX() - 0.25, false)
+                                  waitUntilXCrossed(stageAimX, false)
                                       .andThen(
                                           superstructure.setGoalCommand(
                                               Superstructure.Goal.AIM))))))
@@ -183,39 +185,39 @@ public class AutoBuilder {
   }
 
   public Command source4() {
-    return preloadToFirstSpike(sourceStartToSpike0)
+    return preloadToFirstSpike(DriveTrajectories.startingLineSpike0, sourceStartToSpike0)
         .andThen(firstSpikeToThirdSpike(true))
         .andThen(followTrajectory(drive, spike2ToCenter));
   }
 
   public Command source5() {
-    return preloadToFirstSpike(sourceStartToSpike0)
+    return preloadToFirstSpike(DriveTrajectories.startingLineSpike0, sourceStartToSpike0)
         .andThen(firstSpikeToThirdSpike(true))
         .andThen(thirdSpikeToCenterline2(true))
         .andThen(followTrajectory(drive, wingShotToCenter));
   }
 
   public Command center4() {
-    return preloadToFirstSpike(centerStartToSpike0)
+    return preloadToFirstSpike(DriveTrajectories.startingLineSpike1, centerStartToSpike0)
         .andThen(firstSpikeToThirdSpike(true))
         .andThen(followTrajectory(drive, spike2ToCenter));
   }
 
   public Command center5() {
-    return preloadToFirstSpike(centerStartToSpike0)
+    return preloadToFirstSpike(DriveTrajectories.startingLineSpike1, centerStartToSpike0)
         .andThen(firstSpikeToThirdSpike(true))
         .andThen(thirdSpikeToCenterline2(true))
         .andThen(followTrajectory(drive, wingShotToCenter));
   }
 
   public Command amp4() {
-    return preloadToFirstSpike(ampStartToSpike2)
+    return preloadToFirstSpike(DriveTrajectories.startingLineSpike2, ampStartToSpike2)
         .andThen(firstSpikeToThirdSpike(false))
         .andThen(followTrajectory(drive, spike0ToCenter));
   }
 
   public Command amp5() {
-    return preloadToFirstSpike(ampStartToSpike2)
+    return preloadToFirstSpike(DriveTrajectories.startingLineSpike2, ampStartToSpike2)
         .andThen(firstSpikeToThirdSpike(false))
         .andThen(thirdSpikeToCenterline2(false))
         .andThen(followTrajectory(drive, underStageShotToCenter));
@@ -260,7 +262,7 @@ public class AutoBuilder {
                         waitUntilXCrossed(FieldConstants.wingX + 0.05, true)
                             .andThen(waitUntilXCrossed(FieldConstants.wingX, false))
                             .deadlineWith(
-                                superstructure.aimWithCompensation(0.0),
+                                superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
                                 rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)),
 
                         // Shoot centerline 0
@@ -305,7 +307,7 @@ public class AutoBuilder {
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
+                                waitUntilXCrossed(stageAimX, false)
                                     .andThen(superstructure.aimWithCompensation(0.0))),
 
                         // Intake centerline 2
@@ -338,7 +340,7 @@ public class AutoBuilder {
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX(), false)
+                                waitUntilXCrossed(stageAimX, false)
                                     .andThen(superstructure.aimWithCompensation(0.0)))))
 
                 // Run flywheels
@@ -490,10 +492,113 @@ public class AutoBuilder {
                                     .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
                                     .withTimeout(shootTimeoutSecs.get()))
                             .deadlineWith(
-                                waitUntilXCrossed(FieldConstants.Stage.center.getX() + 0.1, false)
+                                waitUntilXCrossed(stageAimX, false)
                                     .andThen(superstructure.aimWithCompensation(0.0)))))
 
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
+  }
+
+  public Command davisSuperAlternativeAuto() {
+    var grabCenterline3 = new HolonomicTrajectory("spike1ToCenterline3");
+    var grabCenterline2 = new HolonomicTrajectory("centerline3ToCenterline2");
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.sequence(
+                    // Drive Sequence
+                    resetPose(DriveTrajectories.startingLineSpike2),
+                    aim(drive).withTimeout(preloadDelay),
+                    followTrajectory(drive, ampStartToSpike2),
+                    aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
+                    followTrajectory(drive, spike2ToSpike1),
+                    aim(drive).withTimeout(spikeIntakeDelay + aimDelay + shootTimeoutSecs.get()),
+                    followTrajectory(drive, grabCenterline3),
+                    followTrajectory(drive, grabCenterline2),
+                    Commands.waitSeconds(shootTimeoutSecs.get()),
+                    aim(drive).withTimeout(shootTimeoutSecs.get() / 2.0))
+                .alongWith(
+                    // Superstructure and rollers sequence
+                    Commands.sequence(
+                            // Shoot preload
+                            Commands.waitUntil(flywheels::atGoal)
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    superstructure.setGoalCommand(Superstructure.Goal.AIM))
+                                .withTimeout(preloadDelay),
+
+                            // Intake spike 2
+                            intake(superstructure, rollers)
+                                .withTimeout(ampStartToSpike2.getDuration() + spikeIntakeDelay),
+
+                            // Shoot spike 2
+                            Commands.waitSeconds(aimDelay)
+                                .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
+                                .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                            // Intake spike 1
+                            intake(superstructure, rollers)
+                                .withTimeout(spike2ToSpike1.getDuration() + spikeIntakeDelay),
+
+                            // Shoot spike 1
+                            Commands.waitSeconds(aimDelay)
+                                .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
+                                .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                            // Intake centerline 3
+                            intake(superstructure, rollers)
+                                .withTimeout(grabCenterline3.getDuration() - 1.0),
+
+                            // Shoot centerline 3
+                            Commands.waitUntil(
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            preloadDelay
+                                                + ampStartToSpike2.getDuration()
+                                                + spike2ToSpike1.getDuration()
+                                                + (spikeIntakeDelay
+                                                        + aimDelay
+                                                        + shootTimeoutSecs.get())
+                                                    * 2.0
+                                                + grabCenterline3.getDuration()
+                                                - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
+                                .deadlineWith(superstructure.aimWithCompensation(0.0)),
+
+                            // Intake centerline 2
+                            waitUntilXCrossed(
+                                    FieldConstants.wingX
+                                        + DriveConstants.driveConfig.bumperWidthX()
+                                        + 0.3,
+                                    true)
+                                .andThen(
+                                    waitUntilXCrossed(
+                                            FieldConstants.wingX
+                                                + DriveConstants.driveConfig.bumperWidthX()
+                                                + 0.25,
+                                            false)
+                                        .deadlineWith(intake(superstructure, rollers))),
+
+                            // Shoot centerline 2
+                            Commands.waitUntil(
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            preloadDelay
+                                                + ampStartToSpike2.getDuration()
+                                                + spike2ToSpike1.getDuration()
+                                                + (spikeIntakeDelay
+                                                        + aimDelay
+                                                        + shootTimeoutSecs.get())
+                                                    * 2.0
+                                                + grabCenterline3.getDuration()
+                                                + grabCenterline2.getDuration()
+                                                - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    waitUntilXCrossed(stageAimX, false)
+                                        .andThen(superstructure.aimWithCompensation(0.0))))
+                        // Run flywheels
+                        .deadlineWith(flywheels.shootCommand())));
   }
 }

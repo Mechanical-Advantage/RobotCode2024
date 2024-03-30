@@ -7,250 +7,138 @@
 
 package org.littletonrobotics.frc2024.commands;
 
-import static org.littletonrobotics.frc2024.FieldConstants.*;
-
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.WrapperCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import java.util.List;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
-import org.littletonrobotics.frc2024.FudgeFactors;
+import org.littletonrobotics.frc2024.Robot;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
+import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.Arm;
-import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
+import org.littletonrobotics.frc2024.util.SteppableCommandGroup;
 
 @ExtensionMethod({GeomUtil.class})
 public class ClimbingCommands {
-  private static final LoggedTunableNumber climbedXOffset =
-      new LoggedTunableNumber("ClimbingCommands/ClimbedXOffset", 0.16);
   private static final LoggedTunableNumber chainToBack =
       new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.3);
-  private static final LoggedTunableNumber chainToFront =
-      new LoggedTunableNumber("ClimbingCommands/ChainToFrontOffset", 0.9);
+  private static final LoggedTunableNumber autoUntrapTime =
+      new LoggedTunableNumber("ClimbingCommands/AutoUntrapTime", 134.5);
 
-  private static final List<Supplier<Pose2d>> centeredClimbedPosesNoOffset =
-      List.of(
-          () ->
-              Stage.centerPodiumAmpChain.transformBy(
-                  FudgeFactors.centerPodiumAmpChain.getTransform()),
-          () ->
-              Stage.centerAmpSourceChain.transformBy(
-                  FudgeFactors.centerAmpSourceChain.getTransform()),
-          () ->
-              Stage.centerSourcePodiumChain.transformBy(
-                  FudgeFactors.centerSourcePodiumChain.getTransform()));
-
-  private static final Supplier<Pose2d> nearestClimbedPose =
-      () -> {
-        Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
-        List<Pose2d> climbedPoses =
-            centeredClimbedPosesNoOffset.stream()
-                .map(Supplier::get)
-                .map(AllianceFlipUtil::apply)
-                .toList();
-        return currentPose.nearest(climbedPoses);
-      };
-  private static final Supplier<Pose2d> backPrepareClimbPose =
-      () ->
-          nearestClimbedPose
-              .get()
-              .transformBy(
-                  new Translation2d(climbedXOffset.get() - chainToBack.get(), 0).toTransform2d());
-  private static final Supplier<Pose2d> frontPrepareClimbPose =
-      () ->
-          nearestClimbedPose
-              .get()
-              .transformBy(
-                  new Translation2d(-climbedXOffset.get() + chainToFront.get(), 0).toTransform2d())
-              .transformBy(
-                  new Transform2d(
-                      0, 0, Rotation2d.fromDegrees(180.0))); // Flip climbed pose for front climb
-
-  /** Command that lets driver adjust robot relative to the robot at slow speed */
-  private static Command driverAdjust(
-      Drive drive,
-      DoubleSupplier controllerX,
-      DoubleSupplier controllerY,
-      DoubleSupplier controllerOmega) {
-    return drive.run(
-        () ->
-            drive.acceptTeleopInput(
-                controllerX.getAsDouble(),
-                controllerY.getAsDouble(),
-                controllerOmega.getAsDouble(),
-                false));
-  }
-
-  private static Command driveToPoseWithAdjust(
-      Drive drive,
-      Supplier<Pose2d> prepareClimbPose,
-      DoubleSupplier controllerX,
-      DoubleSupplier controllerY) {
-    return Commands.sequence(
-        // Auto drive to behind the chain
-        drive
-            .startEnd(
-                () -> drive.setAutoAlignGoal(prepareClimbPose, false), drive::clearAutoAlignGoal)
-            .until(drive::isAutoAlignGoalCompleted),
-
-        // Let driver move robot left and right while aligned to chain
-        driverAdjust(drive, controllerX, controllerY, () -> 0.0));
-  }
-
-  /** Drive to back climber ready pose. */
-  public static Command autoDrive(
-      boolean isFront,
-      Drive drive,
-      DoubleSupplier controllerX,
-      DoubleSupplier controllerY,
-      Trigger autoDriveDisable) {
-    return driveToPoseWithAdjust(
-            drive, isFront ? frontPrepareClimbPose : backPrepareClimbPose, controllerX, controllerY)
-        .onlyIf(autoDriveDisable.negate());
-  }
-
-  /**
-   * Drives to climbed pose while raising climber up and arm back, ends when at position with drive
-   * and superstructure.
-   */
-  private static Command prepareClimbFromBack(
-      Drive drive, Superstructure superstructure, Trigger autoDriveDisable) {
-    return drive
-        .startEnd(
-            () -> {
-              Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
-              Pose2d targetPose =
-                  currentPose.transformBy(new Translation2d(chainToBack.get(), 0).toTransform2d());
-              drive.setAutoAlignGoal(() -> targetPose, true);
-            },
-            drive::clearAutoAlignGoal)
-        .onlyIf(autoDriveDisable.negate())
-        .alongWith(
-            superstructure.setGoalWithConstraintsCommand(
-                Superstructure.Goal.PREPARE_CLIMB, Arm.prepareClimbProfileConstraints.get()));
-  }
-
-  private static Command prepareClimbFromFront(
-      Drive drive, Superstructure superstructure, Trigger autoDriveDisable) {
-    return drive
-        .startEnd(
-            () -> {
-              Pose2d currentPose = RobotState.getInstance().getEstimatedPose();
-              Pose2d targetPose =
-                  currentPose.transformBy(new Translation2d(chainToFront.get(), 0).toTransform2d());
-              drive.setAutoAlignGoal(() -> targetPose, true);
-            },
-            drive::clearAutoAlignGoal)
-        .onlyIf(autoDriveDisable.negate())
-        .alongWith(superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB));
-  }
-
-  public static Command simpleClimbSequence(
-      Superstructure superstructure, Trigger startClimbTrigger) {
-    return superstructure
-        .setGoalCommand(Superstructure.Goal.PREPARE_CLIMB)
-        .until(startClimbTrigger)
-        .andThen(superstructure.setGoalCommand(Superstructure.Goal.CLIMB))
-
-        // If cancelled, go to safe state
-        .finallyDo(
-            () -> {
-              switch (superstructure.getCurrentGoal()) {
-                case PREPARE_CLIMB, CANCEL_PREPARE_CLIMB ->
-                    superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
-                case CLIMB, CANCEL_CLIMB ->
-                    superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
-              }
-            });
-  }
-
-  /** Runs the climbing sequence and then scores in the trap when the trapScore button is pressed */
-  public static Command climbNTrapSequence(
+  public static Command trapSequence(
       Drive drive,
       Superstructure superstructure,
       Rollers rollers,
-      DoubleSupplier controllerX,
-      DoubleSupplier controllerY,
-      DoubleSupplier controllerOmega,
-      Trigger startClimbTrigger,
-      Trigger trapScoreTrigger,
-      Trigger autoDriveDisable) {
-    return Commands.sequence(
+      Trigger forwardTrigger,
+      Trigger reverseTrigger) {
+    Trigger endOfMatch = Robot.createTeleopTimeTrigger(autoUntrapTime);
+    SteppableCommandGroup sequence =
+        new SteppableCommandGroup(
+            forwardTrigger
+                .and(superstructure::atArmGoal)
+                .or(
+                    endOfMatch.and(
+                        () ->
+                            superstructure.getDesiredGoal() == Superstructure.Goal.TRAP
+                                && rollers.getGoal() == Rollers.Goal.TRAP_SCORE)),
+            reverseTrigger,
+
+            // Move arm to prepare prepare climb setpoint while moving climbers up
+            superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
+
             // Drive forward while raising arm and climber
-            prepareClimbFromBack(drive, superstructure, autoDriveDisable)
-                .until(() -> superstructure.atGoal() && drive.isAutoAlignGoalCompleted())
-                .withTimeout(5.0),
+            drive
+                .startEnd(
+                    () -> {
+                      Pose2d robot = RobotState.getInstance().getEstimatedPose();
+                      Pose2d target =
+                          robot.transformBy(GeomUtil.toTransform2d(chainToBack.get(), 0.0));
+                      drive.setAutoAlignGoal(() -> target, () -> new Translation2d(), true);
+                    },
+                    drive::clearAutoAlignGoal)
+                .asProxy()
+                .until(() -> drive.isAutoAlignGoalCompleted() && superstructure.atGoal())
+                .withTimeout(5.0)
+                .alongWith(
+                    superstructure.setGoalWithConstraintsCommand(
+                        Superstructure.Goal.PREPARE_CLIMB,
+                        Arm.prepareClimbProfileConstraints.get()),
+                    rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)),
 
-            // Allow driver to line up
-            Commands.waitUntil(startClimbTrigger)
-                .deadlineWith(
-                    superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
-                    driverAdjust(drive, controllerX, controllerY, controllerOmega)),
+            // Pre-move arm to climb position to help with alignment and prevent wedging
+            superstructure.setGoalCommand(Superstructure.Goal.POST_PREPARE_TRAP_CLIMB),
 
-            // Climb and wait, continue if trap button pressed
+            // Allow driver to line up and climb
+            superstructure.setGoalCommand(Superstructure.Goal.CLIMB),
+
+            // Extend backpack
             superstructure
-                .setGoalCommand(Superstructure.Goal.CLIMB)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK))
-                .raceWith(
-                    Commands.waitUntil(trapScoreTrigger)
-                        .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
+                .setGoalCommand(Superstructure.Goal.TRAP)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE)),
 
-            // Repeat trap sequence forever and ever
-            Commands.sequence(
-                    // Extend backpack
-                    superstructure
-                        .setGoalCommand(Superstructure.Goal.TRAP)
-                        .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_PRESCORE))
-                        .raceWith(
-                            Commands.waitUntil(trapScoreTrigger)
-                                .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
+            // Trap.
+            superstructure
+                .setGoalCommand(Superstructure.Goal.TRAP)
+                .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_SCORE)),
 
-                    // Score in trap and wait
-                    rollers
-                        .setGoalCommand(Rollers.Goal.TRAP_SCORE)
-                        .alongWith(superstructure.setGoalCommand(Superstructure.Goal.TRAP))
-                        .raceWith(
-                            Commands.waitUntil(trapScoreTrigger)
-                                .andThen(Commands.waitUntil(trapScoreTrigger.negate()))),
+            // Untrap
+            superstructure.setGoalCommand(Superstructure.Goal.UNTRAP));
+    return new WrapperCommand(
+        sequence
+            .beforeStarting(() -> Leds.getInstance().climbing = true)
+            .finallyDo(() -> Leds.getInstance().climbing = false)) {
+      @Override
+      public InterruptionBehavior getInterruptionBehavior() {
+        if (sequence.getCurrentCommandIndex().isPresent()
+            && sequence.getCurrentCommandIndex().getAsInt() == 0) {
+          return InterruptionBehavior.kCancelSelf;
+        }
+        return InterruptionBehavior.kCancelIncoming;
+      }
 
-                    // Retract backpack
-                    superstructure
-                        .setGoalCommand(Superstructure.Goal.UNTRAP)
-                        .raceWith(
-                            Commands.waitUntil(trapScoreTrigger)
-                                .andThen(Commands.waitUntil(trapScoreTrigger.negate()))))
-                .repeatedly())
+      @Override
+      public String getName() {
+        return "Trap Climb";
+      }
+    };
+  }
 
-        // If cancelled, go to safe state
-        .finallyDo(
-            () -> {
-              switch (superstructure.getCurrentGoal()) {
-                case PREPARE_CLIMB, CANCEL_PREPARE_CLIMB ->
-                    superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_PREPARE_CLIMB));
-                case CLIMB, CANCEL_CLIMB ->
-                    superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.CANCEL_CLIMB));
-                case TRAP ->
-                    superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
-                case UNTRAP ->
-                    superstructure.setDefaultCommand(
-                        superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
-              }
-            });
+  public static Command simpleSequence(
+      Superstructure superstructure, Trigger forwardTrigger, Trigger reverseTrigger) {
+    SteppableCommandGroup sequence =
+        new SteppableCommandGroup(
+            forwardTrigger.and(superstructure::atGoal),
+            reverseTrigger,
+
+            // Raise climber
+            superstructure.setGoalCommand(Superstructure.Goal.PREPARE_CLIMB),
+
+            // Climb
+            superstructure.setGoalCommand(Superstructure.Goal.CLIMB));
+    return new WrapperCommand(
+        sequence
+            .beforeStarting(() -> Leds.getInstance().climbing = true)
+            .finallyDo(() -> Leds.getInstance().climbing = false)) {
+
+      @Override
+      public InterruptionBehavior getInterruptionBehavior() {
+        if (sequence.getCurrentCommandIndex().isPresent()
+            && sequence.getCurrentCommandIndex().getAsInt() == 0) {
+          return InterruptionBehavior.kCancelSelf;
+        }
+        return InterruptionBehavior.kCancelIncoming;
+      }
+
+      @Override
+      public String getName() {
+        return "Simple Climb";
+      }
+    };
   }
 }

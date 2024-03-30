@@ -400,6 +400,7 @@ public class RobotContainer {
                 "First center note?",
                 List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
+    autoSelector.addRoutine("Davis 7 Note Auto", autoBuilder.davis7NoteAuto());
 
     // Set up feedforward characterization
     autoSelector.addRoutine(

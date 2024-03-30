@@ -41,6 +41,18 @@ public class ArmConstants {
         case DEVBOT -> 42;
       };
 
+  public static final String armCanbus =
+      switch (Constants.getRobot()) {
+        default -> "*";
+        case DEVBOT -> "rio";
+      };
+
+  public static final int canFrequency =
+      switch (Constants.getRobot()) {
+        default -> 1000;
+        case DEVBOT -> 200;
+      };
+
   public static final boolean leaderInverted = false;
 
   /** The offset of the arm encoder in radians. */

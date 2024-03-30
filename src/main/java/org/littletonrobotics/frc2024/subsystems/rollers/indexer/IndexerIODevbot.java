@@ -7,12 +7,6 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers.indexer;
 
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.NeutralOut;
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkMax;
 import org.littletonrobotics.frc2024.subsystems.rollers.GenericRollerSystemIOSparkFlex;

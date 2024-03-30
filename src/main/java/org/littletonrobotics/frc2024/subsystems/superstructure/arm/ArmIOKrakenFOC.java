@@ -45,10 +45,10 @@ public class ArmIOKrakenFOC implements ArmIO {
   private final TalonFXConfiguration config = new TalonFXConfiguration();
 
   public ArmIOKrakenFOC() {
-    leaderTalon = new TalonFX(ArmConstants.leaderID, "*");
-    followerTalon = new TalonFX(ArmConstants.followerID, "*");
+    leaderTalon = new TalonFX(ArmConstants.leaderID, ArmConstants.armCanbus);
+    followerTalon = new TalonFX(ArmConstants.followerID, ArmConstants.armCanbus);
     followerTalon.setControl(new Follower(ArmConstants.leaderID, true));
-    absoluteEncoder = new CANcoder(ArmConstants.armEncoderID, "*");
+    absoluteEncoder = new CANcoder(ArmConstants.armEncoderID, ArmConstants.armCanbus);
 
     // Arm Encoder Configs
     CANcoderConfiguration armEncoderConfig = new CANcoderConfiguration();
@@ -99,7 +99,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         tempCelsius.get(1));
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        1000, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
+        ArmConstants.canFrequency, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
 
     // Optimize bus utilization
     leaderTalon.optimizeBusUtilization(1.0);

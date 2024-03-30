@@ -58,7 +58,7 @@ public class DriveTrajectories {
   public static final Translation2d stageLeftAvoidance =
       new Translation2d(
           FieldConstants.wingX,
-          MathUtil.interpolate(FieldConstants.Stage.ampLeg.getY(), FieldConstants.fieldWidth, 0.3));
+          MathUtil.interpolate(FieldConstants.Stage.ampLeg.getY(), FieldConstants.fieldWidth, 0.4));
   public static final Translation2d stageRightAvoidance =
       FieldConstants.Stage.sourceLeg.getTranslation().plus(new Translation2d(0.0, -1.2));
   public static final Translation2d stageCenterAvoidance =

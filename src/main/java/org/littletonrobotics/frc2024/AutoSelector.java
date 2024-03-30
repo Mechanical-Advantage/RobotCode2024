@@ -141,5 +141,7 @@ public class AutoSelector extends VirtualSubsystem {
     AMP_WALL,
     SCORE_POOPED,
     FOURTH_CENTER,
+    CLOCKWISE,
+    COUNTER_CLOCKWISE
   }
 }

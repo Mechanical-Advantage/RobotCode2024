@@ -401,7 +401,7 @@ public class RobotContainer {
                 List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
 
-    // Set up feedforward characterization
+    // Set up characterization routines
     autoSelector.addRoutine(
         "Drive Static Characterization",
         new StaticCharacterization(
@@ -425,11 +425,20 @@ public class RobotContainer {
             .finallyDo(superstructure::endArmCharacterization));
     autoSelector.addRoutine(
         "Drive Wheel Radius Characterization",
+        List.of(
+            new AutoQuestion(
+                "Direction?",
+                List.of(AutoQuestionResponse.CLOCKWISE, AutoQuestionResponse.COUNTER_CLOCKWISE))),
         drive
             .orientModules(Drive.getCircleOrientations())
             .andThen(
-                new WheelRadiusCharacterization(
-                    drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
+                Commands.either(
+                    new WheelRadiusCharacterization(
+                        drive, WheelRadiusCharacterization.Direction.CLOCKWISE),
+                    new WheelRadiusCharacterization(
+                        drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE),
+                    () ->
+                        autoSelector.getResponses().get(0).equals(AutoQuestionResponse.CLOCKWISE)))
             .withName("Drive Wheel Radius Characterization"));
     autoSelector.addRoutine(
         "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));

@@ -158,7 +158,8 @@ public class AutoBuilder {
     return Commands.sequence(
         resetPose(DriveTrajectories.startingDriverStation),
         Commands.runOnce(autoTimer::restart),
-                flywheels.poopCommand()
+        flywheels
+            .poopCommand()
             .alongWith(Commands.waitUntil(flywheels::atGoal).andThen(feed(rollers)))
             .withTimeout(ejectDelay),
         Commands.select(centerlineChoices, () -> responses.get().get(0)),

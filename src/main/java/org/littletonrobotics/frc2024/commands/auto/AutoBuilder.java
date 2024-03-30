@@ -41,11 +41,11 @@ public class AutoBuilder {
 
   private static final Map<Integer, Double> centerlineShotCompensations =
       Map.of(
-          4, 0.0,
-          3, 0.0,
-          2, 0.0,
+          0, 0.0,
           1, 0.0,
-          0, 0.0);
+          2, 0.0,
+          3, 0.0,
+          4, 0.0);
 
   /** Command that scores preload. Times out with preloadDelay. */
   private Command scorePreload() {
@@ -326,6 +326,7 @@ public class AutoBuilder {
           centerline2, Commands.select(centerline1Choices, () -> responses.get().get(2)));
     }
 
+    int[] validCenterlineIndices = {2, 3, 4};
     Timer autoTimer = new Timer();
     return Commands.sequence(
         Commands.runOnce(autoTimer::restart),
@@ -350,8 +351,27 @@ public class AutoBuilder {
         Commands.select(centerlinesChoices, () -> responses.get().get(3)),
         Commands.runOnce(() -> System.out.println("Centerlines finished at: " + autoTimer.get())),
 
-        // Drive to centerline
-        followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenter"))
+        // Intake missing centerline note
+        Commands.select(
+                Map.of(
+                    2,
+                    followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenterline2")),
+                    3,
+                    followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenterline3")),
+                    4,
+                    followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenterline4"))),
+                () -> {
+                  int centerline1 = calculateCenterlineIndex(responses.get().get(2));
+                  int centerline2 = calculateCenterlineIndex(responses.get().get(3));
+                  int missingCenterline = validCenterlineIndices[0];
+                  for (int i = 0; i < 3; i++) {
+                    if (missingCenterline != centerline1 && missingCenterline != centerline2) {
+                      break;
+                    }
+                    missingCenterline = validCenterlineIndices[i];
+                  }
+                  return missingCenterline;
+                })
             .deadlineWith(intake(superstructure, rollers)));
   }
 

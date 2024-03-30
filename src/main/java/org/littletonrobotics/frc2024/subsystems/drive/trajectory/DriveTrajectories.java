@@ -320,17 +320,6 @@ public class DriveTrajectories {
             List.of(spikeToCenterlineIntakeSegments[spikeIndex][i], centerlineToShotSegments[i]));
       }
     }
-
-    Translation2d centerField = new Translation2d(fieldLength / 2.0, fieldWidth / 2.0);
-    paths.put(
-        "spiky_shotToCenter",
-        List.of(
-            PathSegment.newBuilder()
-                .addPoseWaypoint(wingLeftShot)
-                .addTranslationWaypoint(wingLeftAvoidance)
-                .addPoseWaypoint(
-                    new Pose2d(centerField, wingLeftAvoidance.minus(centerField).getAngle()))
-                .build()));
   }
 
   // Davis Speedy Auto (named "speedy_XXX")

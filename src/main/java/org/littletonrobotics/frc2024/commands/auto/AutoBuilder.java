@@ -38,6 +38,7 @@ public class AutoBuilder {
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
   private static final double spikeFeedThroughDelay = 0.35;
+  private static final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
 
   /** All shot compensation values used when shooting corresponding centerline note. */
   private static final Map<Integer, Double> centerlineShotCompensations =
@@ -383,7 +384,82 @@ public class AutoBuilder {
   }
 
   public Command davisEthicalAuto() {
-    return Commands.none();
+    HolonomicTrajectory grabCenterline0 = new HolonomicTrajectory("ethical_grabCenterline0");
+    HolonomicTrajectory grabCenterline1 = new HolonomicTrajectory("ethical_grabCenterline1");
+    HolonomicTrajectory grabCenterline2 = new HolonomicTrajectory("ethical_grabCenterline2");
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            // Drive Sequence
+            Commands.sequence(
+                    resetPose(DriveTrajectories.startingSource),
+                    aim(drive).withTimeout(preloadDelay),
+                    followTrajectory(drive, grabCenterline0),
+                    followTrajectory(drive, grabCenterline1),
+                    followTrajectory(drive, grabCenterline2))
+                .alongWith(
+                    // Superstructure and rollers sequence
+                    Commands.sequence(
+                            // Score preload
+                            Commands.waitUntil(flywheels::atGoal)
+                                .andThen(feed(rollers))
+                                .deadlineWith(superstructure.aimWithCompensation(0.0))
+                                .withTimeout(preloadDelay + shootTimeoutSecs.get()),
+
+                            // Intake and shoot centerline 0
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                                .until(
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            preloadDelay
+                                                + grabCenterline0.getDuration()
+                                                - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    Commands.waitUntil(
+                                            () ->
+                                                autoTimer.hasElapsed(
+                                                    grabCenterline0.getDuration() - 1.5))
+                                        .andThen(superstructure.aimWithCompensation(0.0))),
+
+                            // Intake and shoot centerline 1
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(
+                                    rollers
+                                        .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                        .until(
+                                            () ->
+                                                autoTimer.hasElapsed(
+                                                    preloadDelay
+                                                        + grabCenterline0.getDuration()
+                                                        + grabCenterline1.getDuration()
+                                                        - shootTimeoutSecs.get() / 2.0))
+                                        .andThen(feed(rollers))
+                                        .deadlineWith(
+                                            waitUntilXCrossed(stageAimX, false)
+                                                .andThen(superstructure.aimWithCompensation(0.0)))),
+
+                            // Intake and shoot centerline 2
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(
+                                    rollers
+                                        .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                        .until(
+                                            () ->
+                                                autoTimer.hasElapsed(
+                                                    preloadDelay
+                                                        + grabCenterline0.getDuration()
+                                                        + grabCenterline1.getDuration()
+                                                        + grabCenterline2.getDuration()
+                                                        - shootTimeoutSecs.get() / 2.0))
+                                        .andThen(feed(rollers))
+                                        .deadlineWith(
+                                            waitUntilXCrossed(stageAimX, false)
+                                                .andThen(superstructure.aimWithCompensation(0.0)))))
+                        // Run flywheels
+                        .deadlineWith(flywheels.shootCommand())));
   }
 
   public Command davisUnethicalAuto() {

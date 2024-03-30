@@ -15,9 +15,13 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import org.littletonrobotics.frc2024.Constants;
 
 public class ArmIOSim implements ArmIO {
+  static final double autoStartAngle = Units.degreesToRadians(80.0);
+
   private final SingleJointedArmSim sim =
       new SingleJointedArmSim(
           DCMotor.getKrakenX60Foc(2),
@@ -36,26 +40,19 @@ public class ArmIOSim implements ArmIO {
   private boolean controllerNeedsReset = false;
   private boolean closedLoop = true;
 
-  private boolean wasNotAuto = true;
-
   public ArmIOSim() {
     controller = new PIDController(0.0, 0.0, 0.0);
     sim.setState(0.0, 0.0);
     setPosition(0.0);
+
+    RobotModeTriggers.autonomous()
+        .onTrue(Commands.runOnce(() -> sim.setState(autoStartAngle, 0.0)));
   }
 
   @Override
   public void updateInputs(ArmIOInputs inputs) {
     if (DriverStation.isDisabled()) {
       controllerNeedsReset = true;
-    }
-    // Assume starting at ~80 degrees
-    if (wasNotAuto && DriverStation.isAutonomousEnabled()) {
-      sim.setState(Units.degreesToRadians(80.0), 0.0);
-      wasNotAuto = false;
-    }
-    if (!DriverStation.isAutonomousEnabled()) {
-      wasNotAuto = true;
     }
 
     sim.update(Constants.loopPeriodSecs);

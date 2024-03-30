@@ -96,7 +96,7 @@ public class Arm {
     }
   }
 
-  @AutoLogOutput @Getter @Setter private Goal goal = Goal.STOW;
+  @AutoLogOutput @Getter private Goal goal = Goal.STOW;
   private boolean characterizing = false;
 
   private final ArmIO io;
@@ -122,6 +122,8 @@ public class Arm {
   private BooleanSupplier disableSupplier = DriverStation::isDisabled;
   private BooleanSupplier coastSupplier = () -> false;
   private boolean brakeModeEnabled = true;
+
+  private boolean wasNotAuto = false;
 
   public Arm(ArmIO io) {
     this.io = io;
@@ -170,9 +172,13 @@ public class Arm {
     if (disableSupplier.getAsBoolean() || goal == Goal.STOP) {
       io.stop();
       // Reset profile when disabled
-      setpointState = new TrapezoidProfile.State(inputs.positionRads, 0);
+      if (!(DriverStation.isAutonomousEnabled() && wasNotAuto)) {
+        setpointState = new TrapezoidProfile.State(inputs.positionRads, 0);
+      }
     }
     Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
+    // Track autonomous enabled
+    wasNotAuto = !DriverStation.isAutonomousEnabled();
 
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean());
@@ -213,6 +219,16 @@ public class Arm {
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
     Logger.recordOutput("Superstructure/Arm/Goal", goal);
+  }
+
+  public void setGoal(Goal goal) {
+    if (Constants.getMode() == Constants.Mode.SIM) {
+      if (DriverStation.isAutonomousEnabled() && wasNotAuto) {
+        setpointState = new TrapezoidProfile.State(ArmIOSim.autoStartAngle, 0.0);
+      }
+    }
+    if (this.goal == goal) return;
+    this.goal = goal;
   }
 
   public void stop() {

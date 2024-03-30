@@ -78,12 +78,12 @@ public class DriveTrajectories {
             .addPoseWaypoint(
                 new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[0],
-                        Rotation2d.fromDegrees(152))
+                        Rotation2d.fromDegrees(158))
                     .transformBy(new Transform2d(0.5, 0, new Rotation2d())))
             .addPoseWaypoint(
                 new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[0],
-                        Rotation2d.fromDegrees(160))
+                        Rotation2d.fromDegrees(163))
                     .transformBy(new Transform2d(0.3, 0, new Rotation2d())),
                 10)
             .addPoseWaypoint(
@@ -99,18 +99,18 @@ public class DriveTrajectories {
             .addPoseWaypoint(
                 new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[1],
-                        Rotation2d.fromDegrees(182))
+                        Rotation2d.fromDegrees(190))
                     .transformBy(new Transform2d(0.5, 0, new Rotation2d())))
             .addPoseWaypoint(
                 new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[1],
-                        Rotation2d.fromDegrees(190))
+                        Rotation2d.fromDegrees(195))
                     .transformBy(new Transform2d(0.3, 0, new Rotation2d())),
                 10)
             .addPoseWaypoint(
                 new Pose2d(
                         FieldConstants.StagingLocations.centerlineTranslations[1],
-                        Rotation2d.fromDegrees(198))
+                        Rotation2d.fromDegrees(200))
                     .transformBy(new Transform2d(0.4, 0, new Rotation2d())),
                 10)
             .build();
@@ -119,15 +119,28 @@ public class DriveTrajectories {
         "unethical_grabCenterline0",
         List.of(
             PathSegment.newBuilder().addPoseWaypoint(startingDriverStation).build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    startingDriverStation.transformBy(new Transform2d(-1.4, 0, new Rotation2d())),
+                    10)
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder().addTranslationWaypoint(sourceLegAvoidance, 10).build(),
             intakeCenterline0,
             PathSegment.newBuilder().addPoseWaypoint(sourceSideShootingPose).build()));
     paths.put(
         "unethical_grabCenterline1",
         List.of(
+            PathSegment.newBuilder().addPoseWaypoint(startingDriverStation).build(),
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingDriverStation)
-                .addTranslationWaypoint(sourceLegAvoidance)
+                .addPoseWaypoint(
+                    startingDriverStation.transformBy(new Transform2d(-1.4, 0, new Rotation2d())),
+                    10)
+                .setStraightLine(true)
+                .setMaxOmega(0)
                 .build(),
+            PathSegment.newBuilder().addTranslationWaypoint(sourceLegAvoidance).build(),
             intakeCenterline1,
             PathSegment.newBuilder()
                 .addTranslationWaypoint(sourceLegAvoidance)
@@ -158,10 +171,35 @@ public class DriveTrajectories {
                 .addPoseWaypoint(sourceSideShootingPose)
                 .build()));
     paths.put(
+        "unethical_grabEjected",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("unethical_centerline1ToCenterline0"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        sourceSideShootingPose.getTranslation().plus(new Translation2d(-0.5, 0)),
+                        Rotation2d.fromDegrees(0)))
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.Subwoofer.centerFace.getX() + 0.5,
+                        FieldConstants.driverStationY,
+                        Rotation2d.fromDegrees(0)))
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        new Translation2d(
+                            FieldConstants.startingLineX, FieldConstants.driverStationY)))
+                .build()));
+    paths.put(
         "unethical_driveToSource",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(sourceSideShootingPose)
+                .addWaypoints(getLastWaypoint("unethical_grabEjected"))
                 .addPoseWaypoint(new Pose2d(FieldConstants.wingX, 1, Rotation2d.fromDegrees(180)))
                 .build(),
             PathSegment.newBuilder()

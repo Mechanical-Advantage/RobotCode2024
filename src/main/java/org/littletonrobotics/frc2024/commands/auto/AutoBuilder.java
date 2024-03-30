@@ -9,9 +9,11 @@ package org.littletonrobotics.frc2024.commands.auto;
 
 import static org.littletonrobotics.frc2024.commands.auto.AutoCommands.*;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +21,14 @@ import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.FieldConstants;
+import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.flywheels.Flywheels;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
 import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
+import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 
 @RequiredArgsConstructor
 public class AutoBuilder {
@@ -48,8 +52,8 @@ public class AutoBuilder {
   private final double preloadDelay = 1.0;
 
   /** Scores two centerline notes with the given trajectories */
-  private Command scoreCenterlines(
-      HolonomicTrajectory spikeToCenterline1,
+  private Command poopThenScoreCenterlines(
+      HolonomicTrajectory startToCenterline1,
       HolonomicTrajectory shotToCenterline2,
       double firstShotCompensation,
       double secondShotCompensation) {
@@ -58,61 +62,52 @@ public class AutoBuilder {
         .andThen(
             // Drive sequence
             Commands.sequence(
-                    followTrajectory(drive, spikeToCenterline1),
+                    followTrajectory(drive, startToCenterline1),
                     followTrajectory(drive, shotToCenterline2))
                 .alongWith(
                     // Superstructure and rollers sequence
                     Commands.sequence(
-                        // Intake centerline 1
-                        waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                            .andThen(
-                                waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                    .deadlineWith(intake(superstructure, rollers))),
-
-                        // Shoot centerline 1
-                        Commands.waitUntil(
-                                () ->
-                                    autoTimer.hasElapsed(
-                                        spikeToCenterline1.getDuration()
-                                            - shootTimeoutSecs.get() / 2.0))
-                            .andThen(feed(rollers))
+                        waitUntilXCrossed(FieldConstants.Stage.center.getX(), true)
                             .deadlineWith(
-                                superstructure.aimWithCompensation(firstShotCompensation)),
+                                Commands.parallel(
+                                    flywheels.ejectCommand(),
+                                    superstructure.setGoalCommand(Superstructure.Goal.STOW),
+                                    feed(rollers))),
+                        Commands.sequence(
+                                // Intake centerline 1
+                                waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                                    .andThen(
+                                        waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                            .deadlineWith(intake(superstructure, rollers))),
 
-                        // Intake centerline 2
-                        waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                            .andThen(
-                                waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                    .deadlineWith(intake(superstructure, rollers))),
+                                // Shoot centerline 1
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                startToCenterline1.getDuration()
+                                                    - shootTimeoutSecs.get() / 2.0))
+                                    .andThen(feed(rollers))
+                                    .deadlineWith(
+                                        superstructure.aimWithCompensation(firstShotCompensation)),
 
-                        // Shoot centerline 2
-                        Commands.waitUntil(
-                                () ->
-                                    autoTimer.hasElapsed(
-                                        spikeToCenterline1.getDuration()
-                                            + shotToCenterline2.getDuration()
-                                            - shootTimeoutSecs.get() / 2.0))
-                            .andThen(feed(rollers))
-                            .deadlineWith(
-                                superstructure.aimWithCompensation(secondShotCompensation))))
-                // Run flywheels
-                .deadlineWith(flywheels.shootCommand()));
-  }
+                                // Intake centerline 2
+                                waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                                    .andThen(
+                                        waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                            .deadlineWith(intake(superstructure, rollers))),
 
-  /** Command that scores preload. Times out with preloadDelay. */
-  private Command scorePreload() {
-    return
-    // Aim robot at speaker
-    aim(drive)
-        .withTimeout(preloadDelay)
-        .alongWith(
-            // Aim superstructure and shoot preload
-            Commands.waitUntil(flywheels::atGoal)
-                .andThen(feed(rollers))
-                .deadlineWith(superstructure.aimWithCompensation(0.0))
-                .withTimeout(preloadDelay))
-        // Run flywheels
-        .deadlineWith(flywheels.shootCommand());
+                                // Shoot centerline 2
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                startToCenterline1.getDuration()
+                                                    + shotToCenterline2.getDuration()
+                                                    - shootTimeoutSecs.get() / 2.0))
+                                    .andThen(feed(rollers))
+                                    .deadlineWith(
+                                        superstructure.aimWithCompensation(secondShotCompensation)))
+                            // Run flywheels
+                            .deadlineWith(flywheels.shootCommand()))));
   }
 
   public Command davisSpikyAuto() {
@@ -133,37 +128,52 @@ public class AutoBuilder {
 
   public Command davisUnethicalAuto() {
     Timer autoTimer = new Timer();
-    double sourceDelay = 2.16;
-    double ejectDelay = 1.0;
+    double sourcePathDelay = 2.5;
+    double brakeThreshold = FieldConstants.fieldLength - FieldConstants.startingLineX - 0.5;
+    HolonomicTrajectory grabEjected = new HolonomicTrajectory("unethical_grabEjected");
     HolonomicTrajectory driveToSource = new HolonomicTrajectory("unethical_driveToSource");
     Map<AutoQuestionResponse, Command> centerlineChoices = new HashMap<>();
 
     centerlineChoices.put(
         AutoQuestionResponse.SOURCE_WALL,
-        Commands.sequence(
-            scoreCenterlines(
-                new HolonomicTrajectory("unethical_grabCenterline0"),
-                new HolonomicTrajectory("unethical_centerline0ToCenterline1"),
-                0,
-                0)));
+        poopThenScoreCenterlines(
+            new HolonomicTrajectory("unethical_grabCenterline0"),
+            new HolonomicTrajectory("unethical_centerline0ToCenterline1"),
+            0,
+            0));
     centerlineChoices.put(
         AutoQuestionResponse.SOURCE_MIDDLE,
-        Commands.sequence(
-            scoreCenterlines(
-                new HolonomicTrajectory("unethical_grabCenterline1"),
-                new HolonomicTrajectory("unethical_centerline1ToCenterline0"),
-                0,
-                0)));
+        poopThenScoreCenterlines(
+            new HolonomicTrajectory("unethical_grabCenterline1"),
+            new HolonomicTrajectory("unethical_centerline1ToCenterline0"),
+            0,
+            0));
+
+    ScheduleCommand endCoast =
+        new ScheduleCommand(
+            Commands.sequence(
+                    Commands.waitUntil(
+                        () ->
+                            AllianceFlipUtil.apply(
+                                    RobotState.getInstance().getEstimatedPose().getX())
+                                >= brakeThreshold),
+                    Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_BRAKE)))
+                .raceWith(
+                    Commands.sequence(
+                        Commands.waitUntil(DriverStation::isDisabled), Commands.waitSeconds(3)))
+                .ignoringDisable(true));
 
     return Commands.sequence(
         resetPose(DriveTrajectories.startingDriverStation),
         Commands.runOnce(autoTimer::restart),
-        flywheels
-            .poopCommand()
-            .alongWith(Commands.waitUntil(flywheels::atGoal).andThen(feed(rollers)))
-            .withTimeout(ejectDelay),
+        Commands.runOnce(autoTimer::restart),
         Commands.select(centerlineChoices, () -> responses.get().get(0)),
-        Commands.waitUntil(() -> autoTimer.get() >= 15.3 - sourceDelay),
+        followTrajectory(drive, grabEjected)
+            .deadlineWith(intake(superstructure, rollers))
+            .andThen(feed(rollers)),
+        Commands.waitUntil(() -> autoTimer.get() >= 15.3 - sourcePathDelay),
+        Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_COAST)),
+        endCoast,
         followTrajectory(drive, driveToSource));
   }
 }

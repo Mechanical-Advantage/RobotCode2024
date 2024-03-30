@@ -144,6 +144,11 @@ public class FieldConstants {
         center.getTranslation().getDistance(centerPodiumAmpChain.getTranslation());
   }
 
+  public static final class Amp {
+    public static final Translation2d ampTapeTopCorner =
+        new Translation2d(Units.inchesToMeters(130.0), Units.inchesToMeters(305.256));
+  }
+
   public static final double aprilTagWidth = Units.inchesToMeters(6.50);
   public static final AprilTagLayoutType defaultAprilTagType = AprilTagLayoutType.OFFICIAL;
 
@@ -154,7 +159,7 @@ public class FieldConstants {
     AMPS_ONLY("2024-amps"),
     WPI("2024-wpi");
 
-    private AprilTagLayoutType(String name) {
+    AprilTagLayoutType(String name) {
       if (Constants.disableHAL) {
         layout = null;
       } else {
@@ -173,7 +178,7 @@ public class FieldConstants {
           layoutString = new ObjectMapper().writeValueAsString(layout);
         } catch (JsonProcessingException e) {
           throw new RuntimeException(
-              "Failed to serialize AprilTag layout JSON " + toString() + "for Northstar");
+              "Failed to serialize AprilTag layout JSON " + this + "for Northstar");
         }
       }
     }

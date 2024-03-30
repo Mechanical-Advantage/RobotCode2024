@@ -601,4 +601,22 @@ public class AutoBuilder {
                         // Run flywheels
                         .deadlineWith(flywheels.shootCommand())));
   }
+
+  public Command davisSpeedyAuto() {
+    var grabCenterline4 = new HolonomicTrajectory("ampToCenterline4");
+    var grabCenterline3 = new HolonomicTrajectory("centerline4ToCenterline3");
+    var grabCenterline2 = new HolonomicTrajectory("centerline3ToCenterline2");
+    var grabCenterline1 = new HolonomicTrajectory("centerline2ToCenterline1");
+    var grabEjected = new HolonomicTrajectory("centerline2ToEjectedNote");
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.sequence(
+                resetPose(DriveTrajectories.startingLineAmp),
+                followTrajectory(drive, grabCenterline4),
+                followTrajectory(drive, grabCenterline3),
+                followTrajectory(drive, grabCenterline2),
+                followTrajectory(drive, grabEjected)));
+  }
 }

@@ -375,6 +375,9 @@ public class RobotContainer {
     autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
     autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
 
+    // Speedy auto
+    autoChooser.addOption("Speedy Auto", autoBuilder.davisSpeedyAuto());
+
     // Set up feedforward characterization
     autoChooser.addOption(
         "Drive Static Characterization",

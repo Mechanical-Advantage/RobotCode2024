@@ -352,6 +352,56 @@ public class DriveTrajectories {
 
   // Davis Ethical Auto (named "ethical_XXX")
   static {
+    Translation2d podiumRightAvoidance =
+        Stage.podiumLeg.getTranslation().plus(new Translation2d(0.5, -2.0));
+
+    paths.put(
+        "ethical_grabCenterline0",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(getShootingPose(startingSource.getTranslation()))
+                .addTranslationWaypoint(podiumRightAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[0],
+                            Rotation2d.fromDegrees(170.0))
+                        .transformBy(new Translation2d(0.25, -0.07).toTransform2d()))
+                .addTranslationWaypoint(stageRightAvoidance)
+                .addPoseWaypoint(stageRightShootingPose)
+                .build()));
+    paths.put(
+        "ethical_grabCenterline1",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageRightShootingPose)
+                .addTranslationWaypoint(stageRightAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(-160.0))
+                        .transformBy(new Translation2d(0.15, -0.05).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(160.0))
+                        .transformBy(new Translation2d(0.15, -0.05).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+    paths.put(
+        "ethical_grabCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageCenterShootingPose)
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(180.0))
+                        .transformBy(new Translation2d(0.3, -0.05).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
   }
 
   // Davis Unethical Auto (named "unethical_XXX")

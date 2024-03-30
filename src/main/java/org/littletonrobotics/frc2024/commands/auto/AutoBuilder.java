@@ -102,7 +102,7 @@ public class AutoBuilder {
                                                     + shootTimeoutSecs.get()))
                                     .deadlineWith(aim(drive))),
 
-                        // Aim second shot if trajectory doesn't end there
+                        // Aim second shot if scoring three spikes
                         Commands.waitUntil(() -> autoTimer.hasElapsed(finalSecondIntakeTime))
                             .andThen(
                                 Commands.waitUntil(
@@ -183,30 +183,27 @@ public class AutoBuilder {
                 .alongWith(
                     // Superstructure and rollers sequence
                     Commands.sequence(
-                        // Intake centerline 1
-                        waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                            .andThen(
-                                waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                    .deadlineWith(intake(superstructure, rollers))),
-
-                        // Shoot centerline 1
-                        Commands.waitUntil(
+                        // Intake and shoot centerline 1
+                        waitUntilXCrossed(FieldConstants.wingX, true)
+                            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         spikeToCenterline1.getDuration()
                                             - shootTimeoutSecs.get() / 2.0))
                             .andThen(feed(rollers))
                             .deadlineWith(
-                                superstructure.aimWithCompensation(firstShotCompensation)),
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                spikeToCenterline1.getDuration() - 1.5))
+                                    .andThen(
+                                        superstructure.aimWithCompensation(firstShotCompensation))),
 
-                        // Intake centerline 2
-                        waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                            .andThen(
-                                waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                    .deadlineWith(intake(superstructure, rollers))),
-
-                        // Shoot centerline 2
-                        Commands.waitUntil(
+                        // Intake and shoot centerline 1
+                        waitUntilXCrossed(FieldConstants.wingX, true)
+                            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            .until(
                                 () ->
                                     autoTimer.hasElapsed(
                                         spikeToCenterline1.getDuration()
@@ -214,7 +211,15 @@ public class AutoBuilder {
                                             - shootTimeoutSecs.get() / 2.0))
                             .andThen(feed(rollers))
                             .deadlineWith(
-                                superstructure.aimWithCompensation(secondShotCompensation))))
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                spikeToCenterline1.getDuration()
+                                                    + shotToCenterline2.getDuration()
+                                                    - 1.5))
+                                    .andThen(
+                                        superstructure.aimWithCompensation(
+                                            secondShotCompensation)))))
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
   }

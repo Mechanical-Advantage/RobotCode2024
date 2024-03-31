@@ -123,6 +123,8 @@ public class Arm {
   private BooleanSupplier coastSupplier = () -> false;
   private boolean brakeModeEnabled = true;
 
+  private boolean wasNotAuto = false;
+
   public Arm(ArmIO io) {
     this.io = io;
     io.setBrakeMode(true);
@@ -167,12 +169,19 @@ public class Arm {
         kA);
 
     // Check if disabled
-    if (disableSupplier.getAsBoolean() || goal == Goal.STOP) {
+    // Also run first cycle of auto to reset arm
+    if (disableSupplier.getAsBoolean()
+        || goal == Goal.STOP
+        || (Constants.getMode() == Constants.Mode.SIM
+            && DriverStation.isAutonomousEnabled()
+            && wasNotAuto)) {
       io.stop();
       // Reset profile when disabled
       setpointState = new TrapezoidProfile.State(inputs.positionRads, 0);
     }
     Leds.getInstance().armEstopped = disableSupplier.getAsBoolean() && DriverStation.isEnabled();
+    // Track autonomous enabled
+    wasNotAuto = !DriverStation.isAutonomousEnabled();
 
     // Set coast mode with override
     setBrakeMode(!coastSupplier.getAsBoolean());

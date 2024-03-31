@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
-import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.RobotState;
@@ -51,7 +51,7 @@ public class Drive extends SubsystemBase {
   private static final LoggedTunableNumber coastMetersPerSecThreshold =
       new LoggedTunableNumber("Drive/CoastMetersPerSecThreshold", 0.05);
 
-  public enum DriveMode {
+  public static enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
     TELEOP,
 
@@ -66,6 +66,12 @@ public class Drive extends SubsystemBase {
 
     /** Running wheel radius characterization routine (spinning in circle) */
     WHEEL_RADIUS_CHARACTERIZATION
+  }
+
+  public static enum CoastRequest {
+    AUTOMATIC,
+    ALWAYS_BRAKE,
+    ALWAYS_COAST
   }
 
   @AutoLog
@@ -93,9 +99,14 @@ public class Drive extends SubsystemBase {
   private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
-  @Getter
   @AutoLogOutput(key = "Drive/BrakeModeEnabled")
   private boolean brakeModeEnabled = true;
+
+  @Setter
+  @AutoLogOutput(key = "Drive/CoastRequest")
+  private CoastRequest coastRequest = CoastRequest.AUTOMATIC;
+
+  private boolean lastEnabled = false;
 
   private ChassisSpeeds desiredSpeeds = new ChassisSpeeds();
 
@@ -122,6 +133,7 @@ public class Drive extends SubsystemBase {
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
     lastMovementTimer.start();
+    setBrakeMode(true);
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -220,6 +232,26 @@ public class Drive extends SubsystemBase {
         .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
       lastMovementTimer.reset();
     }
+    if (DriverStation.isEnabled() && !lastEnabled) {
+      coastRequest = CoastRequest.AUTOMATIC;
+    }
+
+    lastEnabled = DriverStation.isEnabled();
+    switch (coastRequest) {
+      case AUTOMATIC -> {
+        if (DriverStation.isEnabled()) {
+          setBrakeMode(true);
+        } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
+          setBrakeMode(false);
+        }
+      }
+      case ALWAYS_BRAKE -> {
+        setBrakeMode(true);
+      }
+      case ALWAYS_COAST -> {
+        setBrakeMode(false);
+      }
+    }
 
     // Run drive based on current mode
     ChassisSpeeds teleopSpeeds = teleopDriveController.update();
@@ -254,16 +286,16 @@ public class Drive extends SubsystemBase {
       default -> {}
     }
 
-    // Run robot at desiredSpeeds
-    // Generate feasible next setpoint
-    currentSetpoint =
-        setpointGenerator.generateSetpoint(
-            currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
-
-    // run modules
+    // Run modules
     if (currentDriveMode != DriveMode.CHARACTERIZATION && !modulesOrienting) {
+      // Run robot at desiredSpeeds
+      // Generate feasible next setpoint
+      currentSetpoint =
+          setpointGenerator.generateSetpoint(
+              currentModuleLimits, currentSetpoint, desiredSpeeds, Constants.loopPeriodSecs);
       SwerveModuleState[] optimizedSetpointStates = new SwerveModuleState[4];
       SwerveModuleState[] optimizedSetpointTorques = new SwerveModuleState[4];
+
       for (int i = 0; i < modules.length; i++) {
         // Optimize setpoints
         optimizedSetpointStates[i] =
@@ -401,6 +433,14 @@ public class Drive extends SubsystemBase {
     return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();
   }
 
+  /** Set brake mode to {@code enabled} doesn't change brake mode if already set. */
+  private void setBrakeMode(boolean enabled) {
+    if (brakeModeEnabled != enabled) {
+      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
+    }
+    brakeModeEnabled = enabled;
+  }
+
   /**
    * Returns command that orients all modules to {@code orientation}, ending when the modules have
    * rotated.
@@ -415,11 +455,14 @@ public class Drive extends SubsystemBase {
    */
   public Command orientModules(Rotation2d[] orientations) {
     return run(() -> {
+          SwerveModuleState[] states = new SwerveModuleState[4];
           for (int i = 0; i < orientations.length; i++) {
             modules[i].runSetpoint(
                 new SwerveModuleState(0.0, orientations[i]),
                 new SwerveModuleState(0.0, new Rotation2d()));
+            states[i] = new SwerveModuleState(0.0, modules[i].getAngle());
           }
+          currentSetpoint = new SwerveSetpoint(new ChassisSpeeds(), states);
         })
         .until(
             () ->

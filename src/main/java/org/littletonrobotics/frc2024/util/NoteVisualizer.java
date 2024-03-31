@@ -35,7 +35,7 @@ public class NoteVisualizer {
   /** Show all staged notes for alliance */
   public static void showAutoNotes() {
     if (autoNotes.isEmpty()) {
-      Logger.recordOutput("NoteVisualizer/StagedNotes");
+      Logger.recordOutput("NoteVisualizer/StagedNotes", new Pose3d[] {});
     }
     // Show auto notes
     Stream<Translation2d> presentNotes = autoNotes.stream().filter(Objects::nonNull);
@@ -85,7 +85,7 @@ public class NoteVisualizer {
     if (hasNote) {
       Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {getIndexerPose3d()});
     } else {
-      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d());
+      Logger.recordOutput("NoteVisualizer/HeldNotes", new Pose3d[] {});
     }
   }
 
@@ -113,7 +113,8 @@ public class NoteVisualizer {
                                     startPose.interpolate(endPose, timer.get() / duration)
                                   }))
                       .until(() -> timer.hasElapsed(duration))
-                      .finallyDo(() -> Logger.recordOutput("NoteVisualizer/ShotNotes"));
+                      .finallyDo(
+                          () -> Logger.recordOutput("NoteVisualizer/ShotNotes", new Pose3d[] {}));
                 },
                 Set.of())
             .ignoringDisable(true));
@@ -142,7 +143,8 @@ public class NoteVisualizer {
                                     startPose.interpolate(endPose, timer.get() / duration)
                                   }))
                       .until(() -> timer.hasElapsed(duration))
-                      .finallyDo(() -> Logger.recordOutput("NoteVisualizer/EjectNotes"));
+                      .finallyDo(
+                          () -> Logger.recordOutput("NoteVisualizer/EjectNotes", new Pose3d[] {}));
                 },
                 Set.of())
             .ignoringDisable(true));

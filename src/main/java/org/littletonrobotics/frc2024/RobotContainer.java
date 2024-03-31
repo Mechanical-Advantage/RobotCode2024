@@ -447,14 +447,15 @@ public class RobotContainer {
                         drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
-    Trigger inWing =
+    Trigger superPoop =
         new Trigger(
-            () ->
-                AllianceFlipUtil.apply(robotState.getEstimatedPose().getX())
-                    < FieldConstants.wingX);
+                () ->
+                    AllianceFlipUtil.apply(robotState.getEstimatedPose().getX())
+                        < FieldConstants.wingX)
+            .and(shootAlignDisable.negate());
     driver
         .a()
-        .and(inWing)
+        .and(superPoop.negate())
         .whileTrue(
             driveAimCommand
                 .get()
@@ -466,8 +467,7 @@ public class RobotContainer {
             .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
-        .and(inWing.negate())
-        .and(shootAlignDisable.negate())
+        .and(superPoop)
         .whileTrue(
             Commands.startEnd(
                     () ->
@@ -487,8 +487,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(inWing)
-        .or(shootAlignDisable)
+        .and(superPoop.negate())
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -500,8 +499,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(inWing.negate())
-        .and(shootAlignDisable.negate())
+        .and(superPoop)
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(

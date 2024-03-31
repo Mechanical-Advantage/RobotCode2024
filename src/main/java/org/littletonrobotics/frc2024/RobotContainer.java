@@ -113,6 +113,8 @@ public class RobotContainer {
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
+  private final Alert ridiculousAutoAlert =
+      new Alert("The selected auto is ridiculous! 😡", AlertType.WARNING);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
@@ -390,8 +392,6 @@ public class RobotContainer {
                 "End behavior?",
                 List.of(AutoQuestionResponse.SCORE_POOPED, AutoQuestionResponse.FOURTH_CENTER))),
         autoBuilder.davisSpeedyAuto());
-    autoSelector.addRoutine(
-        "Davis Alternative Speedy Auto", autoBuilder.davisAlternativeSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(
         "Davis Unethical Auto",
@@ -815,14 +815,20 @@ public class RobotContainer {
     SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
   }
 
-  /** Updates the AprilTag alert. */
-  public void updateAprilTagAlert() {
-    boolean active = getAprilTagLayoutType() != AprilTagLayoutType.OFFICIAL;
-    aprilTagLayoutAlert.set(active);
-    if (active) {
+  /** Updates the alerts. */
+  public void updateAlerts() {
+    // AprilTag layout alert
+    boolean aprilTagAlertActive = getAprilTagLayoutType() != AprilTagLayoutType.OFFICIAL;
+    aprilTagLayoutAlert.set(aprilTagAlertActive);
+    if (aprilTagAlertActive) {
       aprilTagLayoutAlert.setText(
           "Non-official AprilTag layout in use (" + getAprilTagLayoutType().toString() + ").");
     }
+
+    // Ridiculous auto alert
+    ridiculousAutoAlert.set(
+        autoSelector.getSelectedName().equals("Davis Spiky Auto")
+            && autoSelector.getResponses().get(2) == autoSelector.getResponses().get(3));
   }
 
   /**

@@ -164,14 +164,17 @@ public class AutoBuilder {
                 .ignoringDisable(true));
 
     return Commands.sequence(
-        resetPose(DriveTrajectories.startingDriverStation),
-        Commands.runOnce(autoTimer::restart),
+        resetPose(DriveTrajectories.startingFarSource),
         Commands.runOnce(autoTimer::restart),
         Commands.select(centerlineChoices, () -> responses.get().get(0)),
         followTrajectory(drive, grabEjected)
-            .deadlineWith(intake(superstructure, rollers))
-            .andThen(feed(rollers)),
-        Commands.waitUntil(() -> autoTimer.get() >= 15.3 - sourcePathDelay),
+            .deadlineWith(
+                intake(superstructure, rollers)
+                    .withTimeout(grabEjected.getDuration() - 0.75)
+                    .andThen(superstructure.setGoalCommand(Superstructure.Goal.AIM))),
+        feed(rollers)
+            .deadlineWith(aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+        // Commands.waitUntil(() -> autoTimer.get() >= 15.3 - sourcePathDelay),
         Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_COAST)),
         endCoast,
         followTrajectory(drive, driveToSource));

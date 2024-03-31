@@ -34,7 +34,6 @@ public class FieldConstants {
   public static final double wingX = Units.inchesToMeters(229.201);
   public static final double podiumX = Units.inchesToMeters(126.75);
   public static final double startingLineX = Units.inchesToMeters(74.111);
-  public static final double driverStationY = Units.inchesToMeters(115.415);
 
   public static final Translation2d ampCenter =
       new Translation2d(Units.inchesToMeters(72.455), fieldWidth);

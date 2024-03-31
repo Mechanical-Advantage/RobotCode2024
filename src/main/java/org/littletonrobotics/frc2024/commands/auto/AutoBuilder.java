@@ -463,8 +463,7 @@ public class AutoBuilder {
                                 .andThen(feed(rollers))
                                 .deadlineWith(
                                     aim(drive),
-                                    superstructure
-                                        .setGoalCommand(Superstructure.Goal.AIM)))
+                                    superstructure.setGoalCommand(Superstructure.Goal.AIM)))
                         .alongWith(flywheels.shootCommand())));
   }
 

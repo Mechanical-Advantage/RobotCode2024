@@ -19,6 +19,7 @@ import lombok.Setter;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.RobotState;
+import org.littletonrobotics.frc2024.commands.auto.AutoCommands;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
@@ -225,7 +226,9 @@ public class Rollers extends SubsystemBase {
           closest = i;
         }
       }
-      if (AllianceFlipUtil.apply(autoNotes[closest]).getDistance(robot) <= intakeNoteProximity) {
+      if (AllianceFlipUtil.apply(autoNotes[closest]).getDistance(robot) <= intakeNoteProximity
+          && !NoteVisualizer.isHasNote()
+          && intake.getGoal() == Intake.Goal.FLOOR_INTAKING) {
         NoteVisualizer.intakeAutoNote(closest);
       }
     }
@@ -233,10 +236,14 @@ public class Rollers extends SubsystemBase {
 
   public Command setGoalCommand(Goal goal) {
     return startEnd(() -> this.goal = goal, () -> this.goal = Goal.IDLE)
-        .alongWith(
-            Commands.waitSeconds(0.15)
+        .deadlineWith(
+            Commands.waitUntil(
+                    () -> NoteVisualizer.isHasNote() || !DriverStation.isAutonomousEnabled())
                 .andThen(
-                    NoteVisualizer.shoot().onlyIf(() -> feeder.getGoal() == Feeder.Goal.SHOOTING)))
+                    Commands.waitSeconds(AutoCommands.shootTimeoutSecs.get() / 2.0),
+                    NoteVisualizer.shoot())
+                .repeatedly()
+                .onlyIf(() -> goal == Goal.FEED_TO_SHOOTER || goal == Goal.QUICK_INTAKE_TO_FEED))
         .withName("Rollers " + goal);
   }
 

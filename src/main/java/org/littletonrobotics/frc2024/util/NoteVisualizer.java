@@ -19,6 +19,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
@@ -30,7 +31,7 @@ public class NoteVisualizer {
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
   @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
   private static final List<Translation2d> autoNotes = new ArrayList<>();
-  @Setter private static boolean hasNote = false;
+  @Setter @Getter private static boolean hasNote = false;
 
   /** Show all staged notes for alliance */
   public static void showAutoNotes() {

@@ -467,6 +467,7 @@ public class RobotContainer {
     driver
         .a()
         .and(inWing.negate())
+        .and(shootAlignDisable.negate())
         .whileTrue(
             Commands.startEnd(
                     () ->
@@ -487,6 +488,7 @@ public class RobotContainer {
         .rightTrigger()
         .and(driver.a())
         .and(inWing)
+        .or(shootAlignDisable)
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -499,6 +501,7 @@ public class RobotContainer {
         .rightTrigger()
         .and(driver.a())
         .and(inWing.negate())
+        .and(shootAlignDisable.negate())
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(

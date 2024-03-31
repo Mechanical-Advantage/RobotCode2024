@@ -21,7 +21,7 @@ public class ArmConstants {
   public static final Rotation2d minAngle =
       switch (Constants.getRobot()) {
         default -> Rotation2d.fromDegrees(6.85); // Measured from hardstop 3/12/24
-        case DEVBOT -> Rotation2d.fromDegrees(10.0);
+        case DEVBOT -> Rotation2d.fromDegrees(11);
       };
   public static final Rotation2d maxAngle = Rotation2d.fromDegrees(110.0);
 
@@ -61,7 +61,7 @@ public class ArmConstants {
         default ->
             1.1980389953386859 + .006; // 1.0753205323078345 rad as measured at hardstop on 3/12/24,
           // corresponding to an arm position of 0.11965050145508001 rad
-        case DEVBOT -> -1.233 - Math.PI / 2.0;
+        case DEVBOT -> 1.277 + Math.PI / 2.0;
       };
 
   public static final double armLength =
@@ -73,7 +73,7 @@ public class ArmConstants {
   public static final Gains gains =
       switch (Constants.getRobot()) {
         case SIMBOT -> new Gains(90.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-        case DEVBOT -> new Gains(75.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0);
+        case DEVBOT -> new Gains(6000.0, 0.0, 250.0, 8.4, 0.0, 0.0, 22.9);
         case COMPBOT -> new Gains(6000.0, 0.0, 250.0, 8.4, 0.0, 0.0, 22.9);
       };
 

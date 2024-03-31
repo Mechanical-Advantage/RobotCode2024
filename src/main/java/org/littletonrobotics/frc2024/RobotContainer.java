@@ -193,7 +193,7 @@ public class RobotContainer {
           flywheels = new Flywheels(new FlywheelsIOSparkFlex());
           feeder = new Feeder(new FeederIOKrakenFOC());
           indexer = new Indexer(new IndexerIODevbot());
-          intake = new Intake(new IntakeIOSparkFlex());
+          intake = new Intake(new IntakeIOSpark());
           backpack = new Backpack(new BackpackIOSparkFlex());
           rollersSensorsIO = new RollersSensorsIODevbot();
           arm = new Arm(new ArmIOKrakenFOC());

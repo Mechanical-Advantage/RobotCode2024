@@ -18,7 +18,12 @@ public abstract class GenericRollerSystemIOSpark implements GenericRollerSystemI
   private final double reduction;
 
   public GenericRollerSystemIOSpark(
-      int id, int currentLimitAmps, boolean invert, boolean brake, double reduction, boolean isFlex) {
+      int id,
+      int currentLimitAmps,
+      boolean invert,
+      boolean brake,
+      double reduction,
+      boolean isFlex) {
     this.reduction = reduction;
 
     if (isFlex) {

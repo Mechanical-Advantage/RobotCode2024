@@ -381,7 +381,6 @@ public class AutoBuilder {
   }
 
   public Command davisSpeedyAuto() {
-
     var grabCenterline4 = new HolonomicTrajectory("speedy_ampToCenterline4");
     var grabCenterline3 = new HolonomicTrajectory("speedy_centerline4ToCenterline3");
     var grabCenterline2 = new HolonomicTrajectory("speedy_centerline3ToCenterline2");
@@ -400,7 +399,7 @@ public class AutoBuilder {
                     Commands.sequence(
                             Commands.waitSeconds(1),
                             feed(rollers),
-                            // grab and score centerline 4
+                            // Grab and score centerline 4
                             waitUntilXCrossed(FieldConstants.wingX, true)
                                 .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
                                 .until(
@@ -416,7 +415,7 @@ public class AutoBuilder {
                                                     grabCenterline4.getDuration() - 1.5))
                                         .andThen(superstructure.aimWithCompensation(0.0))),
 
-                            // grab and score centerline 3
+                            // Grab and score centerline 3
                             waitUntilXCrossed(FieldConstants.wingX, true)
                                 .andThen(
                                     rollers
@@ -437,7 +436,7 @@ public class AutoBuilder {
                                                                 - 1.5))
                                                 .andThen(superstructure.aimWithCompensation(0.0)))),
 
-                            // grab and score centerline 2
+                            // Grab and score centerline 2
                             waitUntilXCrossed(FieldConstants.wingX, true)
                                 .andThen(
                                     rollers
@@ -453,14 +452,17 @@ public class AutoBuilder {
                                         .deadlineWith(
                                             waitUntilXCrossed(stageAimX, false)
                                                 .andThen(superstructure.aimWithCompensation(0.0)))),
-                            // grab and score ejected note
+                            // Grab ejected note
                             superstructure
                                 .setGoalCommand(Superstructure.Goal.INTAKE)
                                 .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                                .withTimeout(grabEjected.getDuration())
-                                .andThen(aim(drive).withTimeout(.5)),
-                            feed(rollers)
+                                .withTimeout(grabEjected.getDuration()),
+
+                            // Score ejected note
+                            Commands.waitSeconds(0.5)
+                                .andThen(feed(rollers))
                                 .deadlineWith(
+                                    aim(drive),
                                     superstructure
                                         .setGoalCommand(Superstructure.Goal.AIM)
                                         .withTimeout(aimDelay)))

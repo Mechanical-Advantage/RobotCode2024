@@ -363,14 +363,20 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingAmpWall)
                 .addTranslationWaypoint(
-                    new Translation2d(Stage.ampLeg.getX(), startingAmpWall.getY()), 250)
+                    new Translation2d(Stage.ampLeg.getX() - 1.5, startingAmpWall.getY()))
+                .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),
             PathSegment.newBuilder()
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[4],
-                            new Rotation2d(Math.PI))
+                            Rotation2d.fromDegrees(-175.0))
+                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-175.0))
                         .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));

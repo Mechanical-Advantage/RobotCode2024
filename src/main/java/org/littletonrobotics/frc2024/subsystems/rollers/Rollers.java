@@ -214,7 +214,7 @@ public class Rollers extends SubsystemBase {
 
     Leds.getInstance().hasNote = gamepieceState != GamepieceState.NONE;
     Leds.getInstance().intaking = goal == Goal.FLOOR_INTAKE || goal == Goal.STATION_INTAKE;
-    if (Constants.getMode() == Constants.Mode.REAL) {
+    if (Constants.getMode() != Constants.Mode.SIM) {
       NoteVisualizer.setHasNote(gamepieceState != GamepieceState.NONE);
     }
     if (DriverStation.isAutonomousEnabled()) {

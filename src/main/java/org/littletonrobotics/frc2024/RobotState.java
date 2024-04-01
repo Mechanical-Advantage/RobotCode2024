@@ -49,7 +49,6 @@ public class RobotState {
       new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
-  @Setter private boolean useAutoLookahead = false;
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;
@@ -210,10 +209,8 @@ public class RobotState {
             .plus(FudgeFactors.speaker.getTransform());
     Pose2d fieldToPredictedVehicle;
     if (DriverStation.isAutonomousEnabled()) {
-      fieldToPredictedVehicle =
-          useAutoLookahead
-              ? getPredictedPose(autoLookahead.get(), autoLookahead.get())
-              : getEstimatedPose();
+      fieldToPredictedVehicle = getPredictedPose(autoLookahead.get(), autoLookahead.get());
+
     } else {
       fieldToPredictedVehicle =
           lookaheadDisable.getAsBoolean()

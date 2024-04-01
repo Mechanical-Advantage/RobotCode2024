@@ -19,7 +19,6 @@ import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.FieldConstants;
-import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
@@ -37,7 +36,7 @@ public class AutoBuilder {
 
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
-  private static final double spikeFeedThroughDelay = 0.35;
+  private static final double spikeFeedThroughDelay = 0.45;
   private static final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
 
   /** All shot compensation values used when shooting corresponding centerline note. */
@@ -164,9 +163,7 @@ public class AutoBuilder {
                         () -> scoresThree)))
 
         // Always aim and run flywheels
-        .deadlineWith(superstructure.aimWithCompensation(0.0), flywheels.shootCommand())
-        .beforeStarting(() -> RobotState.getInstance().setUseAutoLookahead(true))
-        .finallyDo(() -> RobotState.getInstance().setUseAutoLookahead(false));
+        .deadlineWith(superstructure.aimWithCompensation(0.0), flywheels.shootCommand());
   }
 
   /** Scores two centerline notes with the given trajectories. */

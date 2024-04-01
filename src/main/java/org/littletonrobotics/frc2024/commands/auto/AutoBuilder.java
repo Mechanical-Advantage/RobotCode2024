@@ -224,7 +224,8 @@ public class AutoBuilder {
   }
 
   /** Returns ending spike index given starting location and whether scoring three spikes or not. */
-  private static int spiky_calculateFinalSpikeIndex(AutoQuestionResponse startingLocation, boolean scoresThree) {
+  private static int spiky_calculateFinalSpikeIndex(
+      AutoQuestionResponse startingLocation, boolean scoresThree) {
     if (scoresThree) {
       if (startingLocation.equals(AutoQuestionResponse.AMP)) {
         return 0;

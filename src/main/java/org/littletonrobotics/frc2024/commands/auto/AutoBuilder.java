@@ -49,7 +49,7 @@ public class AutoBuilder {
           4, 0.0);
 
   /** Command that scores preload. Times out with preloadDelay. */
-  private Command scorePreload() {
+  private Command spiky_scorePreload() {
     return
     // Aim robot at speaker
     aim(drive)
@@ -65,7 +65,7 @@ public class AutoBuilder {
   }
 
   /** Scores 2 or 3 spike notes. */
-  private Command scoreSpikes(AutoQuestionResponse startingLocation, boolean scoresThree) {
+  private Command spiky_scoreSpikes(AutoQuestionResponse startingLocation, boolean scoresThree) {
     HolonomicTrajectory trajectory =
         new HolonomicTrajectory(
             "spiky_" + startingLocation.toString().toLowerCase() + "Start" + (scoresThree ? 3 : 2));
@@ -167,7 +167,7 @@ public class AutoBuilder {
   }
 
   /** Scores two centerline notes with the given trajectories. */
-  private Command scoreCenterlines(
+  private Command spiky_scoreCenterlines(
       HolonomicTrajectory spikeToCenterline1,
       HolonomicTrajectory shotToCenterline2,
       double firstShotCompensation,
@@ -224,7 +224,7 @@ public class AutoBuilder {
   }
 
   /** Returns ending spike index given starting location and whether scoring three spikes or not. */
-  private int calculateFinalSpikeIndex(AutoQuestionResponse startingLocation, boolean scoresThree) {
+  private static int spiky_calculateFinalSpikeIndex(AutoQuestionResponse startingLocation, boolean scoresThree) {
     if (scoresThree) {
       if (startingLocation.equals(AutoQuestionResponse.AMP)) {
         return 0;
@@ -241,7 +241,7 @@ public class AutoBuilder {
   }
 
   /** Returns centerline index given centerline note response. */
-  private int calculateCenterlineIndex(AutoQuestionResponse centerlineNote) {
+  private static int spiky_calculateCenterlineIndex(AutoQuestionResponse centerlineNote) {
     return switch (centerlineNote) {
       case AMP_WALL -> 4;
       case AMP_MIDDLE -> 3;
@@ -265,19 +265,19 @@ public class AutoBuilder {
       spikeChoices.put(
           startingLocation,
           Commands.either(
-              scoreSpikes(startingLocation, true),
-              scoreSpikes(startingLocation, false),
+              spiky_scoreSpikes(startingLocation, true),
+              spiky_scoreSpikes(startingLocation, false),
               () -> responses.get().get(1).equals(AutoQuestionResponse.THREE)));
     }
 
     // Set up centerline choices
     Map<AutoQuestionResponse, Command> centerlinesChoices = new HashMap<>();
     for (var centerline2 : centerlineOptions) {
-      int centerline2Index = calculateCenterlineIndex(centerline2);
+      int centerline2Index = spiky_calculateCenterlineIndex(centerline2);
       Map<AutoQuestionResponse, Command> centerline1Choices = new HashMap<>();
 
       for (var centerline1 : centerlineOptions) {
-        int centerline1Index = calculateCenterlineIndex(centerline1);
+        int centerline1Index = spiky_calculateCenterlineIndex(centerline1);
         Map<AutoQuestionResponse, Command> startingLocationChoices = new HashMap<>();
 
         // Add scoreCenterlines command for each centerline 1 choice and centerline 2 choice
@@ -286,13 +286,13 @@ public class AutoBuilder {
           HolonomicTrajectory spike3ToCenterline1 =
               new HolonomicTrajectory(
                   "spiky_spike"
-                      + calculateFinalSpikeIndex(startingLocation, true)
+                      + spiky_calculateFinalSpikeIndex(startingLocation, true)
                       + "ToCenterline"
                       + centerline1Index);
           HolonomicTrajectory spike2ToCenterline1 =
               new HolonomicTrajectory(
                   "spiky_spike"
-                      + calculateFinalSpikeIndex(startingLocation, false)
+                      + spiky_calculateFinalSpikeIndex(startingLocation, false)
                       + "ToCenterline"
                       + centerline1Index);
           HolonomicTrajectory shotToCenterline2 =
@@ -303,12 +303,12 @@ public class AutoBuilder {
           startingLocationChoices.put(
               startingLocation,
               Commands.either(
-                  scoreCenterlines(
+                  spiky_scoreCenterlines(
                       spike3ToCenterline1,
                       shotToCenterline2,
                       centerlineShotCompensations.get(centerline1Index),
                       centerlineShotCompensations.get(centerline2Index)),
-                  scoreCenterlines(
+                  spiky_scoreCenterlines(
                       spike2ToCenterline1,
                       shotToCenterline2,
                       centerlineShotCompensations.get(centerline1Index),
@@ -341,7 +341,7 @@ public class AutoBuilder {
                 AutoQuestionResponse.AMP,
                 resetPose(DriveTrajectories.startingAmp)),
             () -> responses.get().get(0)),
-        scorePreload(),
+        spiky_scorePreload(),
         Commands.runOnce(() -> System.out.println("Preload at: " + autoTimer.get())),
 
         // Score spike notes
@@ -362,8 +362,8 @@ public class AutoBuilder {
                     4,
                     followTrajectory(drive, new HolonomicTrajectory("spiky_shotToCenterline4"))),
                 () -> {
-                  int centerline1 = calculateCenterlineIndex(responses.get().get(2));
-                  int centerline2 = calculateCenterlineIndex(responses.get().get(3));
+                  int centerline1 = spiky_calculateCenterlineIndex(responses.get().get(2));
+                  int centerline2 = spiky_calculateCenterlineIndex(responses.get().get(3));
                   int missingCenterline = validCenterlineIndices[0];
                   for (int i = 0; i < 3; i++) {
                     if (missingCenterline != centerline1 && missingCenterline != centerline2) {

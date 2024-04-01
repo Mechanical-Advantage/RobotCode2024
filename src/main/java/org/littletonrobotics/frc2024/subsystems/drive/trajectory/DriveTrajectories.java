@@ -167,10 +167,10 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addWaypoints(getLastWaypoint("unethical_grabEjected"))
                 .addPoseWaypoint(
-                    new Pose2d(FieldConstants.wingX + 1.0, 1.5, Rotation2d.fromDegrees(180)))
+                    new Pose2d(FieldConstants.wingX + 0.75, 1.25, Rotation2d.fromDegrees(180)))
                 .build(),
             PathSegment.newBuilder()
-                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1))
+                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1.25))
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build()));

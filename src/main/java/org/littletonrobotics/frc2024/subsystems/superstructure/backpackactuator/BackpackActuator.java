@@ -19,7 +19,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 public class BackpackActuator extends GenericSlamElevator<BackpackActuator.Goal> {
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements SlamElevatorGoal {
+  public enum Goal implements GenericSlamElevator.SlamElevatorGoal {
     RETRACT(
         new LoggedTunableNumber("BackpackActuator/RetractingCurrent", -25.0),
         true,

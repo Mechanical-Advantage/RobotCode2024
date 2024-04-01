@@ -39,7 +39,6 @@ sourceSets {
     }
 }
 
-
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -69,6 +68,7 @@ deploy {
 
                 // Static files artifact
                 frcStaticFileDeploy(getArtifactTypeClass('FileTreeArtifact')) {
+                    predeploy << { execute 'rm -rf /home/lvuser/deploy' }
                     files = project.fileTree('src/main/deploy')
                     directory = '/home/lvuser/deploy'
                 }

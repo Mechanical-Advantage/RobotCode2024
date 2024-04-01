@@ -73,6 +73,11 @@ public class AutoSelector extends VirtualSubsystem {
     return lastRoutine.command();
   }
 
+  /** Returns the name of the selected routine. */
+  public String getSelectedName() {
+    return lastRoutine.name();
+  }
+
   /** Returns the selected question responses. */
   public List<AutoQuestionResponse> getResponses() {
     return lastResponses;

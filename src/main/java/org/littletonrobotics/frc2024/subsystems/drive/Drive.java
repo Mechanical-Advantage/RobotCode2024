@@ -12,6 +12,7 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -268,6 +269,9 @@ public class Drive extends SubsystemBase {
       case TRAJECTORY -> {
         // Run trajectory
         desiredSpeeds = trajectoryController.update();
+        if (headingController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = headingController.update();
+        }
       }
       case AUTO_ALIGN -> {
         // Run auto align with drive input
@@ -355,6 +359,7 @@ public class Drive extends SubsystemBase {
   public void clearTrajectory() {
     trajectoryController = null;
     currentDriveMode = DriveMode.TELEOP;
+    RobotState.getInstance().addTrajectoryVelocityData(new Twist2d());
   }
 
   /** Returns true if the robot is done with trajectory. */

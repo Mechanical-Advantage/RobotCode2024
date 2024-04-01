@@ -22,6 +22,7 @@ public class ArmIOKrakenFOC implements ArmIO {
   // Hardware
   private final TalonFX leaderTalon;
   private final TalonFX followerTalon;
+  private final CANcoder absoluteEncoder;
 
   // Status Signals
   private final StatusSignal<Double> internalPositionRotations;
@@ -47,7 +48,7 @@ public class ArmIOKrakenFOC implements ArmIO {
     leaderTalon = new TalonFX(ArmConstants.leaderID, "*");
     followerTalon = new TalonFX(ArmConstants.followerID, "*");
     followerTalon.setControl(new Follower(ArmConstants.leaderID, true));
-    CANcoder absoluteEncoder = new CANcoder(ArmConstants.armEncoderID, "*");
+    absoluteEncoder = new CANcoder(ArmConstants.armEncoderID, "*");
 
     // Arm Encoder Configs
     CANcoderConfiguration armEncoderConfig = new CANcoderConfiguration();
@@ -175,12 +176,6 @@ public class ArmIOKrakenFOC implements ArmIO {
     config.Slot0.kI = i;
     config.Slot0.kD = d;
     leaderTalon.getConfigurator().apply(config, 0.01);
-  }
-
-  @Override
-  public void setPosition(double positionRads) {
-    //    leaderTalon.setPosition(Units.radiansToRotations(positionRads * reduction), 0.2); TODO:
-    // Figure this out.
   }
 
   @Override

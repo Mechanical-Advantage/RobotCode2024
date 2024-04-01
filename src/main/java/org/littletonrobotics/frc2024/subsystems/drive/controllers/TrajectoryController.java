@@ -29,12 +29,13 @@ import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.TrajectoryGenerationHelpers;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
+import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleState;
 
-@ExtensionMethod({TrajectoryGenerationHelpers.class})
+@ExtensionMethod({TrajectoryGenerationHelpers.class, GeomUtil.class})
 public class TrajectoryController {
   private static final LoggedTunableNumber linearkP =
       new LoggedTunableNumber("Trajectory/linearkP", trajectoryConstants.linearkP());
@@ -89,6 +90,14 @@ public class TrajectoryController {
     // Sample and flip state
     VehicleState setpointState = AllianceFlipUtil.apply(trajectory.sample(sampletime));
     RobotState.getInstance().setTrajectorySetpoint(setpointState.getPose());
+    RobotState.getInstance()
+        .addTrajectoryVelocityData(
+            ChassisSpeeds.fromFieldRelativeSpeeds(
+                    setpointState.getVx(),
+                    setpointState.getVy(),
+                    setpointState.getOmega(),
+                    Rotation2d.fromRadians(setpointState.getTheta()))
+                .toTwist2d());
 
     // Calculate feedback velocities (based on position error).
     double xFeedback = xController.calculate(currentState.getX(), setpointState.getX());

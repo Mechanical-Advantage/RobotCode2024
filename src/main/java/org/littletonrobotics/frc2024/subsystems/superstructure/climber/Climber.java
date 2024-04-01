@@ -17,15 +17,9 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 @Getter
 @Setter
 public class Climber extends GenericSlamElevator<Climber.Goal> {
-  private static final LoggedTunableNumber cancelClimbCheckInches =
-      new LoggedTunableNumber("Climber/CancelClimbInches", 14.0);
-  private static final LoggedTunableNumber cancelClimbMaxTorqueCurrent =
-      new LoggedTunableNumber("Climber/CancelClimbTorqueCurrent", 15.0);
-  private static final double drumRadiusInches = 1.275;
-
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements SlamElevatorGoal {
+  public enum Goal implements GenericSlamElevator.SlamElevatorGoal {
     STOP(new LoggedTunableNumber("Climber/StopCurrent", 0.0), false, SlamElevatorState.IDLING),
     IDLE(new LoggedTunableNumber("Climber/IdleCurrent", -12.0), true, SlamElevatorState.RETRACTING),
     RETRACT(

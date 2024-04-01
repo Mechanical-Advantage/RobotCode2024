@@ -34,9 +34,9 @@ public class Flywheels extends SubsystemBase {
   private static final LoggedTunableNumber kV = new LoggedTunableNumber("Flywheels/kV", gains.kV());
   private static final LoggedTunableNumber kA = new LoggedTunableNumber("Flywheels/kA", gains.kA());
   private static final LoggedTunableNumber shootingLeftRpm =
-      new LoggedTunableNumber("Flywheels/ShootingLeftRpm", 7000.0);
+      new LoggedTunableNumber("Flywheels/ShootingLeftRpm", 5066.0);
   private static final LoggedTunableNumber shootingRightRpm =
-      new LoggedTunableNumber("Flywheels/ShootingRightRpm", 4500.0);
+      new LoggedTunableNumber("Flywheels/ShootingRightRpm", 7733.0);
   private static final LoggedTunableNumber prepareShootMultiplier =
       new LoggedTunableNumber("Flywheels/PrepareShootMultiplier", 0.75);
   private static final LoggedTunableNumber intakingRpm =

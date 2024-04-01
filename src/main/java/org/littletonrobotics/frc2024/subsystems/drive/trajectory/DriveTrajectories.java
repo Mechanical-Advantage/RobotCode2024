@@ -301,6 +301,12 @@ public class DriveTrajectories {
               .addPoseWaypoint(
                   new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
                       .transformBy(new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+              .addPoseWaypoint(
+                  new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
+                      .transformBy(
+                          new Translation2d(
+                                  centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
+                              .toTransform2d()))
               .build();
       shotToCenterlineIntakeSegments[i] = shotToCenterlineIntake;
 
@@ -336,6 +342,12 @@ public class DriveTrajectories {
                     new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
+                        .transformBy(
+                            new Translation2d(
+                                    centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
+                                .toTransform2d()))
                 .build();
         spikeToCenterlineIntakeSegments[spikeIndex][i] = spikeToCenterline;
       }

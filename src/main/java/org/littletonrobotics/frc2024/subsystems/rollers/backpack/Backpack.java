@@ -19,7 +19,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 public class Backpack extends GenericRollerSystem<Backpack.Goal> {
   @RequiredArgsConstructor
   @Getter
-  public enum Goal implements VoltageGoal {
+  public enum Goal implements GenericRollerSystem.VoltageGoal {
     IDLING(() -> 0),
     AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0)),
     TRAP_SCORING(new LoggedTunableNumber("Backpack/TrapScoringVoltage", 8.0)),

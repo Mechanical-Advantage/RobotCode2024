@@ -390,6 +390,11 @@ public class DriveTrajectories {
                             FieldConstants.StagingLocations.centerlineTranslations[4],
                             Rotation2d.fromDegrees(-175.0))
                         .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-175.0))
+                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
     paths.put(
@@ -407,6 +412,11 @@ public class DriveTrajectories {
                             FieldConstants.StagingLocations.centerlineTranslations[3],
                             Rotation2d.fromDegrees(135.0))
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageLeftAvoidance)
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
@@ -430,6 +440,13 @@ public class DriveTrajectories {
                                 .minus(StagingLocations.centerlineTranslations[2])
                                 .getAngle())
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[2],
+                            stageLeftAvoidance
+                                .minus(StagingLocations.centerlineTranslations[2])
+                                .getAngle())
+                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));

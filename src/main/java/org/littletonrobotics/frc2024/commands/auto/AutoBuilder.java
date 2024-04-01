@@ -394,7 +394,7 @@ public class AutoBuilder {
                     followTrajectory(drive, grabEjected))
                 .alongWith(
                     Commands.sequence(
-                            Commands.waitSeconds(1),
+                            Commands.waitSeconds(1.4),
                             feed(rollers),
                             // Grab and score centerline 4
                             waitUntilXCrossed(FieldConstants.wingX, true)
@@ -461,7 +461,11 @@ public class AutoBuilder {
                                 .deadlineWith(
                                     aim(drive),
                                     superstructure.setGoalCommand(Superstructure.Goal.AIM)))
-                        .alongWith(flywheels.shootCommand())));
+                        .alongWith(
+                            flywheels
+                                .ejectCommand()
+                                .withTimeout(2.0)
+                                .andThen(flywheels.shootCommand()))));
   }
 
   public Command davisEthicalAuto() {

@@ -14,9 +14,6 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ScheduleCommand;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -231,7 +228,8 @@ public class AutoBuilder {
   }
 
   /** Returns ending spike index given starting location and whether scoring three spikes or not. */
-  private static int spiky_calculateFinalSpikeIndex(AutoQuestionResponse startingLocation, boolean scoresThree) {
+  private static int spiky_calculateFinalSpikeIndex(
+      AutoQuestionResponse startingLocation, boolean scoresThree) {
     if (scoresThree) {
       if (startingLocation.equals(AutoQuestionResponse.AMP)) {
         return 0;
@@ -488,16 +486,19 @@ public class AutoBuilder {
             0,
             0));
 
-    ScheduleCommand endCoast = new ScheduleCommand(
-        Commands.sequence(
-            Commands.waitUntil(
-                () -> AllianceFlipUtil.apply(
-                    RobotState.getInstance().getEstimatedPose().getX()) >= brakeThreshold),
-            Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_BRAKE)))
-            .raceWith(
-                Commands.sequence(
-                    Commands.waitUntil(DriverStation::isDisabled), Commands.waitSeconds(3)))
-            .ignoringDisable(true));
+    ScheduleCommand endCoast =
+        new ScheduleCommand(
+            Commands.sequence(
+                    Commands.waitUntil(
+                        () ->
+                            AllianceFlipUtil.apply(
+                                    RobotState.getInstance().getEstimatedPose().getX())
+                                >= brakeThreshold),
+                    Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_BRAKE)))
+                .raceWith(
+                    Commands.sequence(
+                        Commands.waitUntil(DriverStation::isDisabled), Commands.waitSeconds(3)))
+                .ignoringDisable(true));
 
     return Commands.sequence(
         resetPose(DriveTrajectories.startingFarSource),
@@ -515,7 +516,7 @@ public class AutoBuilder {
         endCoast,
         followTrajectory(drive, driveToSource));
   }
-  
+
   /** Scores two centerline notes with the given trajectories */
   private Command unethical_poopThenScoreCenterlines(
       HolonomicTrajectory startToCenterline1,
@@ -527,8 +528,8 @@ public class AutoBuilder {
         .andThen(
             // Drive sequence
             Commands.sequence(
-                followTrajectory(drive, startToCenterline1),
-                followTrajectory(drive, shotToCenterline2))
+                    followTrajectory(drive, startToCenterline1),
+                    followTrajectory(drive, shotToCenterline2))
                 .alongWith(
                     // Superstructure and rollers sequence
                     Commands.sequence(
@@ -539,36 +540,38 @@ public class AutoBuilder {
                                     superstructure.setGoalCommand(Superstructure.Goal.STOW),
                                     feed(rollers))),
                         Commands.sequence(
-                            // Intake centerline 1
-                            waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                                .andThen(
-                                    waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                        .deadlineWith(intake(superstructure, rollers))),
+                                // Intake centerline 1
+                                waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                                    .andThen(
+                                        waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                            .deadlineWith(intake(superstructure, rollers))),
 
-                            // Shoot centerline 1
-                            Commands.waitUntil(
-                                () -> autoTimer.hasElapsed(
-                                    startToCenterline1.getDuration()
-                                        - shootTimeoutSecs.get() / 2.0))
-                                .andThen(feed(rollers))
-                                .deadlineWith(
-                                    superstructure.aimWithCompensation(firstShotCompensation)),
+                                // Shoot centerline 1
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                startToCenterline1.getDuration()
+                                                    - shootTimeoutSecs.get() / 2.0))
+                                    .andThen(feed(rollers))
+                                    .deadlineWith(
+                                        superstructure.aimWithCompensation(firstShotCompensation)),
 
-                            // Intake centerline 2
-                            waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                                .andThen(
-                                    waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                        .deadlineWith(intake(superstructure, rollers))),
+                                // Intake centerline 2
+                                waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                                    .andThen(
+                                        waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                            .deadlineWith(intake(superstructure, rollers))),
 
-                            // Shoot centerline 2
-                            Commands.waitUntil(
-                                () -> autoTimer.hasElapsed(
-                                    startToCenterline1.getDuration()
-                                        + shotToCenterline2.getDuration()
-                                        - shootTimeoutSecs.get() / 2.0))
-                                .andThen(feed(rollers))
-                                .deadlineWith(
-                                    superstructure.aimWithCompensation(secondShotCompensation)))
+                                // Shoot centerline 2
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                startToCenterline1.getDuration()
+                                                    + shotToCenterline2.getDuration()
+                                                    - shootTimeoutSecs.get() / 2.0))
+                                    .andThen(feed(rollers))
+                                    .deadlineWith(
+                                        superstructure.aimWithCompensation(secondShotCompensation)))
                             // Run flywheels
                             .deadlineWith(flywheels.shootCommand()))));
   }

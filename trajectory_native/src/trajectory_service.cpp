@@ -19,7 +19,7 @@ namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 // We take the tradeoff of increased computation time since we cache paths anyway.
 static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.0;
 
-static const int MINIMUM_CONTROL_INTERVAL_COUNT = 20;
+static const int MINIMUM_CONTROL_INTERVAL_COUNT = 10;
 
 static std::unique_ptr<grpc::Server> server;
 

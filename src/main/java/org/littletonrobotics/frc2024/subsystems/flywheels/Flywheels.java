@@ -226,7 +226,7 @@ public class Flywheels extends SubsystemBase {
   }
 
   public Command ejectCommand() {
-    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.EJECT))
+    return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
         .withName("Flywheels Eject");
   }
 

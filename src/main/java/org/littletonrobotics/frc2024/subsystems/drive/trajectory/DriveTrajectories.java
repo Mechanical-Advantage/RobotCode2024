@@ -29,16 +29,25 @@ public class DriveTrajectories {
 
   // Starting locations
   public static final Pose2d startingSource =
-      new Pose2d(startingLineX - 0.5, Stage.podiumLeg.getY(), Rotation2d.fromDegrees(180.0));
+      new Pose2d(
+          FieldConstants.startingLineX - 0.5,
+          FieldConstants.Stage.podiumLeg.getY(),
+          Rotation2d.fromDegrees(180.0));
   public static final Pose2d startingCenter =
       new Pose2d(
-          startingLineX - 0.5,
-          StagingLocations.spikeTranslations[1].getY(),
+          FieldConstants.startingLineX - 0.5,
+          FieldConstants.StagingLocations.spikeTranslations[1].getY(),
           Rotation2d.fromDegrees(180.0));
   public static final Pose2d startingAmp =
       new Pose2d(
-          startingLineX - 0.5,
-          StagingLocations.spikeTranslations[2].getY(),
+          FieldConstants.startingLineX - 0.5,
+          FieldConstants.StagingLocations.spikeTranslations[2].getY(),
+          Rotation2d.fromDegrees(180.0));
+
+  public static final Pose2d startingAmpWall =
+      new Pose2d(
+          FieldConstants.startingLineX - 0.5,
+          FieldConstants.fieldWidth - 0.5,
           Rotation2d.fromDegrees(180.0));
   public static final Pose2d startingFarSource =
       new Pose2d(FieldConstants.startingLineX - 0.5, 1.57, Rotation2d.fromDegrees(180));
@@ -368,6 +377,100 @@ public class DriveTrajectories {
 
   // Davis Speedy Auto (named "speedy_XXX")
   static {
+    paths.put(
+        "speedy_ampToCenterline4",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingAmpWall)
+                .addTranslationWaypoint(
+                    new Translation2d(Stage.ampLeg.getX() - 1.5, startingAmpWall.getY()))
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-175.0))
+                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-175.0))
+                        .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(-175.0))
+                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
+                .addPoseWaypoint(stageLeftShootingPose)
+                .build()));
+    paths.put(
+        "speedy_centerline4ToCenterline3",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("speedy_ampToCenterline4"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(1.7, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageLeftAvoidance)
+                .addPoseWaypoint(stageLeftShootingPose)
+                .build()));
+    paths.put(
+        "speedy_centerline3ToCenterline2",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("speedy_centerline4ToCenterline3"))
+                .addTranslationWaypoint(stageLeftAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[2],
+                            stageLeftAvoidance
+                                .minus(StagingLocations.centerlineTranslations[2])
+                                .getAngle())
+                        .transformBy(new Translation2d(1, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            stageLeftAvoidance
+                                .minus(StagingLocations.centerlineTranslations[2])
+                                .getAngle())
+                        .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            StagingLocations.centerlineTranslations[2],
+                            stageLeftAvoidance
+                                .minus(StagingLocations.centerlineTranslations[2])
+                                .getAngle())
+                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(stageCenterShootingPose)
+                .build()));
+    paths.put(
+        "speedy_centerline2ToEjectedNote",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(getLastWaypoint("speedy_centerline3ToCenterline2"))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.Amp.ampTapeTopCorner.plus(new Translation2d(1.3, -0.3)),
+                        new Rotation2d(-Math.PI / 2)))
+                .addPoseWaypoint(
+                    getShootingPose(
+                        FieldConstants.Amp.ampTapeTopCorner.plus(new Translation2d(1.0, -0.5))))
+                .build()));
   }
 
   // Davis Ethical Auto (named "ethical_XXX")

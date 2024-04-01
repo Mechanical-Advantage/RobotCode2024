@@ -35,7 +35,7 @@ public class ModuleIOSim implements ModuleIO {
   private final Rotation2d turnAbsoluteInitPosition;
 
   private boolean driveCoast = false;
-  private SlewRateLimiter driveVoltsLimiter = new SlewRateLimiter(4.0);
+  private SlewRateLimiter driveVoltsLimiter = new SlewRateLimiter(2.5);
 
   public ModuleIOSim(ModuleConfig config) {
     turnAbsoluteInitPosition = config.absoluteEncoderOffset();

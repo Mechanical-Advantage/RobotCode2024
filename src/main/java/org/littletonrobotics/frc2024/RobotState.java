@@ -11,7 +11,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.interpolation.TimeInterpolatableBuffer;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
@@ -49,30 +48,10 @@ public class RobotState {
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
   private static final double poseBufferSizeSeconds = 2.0;
 
-  /** Arm angle look up table key: meters, values: degrees */
-  private static final InterpolatingDoubleTreeMap armAngleMap = new InterpolatingDoubleTreeMap();
+  private static final double armAngleCoefficient = 57.254371165197;
+  private static final double armAngleExponent = -0.593140189605718;
 
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
-
-  static {
-    armAngleMap.put(1.04, 55.0);
-    armAngleMap.put(1.25, 52.0);
-    armAngleMap.put(1.5, 46.0);
-    armAngleMap.put(1.75, 42.0);
-    armAngleMap.put(2.0, 40.0);
-    armAngleMap.put(2.25, 37.5);
-    armAngleMap.put(2.5, 35.5);
-    armAngleMap.put(2.75, 33.25);
-    armAngleMap.put(2.94, 32.15);
-    armAngleMap.put(3.15, 30.65);
-    armAngleMap.put(3.55, 28.75);
-    armAngleMap.put(3.75, 28.1);
-    armAngleMap.put(4.0, 27.75);
-    armAngleMap.put(4.25, 26.8);
-    armAngleMap.put(4.5, 25.6);
-    armAngleMap.put(8.0, 8.8); // Added in with slope of previous two points to make a best guess
-  }
-
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
@@ -238,10 +217,11 @@ public class RobotState {
         robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
             - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
+    double armAngleDegrees = armAngleCoefficient * Math.pow(targetDistance, armAngleExponent);
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            Rotation2d.fromDegrees(armAngleMap.get(targetDistance) + shotCompensationDegrees),
+            Rotation2d.fromDegrees(armAngleDegrees + shotCompensationDegrees),
             targetDistance,
             feedVelocity);
     return latestParameters;

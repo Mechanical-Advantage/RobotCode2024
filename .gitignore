@@ -179,3 +179,6 @@ src/main/java/org/littletonrobotics/frc2024/BuildConstants.java
 
 # Generated paths
 src/main/deploy/trajectories/*.pathblob
+
+# Shot map temporary file
+~*.xlsx

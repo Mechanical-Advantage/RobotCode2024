@@ -73,7 +73,7 @@ public class Arm {
   @RequiredArgsConstructor
   public enum Goal {
     STOP(() -> 0),
-    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", 7.0)),
+    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", minAngle.getDegrees())),
     UNJAM_INTAKE(new LoggedTunableNumber("Arm/UnjamDegrees", 40.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),

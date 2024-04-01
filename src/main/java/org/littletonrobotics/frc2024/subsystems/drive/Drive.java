@@ -52,7 +52,7 @@ public class Drive extends SubsystemBase {
   private static final LoggedTunableNumber coastMetersPerSecThreshold =
       new LoggedTunableNumber("Drive/CoastMetersPerSecThreshold", 0.05);
 
-  public static enum DriveMode {
+  public enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
     TELEOP,
 
@@ -69,7 +69,7 @@ public class Drive extends SubsystemBase {
     WHEEL_RADIUS_CHARACTERIZATION
   }
 
-  public static enum CoastRequest {
+  public enum CoastRequest {
     AUTOMATIC,
     ALWAYS_BRAKE,
     ALWAYS_COAST

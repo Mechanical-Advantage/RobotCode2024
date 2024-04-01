@@ -33,6 +33,7 @@ public class AutoBuilder {
   private final Flywheels flywheels;
   private final Rollers rollers;
   private final Supplier<List<AutoQuestionResponse>> responses;
+  private final double aimDelay = 0.5;
 
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
@@ -378,7 +379,94 @@ public class AutoBuilder {
   }
 
   public Command davisSpeedyAuto() {
-    return Commands.none();
+    var grabCenterline4 = new HolonomicTrajectory("speedy_ampToCenterline4");
+    var grabCenterline3 = new HolonomicTrajectory("speedy_centerline4ToCenterline3");
+    var grabCenterline2 = new HolonomicTrajectory("speedy_centerline3ToCenterline2");
+    var grabEjected = new HolonomicTrajectory("speedy_centerline2ToEjectedNote");
+
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
+        .andThen(
+            Commands.sequence(
+                    resetPose(DriveTrajectories.startingAmpWall),
+                    followTrajectory(drive, grabCenterline4),
+                    followTrajectory(drive, grabCenterline3),
+                    followTrajectory(drive, grabCenterline2),
+                    followTrajectory(drive, grabEjected))
+                .alongWith(
+                    Commands.sequence(
+                            Commands.waitSeconds(1.4),
+                            feed(rollers),
+                            // Grab and score centerline 4
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                                .until(
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            grabCenterline4.getDuration()
+                                                - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers).withTimeout(shootTimeoutSecs.get()))
+                                .deadlineWith(
+                                    Commands.waitUntil(
+                                            () ->
+                                                autoTimer.hasElapsed(
+                                                    grabCenterline4.getDuration() - 1.5))
+                                        .andThen(superstructure.aimWithCompensation(0.0))),
+
+                            // Grab and score centerline 3
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(
+                                    rollers
+                                        .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                        .until(
+                                            () ->
+                                                autoTimer.hasElapsed(
+                                                    grabCenterline4.getDuration()
+                                                        + grabCenterline3.getDuration()
+                                                        - shootTimeoutSecs.get() / 2.0))
+                                        .andThen(feed(rollers))
+                                        .deadlineWith(
+                                            Commands.waitUntil(
+                                                    () ->
+                                                        autoTimer.hasElapsed(
+                                                            grabCenterline4.getDuration()
+                                                                + grabCenterline3.getDuration()
+                                                                - 1.5))
+                                                .andThen(superstructure.aimWithCompensation(0.0)))),
+
+                            // Grab and score centerline 2
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(
+                                    rollers
+                                        .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                        .until(
+                                            () ->
+                                                autoTimer.hasElapsed(
+                                                    +grabCenterline4.getDuration()
+                                                        + grabCenterline3.getDuration()
+                                                        + grabCenterline2.getDuration()
+                                                        - shootTimeoutSecs.get() / 2.0))
+                                        .andThen(feed(rollers))
+                                        .deadlineWith(
+                                            waitUntilXCrossed(stageAimX, false)
+                                                .andThen(superstructure.aimWithCompensation(0.0)))),
+                            // Grab ejected note
+                            superstructure
+                                .setGoalCommand(Superstructure.Goal.INTAKE)
+                                .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                                .withTimeout(grabEjected.getDuration()),
+
+                            // Score ejected note
+                            Commands.waitSeconds(0.5)
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    aim(drive),
+                                    superstructure.setGoalCommand(Superstructure.Goal.AIM)))
+                        .alongWith(
+                            flywheels
+                                .ejectCommand()
+                                .withTimeout(2.0)
+                                .andThen(flywheels.shootCommand()))));
   }
 
   public Command davisEthicalAuto() {

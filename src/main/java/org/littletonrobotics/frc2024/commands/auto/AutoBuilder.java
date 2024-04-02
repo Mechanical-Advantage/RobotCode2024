@@ -37,7 +37,6 @@ public class AutoBuilder {
   private final Flywheels flywheels;
   private final Rollers rollers;
   private final Supplier<List<AutoQuestionResponse>> responses;
-  private final double aimDelay = 0.5;
 
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
@@ -202,7 +201,10 @@ public class AutoBuilder {
                                             autoTimer.hasElapsed(
                                                 spikeToCenterline1.getDuration() - 1.5))
                                     .andThen(
-                                        superstructure.aimWithCompensation(firstShotCompensation))),
+                                        Commands.parallel(
+                                            aim(drive),
+                                            superstructure.aimWithCompensation(
+                                                firstShotCompensation)))),
 
                         // Intake and shoot centerline 1
                         waitUntilXCrossed(FieldConstants.wingX, true)
@@ -222,8 +224,10 @@ public class AutoBuilder {
                                                     + shotToCenterline2.getDuration()
                                                     - 1.5))
                                     .andThen(
-                                        superstructure.aimWithCompensation(
-                                            secondShotCompensation)))))
+                                        Commands.parallel(
+                                            aim(drive),
+                                            superstructure.aimWithCompensation(
+                                                secondShotCompensation))))))
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
   }
@@ -446,7 +450,7 @@ public class AutoBuilder {
                                         .until(
                                             () ->
                                                 autoTimer.hasElapsed(
-                                                    +grabCenterline4.getDuration()
+                                                    grabCenterline4.getDuration()
                                                         + grabCenterline3.getDuration()
                                                         + grabCenterline2.getDuration()
                                                         - shootTimeoutSecs.get() / 2.0))
@@ -458,15 +462,15 @@ public class AutoBuilder {
                             superstructure
                                 .setGoalCommand(Superstructure.Goal.INTAKE)
                                 .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                                .withTimeout(grabEjected.getDuration()),
+                                .withTimeout(grabEjected.getDuration() - 0.5),
 
                             // Score ejected note
-                            Commands.waitSeconds(0.5)
+                            Commands.waitSeconds(0.65)
                                 .andThen(feed(rollers))
                                 .deadlineWith(
                                     aim(drive),
                                     superstructure.setGoalCommand(Superstructure.Goal.AIM)))
-                        .alongWith(
+                        .deadlineWith(
                             flywheels
                                 .ejectCommand()
                                 .withTimeout(2.0)
@@ -595,11 +599,12 @@ public class AutoBuilder {
         followTrajectory(drive, grabEjected)
             .deadlineWith(
                 intake(superstructure, rollers)
-                    .withTimeout(grabEjected.getDuration() - 0.75)
-                    .andThen(superstructure.setGoalCommand(Superstructure.Goal.AIM))),
+                    .withTimeout(grabEjected.getDuration() - 0.5)
+                    .andThen(
+                        Commands.parallel(
+                            aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)))),
         feed(rollers)
             .deadlineWith(aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-        // Commands.waitUntil(() -> autoTimer.get() >= 15.3 - sourcePathDelay),
         Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_COAST)),
         endCoast,
         followTrajectory(drive, driveToSource));

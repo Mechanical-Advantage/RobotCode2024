@@ -142,6 +142,15 @@ public class Drive extends SubsystemBase {
             .moduleLocations(DriveConstants.moduleTranslations)
             .build();
     teleopDriveController = new TeleopDriveController();
+
+    // Preload trajectory classes
+    for (int i = 0; i < 25; i++) {
+      var controller = new TrajectoryController(new HolonomicTrajectory("driveStraight"));
+      for (int x = 0; x < 25; x++) {
+        controller.update();
+      }
+    }
+    RobotState.getInstance().addTrajectoryVelocityData(new Twist2d());
   }
 
   public void periodic() {

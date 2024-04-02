@@ -26,7 +26,7 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             DriveConfig.builder()
-                .wheelRadius(Units.inchesToMeters(1.9108121863500676))
+                .wheelRadius(Units.inchesToMeters(1.923))
                 .trackWidthX(Units.inchesToMeters(20.75))
                 .trackWidthY(Units.inchesToMeters(20.75))
                 .bumperWidthX(Units.inchesToMeters(37))
@@ -148,7 +148,7 @@ public final class DriveConstants {
   // Trajectory Following
   public static final TrajectoryConstants trajectoryConstants =
       switch (Constants.getRobot()) {
-        case COMPBOT -> TrajectoryConstants.builder().linearkP(8.0).thetakP(5.0).build();
+        case COMPBOT -> TrajectoryConstants.builder().linearkP(8.0).thetakP(4.0).build();
         case DEVBOT ->
             new TrajectoryConstants(
                 6.0,

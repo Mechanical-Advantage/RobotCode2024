@@ -17,6 +17,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
@@ -46,9 +47,11 @@ public class RobotState {
       double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber autoLookahead =
-      new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
+      new LoggedTunableNumber("RobotState/AutoLookahead", 0.8);
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
+  private static final LoggedTunableNumber nearSpeakerFeet =
+      new LoggedTunableNumber("RobotState/NearSpeakerFeet", 25.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;
@@ -189,10 +192,8 @@ public class RobotState {
   }
 
   public void addTrajectoryVelocityData(Twist2d robotVelocity) {
-    if (DriverStation.isAutonomousEnabled()) {
-      latestParameters = null;
-      trajectoryVelocity = robotVelocity;
-    }
+    latestParameters = null;
+    trajectoryVelocity = robotVelocity;
   }
 
   public AimingParameters getAimingParameters() {
@@ -250,6 +251,15 @@ public class RobotState {
     return flywheelAccelerating && !DriverStation.isAutonomousEnabled()
         ? DriveConstants.moduleLimitsFlywheelSpinup
         : DriveConstants.moduleLimitsFree;
+  }
+
+  public boolean isNearSpeaker() {
+    return getEstimatedPose()
+            .getTranslation()
+            .getDistance(
+                AllianceFlipUtil.apply(
+                    FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+        < Units.feetToMeters(nearSpeakerFeet.get());
   }
 
   /**

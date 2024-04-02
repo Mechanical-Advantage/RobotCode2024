@@ -83,7 +83,8 @@ public class Robot extends LoggedRobot {
           AlertType.WARNING);
   private final Alert sameBatteryAlert =
       new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
-  private final Alert gcAlert = new Alert("Please wait 30 seconds to enable.", AlertType.WARNING);
+  private final Alert gcAlert =
+      new Alert("Please wait to enable, collecting garbage. 🗑️", AlertType.WARNING);
 
   public static Trigger createTeleopTimeTrigger(DoubleSupplier teleElapsedTime) {
     return new Trigger(
@@ -264,7 +265,7 @@ public class Robot extends LoggedRobot {
     }
 
     // GC alert
-    gcAlert.set(Timer.getFPGATimestamp() < 30.0);
+    gcAlert.set(Timer.getFPGATimestamp() < 45.0);
 
     // Update battery alert
     String batteryName = batteryNameSubscriber.get();

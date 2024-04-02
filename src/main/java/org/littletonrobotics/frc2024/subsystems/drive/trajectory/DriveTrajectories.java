@@ -83,6 +83,18 @@ public class DriveTrajectories {
           .getTranslation()
           .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
 
+  // Drive straight path
+  // (Used for preload of trajectory classes in drive constructor)
+  static {
+    paths.put(
+        "driveStraight",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(new Pose2d())
+                .addPoseWaypoint(new Pose2d(3.0, 2.0, Rotation2d.fromDegrees(180.0)))
+                .build()));
+  }
+
   // Davis Spiky Auto (named "spiky_XXX")
   static {
     final double shootingVelocity = 0.7;
@@ -391,17 +403,17 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[4],
-                            Rotation2d.fromDegrees(-175.0))
+                            Rotation2d.fromDegrees(-170.0))
                         .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[4],
-                            Rotation2d.fromDegrees(-175.0))
+                            Rotation2d.fromDegrees(-170.0))
                         .transformBy(new Translation2d(0.3, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[4],
-                            Rotation2d.fromDegrees(-175.0))
+                            Rotation2d.fromDegrees(-170.0))
                         .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
@@ -413,18 +425,18 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[3],
-                            Rotation2d.fromDegrees(135.0))
-                        .transformBy(new Translation2d(1.7, 0.0).toTransform2d()))
+                            Rotation2d.fromDegrees(150.0))
+                        .transformBy(new Translation2d(0.75, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[3],
-                            Rotation2d.fromDegrees(135.0))
+                            Rotation2d.fromDegrees(150.0))
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[3],
-                            Rotation2d.fromDegrees(135.0))
-                        .transformBy(new Translation2d(1.0, 0.0).toTransform2d()))
+                            Rotation2d.fromDegrees(150.0))
+                        .transformBy(new Translation2d(0.75, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageLeftAvoidance)
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
@@ -448,13 +460,6 @@ public class DriveTrajectories {
                                 .minus(StagingLocations.centerlineTranslations[2])
                                 .getAngle())
                         .transformBy(new Translation2d(0.25, 0.0).toTransform2d()))
-                .addPoseWaypoint(
-                    new Pose2d(
-                            StagingLocations.centerlineTranslations[2],
-                            stageLeftAvoidance
-                                .minus(StagingLocations.centerlineTranslations[2])
-                                .getAngle())
-                        .transformBy(new Translation2d(0.6, 0.0).toTransform2d()))
                 .addTranslationWaypoint(stageCenterAvoidance)
                 .addPoseWaypoint(stageCenterShootingPose)
                 .build()));
@@ -614,7 +619,7 @@ public class DriveTrajectories {
                         new Transform2d(-0.5, 0.0, Rotation2d.fromDegrees(180.0))))
                 .addPoseWaypoint(
                     startingFarSource.transformBy(
-                        new Transform2d(0.5, 0.0, Rotation2d.fromDegrees(180.0))))
+                        new Transform2d(0.65, 0.0, Rotation2d.fromDegrees(180.0))))
                 .addPoseWaypoint(stageRightCloseShootingPose)
                 .build()));
     paths.put(
@@ -623,7 +628,7 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addWaypoints(getLastWaypoint("unethical_grabEjected"))
                 .addPoseWaypoint(
-                    new Pose2d(FieldConstants.wingX + 0.75, 1.25, Rotation2d.fromDegrees(180)))
+                    new Pose2d(FieldConstants.wingX + 0.75, 1.0, Rotation2d.fromDegrees(180)))
                 .build(),
             PathSegment.newBuilder()
                 .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1.25))

@@ -389,13 +389,22 @@ public class DriveTrajectories {
 
   // Davis Speedy Auto (named "speedy_XXX")
   static {
+    final Pose2d stageLeftShootingPose =
+        getShootingPose(
+            FieldConstants.Stage.ampLeg.getTranslation().plus(new Translation2d(-0.7, 0.9)));
+    final Translation2d stageLeftAvoidance =
+        new Translation2d(
+            FieldConstants.wingX,
+            MathUtil.interpolate(
+                FieldConstants.Stage.ampLeg.getY(), FieldConstants.fieldWidth, 0.3));
+
     paths.put(
         "speedy_ampToCenterline4",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingAmpWall)
                 .addTranslationWaypoint(
-                    new Translation2d(Stage.ampLeg.getX() - 1.5, startingAmpWall.getY()))
+                    new Translation2d(Stage.ampLeg.getX() - 0.75, startingAmpWall.getY()))
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),
@@ -437,7 +446,6 @@ public class DriveTrajectories {
                             FieldConstants.StagingLocations.centerlineTranslations[3],
                             Rotation2d.fromDegrees(150.0))
                         .transformBy(new Translation2d(0.75, 0.0).toTransform2d()))
-                .addTranslationWaypoint(stageLeftAvoidance)
                 .addPoseWaypoint(stageLeftShootingPose)
                 .build()));
     paths.put(
@@ -572,7 +580,10 @@ public class DriveTrajectories {
                 .setMaxOmega(0)
                 .build(),
             intakeCenterline0,
-            PathSegment.newBuilder().addPoseWaypoint(stageRightShootingPose).build()));
+            PathSegment.newBuilder()
+                .addTranslationWaypoint(stageRightAvoidance)
+                .addPoseWaypoint(stageRightShootingPose)
+                .build()));
     paths.put(
         "unethical_grabCenterline1",
         List.of(
@@ -627,8 +638,7 @@ public class DriveTrajectories {
         List.of(
             PathSegment.newBuilder()
                 .addWaypoints(getLastWaypoint("unethical_grabEjected"))
-                .addPoseWaypoint(
-                    new Pose2d(FieldConstants.wingX + 0.75, 1.0, Rotation2d.fromDegrees(180)))
+                .addPoseWaypoint(new Pose2d(FieldConstants.wingX, 1.0, Rotation2d.fromDegrees(180)))
                 .build(),
             PathSegment.newBuilder()
                 .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1.25))

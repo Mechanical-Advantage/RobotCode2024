@@ -17,6 +17,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import java.util.NoSuchElementException;
 import java.util.function.BooleanSupplier;
@@ -30,6 +31,7 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.swerve.ModuleLimits;
 import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.Logger;
 
 @ExtensionMethod({GeomUtil.class})
 public class RobotState {
@@ -44,8 +46,12 @@ public class RobotState {
       double effectiveDistance,
       double driveFeedVelocity) {}
 
+  private static final LoggedTunableNumber autoLookahead =
+      new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
+  private static final LoggedTunableNumber nearSpeakerFeet =
+      new LoggedTunableNumber("RobotState/NearSpeakerFeet", 25.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;
@@ -84,6 +90,7 @@ public class RobotState {
           });
   private Rotation2d lastGyroAngle = new Rotation2d();
   private Twist2d robotVelocity = new Twist2d();
+  private Twist2d trajectoryVelocity = new Twist2d();
 
   /** Cached latest aiming parameters. Calculated in {@code getAimingParameters()} */
   private AimingParameters latestParameters = null;
@@ -184,6 +191,11 @@ public class RobotState {
     this.robotVelocity = robotVelocity;
   }
 
+  public void addTrajectoryVelocityData(Twist2d robotVelocity) {
+    latestParameters = null;
+    trajectoryVelocity = robotVelocity;
+  }
+
   public AimingParameters getAimingParameters() {
     if (latestParameters != null) {
       // Cache previously calculated aiming parameters. Cache is invalidated whenever new
@@ -196,10 +208,18 @@ public class RobotState {
             .toTranslation2d()
             .toTransform2d()
             .plus(FudgeFactors.speaker.getTransform());
-    Pose2d fieldToPredictedVehicle =
-        lookaheadDisable.getAsBoolean() || DriverStation.isAutonomousEnabled()
-            ? getEstimatedPose()
-            : getPredictedPose(lookahead.get(), lookahead.get());
+    Pose2d fieldToPredictedVehicle;
+    if (DriverStation.isAutonomousEnabled()) {
+      fieldToPredictedVehicle = getPredictedPose(autoLookahead.get(), autoLookahead.get());
+
+    } else {
+      fieldToPredictedVehicle =
+          lookaheadDisable.getAsBoolean()
+              ? getEstimatedPose()
+              : getPredictedPose(lookahead.get(), lookahead.get());
+    }
+    Logger.recordOutput("RobotState/AimingParameters/PredictedPose", fieldToPredictedVehicle);
+
     Pose2d fieldToPredictedVehicleFixed =
         new Pose2d(fieldToPredictedVehicle.getTranslation(), new Rotation2d());
 
@@ -231,6 +251,15 @@ public class RobotState {
     return flywheelAccelerating && !DriverStation.isAutonomousEnabled()
         ? DriveConstants.moduleLimitsFlywheelSpinup
         : DriveConstants.moduleLimitsFree;
+  }
+
+  public boolean isNearSpeaker() {
+    return getEstimatedPose()
+            .getTranslation()
+            .getDistance(
+                AllianceFlipUtil.apply(
+                    FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+        < Units.feetToMeters(nearSpeakerFeet.get());
   }
 
   /**
@@ -265,12 +294,13 @@ public class RobotState {
    * @return The predicted pose.
    */
   public Pose2d getPredictedPose(double translationLookaheadS, double rotationLookaheadS) {
+    Twist2d velocity = DriverStation.isAutonomousEnabled() ? trajectoryVelocity : robotVelocity;
     return getEstimatedPose()
-        .exp(
-            new Twist2d(
-                robotVelocity.dx * translationLookaheadS,
-                robotVelocity.dy * translationLookaheadS,
-                robotVelocity.dtheta * rotationLookaheadS));
+        .transformBy(
+            new Transform2d(
+                velocity.dx * translationLookaheadS,
+                velocity.dy * translationLookaheadS,
+                Rotation2d.fromRadians(velocity.dtheta * rotationLookaheadS)));
   }
 
   @AutoLogOutput(key = "RobotState/OdometryPose")

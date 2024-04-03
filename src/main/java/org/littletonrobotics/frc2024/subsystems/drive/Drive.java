@@ -12,6 +12,7 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.*;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -51,7 +52,7 @@ public class Drive extends SubsystemBase {
   private static final LoggedTunableNumber coastMetersPerSecThreshold =
       new LoggedTunableNumber("Drive/CoastMetersPerSecThreshold", 0.05);
 
-  public static enum DriveMode {
+  public enum DriveMode {
     /** Driving with input from driver joysticks. (Default) */
     TELEOP,
 
@@ -68,7 +69,7 @@ public class Drive extends SubsystemBase {
     WHEEL_RADIUS_CHARACTERIZATION
   }
 
-  public static enum CoastRequest {
+  public enum CoastRequest {
     AUTOMATIC,
     ALWAYS_BRAKE,
     ALWAYS_COAST
@@ -141,6 +142,15 @@ public class Drive extends SubsystemBase {
             .moduleLocations(DriveConstants.moduleTranslations)
             .build();
     teleopDriveController = new TeleopDriveController();
+
+    // Preload trajectory classes
+    for (int i = 0; i < 25; i++) {
+      var controller = new TrajectoryController(new HolonomicTrajectory("driveStraight"));
+      for (int x = 0; x < 25; x++) {
+        controller.update();
+      }
+    }
+    RobotState.getInstance().addTrajectoryVelocityData(new Twist2d());
   }
 
   public void periodic() {
@@ -229,7 +239,9 @@ public class Drive extends SubsystemBase {
     // Update brake mode
     // Reset movement timer if moved
     if (Arrays.stream(modules)
-        .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
+        .anyMatch(
+            module ->
+                Math.abs(module.getVelocityMetersPerSec()) > coastMetersPerSecThreshold.get())) {
       lastMovementTimer.reset();
     }
     if (DriverStation.isEnabled() && !lastEnabled) {
@@ -268,6 +280,9 @@ public class Drive extends SubsystemBase {
       case TRAJECTORY -> {
         // Run trajectory
         desiredSpeeds = trajectoryController.update();
+        if (headingController != null) {
+          desiredSpeeds.omegaRadiansPerSecond = headingController.update();
+        }
       }
       case AUTO_ALIGN -> {
         // Run auto align with drive input
@@ -355,6 +370,7 @@ public class Drive extends SubsystemBase {
   public void clearTrajectory() {
     trajectoryController = null;
     currentDriveMode = DriveMode.TELEOP;
+    RobotState.getInstance().addTrajectoryVelocityData(new Twist2d());
   }
 
   /** Returns true if the robot is done with trajectory. */

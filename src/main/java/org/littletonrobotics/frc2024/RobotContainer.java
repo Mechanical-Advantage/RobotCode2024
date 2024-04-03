@@ -8,6 +8,7 @@
 package org.littletonrobotics.frc2024;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -24,8 +25,11 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import java.util.List;
 import java.util.function.Supplier;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.AutoSelector.AutoQuestion;
+import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
 import org.littletonrobotics.frc2024.commands.ClimbingCommands;
 import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
@@ -74,7 +78,6 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
@@ -111,6 +114,8 @@ public class RobotContainer {
   private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
   private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
+  private final Alert ridiculousAutoAlert =
+      new Alert("The selected auto is ridiculous! 😡", AlertType.WARNING);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
@@ -126,8 +131,7 @@ public class RobotContainer {
   private boolean armCoastOverride = false;
 
   // Dashboard inputs
-  private final LoggedDashboardChooser<Command> autoChooser =
-      new LoggedDashboardChooser<>("Auto Choices");
+  private final AutoSelector autoSelector = new AutoSelector("Auto");
 
   /** Returns the current AprilTag layout type. */
   public AprilTagLayoutType getAprilTagLayoutType() {
@@ -302,13 +306,7 @@ public class RobotContainer {
         () ->
             autoFlywheelSpinupDisable.negate().getAsBoolean()
                 && DriverStation.isTeleopEnabled()
-                && robotState
-                        .getEstimatedPose()
-                        .getTranslation()
-                        .getDistance(
-                            AllianceFlipUtil.apply(
-                                FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-                    < Units.feetToMeters(25.0)
+                && robotState.isNearSpeaker()
                 && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
                 && !superstructure.getCurrentGoal().isClimbingGoal());
 
@@ -348,51 +346,68 @@ public class RobotContainer {
   }
 
   private void configureAutos() {
-    AutoBuilder autoBuilder = new AutoBuilder(drive, superstructure, flywheels, rollers);
+    AutoBuilder autoBuilder =
+        new AutoBuilder(drive, superstructure, flywheels, rollers, autoSelector::getResponses);
 
-    autoChooser.addDefaultOption(
-        "Do Nothing",
-        Commands.runOnce(
-            () ->
-                robotState.resetPose(
-                    new Pose2d(
-                        new Translation2d(),
-                        AllianceFlipUtil.apply(Rotation2d.fromDegrees(180.0))))));
-    autoChooser.addOption("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
-    autoChooser.addOption("Davis Alternative Auto", autoBuilder.davisAlternativeAuto());
-    autoChooser.addOption("Davis Super Alternative Auto", autoBuilder.davisSuperAlternativeAuto());
-
-    // Spike autos
-    autoChooser.addOption("Spike: Source 4", autoBuilder.source4());
-    autoChooser.addOption("Spike: Center 4", autoBuilder.center4());
-    autoChooser.addOption("Spike: Amp 4", autoBuilder.amp4());
-    autoChooser.addOption("Spike: Source 5", autoBuilder.source5());
-    autoChooser.addOption("Spike: Center 5", autoBuilder.center5());
-    autoChooser.addOption("Spike: Amp 5", autoBuilder.amp5());
+    // Add autos
+    autoSelector.addRoutine(
+        "Davis Spiky Auto",
+        List.of(
+            new AutoQuestion(
+                "Starting location?",
+                List.of(
+                    AutoQuestionResponse.AMP,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.SOURCE)),
+            new AutoQuestion(
+                "How many spike notes?",
+                List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE)),
+            new AutoQuestion(
+                "First center note?",
+                List.of(
+                    AutoQuestionResponse.AMP_WALL,
+                    AutoQuestionResponse.AMP_MIDDLE,
+                    AutoQuestionResponse.MIDDLE)),
+            new AutoQuestion(
+                "Second center note?",
+                List.of(
+                    AutoQuestionResponse.AMP_WALL,
+                    AutoQuestionResponse.AMP_MIDDLE,
+                    AutoQuestionResponse.MIDDLE))),
+        autoBuilder.davisSpikyAuto());
+    autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
+    autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
+    autoSelector.addRoutine(
+        "Davis Unethical Auto",
+        List.of(
+            new AutoQuestion(
+                "First center note?",
+                List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
+        autoBuilder.davisUnethicalAuto());
 
     // Set up feedforward characterization
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Drive Static Characterization",
         new StaticCharacterization(
                 drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Drive FF Characterization",
         new FeedForwardCharacterization(
                 drive, drive::runCharacterization, drive::getCharacterizationVelocity)
             .finallyDo(drive::endCharacterization));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Flywheels FF Characterization",
         new FeedForwardCharacterization(
             flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Arm Static Characterization",
         new StaticCharacterization(
                 superstructure,
                 superstructure::runArmCharacterization,
                 superstructure::getArmCharacterizationVelocity)
             .finallyDo(superstructure::endArmCharacterization));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Drive Wheel Radius Characterization",
         drive
             .orientModules(Drive.getCircleOrientations())
@@ -400,7 +415,7 @@ public class RobotContainer {
                 new WheelRadiusCharacterization(
                     drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
             .withName("Drive Wheel Radius Characterization"));
-    autoChooser.addOption(
+    autoSelector.addRoutine(
         "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
   }
 
@@ -442,14 +457,10 @@ public class RobotContainer {
                         drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
-    Trigger inWing =
-        new Trigger(
-            () ->
-                AllianceFlipUtil.apply(robotState.getEstimatedPose().getX())
-                    < FieldConstants.wingX);
+    Trigger nearSpeaker = new Trigger(robotState::isNearSpeaker);
     driver
         .a()
-        .and(inWing)
+        .and(nearSpeaker)
         .whileTrue(
             driveAimCommand
                 .get()
@@ -461,7 +472,7 @@ public class RobotContainer {
             .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
-        .and(inWing.negate())
+        .and(nearSpeaker.negate())
         .whileTrue(
             Commands.startEnd(
                     () ->
@@ -476,12 +487,12 @@ public class RobotContainer {
                     flywheels.superPoopCommand())
                 .withName("Super Poop"));
     Trigger readyToShoot =
-        new Trigger(
-            () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
+        new Trigger(() -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal())
+            .debounce(0.2, DebounceType.kRising);
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(inWing)
+        .and(nearSpeaker)
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -493,7 +504,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(inWing.negate())
+        .and(nearSpeaker.negate())
         .and(readyToShoot)
         .onTrue(
             Commands.parallel(
@@ -663,7 +674,10 @@ public class RobotContainer {
             () ->
                 superstructure.getDesiredGoal() == Superstructure.Goal.AMP
                     && superstructure.atArmGoal())
-        .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.75), Commands.waitUntil(driver.rightTrigger().negate()))
+                .deadlineWith(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
     // ------------- Climbing Controls -------------
     Command trapSequence =
@@ -783,14 +797,20 @@ public class RobotContainer {
     SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
   }
 
-  /** Updates the AprilTag alert. */
-  public void updateAprilTagAlert() {
-    boolean active = getAprilTagLayoutType() != AprilTagLayoutType.OFFICIAL;
-    aprilTagLayoutAlert.set(active);
-    if (active) {
+  /** Updates the alerts. */
+  public void updateAlerts() {
+    // AprilTag layout alert
+    boolean aprilTagAlertActive = getAprilTagLayoutType() != AprilTagLayoutType.OFFICIAL;
+    aprilTagLayoutAlert.set(aprilTagAlertActive);
+    if (aprilTagAlertActive) {
       aprilTagLayoutAlert.setText(
           "Non-official AprilTag layout in use (" + getAprilTagLayoutType().toString() + ").");
     }
+
+    // Ridiculous auto alert
+    ridiculousAutoAlert.set(
+        autoSelector.getSelectedName().equals("Davis Spiky Auto")
+            && autoSelector.getResponses().get(2) == autoSelector.getResponses().get(3));
   }
 
   /**
@@ -799,6 +819,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return autoChooser.get();
+    return autoSelector.getCommand();
   }
 }

@@ -31,7 +31,7 @@ public class Leds extends VirtualSubsystem {
 
   // Robot state tracking
   public int loopCycleCount = 0;
-  public boolean requestAmp = false;
+  public boolean boost = false;
   public boolean intaking = false;
   public boolean hasNote = false;
   public boolean autoShoot = false;
@@ -176,7 +176,7 @@ public class Leds extends VirtualSubsystem {
         solid((Timer.getFPGATimestamp() - autoFinishedTime) / fullTime, Color.kGreen);
       }
     } else { // Enabled
-      if (requestAmp) {
+      if (boost) {
         strobe(Color.kWhite, strobeDuration);
       } else if (trapping || climbing || autoDrive || autoShoot) {
         rainbow(rainbowCycleLength, rainbowDuration);

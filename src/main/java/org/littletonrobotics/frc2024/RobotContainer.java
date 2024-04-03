@@ -679,6 +679,11 @@ public class RobotContainer {
                     Commands.waitSeconds(0.75), Commands.waitUntil(driver.rightTrigger().negate()))
                 .deadlineWith(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
+    // Boost.
+    driver
+        .rightStick()
+        .whileTrue(Commands.startEnd(() -> leds.boost = true, () -> leds.boost = false));
+
     // ------------- Climbing Controls -------------
     Command trapSequence =
         ClimbingCommands.trapSequence(
@@ -721,11 +726,6 @@ public class RobotContainer {
     operator
         .a()
         .onTrue(Commands.runOnce(() -> podiumShotMode = false)); // set preset mode to subwoofer
-
-    // Request amp
-    operator
-        .x()
-        .whileTrue(Commands.startEnd(() -> leds.requestAmp = true, () -> leds.requestAmp = false));
 
     // Shuffle gamepiece
     operator.b().whileTrue(rollers.shuffle());

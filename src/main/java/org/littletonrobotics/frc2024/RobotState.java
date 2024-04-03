@@ -47,7 +47,7 @@ public class RobotState {
       double driveFeedVelocity) {}
 
   private static final LoggedTunableNumber autoLookahead =
-      new LoggedTunableNumber("RobotState/AutoLookahead", 0.8);
+      new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
   private static final LoggedTunableNumber nearSpeakerFeet =

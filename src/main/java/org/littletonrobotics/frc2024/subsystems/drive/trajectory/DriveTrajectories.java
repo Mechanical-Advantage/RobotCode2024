@@ -216,8 +216,7 @@ public class DriveTrajectories {
             // Intake and shoot spike 1
             PathSegment.newBuilder()
                 .addPoseWaypoint(
-                    spikeShootingPoses[1].transformBy(
-                        new Translation2d(spikePrepareIntakeOffset, 0.0).toTransform2d()))
+                    spikeShootingPoses[1].transformBy(new Translation2d(0.15, 0.0).toTransform2d()))
                 .build(),
             PathSegment.newBuilder()
                 .addPoseWaypoint(spikeShootingPoses[1])
@@ -270,8 +269,7 @@ public class DriveTrajectories {
             spike2ToSpike1Shot,
             PathSegment.newBuilder()
                 .addPoseWaypoint(
-                    spikeShootingPoses[1].transformBy(
-                        new Translation2d(spikePrepareIntakeOffset, 0.0).toTransform2d()))
+                    spikeShootingPoses[1].transformBy(new Translation2d(0.15, 0.0).toTransform2d()))
                 .build(),
             PathSegment.newBuilder()
                 .addPoseWaypoint(spikeShootingPoses[1])
@@ -641,7 +639,7 @@ public class DriveTrajectories {
                 .addPoseWaypoint(new Pose2d(FieldConstants.wingX, 1.0, Rotation2d.fromDegrees(180)))
                 .build(),
             PathSegment.newBuilder()
-                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1.25))
+                .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1.2))
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build()));

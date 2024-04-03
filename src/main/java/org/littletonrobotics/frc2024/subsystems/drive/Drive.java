@@ -239,7 +239,9 @@ public class Drive extends SubsystemBase {
     // Update brake mode
     // Reset movement timer if moved
     if (Arrays.stream(modules)
-        .anyMatch(module -> module.getVelocityMetersPerSec() > coastMetersPerSecThreshold.get())) {
+        .anyMatch(
+            module ->
+                Math.abs(module.getVelocityMetersPerSec()) > coastMetersPerSecThreshold.get())) {
       lastMovementTimer.reset();
     }
     if (DriverStation.isEnabled() && !lastEnabled) {

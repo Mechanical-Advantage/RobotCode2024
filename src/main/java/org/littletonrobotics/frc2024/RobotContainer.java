@@ -674,7 +674,10 @@ public class RobotContainer {
             () ->
                 superstructure.getDesiredGoal() == Superstructure.Goal.AMP
                     && superstructure.atArmGoal())
-        .whileTrue(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE).onlyWhile(driver.rightTrigger()));
+        .onTrue(
+            Commands.parallel(
+                    Commands.waitSeconds(0.75), Commands.waitUntil(driver.rightTrigger().negate()))
+                .deadlineWith(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
 
     // ------------- Climbing Controls -------------
     Command trapSequence =

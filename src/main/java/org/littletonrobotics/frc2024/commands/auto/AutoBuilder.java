@@ -40,7 +40,7 @@ public class AutoBuilder {
 
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
-  private static final double spikeFeedThroughDelay = 0.45;
+  private static final double spikeFeedThroughDelay = 0.5;
   private static final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
 
   /** All shot compensation values used when shooting corresponding centerline note. */
@@ -164,7 +164,7 @@ public class AutoBuilder {
                                 .until(
                                     () ->
                                         autoTimer.hasElapsed(
-                                            lastIntakeTime + spikeFeedThroughDelay))),
+                                            trajectory.getDuration() + spikeFeedThroughDelay))),
                         () -> scoresThree)))
 
         // Always aim and run flywheels
@@ -526,7 +526,7 @@ public class AutoBuilder {
                                     Commands.waitUntil(
                                             () ->
                                                 autoTimer.hasElapsed(
-                                                    grabCenterline0.getDuration() - 1.5))
+                                                    grabCenterline0.getDuration() - 0.75))
                                         .andThen(
                                             Commands.parallel(
                                                 aim(drive),
@@ -613,21 +613,23 @@ public class AutoBuilder {
                 .ignoringDisable(true));
 
     return Commands.sequence(
-        resetPose(DriveTrajectories.startingFarSource),
-        Commands.runOnce(autoTimer::restart),
-        Commands.select(centerlineChoices, () -> responses.get().get(0)),
-        followTrajectory(drive, grabEjected)
-            .deadlineWith(
-                intake(superstructure, rollers)
-                    .withTimeout(grabEjected.getDuration() - 0.5)
-                    .andThen(
-                        Commands.parallel(
-                            aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)))),
-        feed(rollers)
-            .deadlineWith(aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)),
-        Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_COAST)),
-        endCoast,
-        followTrajectory(drive, driveToSource));
+            resetPose(DriveTrajectories.startingFarSource),
+            Commands.runOnce(autoTimer::restart),
+            Commands.select(centerlineChoices, () -> responses.get().get(0)),
+            followTrajectory(drive, grabEjected)
+                .deadlineWith(
+                    intake(superstructure, rollers)
+                        .withTimeout(grabEjected.getDuration() - 0.5)
+                        .andThen(
+                            Commands.parallel(
+                                aim(drive),
+                                superstructure.setGoalCommand(Superstructure.Goal.AIM)))),
+            feed(rollers)
+                .deadlineWith(aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+            Commands.runOnce(() -> drive.setCoastRequest(Drive.CoastRequest.ALWAYS_COAST)),
+            endCoast,
+            followTrajectory(drive, driveToSource))
+        .deadlineWith(flywheels.ejectCommand().withTimeout(1.0).andThen(flywheels.shootCommand()));
   }
 
   /** Scores two centerline notes with the given trajectories */
@@ -649,49 +651,45 @@ public class AutoBuilder {
                         waitUntilXCrossed(FieldConstants.Stage.center.getX(), true)
                             .deadlineWith(
                                 Commands.parallel(
-                                    flywheels.ejectCommand(),
                                     superstructure.setGoalCommand(Superstructure.Goal.STOW),
                                     feed(rollers))),
                         Commands.sequence(
-                                // Intake centerline 1
-                                waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                                    .andThen(
-                                        waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                            .deadlineWith(intake(superstructure, rollers))),
+                            // Intake centerline 1
+                            waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                                .andThen(
+                                    waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                        .deadlineWith(intake(superstructure, rollers))),
 
-                                // Shoot centerline 1
-                                Commands.waitUntil(
-                                        () ->
-                                            autoTimer.hasElapsed(
-                                                startToCenterline1.getDuration()
-                                                    - shootTimeoutSecs.get() / 2.0))
-                                    .andThen(feed(rollers))
-                                    .deadlineWith(
-                                        Commands.parallel(
-                                            aim(drive),
-                                            superstructure.aimWithCompensation(
-                                                firstShotCompensation))),
+                            // Shoot centerline 1
+                            Commands.waitUntil(
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            startToCenterline1.getDuration()
+                                                - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    Commands.parallel(
+                                        aim(drive),
+                                        superstructure.aimWithCompensation(firstShotCompensation))),
 
-                                // Intake centerline 2
-                                waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
-                                    .andThen(
-                                        waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                            .deadlineWith(intake(superstructure, rollers))),
+                            // Intake centerline 2
+                            waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
+                                .andThen(
+                                    waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
+                                        .deadlineWith(intake(superstructure, rollers))),
 
-                                // Shoot centerline 2
-                                Commands.waitUntil(
-                                        () ->
-                                            autoTimer.hasElapsed(
-                                                startToCenterline1.getDuration()
-                                                    + shotToCenterline2.getDuration()
-                                                    - shootTimeoutSecs.get() / 2.0))
-                                    .andThen(feed(rollers))
-                                    .deadlineWith(
-                                        Commands.parallel(
-                                            aim(drive),
-                                            superstructure.aimWithCompensation(
-                                                secondShotCompensation))))
-                            // Run flywheels
-                            .deadlineWith(flywheels.shootCommand()))));
+                            // Shoot centerline 2
+                            Commands.waitUntil(
+                                    () ->
+                                        autoTimer.hasElapsed(
+                                            startToCenterline1.getDuration()
+                                                + shotToCenterline2.getDuration()
+                                                - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    Commands.parallel(
+                                        aim(drive),
+                                        superstructure.aimWithCompensation(
+                                            secondShotCompensation)))))));
   }
 }

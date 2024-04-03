@@ -24,6 +24,7 @@ import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceGrpc;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.PathRequest;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.PathSegment;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.TimestampedVehicleState;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.Trajectory;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.TrajectoryResponse;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleModel;
@@ -106,7 +107,8 @@ public class GenerateTrajectories {
       System.out.print(entry.getKey() + " - Generating 💭");
       double startTime = System.currentTimeMillis();
       if (generateEmpty) {
-        trajectory = Trajectory.newBuilder().build();
+        trajectory =
+            Trajectory.newBuilder().addStates(TimestampedVehicleState.newBuilder().build()).build();
       } else {
         // Use service for generation
         PathRequest request =

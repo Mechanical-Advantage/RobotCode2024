@@ -23,7 +23,7 @@ public class Backpack extends GenericRollerSystem<Backpack.Goal> {
     IDLING(() -> 0),
     AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0)),
     TRAP_SCORING(new LoggedTunableNumber("Backpack/TrapScoringVoltage", 8.0)),
-    TRAP_JACKHAMMER_OUT(new LoggedTunableNumber("Backpack/JackhammerOutVoltage", 12.0)),
+    TRAP_JACKHAMMER_OUT(new LoggedTunableNumber("Backpack/JackhammerOutVoltage", 8.0)),
     TRAP_JACKHAMMER_IN(new LoggedTunableNumber("Backpack/JackhammerInVoltage", -4.0)),
     EJECTING(new LoggedTunableNumber("Backpack/EjectingVoltage", -12.0));
 

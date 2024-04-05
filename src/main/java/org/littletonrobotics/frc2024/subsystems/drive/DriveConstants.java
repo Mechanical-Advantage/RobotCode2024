@@ -26,7 +26,7 @@ public final class DriveConstants {
       switch (Constants.getRobot()) {
         case SIMBOT, COMPBOT ->
             DriveConfig.builder()
-                .wheelRadius(Units.inchesToMeters(1.936))
+                .wheelRadius(Units.inchesToMeters(1.908)) // 1.936
                 .trackWidthX(Units.inchesToMeters(20.75))
                 .trackWidthY(Units.inchesToMeters(20.75))
                 .bumperWidthX(Units.inchesToMeters(37))

@@ -58,7 +58,7 @@ public class RobotState {
   private static final double armAngleExponent = -0.593140189605718;
 
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
-  @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.6;
+  @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.3;
 
   private static final double autoFarShotCompensationDegrees = 0.6;
 

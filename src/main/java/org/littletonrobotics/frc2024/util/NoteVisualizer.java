@@ -19,18 +19,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.Setter;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.junction.Logger;
 
 public class NoteVisualizer {
-  private static final double shotSpeed = 9.0; // Meters per sec
+  private static final double shotSpeed = 15.0; // Meters per sec
   private static final double ejectSpeed = 2.0; // Meters per sec
   @Setter private static Supplier<Pose2d> robotPoseSupplier = Pose2d::new;
   @Setter private static Supplier<Rotation2d> armAngleSupplier = Rotation2d::new;
   private static final List<Translation2d> autoNotes = new ArrayList<>();
-  @Setter private static boolean hasNote = false;
+  @Setter @Getter private static boolean hasNote = false;
 
   /** Show all staged notes for alliance */
   public static void showAutoNotes() {
@@ -59,25 +60,25 @@ public class NoteVisualizer {
   /** Add all notes to be shown at the beginning of auto */
   public static void resetAutoNotes() {
     clearAutoNotes();
-    for (int i = FieldConstants.StagingLocations.spikeTranslations.length - 1; i >= 0; i--) {
+    for (int i = 0; i < 3; i++) {
       autoNotes.add(AllianceFlipUtil.apply(FieldConstants.StagingLocations.spikeTranslations[i]));
     }
-    for (int i = FieldConstants.StagingLocations.centerlineTranslations.length - 1; i >= 0; i--) {
+    for (int i = 0; i < 5; i++) {
       autoNotes.add(
           AllianceFlipUtil.apply(FieldConstants.StagingLocations.centerlineTranslations[i]));
     }
   }
 
   /**
-   * Take note from staged note
+   * Intakes staged note.
    *
-   * @param note Number of note starting with 0 - 2 being spike notes going from amp to source side
-   *     <br>
-   *     and 3 - 7 being centerline notes going from amp to source side.
+   * @param index of staged note (0-2) spikes, (3-7) centerlines
    */
-  public static void takeAutoNote(int note) {
-    autoNotes.set(note, null);
-    hasNote = true;
+  public static void intakeAutoNote(int index) {
+    if (autoNotes.get(index) != null) {
+      setHasNote(true);
+    }
+    autoNotes.set(index, null);
   }
 
   /** Shows the currently held note if there is one */
@@ -98,9 +99,9 @@ public class NoteVisualizer {
                   final Pose3d startPose = getIndexerPose3d();
                   final Pose3d endPose =
                       new Pose3d(
-                          AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening),
-                          startPose.getRotation());
-
+                              AllianceFlipUtil.apply(FieldConstants.Speaker.centerSpeakerOpening),
+                              startPose.getRotation())
+                          .transformBy(new Transform3d(0.4, 0.0, 0.0, new Rotation3d()));
                   final double duration =
                       startPose.getTranslation().getDistance(endPose.getTranslation()) / shotSpeed;
                   final Timer timer = new Timer();

@@ -41,6 +41,8 @@ import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIONorthstar;
 import org.littletonrobotics.frc2024.subsystems.drive.*;
 import org.littletonrobotics.frc2024.subsystems.drive.controllers.TeleopDriveController;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.DriveTrajectories;
+import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.flywheels.*;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
@@ -343,6 +345,15 @@ public class RobotContainer {
                 .withTimeout(0.9) // Rumble three times
                 .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
                 .finallyDo(() -> Leds.getInstance().endgameAlert = false));
+
+    // Log CA trajectories
+    DriveTrajectories.paths.keySet().stream()
+        .filter(name -> name.startsWith("CA"))
+        .forEach(
+            name ->
+                Logger.recordOutput(
+                    "DavisCATrajectories/" + name,
+                    new HolonomicTrajectory(name).getTrajectoryPoses()));
   }
 
   private void configureAutos() {
@@ -375,7 +386,23 @@ public class RobotContainer {
                     AutoQuestionResponse.AMP_MIDDLE,
                     AutoQuestionResponse.MIDDLE))),
         autoBuilder.davisSpikyAuto());
-    autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
+    autoSelector.addRoutine(
+        "Davis CA Auto",
+        List.of(
+            new AutoQuestion(
+                "First center note?",
+                List.of(
+                    AutoQuestionResponse.AMP_WALL,
+                    AutoQuestionResponse.AMP_MIDDLE,
+                    AutoQuestionResponse.MIDDLE)),
+            new AutoQuestion(
+                "Second center note?",
+                List.of(
+                    AutoQuestionResponse.AMP_WALL,
+                    AutoQuestionResponse.AMP_MIDDLE,
+                    AutoQuestionResponse.MIDDLE))),
+        autoBuilder.davisCAAuto());
+    autoSelector.addRoutine("Davis Speedy Auto", autoBuilder.davisSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(
         "Davis Unethical Auto",

@@ -387,6 +387,149 @@ public class AutoBuilder {
             .deadlineWith(intake(superstructure, rollers)));
   }
 
+  public Command davisCAAuto() {
+    List<AutoQuestionResponse> centerlineChoices =
+        List.of(
+            AutoQuestionResponse.AMP_WALL,
+            AutoQuestionResponse.AMP_MIDDLE,
+            AutoQuestionResponse.MIDDLE);
+    // Set up all choices
+    Map<AutoQuestionResponse, Command> choices = new HashMap<>();
+    for (var firstCenterline : centerlineChoices) {
+      final int firstCenterlineIndex = spiky_calculateCenterlineIndex(firstCenterline);
+      Map<AutoQuestionResponse, Command> secondCenterlineChoices = new HashMap<>();
+
+      for (var secondCenterline : centerlineChoices) {
+        final int secondCenterlineIndex = spiky_calculateCenterlineIndex(secondCenterline);
+        // Get trajectories
+        HolonomicTrajectory preloadToFirstCenterline =
+            new HolonomicTrajectory("CA_startToCenterline" + firstCenterlineIndex);
+        HolonomicTrajectory lastCenterlineToSpike0 =
+            new HolonomicTrajectory("CA_grabCenterline" + secondCenterlineIndex + "ToSpike0");
+        secondCenterlineChoices.put(
+            secondCenterline, CA_fullCommand(preloadToFirstCenterline, lastCenterlineToSpike0));
+      }
+      choices.put(
+          firstCenterline, Commands.select(secondCenterlineChoices, () -> responses.get().get(1)));
+    }
+
+    return resetPose(DriveTrajectories.startingAmp)
+        .andThen(Commands.select(choices, () -> responses.get().get(0)));
+  }
+
+  public Command CA_fullCommand(
+      HolonomicTrajectory preloadToFirstCenterline, HolonomicTrajectory lastCenterlineToSpike0) {
+
+    final double spike1IntakeTime = 2.5;
+
+    Timer remainingSpikesTimer = new Timer();
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(
+            () -> {
+              remainingSpikesTimer.stop();
+              remainingSpikesTimer.reset();
+              autoTimer.restart();
+            })
+        .andThen(
+            // Drive Sequence
+            Commands.sequence(
+                    followTrajectory(drive, preloadToFirstCenterline),
+                    followTrajectory(drive, lastCenterlineToSpike0))
+                .alongWith(
+                    // Sequence superstructure and rollers
+                    Commands.sequence(
+                        // Score preload and spike 2
+                        Commands.waitUntil(() -> autoTimer.hasElapsed(1.0))
+                            .andThen(rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
+                            .deadlineWith(
+                                Commands.parallel(
+                                    aim(drive),
+                                    superstructure.setGoalCommand(Superstructure.Goal.AIM)))
+                            .until(() -> autoTimer.hasElapsed(2.6)),
+
+                        // Intake and shoot centerline 1
+                        waitUntilXCrossed(FieldConstants.wingX, true)
+                            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            .until(
+                                () ->
+                                    autoTimer.hasElapsed(
+                                        preloadToFirstCenterline.getDuration()
+                                            - shootTimeoutSecs.get() / 2.0))
+                            .andThen(feed(rollers))
+                            .deadlineWith(
+                                Commands.waitUntil(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                preloadToFirstCenterline.getDuration() - 1.5))
+                                    .andThen(
+                                        Commands.parallel(
+                                            aim(drive), superstructure.aimWithCompensation(0)))),
+
+                        // Intake second centerline
+                        intake(superstructure, rollers)
+                            .raceWith(waitUntilXCrossed(stageAimX, false)),
+
+                        // Sequence aiming, intaking and shooting
+                        Commands.sequence(
+                                // Sequence aiming portions
+                                Commands.sequence(
+                                        // Aim last centerline shot
+                                        waitUntilXCrossed(
+                                                DriveTrajectories.CA_lastCenterlineShot.getX(),
+                                                false)
+                                            .andThen(aim(drive))
+                                            .until(
+                                                () ->
+                                                    remainingSpikesTimer.hasElapsed(
+                                                        shootTimeoutSecs.get()
+                                                            * 1.5)), // Aim longer to ensure aimed
+
+                                        // Aim spike 1 and 0
+                                        Commands.waitUntil(
+                                                () ->
+                                                    remainingSpikesTimer.hasElapsed(
+                                                        spike1IntakeTime))
+                                            .andThen(aim(drive))
+                                            .until(
+                                                () ->
+                                                    autoTimer.hasElapsed(
+                                                        preloadToFirstCenterline.getDuration()
+                                                            + lastCenterlineToSpike0.getDuration()
+                                                            + spikeFeedThroughDelay)))
+                                    .deadlineWith(
+                                        Commands.sequence(
+                                            // Shoot second centerline
+                                            rollers
+                                                .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                                .raceWith(
+                                                    waitUntilXCrossed(
+                                                        DriveTrajectories.CA_lastCenterlineShot
+                                                            .getX(),
+                                                        false)),
+                                            feed(rollers),
+                                            // Intake and shoot spike 1
+                                            rollers
+                                                .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                                .until(
+                                                    () ->
+                                                        remainingSpikesTimer.hasElapsed(
+                                                            spike1IntakeTime + spikeIntakeDelay)),
+                                            // Run intake and feeder for spike 0
+                                            rollers.setGoalCommand(
+                                                Rollers.Goal.QUICK_INTAKE_TO_FEED))))
+                            .deadlineWith(
+                                // Start spike timer when spike scoring segment begins
+                                waitUntilXCrossed(
+                                        DriveTrajectories.CA_lastCenterlineShot.getX(), false)
+                                    .andThen(remainingSpikesTimer::restart),
+                                // Aim superstructure
+                                waitUntilXCrossed(stageAimX, false)
+                                    .andThen(
+                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))))
+                // Run flywheels
+                .deadlineWith(flywheels.shootCommand()));
+  }
+
   public Command davisSpeedyAuto() {
     var grabCenterline4 = new HolonomicTrajectory("speedy_ampToCenterline4");
     var grabCenterline3 = new HolonomicTrajectory("speedy_centerline4ToCenterline3");

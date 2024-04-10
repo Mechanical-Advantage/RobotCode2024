@@ -14,9 +14,11 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.util.GeomUtil;
@@ -382,6 +384,137 @@ public class DriveTrajectories {
             "spiky_spike" + spikeIndex + "ToCenterline" + centerlineIndex,
             List.of(spikeToCenterlineIntakeSegments[spikeIndex][i], centerlineToShotSegments[i]));
       }
+    }
+  }
+
+  public static final Pose2d CA_lastCenterlineShot =
+      getShootingPose(
+          StagingLocations.spikeTranslations[2]
+              .interpolate(StagingLocations.spikeTranslations[1], 0.3)
+              .plus(new Translation2d(0.25, 0.0)));
+
+  // Davis Unusual Auto (named "CA_XXX")
+  static {
+    final double shootingVelocity = 0.7;
+    final double centerlineIntakeOffset = 0.25;
+    final double centerlinePrepareIntakeOffset = 0.8;
+
+    // Segments for amp start and scoring spike 2
+    final List<PathSegment> startToSpike2Segment =
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingAmp, 200)
+                .addPoseWaypoint(
+                    getShootingPose(StagingLocations.spikeTranslations[2])
+                        .transformBy(GeomUtil.toTransform2d(0.8, 0.0)),
+                    200)
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(StagingLocations.spikeTranslations[2])
+                        .transformBy(GeomUtil.toTransform2d(-0.35, 0.0)),
+                    200)
+                .setMaxVelocity(shootingVelocity)
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build());
+
+    // Segments for scoring the last centerline and remaining spikes
+    final List<PathSegment> lastCenterlineToSpike0 =
+        List.of(
+            // Shoot last centerline while moving in front of spike 1
+            PathSegment.newBuilder()
+                .addPoseWaypoint(CA_lastCenterlineShot)
+                .addPoseWaypoint(
+                    getShootingPose(
+                        StagingLocations.spikeTranslations[2]
+                            .interpolate(StagingLocations.spikeTranslations[1], 0.4)
+                            .plus(new Translation2d(-0.65, 0.0))),
+                    200)
+                .setMaxVelocity(shootingVelocity)
+                .build(),
+            // Intake spike 1
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    new Pose2d(StagingLocations.spikeTranslations[1], Rotation2d.fromDegrees(160.0))
+                        .transformBy(GeomUtil.toTransform2d(0.8, 0.0)),
+                    200)
+                .addPoseWaypoint(
+                    new Pose2d(StagingLocations.spikeTranslations[1], Rotation2d.fromDegrees(160.0))
+                        .transformBy(GeomUtil.toTransform2d(0.5, 0.0)),
+                    200)
+                .build(),
+            // Shoot spike 1
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        StagingLocations.spikeTranslations[1]
+                            .interpolate(StagingLocations.spikeTranslations[0], 0.4)
+                            .plus(new Translation2d(-0.65, 0.0))),
+                    200)
+                .setMaxVelocity(1.2)
+                .build(),
+            // Intake and shoot spike 0
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(StagingLocations.spikeTranslations[0])
+                        .transformBy(GeomUtil.toTransform2d(0.5, 0.0)),
+                    200)
+                .build());
+
+    for (int centerlineIndex = 2; centerlineIndex <= 4; centerlineIndex++) {
+      Translation2d centerlineTranslation =
+          StagingLocations.centerlineTranslations[centerlineIndex];
+      Rotation2d centerlineIntakeRotation =
+          centerlineIndex != 4
+              ? stageLeftAvoidance.minus(centerlineTranslation).getAngle()
+              : Rotation2d.fromDegrees(-170.0);
+      // Segment that intakes centerline note while avoiding stage
+      PathSegment centerlineIntakeSegment = PathSegment.newBuilder().build();
+      // Avoid stage if not centerline 4
+      if (centerlineIndex != 4) {
+        centerlineIntakeSegment =
+            centerlineIntakeSegment.toBuilder().addTranslationWaypoint(stageLeftAvoidance).build();
+      }
+      centerlineIntakeSegment =
+          centerlineIntakeSegment.toBuilder()
+              .addPoseWaypoint(
+                  new Pose2d(centerlineTranslation, centerlineIntakeRotation)
+                      .transformBy(GeomUtil.toTransform2d(centerlinePrepareIntakeOffset, 0.0)))
+              .addPoseWaypoint(
+                  new Pose2d(centerlineTranslation, centerlineIntakeRotation)
+                      .transformBy(GeomUtil.toTransform2d(centerlineIntakeOffset, 0.0)))
+              .addPoseWaypoint(
+                  new Pose2d(centerlineTranslation, centerlineIntakeRotation)
+                      .transformBy(GeomUtil.toTransform2d(centerlinePrepareIntakeOffset, 0.0)))
+              .build();
+      // Avoid stage on way out
+      if (centerlineIndex != 4) {
+        centerlineIntakeSegment =
+            centerlineIntakeSegment.toBuilder().addTranslationWaypoint(stageLeftAvoidance).build();
+      }
+
+      // Trajectory from start to centerline + shot
+      paths.put(
+          "CA_startToCenterline" + centerlineIndex,
+          Stream.of(
+                  startToSpike2Segment,
+                  List.of(
+                      centerlineIntakeSegment,
+                      PathSegment.newBuilder().addPoseWaypoint(stageLeftShootingPose).build()))
+              .flatMap(Collection::stream)
+              .toList());
+
+      // Trajectory from shot to centerline and remaining spikes
+      paths.put(
+          "CA_grabCenterline" + centerlineIndex + "ToSpike0",
+          Stream.of(
+                  List.of(
+                      PathSegment.newBuilder().addPoseWaypoint(stageLeftShootingPose).build(),
+                      centerlineIntakeSegment),
+                  lastCenterlineToSpike0)
+              .flatMap(Collection::stream)
+              .toList());
     }
   }
 

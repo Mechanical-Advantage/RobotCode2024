@@ -60,7 +60,7 @@ public class RobotState {
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
 
-  private static final double autoFarShotCompensationDegrees = 0.6;
+  private static final double autoFarShotCompensationDegrees = 0.0; // 0.6 at NECMP
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
     shotCompensationDegrees += deltaDegrees;

@@ -652,17 +652,27 @@ public class RobotContainer {
 
                     // Auto drive to amp
                     ampAutoDrive,
-                    autoDriveDisable)
+                    autoDriveDisable.negate())
                 .alongWith(
                     Commands.waitUntil(
                             () -> {
-                              if (autoDriveDisable.getAsBoolean()) {
-                                return true;
+                              if (!autoDriveDisable.getAsBoolean()) {
+                                Pose2d poseError =
+
+                                    robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
+                                return
+                                    poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
+                                        &&
+                                        Math.abs(poseError.getRotation().getDegrees()) <= 120;
                               }
-                              Pose2d poseError =
-                                  robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
-                              return poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
-                                  && Math.abs(poseError.getRotation().getDegrees()) <= 120;
+//                                                            Pose2d poseError =
+//
+//                               robotState.getEstimatedPose().relativeTo(ampAlignedPose.get());
+//                                                            return
+//                               poseError.getTranslation().getNorm() <= Units.feetToMeters(5.0)
+//                                                                &&
+//                               Math.abs(poseError.getRotation().getDegrees()) <= 120;
+                              return true;
                             })
                         .andThen(
                             superstructure.setGoalWithConstraintsCommand(

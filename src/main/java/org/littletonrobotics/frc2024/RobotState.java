@@ -53,7 +53,7 @@ public class RobotState {
   private static final LoggedTunableNumber shootingZoneFeet =
       new LoggedTunableNumber("RobotState/ShootingZoneFeet", 25.0);
   private static final LoggedTunableNumber closeShootingZoneFeet =
-      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 12.0);
+      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 11.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;

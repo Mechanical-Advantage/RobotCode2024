@@ -57,9 +57,9 @@ public class RobotState {
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
   private static final LoggedTunableNumber superPoopLookahead =
-      new LoggedTunableNumber("RobotState/superPoopLookahead", 1.0);
-  private static final LoggedTunableNumber nearSpeakerFeet =
-      new LoggedTunableNumber("RobotState/NearSpeakerFeet", 25.0);
+      new LoggedTunableNumber("RobotState/SuperPoopLookahead", 1.0);
+  private static final LoggedTunableNumber closeShootingZoneFeet =
+      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 11.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;
@@ -259,14 +259,8 @@ public class RobotState {
     Translation2d predictedVehicleFixedToTargetTranslation =
         fieldToPredictedVehicleFixed.inverse().transformBy(fieldToTarget).getTranslation();
 
-    Rotation2d vehicleToGoalDirection = predictedVehicleToTargetTranslation.getAngle();
-
     Rotation2d targetVehicleDirection = predictedVehicleFixedToTargetTranslation.getAngle();
     double targetDistance = predictedVehicleToTargetTranslation.getNorm();
-
-    double feedVelocity =
-        robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
-            - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
     double armAngleDegrees = armAngleCoefficient * Math.pow(targetDistance, armAngleExponent);
     double autoFarArmCorrection =
@@ -313,13 +307,22 @@ public class RobotState {
         : DriveConstants.moduleLimitsFree;
   }
 
-  public boolean nearSpeaker() {
+  public boolean inShootingZone() {
     Pose2d robot = AllianceFlipUtil.apply(getEstimatedPose());
     if (robot.getY() <= FieldConstants.Stage.ampLeg.getY()) {
       return robot.getX() <= FieldConstants.wingX;
     } else {
       return robot.getX() <= FieldConstants.fieldLength / 2.0 + 0.5;
     }
+  }
+
+  public boolean inCloseShootingZone() {
+    return getEstimatedPose()
+            .getTranslation()
+            .getDistance(
+                AllianceFlipUtil.apply(
+                    FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+        < Units.feetToMeters(closeShootingZoneFeet.get());
   }
 
   /**

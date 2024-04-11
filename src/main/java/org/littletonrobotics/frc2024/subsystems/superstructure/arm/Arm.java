@@ -60,6 +60,9 @@ public class Arm {
       new LoggedTunableNumber("Arm/LowerLimitDegrees", minAngle.getDegrees());
   private static final LoggedTunableNumber upperLimitDegrees =
       new LoggedTunableNumber("Arm/UpperLimitDegrees", maxAngle.getDegrees());
+  private static final LoggedTunableNumber partialStowUpperLimitDegrees =
+      new LoggedTunableNumber("Arm/PartialStowUpperLimitDegrees", 30.0);
+
   // Profile constraints
   public static final Supplier<TrapezoidProfile.Constraints> maxProfileConstraints =
       () -> new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get());
@@ -72,14 +75,12 @@ public class Arm {
 
   @RequiredArgsConstructor
   public enum Goal {
-    STOP(() -> 0),
-    FLOOR_INTAKE(new LoggedTunableNumber("Arm/IntakeDegrees", minAngle.getDegrees())),
+    STOW(() -> 0),
     UNJAM_INTAKE(new LoggedTunableNumber("Arm/UnjamDegrees", 40.0)),
     STATION_INTAKE(new LoggedTunableNumber("Arm/StationIntakeDegrees", 45.0)),
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     SUPER_POOP(
         () -> RobotState.getInstance().getSuperPoopAimingParameters().armAngle().getDegrees()),
-    STOW(new LoggedTunableNumber("Arm/StowDegrees", minAngle.getDegrees())),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 34.0)),
@@ -148,6 +149,17 @@ public class Arm {
     coastSupplier = coastOverride;
   }
 
+  private double getStowAngle() {
+    if (DriverStation.isTeleopEnabled() && RobotState.getInstance().inCloseShootingZone()) {
+      return MathUtil.clamp(
+          setpointState.position,
+          minAngle.getRadians(),
+          Units.degreesToRadians(partialStowUpperLimitDegrees.get()));
+    } else {
+      return minAngle.getRadians();
+    }
+  }
+
   public void periodic() {
     // Process inputs
     io.updateInputs(inputs);
@@ -172,7 +184,6 @@ public class Arm {
     // Check if disabled
     // Also run first cycle of auto to reset arm
     if (disableSupplier.getAsBoolean()
-        || goal == Goal.STOP
         || (Constants.getMode() == Constants.Mode.SIM
             && DriverStation.isAutonomousEnabled()
             && wasNotAuto)) {
@@ -189,30 +200,25 @@ public class Arm {
     Leds.getInstance().armCoast = coastSupplier.getAsBoolean();
 
     // Don't run profile when characterizing, coast mode, or disabled
-    if (!characterizing
-        && brakeModeEnabled
-        && !disableSupplier.getAsBoolean()
-        && goal != Goal.STOP) {
+    if (!characterizing && brakeModeEnabled && !disableSupplier.getAsBoolean()) {
       // Run closed loop
+      double goalAngle =
+          goal.getRads() + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0);
+      if (goal == Goal.STOW) {
+        goalAngle = getStowAngle();
+      }
       setpointState =
           profile.calculate(
               Constants.loopPeriodSecs,
               setpointState,
               new TrapezoidProfile.State(
                   MathUtil.clamp(
-                      goal.getRads()
-                          + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0),
+                      goalAngle,
                       Units.degreesToRadians(lowerLimitDegrees.get()),
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));
-
-      if (goal == Goal.STOW && atGoal()) {
-        // Stop applying power against the hardstop
-        io.stop();
-      } else {
-        io.runSetpoint(
-            setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
-      }
+      io.runSetpoint(
+          setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
     }
 
     // Logs

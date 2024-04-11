@@ -111,7 +111,7 @@ public class RobotContainer {
   private final Trigger shootPresets = overrides.operatorSwitch(0);
   private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
-  private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
+  private final Trigger autoDriveEnable = overrides.operatorSwitch(3);
   private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
   private final Alert ridiculousAutoAlert =
@@ -636,6 +636,9 @@ public class RobotContainer {
         .b()
         .whileTrue(
             Commands.either(
+                    // Auto drive to amp
+                    ampAutoDrive,
+
                     // Drive while heading is being controlled
                     drive
                         .run(
@@ -649,14 +652,11 @@ public class RobotContainer {
                             Commands.startEnd(
                                 () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
                                 drive::clearHeadingGoal)),
-
-                    // Auto drive to amp
-                    ampAutoDrive,
-                    autoDriveDisable)
+                    autoDriveEnable)
                 .alongWith(
                     Commands.waitUntil(
                             () -> {
-                              if (autoDriveDisable.getAsBoolean()) {
+                              if (!autoDriveEnable.getAsBoolean()) {
                                 return true;
                               }
                               Pose2d poseError =

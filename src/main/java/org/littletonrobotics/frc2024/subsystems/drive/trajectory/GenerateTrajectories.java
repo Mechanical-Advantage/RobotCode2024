@@ -17,8 +17,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceGrpc;
@@ -49,6 +51,111 @@ public class GenerateTrajectories {
                     * 0.75)
             .build();
 
+    // Connect to service
+    var channel =
+        Grpc.newChannelBuilder("127.0.0.1:56328", InsecureChannelCredentials.create()).build();
+    var service = VehicleTrajectoryServiceGrpc.newBlockingStub(channel);
+
+    Set<String> completedPaths = new HashSet<>();
+    while (true) {
+      // Get all paths
+      var allPaths = DriveTrajectories.paths;
+      boolean hasAllPaths = true;
+      for (var supplier : DriveTrajectories.suppliedPaths) {
+        var suppliedPaths = supplier.apply(completedPaths);
+        if (suppliedPaths == null) {
+          hasAllPaths = false;
+        } else {
+          allPaths.putAll(suppliedPaths);
+        }
+      }
+      Set<String> originalKeys = new HashSet<>();
+      originalKeys.addAll(allPaths.keySet());
+      for (String name : originalKeys) {
+        if (completedPaths.contains(name)) {
+          allPaths.remove(name);
+        } else {
+          completedPaths.add(name);
+        }
+      }
+      if (!hasAllPaths && allPaths.size() == 0) {
+        throw new RuntimeException(
+            "Invalid dependency tree. Not all supplied trajectories are available, but there are no trajectories to generate.");
+      }
+
+      // Check hashcodes
+      Map<String, List<PathSegment>> pathQueue = new HashMap<>();
+      for (Map.Entry<String, List<PathSegment>> entry : allPaths.entrySet()) {
+        String hashCode = getHashCode(model, entry.getValue());
+        File pathFile =
+            Path.of("src", "main", "deploy", "trajectories", entry.getKey() + ".pathblob").toFile();
+        if (pathFile.exists()) {
+          try {
+            InputStream fileStream = new FileInputStream(pathFile);
+            Trajectory trajectory = Trajectory.parseFrom(fileStream);
+            if (!trajectory.getHashCode().equals(hashCode)) {
+              pathQueue.put(entry.getKey(), entry.getValue());
+            }
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        } else {
+          pathQueue.put(entry.getKey(), entry.getValue());
+        }
+      }
+
+      // Generate trajectories
+      String generateEmptyFlag = System.getenv("GENERATE_EMPTY_DRIVE_TRAJECTORIES");
+      boolean generateEmpty = generateEmptyFlag != null && generateEmptyFlag.length() > 0;
+      for (Map.Entry<String, List<PathSegment>> entry : pathQueue.entrySet()) {
+        Trajectory trajectory;
+        System.out.print(entry.getKey() + " - Generating 💭");
+        double startTime = System.currentTimeMillis();
+        if (generateEmpty) {
+          trajectory =
+              Trajectory.newBuilder()
+                  .addStates(TimestampedVehicleState.newBuilder().build())
+                  .build();
+        } else {
+          // Use service for generation
+          PathRequest request =
+              PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
+          TrajectoryResponse response = service.generateTrajectory(request);
+          String error = response.getError().getReason();
+          if (error.length() > 0) {
+            System.err.println(
+                "Got error response for trajectory \"" + entry.getKey() + "\": " + error);
+            System.exit(1);
+          }
+          trajectory =
+              response.getTrajectory().toBuilder()
+                  .setHashCode(getHashCode(model, entry.getValue()))
+                  .build();
+        }
+        File pathFile =
+            Path.of("src", "main", "deploy", "trajectories", entry.getKey() + ".pathblob").toFile();
+        try {
+          OutputStream fileStream = new FileOutputStream(pathFile);
+          trajectory.writeTo(fileStream);
+          double endTime = System.currentTimeMillis();
+          System.out.println(
+              "\r"
+                  + entry.getKey()
+                  + " - Finished in "
+                  + Math.round((endTime - startTime) / 100.0) / 10.0
+                  + " secs ✅");
+        } catch (IOException e) {
+          System.out.println("\r" + entry.getKey() + " - FAILED ⛔");
+          e.printStackTrace();
+        }
+      }
+
+      // Exit if all trajectories ready
+      if (hasAllPaths) {
+        break;
+      }
+    }
+
     // Delete old trajectories
     try {
       Files.list(Path.of("src", "main", "deploy", "trajectories"))
@@ -57,8 +164,7 @@ public class GenerateTrajectories {
                 String filename = path.getFileName().toString();
                 if (!filename.endsWith(".pathblob")) return;
                 String[] components = filename.split("\\.");
-                if (components.length == 2
-                    && !DriveTrajectories.paths.keySet().contains(components[0])) {
+                if (components.length == 2 && !completedPaths.contains(components[0])) {
                   path.toFile().delete();
                   System.out.println(components[0] + " - Deleted 💀");
                 }
@@ -66,82 +172,7 @@ public class GenerateTrajectories {
     } catch (IOException e) {
       e.printStackTrace();
     }
-
-    // Check hashcodes
-    Map<String, List<PathSegment>> pathQueue = new HashMap<>();
-    for (Map.Entry<String, List<PathSegment>> entry : DriveTrajectories.paths.entrySet()) {
-      String hashCode = getHashCode(model, entry.getValue());
-      File pathFile =
-          Path.of("src", "main", "deploy", "trajectories", entry.getKey() + ".pathblob").toFile();
-      if (pathFile.exists()) {
-        try {
-          InputStream fileStream = new FileInputStream(pathFile);
-          Trajectory trajectory = Trajectory.parseFrom(fileStream);
-          if (!trajectory.getHashCode().equals(hashCode)) {
-            pathQueue.put(entry.getKey(), entry.getValue());
-          }
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-      } else {
-        pathQueue.put(entry.getKey(), entry.getValue());
-      }
-    }
-
-    // Exit if trajectories up-to-date
-    if (pathQueue.isEmpty()) {
-      System.out.println("All trajectories up-to-date!");
-      return;
-    }
-
-    // Connect to service
-    var channel =
-        Grpc.newChannelBuilder("127.0.0.1:56328", InsecureChannelCredentials.create()).build();
-    var service = VehicleTrajectoryServiceGrpc.newBlockingStub(channel);
-    String generateEmptyFlag = System.getenv("GENERATE_EMPTY_DRIVE_TRAJECTORIES");
-    boolean generateEmpty = generateEmptyFlag != null && generateEmptyFlag.length() > 0;
-
-    // Generate trajectories
-    for (Map.Entry<String, List<PathSegment>> entry : pathQueue.entrySet()) {
-      Trajectory trajectory;
-      System.out.print(entry.getKey() + " - Generating 💭");
-      double startTime = System.currentTimeMillis();
-      if (generateEmpty) {
-        trajectory =
-            Trajectory.newBuilder().addStates(TimestampedVehicleState.newBuilder().build()).build();
-      } else {
-        // Use service for generation
-        PathRequest request =
-            PathRequest.newBuilder().setModel(model).addAllSegments(entry.getValue()).build();
-        TrajectoryResponse response = service.generateTrajectory(request);
-        String error = response.getError().getReason();
-        if (error.length() > 0) {
-          System.err.println(
-              "Got error response for trajectory \"" + entry.getKey() + "\": " + error);
-          System.exit(1);
-        }
-        trajectory =
-            response.getTrajectory().toBuilder()
-                .setHashCode(getHashCode(model, entry.getValue()))
-                .build();
-      }
-      File pathFile =
-          Path.of("src", "main", "deploy", "trajectories", entry.getKey() + ".pathblob").toFile();
-      try {
-        OutputStream fileStream = new FileOutputStream(pathFile);
-        trajectory.writeTo(fileStream);
-        double endTime = System.currentTimeMillis();
-        System.out.println(
-            "\r"
-                + entry.getKey()
-                + " - Finished in "
-                + Math.round((endTime - startTime) / 100.0) / 10.0
-                + " secs ✅");
-      } catch (IOException e) {
-        System.out.println("\r" + entry.getKey() + " - FAILED ⛔");
-        e.printStackTrace();
-      }
-    }
+    System.out.println("All trajectories up-to-date!");
   }
 
   // create a hashcode for the vehicle model and path segments

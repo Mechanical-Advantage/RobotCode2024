@@ -14,18 +14,25 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.PathSegment;
+import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleVelocityConstraint;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.Waypoint;
 
 @ExtensionMethod({TrajectoryGenerationHelpers.class, GeomUtil.class})
 public class DriveTrajectories {
   public static final Map<String, List<PathSegment>> paths = new HashMap<>();
+  public static final List<Function<Set<String>, Map<String, List<PathSegment>>>> suppliedPaths =
+      new ArrayList<>(); // List of functions that take a set of completed paths and return a map of
+  // trajectories to generate (or null if they cannot be generated yet)
 
   // Starting locations
   public static final Pose2d startingSource =
@@ -100,8 +107,7 @@ public class DriveTrajectories {
     final double shootingVelocity = 0.7;
     final double spikeIntakeOffset = 0.55;
     final double spikePrepareIntakeOffset = 0.3; // Added ontop of spikeIntakeOffset
-    final double centerlineIntakeOffset = 0.25;
-    final double centerlinePrepareIntakeOffset = 1.0;
+    final double centerlineIntakeOffset = 0.4;
 
     final Rotation2d spike0To1IntakeRotation = Rotation2d.fromDegrees(-160.0);
     final Rotation2d spike2To1IntakeRotation =
@@ -276,112 +282,134 @@ public class DriveTrajectories {
                 .setStraightLine(true)
                 .build()));
 
-    // Generate trajectories for centerline shots
-    PathSegment[][] spikeToCenterlineIntakeSegments = new PathSegment[3][3];
-    PathSegment[] shotToCenterlineIntakeSegments = new PathSegment[3];
-    PathSegment[] centerlineToShotSegments = new PathSegment[3];
+    // First intake
+    var startFirstIntakeWaypoint =
+        Waypoint.newBuilder()
+            .fromPose(
+                new Pose2d(
+                    FieldConstants.wingX + 1.0,
+                    FieldConstants.StagingLocations.centerlineTranslations[4].getY(),
+                    Rotation2d.fromDegrees(180.0)))
+            .setVehicleVelocity(
+                VehicleVelocityConstraint.newBuilder().setVx(3.0).setVy(0.0).setOmega(0.0).build())
+            .build();
+    for (int spikeIndex = 0; spikeIndex < 3; spikeIndex++) {
+      Pose2d spikePose = spikeShootingPoses[spikeIndex];
 
-    for (int i = 0; i < 3; i++) {
-      int centerlineIndex = 4 - i;
-      // Centerline intake to shot
-      Translation2d centerlineNote = StagingLocations.centerlineTranslations[centerlineIndex];
-      if (centerlineIndex != 4) {
-        centerlineToShotSegments[i] =
-            PathSegment.newBuilder()
-                .addTranslationWaypoint(stageLeftAvoidance)
-                .addPoseWaypoint(stageLeftShootingPose)
-                .build();
-      } else {
-        centerlineToShotSegments[i] =
-            PathSegment.newBuilder().addPoseWaypoint(stageLeftShootingPose).build();
-      }
+      // Start segment at spike pose
+      var spikeToCenterline = PathSegment.newBuilder().addPoseWaypoint(spikePose).build();
 
-      // Make shot to centerline intake segments
-      PathSegment shotToCenterlineIntake;
-      Rotation2d shotToCenterlineIntakeOrientation =
-          (centerlineIndex == 4)
-              ? stageLeftShootingPose.getTranslation().minus(centerlineNote).getAngle()
-              : stageLeftAvoidance.minus(centerlineNote).getAngle();
-      shotToCenterlineIntake =
-          PathSegment.newBuilder().addPoseWaypoint(stageLeftShootingPose).build();
-      if (centerlineIndex != 4) {
-        shotToCenterlineIntake =
-            shotToCenterlineIntake.toBuilder().addTranslationWaypoint(stageLeftAvoidance).build();
-      }
-      shotToCenterlineIntake =
-          shotToCenterlineIntake.toBuilder()
-              .addPoseWaypoint(
-                  new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
-                      .transformBy(
-                          new Translation2d(
-                                  centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
-                              .toTransform2d()))
-              .addPoseWaypoint(
-                  new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
-                      .transformBy(new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
-              .addPoseWaypoint(
-                  new Pose2d(centerlineNote, shotToCenterlineIntakeOrientation)
-                      .transformBy(
-                          new Translation2d(
-                                  centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
-                              .toTransform2d()))
-              .build();
-      shotToCenterlineIntakeSegments[i] = shotToCenterlineIntake;
-
-      // Segments for all spikes to centerline intake
-      for (int spikeIndex = 0; spikeIndex < 3; spikeIndex++) {
-        Pose2d spikePose = spikeShootingPoses[spikeIndex];
-        Rotation2d spikeTocenterlineIntakeOrientation =
-            spikePose.getTranslation().minus(centerlineNote).getAngle();
-        // Start segment at spike pose
-        var spikeToCenterline = PathSegment.newBuilder().addPoseWaypoint(spikePose).build();
-        // Avoid podium leg if spike 0
-        if (spikeIndex == 0) {
-          spikeToCenterline =
-              spikeToCenterline.toBuilder().addTranslationWaypoint(podiumAvoidance).build();
-          spikeTocenterlineIntakeOrientation = podiumAvoidance.minus(centerlineNote).getAngle();
-        }
-        // Use wing left avoidance if not centerline 4
-        if (centerlineIndex != 4) {
-          spikeToCenterline =
-              spikeToCenterline.toBuilder().addTranslationWaypoint(stageLeftAvoidance).build();
-          spikeTocenterlineIntakeOrientation = stageLeftAvoidance.minus(centerlineNote).getAngle();
-        }
-        // Add intake to segment
+      // Avoid podium leg if spike 0
+      if (spikeIndex == 0) {
         spikeToCenterline =
-            spikeToCenterline.toBuilder()
+            spikeToCenterline.toBuilder().addTranslationWaypoint(podiumAvoidance).build();
+      }
+
+      // End at intake waypoint
+      spikeToCenterline =
+          spikeToCenterline.toBuilder().addWaypoints(startFirstIntakeWaypoint).build();
+
+      // Add path
+      paths.put("spiky_spike" + spikeIndex + "ToFirstIntake", List.of(spikeToCenterline));
+    }
+    paths.put(
+        "spiky_firstIntake",
+        List.of(
+            PathSegment.newBuilder()
+                .addWaypoints(startFirstIntakeWaypoint)
                 .addPoseWaypoint(
-                    new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
-                        .transformBy(
-                            new Translation2d(
-                                    centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
-                                .toTransform2d()))
-                .addPoseWaypoint(
-                    new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            Rotation2d.fromDegrees(180.0))
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
                 .addPoseWaypoint(
-                    new Pose2d(centerlineNote, spikeTocenterlineIntakeOrientation)
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(100.0))
                         .transformBy(
-                            new Translation2d(
-                                    centerlineIntakeOffset + centerlinePrepareIntakeOffset, 0.0)
-                                .toTransform2d()))
-                .build();
-        spikeToCenterlineIntakeSegments[spikeIndex][i] = spikeToCenterline;
-      }
-    }
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(100.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(100.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.StagingLocations.centerlineTranslations[0],
+                        Rotation2d.fromDegrees(100.0)))
+                .build()));
 
-    // Generate trajectories
-    for (int i = 0; i < 3; i++) {
-      int centerlineIndex = 4 - i;
-      paths.put(
-          "spiky_shotToCenterline" + centerlineIndex,
-          List.of(shotToCenterlineIntakeSegments[i], centerlineToShotSegments[i]));
-      for (int spikeIndex = 0; spikeIndex < 3; spikeIndex++) {
-        paths.put(
-            "spiky_spike" + spikeIndex + "ToCenterline" + centerlineIndex,
-            List.of(spikeToCenterlineIntakeSegments[spikeIndex][i], centerlineToShotSegments[i]));
-      }
+    // Second intake
+    paths.put(
+        "spiky_secondIntake",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageLeftShootingPose)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[3],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(100.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(100.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.StagingLocations.centerlineTranslations[0],
+                        Rotation2d.fromDegrees(100.0)))
+                .build()));
+
+    // Return trajectories
+    for (String intakeName : List.of("spiky_firstIntake", "spiky_secondIntake")) {
+      suppliedPaths.add(
+          (completedPaths) -> {
+            if (!completedPaths.contains(intakeName)) return null;
+
+            final double minDistance = 0.15;
+
+            Map<String, List<PathSegment>> returnPaths = new HashMap<>();
+            var intakeTrajectory = new HolonomicTrajectory(intakeName);
+            int index = -1;
+            int validIndex = -1;
+            Translation2d lastTranslation = new Translation2d();
+            for (var state : intakeTrajectory.getStates()) {
+              index++;
+              Translation2d translation = state.getPose().getTranslation();
+              if ((translation.getDistance(lastTranslation) > minDistance
+                      && translation.getX() > FieldConstants.wingX + 1.0)
+                  || index == intakeTrajectory.getStates().length - 1) {
+                validIndex++;
+                lastTranslation = translation;
+                paths.put(
+                    intakeName + "Return" + String.format("%03d", validIndex),
+                    List.of(
+                        PathSegment.newBuilder()
+                            .addContinuationWaypoint(state)
+                            .addTranslationWaypoint(stageLeftAvoidance)
+                            .addPoseWaypoint(stageLeftShootingPose)
+                            .build()));
+              }
+            }
+            return returnPaths;
+          });
     }
   }
 
@@ -499,7 +527,7 @@ public class DriveTrajectories {
                     new Pose2d(
                             StagingLocations.centerlineTranslations[0],
                             Rotation2d.fromDegrees(170.0))
-                        .transformBy(new Translation2d(0.25, -0.07).toTransform2d()))
+                        .transformBy(new Translation2d(0.25, -0.08).toTransform2d()))
                 .addTranslationWaypoint(stageRightAvoidance)
                 .addPoseWaypoint(stageRightShootingPose)
                 .build()));

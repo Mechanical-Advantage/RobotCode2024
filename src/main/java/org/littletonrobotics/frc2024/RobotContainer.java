@@ -306,7 +306,7 @@ public class RobotContainer {
         () ->
             autoFlywheelSpinupDisable.negate().getAsBoolean()
                 && DriverStation.isTeleopEnabled()
-                && robotState.isNearSpeaker()
+                && robotState.nearSpeaker()
                 && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
                 && !superstructure.getCurrentGoal().isClimbingGoal());
 
@@ -457,7 +457,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
-    Trigger nearSpeaker = new Trigger(robotState::isNearSpeaker);
+    Trigger nearSpeaker = new Trigger(robotState::nearSpeaker);
     driver
         .a()
         .and(nearSpeaker)
@@ -466,10 +466,6 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
-    Translation2d superPoopTarget =
-        FieldConstants.Speaker.centerSpeakerOpening
-            .toTranslation2d()
-            .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
         .and(nearSpeaker.negate())
@@ -477,23 +473,20 @@ public class RobotContainer {
             Commands.startEnd(
                     () ->
                         drive.setHeadingGoal(
-                            () ->
-                                AllianceFlipUtil.apply(superPoopTarget)
-                                    .minus(robotState.getEstimatedPose().getTranslation())
-                                    .getAngle()),
+                            () -> robotState.getSuperPoopAimingParameters().driveHeading()),
                     drive::clearHeadingGoal)
                 .alongWith(
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand())
                 .withName("Super Poop"));
     Trigger readyToShoot =
-        new Trigger(() -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal())
-            .debounce(0.2, DebounceType.kRising);
+        new Trigger(
+            () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
     driver
         .rightTrigger()
         .and(driver.a())
         .and(nearSpeaker)
-        .and(readyToShoot)
+        .and(readyToShoot.debounce(0.2, DebounceType.kRising))
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
@@ -505,7 +498,7 @@ public class RobotContainer {
         .rightTrigger()
         .and(driver.a())
         .and(nearSpeaker.negate())
-        .and(readyToShoot)
+        .and(readyToShoot.debounce(0.3, DebounceType.kFalling))
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))

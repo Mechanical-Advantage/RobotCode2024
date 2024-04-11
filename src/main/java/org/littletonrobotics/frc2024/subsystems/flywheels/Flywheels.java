@@ -45,8 +45,6 @@ public class Flywheels extends SubsystemBase {
       new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
   private static final LoggedTunableNumber poopingRpm =
       new LoggedTunableNumber("Flywheels/PoopingRpm", 3000.0);
-  private static final LoggedTunableNumber superPoopRpm =
-      new LoggedTunableNumber("Flywheels/SuperPoopingRpm", 3000.0);
   private static final LoggedTunableNumber maxAcceleration =
       new LoggedTunableNumber(
           "Flywheels/MaxAccelerationRpmPerSec", flywheelConfig.maxAcclerationRpmPerSec());
@@ -74,7 +72,10 @@ public class Flywheels extends SubsystemBase {
     INTAKE(intakingRpm, intakingRpm),
     EJECT(ejectingRpm, ejectingRpm),
     POOP(poopingRpm, poopingRpm),
-    SUPER_POOP(superPoopRpm, superPoopRpm),
+    SUPER_POOP(
+        () -> RobotState.getInstance().getSuperPoopAimingParameters().flywheelSpeeds().leftSpeed(),
+        () ->
+            RobotState.getInstance().getSuperPoopAimingParameters().flywheelSpeeds().rightSpeed()),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftGoal;

@@ -84,7 +84,7 @@ public class Robot extends LoggedRobot {
   private final Alert sameBatteryAlert =
       new Alert("The battery has not been changed since the last match.", AlertType.WARNING);
   private final Alert gcAlert =
-      new Alert("Please wait to enable, collecting garbage. 🗑️", AlertType.WARNING);
+      new Alert("Please wait to enable, collecting garbage. 🗑", AlertType.WARNING);
 
   public static Trigger createTeleopTimeTrigger(DoubleSupplier teleElapsedTime) {
     return new Trigger(
@@ -215,8 +215,19 @@ public class Robot extends LoggedRobot {
     Logger.recordOutput("RobotState/AimingParameters/ArmAngle", aimingParameters.armAngle());
     Logger.recordOutput(
         "RobotState/AimingParameters/EffectiveDistance", aimingParameters.effectiveDistance());
+    var superPoopParameters = RobotState.getInstance().getSuperPoopAimingParameters();
     Logger.recordOutput(
-        "RobotState/AimingParameters/DriveFeedVelocity", aimingParameters.driveFeedVelocity());
+        "RobotState/SuperPoopParameters/DriveHeading", superPoopParameters.driveHeading());
+    Logger.recordOutput("RobotState/SuperPoopParameters/ArmAngle", superPoopParameters.armAngle());
+    Logger.recordOutput(
+        "RobotState/SuperPoopParameters/EffectiveDistance",
+        superPoopParameters.effectiveDistance());
+    Logger.recordOutput(
+        "RobotState/SuperPoopParameters/FlywheelsLeftSpeed",
+        superPoopParameters.flywheelSpeeds().leftSpeed());
+    Logger.recordOutput(
+        "RobotState/SuperPoopParameters/FlywheelsRightSpeed",
+        superPoopParameters.flywheelSpeeds().rightSpeed());
 
     // Robot container periodic methods
     robotContainer.checkControllers();

@@ -306,9 +306,10 @@ public class RobotContainer {
         () ->
             autoFlywheelSpinupDisable.negate().getAsBoolean()
                 && DriverStation.isTeleopEnabled()
-                && robotState.isNearSpeaker()
-                && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
-                && !superstructure.getCurrentGoal().isClimbingGoal());
+                && !superstructure.getCurrentGoal().isClimbingGoal()
+                && (robotState.inCloseShootingZone()
+                    || (robotState.inShootingZone()
+                        && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED)));
 
     // Configure autos and buttons
     configureAutos();
@@ -457,7 +458,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
-    Trigger nearSpeaker = new Trigger(robotState::isNearSpeaker);
+    Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
     driver
         .a()
         .and(nearSpeaker)
@@ -534,13 +535,7 @@ public class RobotContainer {
         .and(
             DriverStation
                 ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.INTAKE)
-                .alongWith(
-                    Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
-                .withName("Floor Intake"));
+        .whileTrue(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE).withName("Floor Intake"));
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
@@ -549,13 +544,7 @@ public class RobotContainer {
     // Eject Floor
     driver
         .leftBumper()
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.INTAKE)
-                .alongWith(
-                    Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
-                .withName("Eject To Floor"));
+        .whileTrue(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR).withName("Eject To Floor"));
 
     // Intake source
     driver

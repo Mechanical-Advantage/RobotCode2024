@@ -50,8 +50,10 @@ public class RobotState {
       new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
-  private static final LoggedTunableNumber nearSpeakerFeet =
-      new LoggedTunableNumber("RobotState/NearSpeakerFeet", 25.0);
+  private static final LoggedTunableNumber shootingZoneFeet =
+      new LoggedTunableNumber("RobotState/ShootingZoneFeet", 25.0);
+  private static final LoggedTunableNumber closeShootingZoneFeet =
+      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 11.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;
@@ -262,13 +264,22 @@ public class RobotState {
         : DriveConstants.moduleLimitsFree;
   }
 
-  public boolean isNearSpeaker() {
+  public boolean inShootingZone() {
     return getEstimatedPose()
             .getTranslation()
             .getDistance(
                 AllianceFlipUtil.apply(
                     FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-        < Units.feetToMeters(nearSpeakerFeet.get());
+        < Units.feetToMeters(shootingZoneFeet.get());
+  }
+
+  public boolean inCloseShootingZone() {
+    return getEstimatedPose()
+            .getTranslation()
+            .getDistance(
+                AllianceFlipUtil.apply(
+                    FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
+        < Units.feetToMeters(closeShootingZoneFeet.get());
   }
 
   /**

@@ -50,6 +50,8 @@ public class AutoBuilder {
       loadTrajectorySet("spiky_firstIntakeReturn");
   private static final Map<Translation2d, HolonomicTrajectory> spiky_secondIntakeReturn =
       loadTrajectorySet("spiky_secondIntakeReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> spiky_farIntakeReturn =
+      loadTrajectorySet("spiky_farIntakeReturn");
 
   private static Map<Translation2d, HolonomicTrajectory> loadTrajectorySet(String name) {
     Map<Translation2d, HolonomicTrajectory> result = new HashMap<>();
@@ -190,13 +192,19 @@ public class AutoBuilder {
   private Command spiky_scoreCenterlines(HolonomicTrajectory toCenterlineTrajectory) {
     var firstIntakeTrajectory = new HolonomicTrajectory("spiky_firstIntake");
     var secondIntakeTrajectory = new HolonomicTrajectory("spiky_secondIntake");
+    var farIntakeTrajectory = new HolonomicTrajectory("spiky_farIntake");
 
     Timer returnTimer = new Timer();
     Container<HolonomicTrajectory> firstReturnTrajectory = new Container<>();
+    Container<HolonomicTrajectory> selectedSecondIntakeTrajectory = new Container<>();
+    Container<Map<Translation2d, HolonomicTrajectory>> secondReturnTrajectorySet =
+        new Container<>();
     Container<HolonomicTrajectory> secondReturnTrajectory = new Container<>();
     return Commands.runOnce(
             () -> {
               firstReturnTrajectory.value = null;
+              selectedSecondIntakeTrajectory.value = null;
+              secondReturnTrajectorySet.value = null;
               secondReturnTrajectory.value = null;
             })
         .andThen(
@@ -216,16 +224,30 @@ public class AutoBuilder {
                           returnTimer.restart();
                         }),
                     followTrajectory(drive, () -> firstReturnTrajectory.value),
-                    followTrajectory(drive, secondIntakeTrajectory).until(rollers::isTouchingNote),
+                    Commands.runOnce(
+                        () -> {
+                          // Select second intake trajectory
+                          boolean isFarIntake =
+                              RobotState.getInstance().getTrajectorySetpoint().getY()
+                                  < FieldConstants.Stage.ampLeg.getY();
+                          selectedSecondIntakeTrajectory.value =
+                              isFarIntake ? farIntakeTrajectory : secondIntakeTrajectory;
+                          secondReturnTrajectorySet.value =
+                              isFarIntake ? spiky_farIntakeReturn : spiky_secondIntakeReturn;
+                        }),
+                    followTrajectory(drive, () -> selectedSecondIntakeTrajectory.value)
+                        .until(rollers::isTouchingNote),
                     Commands.runOnce(
                         () -> {
                           // Select return trajectory
                           secondReturnTrajectory.value =
-                              spiky_secondIntakeReturn.get(
+                              secondReturnTrajectorySet.value.get(
                                   RobotState.getInstance()
                                       .getTrajectorySetpoint()
                                       .getTranslation()
-                                      .nearest(new ArrayList<>(spiky_secondIntakeReturn.keySet())));
+                                      .nearest(
+                                          new ArrayList<>(
+                                              secondReturnTrajectorySet.value.keySet())));
                           returnTimer.restart();
                         }),
                     followTrajectory(drive, () -> secondReturnTrajectory.value))
@@ -247,8 +269,12 @@ public class AutoBuilder {
                                         () ->
                                             firstReturnTrajectory.value != null
                                                 && returnTimer.hasElapsed(
-                                                    firstReturnTrajectory.value.getDuration()
-                                                        - 1.5))
+                                                    firstReturnTrajectory.value.getDuration() - 1.5)
+                                                && (RobotState.getInstance()
+                                                            .getTrajectorySetpoint()
+                                                            .getY()
+                                                        > FieldConstants.Stage.ampLeg.getY()
+                                                    || xCrossed(stageAimX, false)))
                                     .andThen(
                                         Commands.parallel(
                                             aim(drive), superstructure.aimWithCompensation(0.0)))),
@@ -269,7 +295,12 @@ public class AutoBuilder {
                                             secondReturnTrajectory.value != null
                                                 && returnTimer.hasElapsed(
                                                     secondReturnTrajectory.value.getDuration()
-                                                        - 1.5))
+                                                        - 1.5)
+                                                && (RobotState.getInstance()
+                                                            .getTrajectorySetpoint()
+                                                            .getY()
+                                                        > FieldConstants.Stage.ampLeg.getY()
+                                                    || xCrossed(stageAimX, false)))
                                     .andThen(
                                         Commands.parallel(
                                             aim(drive), superstructure.aimWithCompensation(0.0))))))

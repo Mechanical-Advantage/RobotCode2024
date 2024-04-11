@@ -377,8 +377,34 @@ public class DriveTrajectories {
                         Rotation2d.fromDegrees(100.0)))
                 .build()));
 
+    // Far intake
+    paths.put(
+        "spiky_farIntake",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(stageCenterShootingPose)
+                .addTranslationWaypoint(stageCenterAvoidance)
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[2],
+                            Rotation2d.fromDegrees(135.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                            FieldConstants.StagingLocations.centerlineTranslations[1],
+                            Rotation2d.fromDegrees(100.0))
+                        .transformBy(
+                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        FieldConstants.StagingLocations.centerlineTranslations[0],
+                        Rotation2d.fromDegrees(100.0)))
+                .build()));
+
     // Return trajectories
-    for (String intakeName : List.of("spiky_firstIntake", "spiky_secondIntake")) {
+    for (String intakeName :
+        List.of("spiky_firstIntake", "spiky_secondIntake", "spiky_farIntake")) {
       suppliedPaths.add(
           (completedPaths) -> {
             if (!completedPaths.contains(intakeName)) return null;
@@ -398,13 +424,17 @@ public class DriveTrajectories {
                   || index == intakeTrajectory.getStates().length - 1) {
                 validIndex++;
                 lastTranslation = translation;
+
+                boolean returnToStage = translation.getY() < FieldConstants.Stage.ampLeg.getY();
                 paths.put(
                     intakeName + "Return" + String.format("%03d", validIndex),
                     List.of(
                         PathSegment.newBuilder()
                             .addContinuationWaypoint(state)
-                            .addTranslationWaypoint(stageLeftAvoidance)
-                            .addPoseWaypoint(stageLeftShootingPose)
+                            .addTranslationWaypoint(
+                                returnToStage ? stageCenterAvoidance : stageLeftAvoidance)
+                            .addPoseWaypoint(
+                                returnToStage ? stageCenterShootingPose : stageLeftShootingPose)
                             .build()));
               }
             }

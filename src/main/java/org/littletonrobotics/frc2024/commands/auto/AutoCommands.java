@@ -17,7 +17,6 @@ import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.subsystems.drive.Drive;
 import org.littletonrobotics.frc2024.subsystems.drive.trajectory.HolonomicTrajectory;
 import org.littletonrobotics.frc2024.subsystems.rollers.Rollers;
-import org.littletonrobotics.frc2024.subsystems.superstructure.Superstructure;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
@@ -93,10 +92,8 @@ public class AutoCommands {
   }
 
   /** Command that intakes using the superstrucure and rollers, does not end */
-  public static Command intake(Superstructure superstructure, Rollers rollers) {
-    return Commands.parallel(
-        superstructure.setGoalCommand(Superstructure.Goal.INTAKE),
-        rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE));
+  public static Command intake(Rollers rollers) {
+    return rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE);
   }
 
   /** Feeds flywheels with shootTimeoutSecs timeout */

@@ -60,6 +60,8 @@ public class RobotState {
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
 
+  private static final double autoFarShotCompensationDegrees = 0.0; // 0.6 at NECMP
+
   public void adjustShotCompensationDegrees(double deltaDegrees) {
     shotCompensationDegrees += deltaDegrees;
   }
@@ -238,10 +240,17 @@ public class RobotState {
             - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
     double armAngleDegrees = armAngleCoefficient * Math.pow(targetDistance, armAngleExponent);
+    double autoFarArmCorrection =
+        DriverStation.isAutonomousEnabled() && targetDistance >= Units.inchesToMeters(125)
+            ? autoFarShotCompensationDegrees
+            : 0.0;
+    Logger.recordOutput(
+        "RobotState/AimingParameters/AutoFarArmCorrectionDegrees", autoFarArmCorrection);
     latestParameters =
         new AimingParameters(
             targetVehicleDirection,
-            Rotation2d.fromDegrees(armAngleDegrees + shotCompensationDegrees),
+            Rotation2d.fromDegrees(
+                armAngleDegrees + shotCompensationDegrees + autoFarArmCorrection),
             targetDistance,
             feedVelocity);
     return latestParameters;

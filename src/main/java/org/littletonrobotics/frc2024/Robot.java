@@ -7,8 +7,6 @@
 
 package org.littletonrobotics.frc2024;
 
-import static org.littletonrobotics.frc2024.util.Alert.AlertType;
-
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringSubscriber;
@@ -32,6 +30,7 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.frc2024.Constants.Mode;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
+import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.frc2024.util.VirtualSubsystem;
 import org.littletonrobotics.junction.LogFileUtil;
@@ -215,8 +214,19 @@ public class Robot extends LoggedRobot {
     Logger.recordOutput("RobotState/AimingParameters/ArmAngle", aimingParameters.armAngle());
     Logger.recordOutput(
         "RobotState/AimingParameters/EffectiveDistance", aimingParameters.effectiveDistance());
+    var superPoopParameters = RobotState.getInstance().getSuperPoopAimingParameters();
     Logger.recordOutput(
-        "RobotState/AimingParameters/DriveFeedVelocity", aimingParameters.driveFeedVelocity());
+        "RobotState/SuperPoopParameters/DriveHeading", superPoopParameters.driveHeading());
+    Logger.recordOutput("RobotState/SuperPoopParameters/ArmAngle", superPoopParameters.armAngle());
+    Logger.recordOutput(
+        "RobotState/SuperPoopParameters/EffectiveDistance",
+        superPoopParameters.effectiveDistance());
+    Logger.recordOutput(
+        "RobotState/SuperPoopParameters/FlywheelsLeftSpeed",
+        superPoopParameters.flywheelSpeeds().leftSpeed());
+    Logger.recordOutput(
+        "RobotState/SuperPoopParameters/FlywheelsRightSpeed",
+        superPoopParameters.flywheelSpeeds().rightSpeed());
 
     // Robot container periodic methods
     robotContainer.checkControllers();

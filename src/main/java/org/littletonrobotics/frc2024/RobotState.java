@@ -7,11 +7,9 @@
 
 package org.littletonrobotics.frc2024;
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.*;
 import edu.wpi.first.math.geometry.*;
-import edu.wpi.first.math.interpolation.TimeInterpolatableBuffer;
+import edu.wpi.first.math.interpolation.*;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveWheelPositions;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -40,18 +38,26 @@ public class RobotState {
 
   public record VisionObservation(Pose2d visionPose, double timestamp, Matrix<N3, N1> stdDevs) {}
 
+  public record FlywheelSpeeds(double leftSpeed, double rightSpeed) {
+    public static FlywheelSpeeds interpolate(FlywheelSpeeds t1, FlywheelSpeeds t2, double v) {
+      double leftSpeed = MathUtil.interpolate(t1.leftSpeed(), t2.leftSpeed(), v);
+      double rightSpeed = MathUtil.interpolate(t1.rightSpeed(), t2.rightSpeed(), v);
+      return new FlywheelSpeeds(leftSpeed, rightSpeed);
+    }
+  }
+
   public record AimingParameters(
       Rotation2d driveHeading,
       Rotation2d armAngle,
       double effectiveDistance,
-      double driveFeedVelocity) {}
+      FlywheelSpeeds flywheelSpeeds) {}
 
   private static final LoggedTunableNumber autoLookahead =
       new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
-  private static final LoggedTunableNumber shootingZoneFeet =
-      new LoggedTunableNumber("RobotState/ShootingZoneFeet", 25.0);
+  private static final LoggedTunableNumber superPoopLookahead =
+      new LoggedTunableNumber("RobotState/SuperPoopLookahead", 1.0);
   private static final LoggedTunableNumber closeShootingZoneFeet =
       new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 11.0);
   private static final double poseBufferSizeSeconds = 2.0;
@@ -61,6 +67,25 @@ public class RobotState {
 
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
   @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
+
+  // Super poop
+  private static final InterpolatingDoubleTreeMap superPoopArmAngleMap =
+      new InterpolatingDoubleTreeMap();
+
+  static {
+    superPoopArmAngleMap.put(Units.feetToMeters(30.0), 35.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(25.0), 37.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(22.0), 45.0);
+  }
+
+  private static final InterpolatingTreeMap<Double, FlywheelSpeeds> superPoopFlywheelSpeedsMap =
+      new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), FlywheelSpeeds::interpolate);
+
+  static {
+    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(30.0), new FlywheelSpeeds(3500, 4500));
+    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(25.0), new FlywheelSpeeds(4100, 4100));
+    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(22.0), new FlywheelSpeeds(2700, 3700));
+  }
 
   private static final double autoFarShotCompensationDegrees = 0.0; // 0.6 at NECMP
 
@@ -99,6 +124,8 @@ public class RobotState {
   /** Cached latest aiming parameters. Calculated in {@code getAimingParameters()} */
   private AimingParameters latestParameters = null;
 
+  private AimingParameters latestSuperPoopParameters = null;
+
   @Setter private BooleanSupplier lookaheadDisable = () -> false;
 
   private RobotState() {
@@ -114,6 +141,7 @@ public class RobotState {
   /** Add odometry observation */
   public void addOdometryObservation(OdometryObservation observation) {
     latestParameters = null;
+    latestSuperPoopParameters = null;
     Twist2d twist = kinematics.toTwist2d(lastWheelPositions, observation.wheelPositions());
     lastWheelPositions = observation.wheelPositions();
     // Check gyro connected
@@ -134,6 +162,7 @@ public class RobotState {
 
   public void addVisionObservation(VisionObservation observation) {
     latestParameters = null;
+    latestSuperPoopParameters = null;
     // If measurement is old enough to be outside the pose buffer's timespan, skip.
     try {
       if (poseBuffer.getInternalBuffer().lastKey() - poseBufferSizeSeconds
@@ -232,14 +261,8 @@ public class RobotState {
     Translation2d predictedVehicleFixedToTargetTranslation =
         fieldToPredictedVehicleFixed.inverse().transformBy(fieldToTarget).getTranslation();
 
-    Rotation2d vehicleToGoalDirection = predictedVehicleToTargetTranslation.getAngle();
-
     Rotation2d targetVehicleDirection = predictedVehicleFixedToTargetTranslation.getAngle();
     double targetDistance = predictedVehicleToTargetTranslation.getNorm();
-
-    double feedVelocity =
-        robotVelocity.dx * vehicleToGoalDirection.getSin() / targetDistance
-            - robotVelocity.dy * vehicleToGoalDirection.getCos() / targetDistance;
 
     double armAngleDegrees = armAngleCoefficient * Math.pow(targetDistance, armAngleExponent);
     double autoFarArmCorrection =
@@ -254,8 +277,30 @@ public class RobotState {
             Rotation2d.fromDegrees(
                 armAngleDegrees + shotCompensationDegrees + autoFarArmCorrection),
             targetDistance,
-            feedVelocity);
+            new FlywheelSpeeds(0, 0));
     return latestParameters;
+  }
+
+  private static final Translation2d superPoopTarget =
+      FieldConstants.Stage.podiumLeg.getTranslation().interpolate(FieldConstants.ampCenter, 0.5);
+
+  public AimingParameters getSuperPoopAimingParameters() {
+    if (latestSuperPoopParameters != null) {
+      return latestSuperPoopParameters;
+    }
+    Pose2d predictedFieldToRobot =
+        getPredictedPose(superPoopLookahead.get(), superPoopLookahead.get());
+    Translation2d predictedRobotToTarget =
+        AllianceFlipUtil.apply(superPoopTarget).minus(predictedFieldToRobot.getTranslation());
+    double effectiveDistance = predictedRobotToTarget.getNorm();
+
+    latestSuperPoopParameters =
+        new AimingParameters(
+            predictedRobotToTarget.getAngle(),
+            Rotation2d.fromDegrees(superPoopArmAngleMap.get(effectiveDistance)),
+            effectiveDistance,
+            superPoopFlywheelSpeedsMap.get(effectiveDistance));
+    return latestSuperPoopParameters;
   }
 
   public ModuleLimits getModuleLimits() {
@@ -265,12 +310,12 @@ public class RobotState {
   }
 
   public boolean inShootingZone() {
-    return getEstimatedPose()
-            .getTranslation()
-            .getDistance(
-                AllianceFlipUtil.apply(
-                    FieldConstants.Speaker.centerSpeakerOpening.toTranslation2d()))
-        < Units.feetToMeters(shootingZoneFeet.get());
+    Pose2d robot = AllianceFlipUtil.apply(getEstimatedPose());
+    if (robot.getY() <= FieldConstants.Stage.ampLeg.getY()) {
+      return robot.getX() <= FieldConstants.wingX;
+    } else {
+      return robot.getX() <= FieldConstants.fieldLength / 2.0 + 0.5;
+    }
   }
 
   public boolean inCloseShootingZone() {

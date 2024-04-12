@@ -14,6 +14,8 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
 import java.util.Queue;
+import org.littletonrobotics.frc2024.Constants;
+import org.littletonrobotics.frc2024.Constants.RobotType;
 
 /** IO implementation for Pigeon2 */
 public class GyroIOPigeon2 implements GyroIO {
@@ -25,7 +27,7 @@ public class GyroIOPigeon2 implements GyroIO {
   private final StatusSignal<Double> yawVelocity;
 
   public GyroIOPigeon2(boolean phoenixDrive) {
-    pigeon = new Pigeon2(id, "*");
+    pigeon = new Pigeon2(id, Constants.getRobot() == RobotType.DEVBOT ? "rio" : "*");
     yaw = pigeon.getYaw();
     yawVelocity = pigeon.getAngularVelocityZWorld();
 

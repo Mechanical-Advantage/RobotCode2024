@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.DoubleSupplier;
 import org.littletonrobotics.frc2024.Constants.Mode;
+import org.littletonrobotics.frc2024.Constants.RobotType;
 import org.littletonrobotics.frc2024.subsystems.leds.Leds;
 import org.littletonrobotics.frc2024.util.Alert;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
@@ -235,7 +236,7 @@ public class Robot extends LoggedRobot {
             && !canInitialErrorTimer.hasElapsed(canErrorTimeThreshold));
 
     // Log CANivore status
-    if (Constants.getMode() == Mode.REAL) {
+    if (Constants.getMode() == Mode.REAL && Constants.getRobot() != RobotType.DEVBOT) {
       var canivoreStatus = CANBus.getStatus("canivore");
       Logger.recordOutput("CANivoreStatus/Status", canivoreStatus.Status.getName());
       Logger.recordOutput("CANivoreStatus/Utilization", canivoreStatus.BusUtilization);

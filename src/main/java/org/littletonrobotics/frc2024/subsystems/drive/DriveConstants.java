@@ -43,8 +43,8 @@ public final class DriveConstants {
                 Units.inchesToMeters(20.75),
                 Units.inchesToMeters(37),
                 Units.inchesToMeters(33),
-                Units.feetToMeters(12.16),
-                Units.feetToMeters(21.32),
+                Units.feetToMeters(13.0),
+                Units.feetToMeters(65.0),
                 7.93,
                 29.89);
       };

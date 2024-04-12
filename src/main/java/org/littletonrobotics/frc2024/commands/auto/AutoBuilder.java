@@ -472,9 +472,8 @@ public class AutoBuilder {
                                                         aim(drive),
                                                         superstructure.aimWithCompensation(0.0))))),
                             // Grab ejected note
-                            superstructure
-                                .setGoalCommand(Superstructure.Goal.INTAKE)
-                                .alongWith(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                            rollers
+                                .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
                                 .withTimeout(grabEjected.getDuration() - 0.5),
 
                             // Score ejected note
@@ -620,7 +619,7 @@ public class AutoBuilder {
             Commands.select(centerlineChoices, () -> responses.get().get(0)),
             followTrajectory(drive, grabEjected)
                 .deadlineWith(
-                    intake(superstructure, rollers)
+                    intake(rollers)
                         .withTimeout(grabEjected.getDuration() - 0.5)
                         .andThen(
                             Commands.parallel(
@@ -660,7 +659,7 @@ public class AutoBuilder {
                             waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
                                 .andThen(
                                     waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                        .deadlineWith(intake(superstructure, rollers))),
+                                        .deadlineWith(intake(rollers))),
 
                             // Shoot centerline 1
                             Commands.waitUntil(
@@ -678,7 +677,7 @@ public class AutoBuilder {
                             waitUntilXCrossed(FieldConstants.wingX + 0.85, true)
                                 .andThen(
                                     waitUntilXCrossed(FieldConstants.wingX + 0.8, false)
-                                        .deadlineWith(intake(superstructure, rollers))),
+                                        .deadlineWith(intake(rollers))),
 
                             // Shoot centerline 2
                             Commands.waitUntil(

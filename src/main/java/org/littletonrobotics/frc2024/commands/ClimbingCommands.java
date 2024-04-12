@@ -31,6 +31,10 @@ public class ClimbingCommands {
   private static final LoggedTunableNumber autoUntrapTime =
       new LoggedTunableNumber("ClimbingCommands/AutoUntrapTime", 134.5);
 
+  // Which mode to use for trap scoring. Can be changed between jackhammering and regular trap
+  // scoring.
+  private static final Rollers.Goal TRAP_SCORE_ROLLER_GOAL = Rollers.Goal.JACKHAMMERING;
+
   public static Command trapSequence(
       Drive drive,
       Superstructure superstructure,
@@ -85,7 +89,7 @@ public class ClimbingCommands {
             // Trap.
             superstructure
                 .setGoalCommand(Superstructure.Goal.TRAP)
-                .alongWith(rollers.setGoalCommand(Rollers.Goal.TRAP_SCORE)),
+                .alongWith(rollers.setGoalCommand(TRAP_SCORE_ROLLER_GOAL)),
 
             // Untrap
             superstructure.setGoalCommand(Superstructure.Goal.UNTRAP));

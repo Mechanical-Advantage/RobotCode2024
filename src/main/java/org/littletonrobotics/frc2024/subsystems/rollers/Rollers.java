@@ -22,11 +22,15 @@ import org.littletonrobotics.frc2024.subsystems.rollers.backpack.Backpack;
 import org.littletonrobotics.frc2024.subsystems.rollers.feeder.Feeder;
 import org.littletonrobotics.frc2024.subsystems.rollers.indexer.Indexer;
 import org.littletonrobotics.frc2024.subsystems.rollers.intake.Intake;
+import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 import org.littletonrobotics.frc2024.util.NoteVisualizer;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 public class Rollers extends SubsystemBase {
+  private static final LoggedTunableNumber jackhammerTime =
+      new LoggedTunableNumber("Rollers/JackhammerTime", 0.075);
+
   private final Feeder feeder;
   private final Indexer indexer;
   private final Intake intake;
@@ -48,6 +52,7 @@ public class Rollers extends SubsystemBase {
     AMP_SCORE,
     TRAP_PRESCORE,
     TRAP_SCORE,
+    JACKHAMMERING,
     SHUFFLE_BACKPACK,
     SHUFFLE_SHOOTER
   }
@@ -62,6 +67,7 @@ public class Rollers extends SubsystemBase {
   @AutoLogOutput @Getter @Setter private GamepieceState gamepieceState = GamepieceState.NONE;
   private GamepieceState lastGamepieceState = GamepieceState.NONE;
   private Timer gamepieceStateTimer = new Timer();
+  private final Timer jackhammerTimer = new Timer();
 
   @Setter private BooleanSupplier backpackActuatedSupplier = () -> false;
 
@@ -110,7 +116,9 @@ public class Rollers extends SubsystemBase {
     intake.setGoal(Intake.Goal.IDLING);
     backpack.setGoal(Backpack.Goal.IDLING);
     switch (goal) {
-      case IDLE -> {}
+      case IDLE -> {
+        jackhammerTimer.reset();
+      }
       case FLOOR_INTAKE -> {
         if (gamepieceState == GamepieceState.SHOOTER_STAGED) {
           intake.setGoal(Intake.Goal.EJECTING);
@@ -173,6 +181,19 @@ public class Rollers extends SubsystemBase {
         feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
         indexer.setGoal(Indexer.Goal.EJECTING);
         backpack.setGoal(Backpack.Goal.TRAP_SCORING);
+      }
+      case JACKHAMMERING -> {
+        jackhammerTimer.start();
+        feeder.setGoal(Feeder.Goal.FLOOR_INTAKING);
+        indexer.setGoal(Indexer.Goal.EJECTING);
+        if (jackhammerTimer.hasElapsed(jackhammerTime.get() * 2.0)) {
+          jackhammerTimer.restart();
+        }
+
+        backpack.setGoal(
+            jackhammerTimer.hasElapsed(jackhammerTime.get())
+                ? Backpack.Goal.TRAP_JACKHAMMER_IN
+                : Backpack.Goal.TRAP_JACKHAMMER_OUT);
       }
       case SHUFFLE_BACKPACK -> {
         // Shuffle into backpack

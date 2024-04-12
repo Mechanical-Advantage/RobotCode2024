@@ -9,8 +9,11 @@ package org.littletonrobotics.frc2024.commands;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import java.util.Arrays;
 import java.util.function.DoubleSupplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.RobotState;
@@ -60,13 +63,21 @@ public class WheelRadiusCharacterization extends Command {
     startWheelPositions = drive.getWheelRadiusCharacterizationPosition();
 
     omegaLimiter.reset(0);
+
+    Logger.recordOutput(
+        "Drive/RadiusCharacterization/CircleOrientations",
+        Arrays.stream(Drive.getCircleOrientations())
+            .map(orientation -> new SwerveModuleState(0.0, orientation))
+            .toArray(SwerveModuleState[]::new));
   }
 
   @Override
   public void execute() {
     // Run drive at velocity
-    drive.runWheelRadiusCharacterization(
-        omegaLimiter.calculate(omegaDirection.value * characterizationSpeed.get()));
+    if (DriverStation.isEnabled()) {
+      drive.runWheelRadiusCharacterization(
+          omegaLimiter.calculate(omegaDirection.value * characterizationSpeed.get()));
+    }
 
     // Get yaw and wheel positions
     accumGyroYawRads += MathUtil.angleModulus(gyroYawRadsSupplier.getAsDouble() - lastGyroYawRads);
@@ -97,5 +108,10 @@ public class WheelRadiusCharacterization extends Command {
               + Units.metersToInches(currentEffectiveWheelRadius)
               + " inches");
     }
+  }
+
+  @Override
+  public boolean runsWhenDisabled() {
+    return true;
   }
 }

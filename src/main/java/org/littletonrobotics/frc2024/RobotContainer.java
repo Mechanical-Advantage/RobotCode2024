@@ -388,7 +388,7 @@ public class RobotContainer {
         autoBuilder.davisUnethicalAuto());
     // Set up passive wheel radius characterization
     new Trigger(new LoggedDashboardBoolean("Passive Wheel Radius Characterization Routine")::get)
-        .toggleOnTrue(
+        .whileTrue(
             new WheelRadiusCharacterization(
                 drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE));
 

@@ -361,6 +361,7 @@ public class RobotContainer {
                 "How many spike notes?",
                 List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE))),
         autoBuilder.davisSpikyAuto());
+    autoSelector.addRoutine("Davis CA Auto", autoBuilder.davisCAAuto());
     autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(

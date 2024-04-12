@@ -14,12 +14,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.FieldConstants;
 import org.littletonrobotics.frc2024.util.GeomUtil;
@@ -101,6 +98,18 @@ public class DriveTrajectories {
                 .addPoseWaypoint(new Pose2d(3.0, 2.0, Rotation2d.fromDegrees(180.0)))
                 .build()));
   }
+
+  // First intake
+  private static final Waypoint startFirstIntakeWaypoint =
+      Waypoint.newBuilder()
+          .fromPose(
+              new Pose2d(
+                  FieldConstants.wingX + 1.0,
+                  FieldConstants.StagingLocations.centerlineTranslations[4].getY(),
+                  Rotation2d.fromDegrees(180.0)))
+          .setVehicleVelocity(
+              VehicleVelocityConstraint.newBuilder().setVx(3.0).setVy(0.0).setOmega(0.0).build())
+          .build();
 
   // Davis Spiky Auto (named "spiky_XXX")
   static {
@@ -282,17 +291,6 @@ public class DriveTrajectories {
                 .setStraightLine(true)
                 .build()));
 
-    // First intake
-    var startFirstIntakeWaypoint =
-        Waypoint.newBuilder()
-            .fromPose(
-                new Pose2d(
-                    FieldConstants.wingX + 1.0,
-                    FieldConstants.StagingLocations.centerlineTranslations[4].getY(),
-                    Rotation2d.fromDegrees(180.0)))
-            .setVehicleVelocity(
-                VehicleVelocityConstraint.newBuilder().setVx(3.0).setVy(0.0).setOmega(0.0).build())
-            .build();
     for (int spikeIndex = 0; spikeIndex < 3; spikeIndex++) {
       Pose2d spikePose = spikeShootingPoses[spikeIndex];
 
@@ -436,6 +434,128 @@ public class DriveTrajectories {
                             .addPoseWaypoint(
                                 returnToStage ? stageCenterShootingPose : stageLeftShootingPose)
                             .build()));
+              }
+            }
+            return returnPaths;
+          });
+    }
+  }
+
+  public static final Pose2d CA_lastCenterlineShot =
+      getShootingPose(
+          StagingLocations.spikeTranslations[2]
+              .interpolate(StagingLocations.spikeTranslations[1], 0.3)
+              .plus(new Translation2d(0.25, 0.0)));
+
+  // Davis CA Auto (named "CA_XXX")
+  static {
+    final double shootingVelocity = 0.9;
+
+    // First trajectory
+    paths.put(
+        "CA_startToFirstIntake",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingAmp)
+                .addPoseWaypoint(
+                    getShootingPose(StagingLocations.spikeTranslations[2])
+                        .transformBy(GeomUtil.toTransform2d(0.7, 0.0)))
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(StagingLocations.spikeTranslations[2])
+                        .transformBy(GeomUtil.toTransform2d(-0.35, 0.0)))
+                .setMaxVelocity(shootingVelocity)
+                .setStraightLine(true)
+                .setMaxOmega(0)
+                .build(),
+            PathSegment.newBuilder().addWaypoints(startFirstIntakeWaypoint).build()));
+
+    // Segments for scoring the last centerline and remaining spikes
+    final List<PathSegment> lastCenterlineShotToSpike0Segment =
+        List.of(
+            // Shoot last centerline while moving in front of spike 1
+            PathSegment.newBuilder()
+                .addPoseWaypoint(CA_lastCenterlineShot)
+                .addPoseWaypoint(
+                    getShootingPose(
+                        StagingLocations.spikeTranslations[2]
+                            .interpolate(StagingLocations.spikeTranslations[1], 0.4)
+                            .plus(new Translation2d(-0.65, 0.0))))
+                .setMaxVelocity(shootingVelocity)
+                .build(),
+            // Intake spike 1
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    new Pose2d(StagingLocations.spikeTranslations[1], Rotation2d.fromDegrees(160.0))
+                        .transformBy(GeomUtil.toTransform2d(0.8, 0.0)))
+                .addPoseWaypoint(
+                    new Pose2d(StagingLocations.spikeTranslations[1], Rotation2d.fromDegrees(160.0))
+                        .transformBy(GeomUtil.toTransform2d(0.5, 0.0)))
+                .build(),
+            // Shoot spike 1
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(
+                        StagingLocations.spikeTranslations[1]
+                            .interpolate(StagingLocations.spikeTranslations[0], 0.4)
+                            .plus(new Translation2d(-0.65, 0.0))))
+                .setMaxVelocity(1.2)
+                .build(),
+            // Intake and shoot spike 0
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    getShootingPose(StagingLocations.spikeTranslations[0])
+                        .transformBy(GeomUtil.toTransform2d(0.45, 0.0)))
+                .build());
+
+    // Return + spikes trajectories
+    for (String intakeName : List.of("spiky_secondIntake", "spiky_farIntake")) {
+      suppliedPaths.add(
+          completedPaths -> {
+            if (!completedPaths.contains(intakeName)) return null;
+            final double minDistance = 0.22;
+
+            Map<String, List<PathSegment>> returnPaths = new HashMap<>();
+            var intakeTrajectory = new HolonomicTrajectory(intakeName);
+            int index = -1;
+            int validIndex = -1;
+            Translation2d lastTranslation = new Translation2d();
+
+            for (var state : intakeTrajectory.getStates()) {
+              index++;
+              Translation2d translation = state.getPose().getTranslation();
+              if ((translation.getDistance(lastTranslation) > minDistance
+                      && translation.getX() > FieldConstants.wingX + 1.0)
+                  || index == intakeTrajectory.getStates().length - 1) {
+                validIndex++;
+                lastTranslation = translation;
+                boolean throughStage = translation.getY() < FieldConstants.Stage.ampLeg.getY();
+
+                PathSegment firstSegment = PathSegment.newBuilder().build();
+                if (throughStage) {
+                  firstSegment =
+                      firstSegment.toBuilder()
+                          .addContinuationWaypoint(state)
+                          .addTranslationWaypoint(
+                              stageCenterAvoidance.plus(new Translation2d(0.0, -0.3)))
+                          .addTranslationWaypoint(
+                              Stage.ampLeg
+                                  .getTranslation()
+                                  .interpolate(Stage.podiumLeg.getTranslation(), 0.4))
+                          .build();
+                } else {
+                  firstSegment =
+                      firstSegment.toBuilder()
+                          .addContinuationWaypoint(state)
+                          .addTranslationWaypoint(stageLeftAvoidance)
+                          .build();
+                }
+                paths.put(
+                    intakeName + "ReturnToSpikes" + String.format("%03d", validIndex),
+                    Stream.of(List.of(firstSegment), lastCenterlineShotToSpike0Segment)
+                        .flatMap(Collection::stream)
+                        .toList());
               }
             }
             return returnPaths;

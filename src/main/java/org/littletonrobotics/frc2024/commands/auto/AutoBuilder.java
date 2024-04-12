@@ -52,6 +52,10 @@ public class AutoBuilder {
       loadTrajectorySet("spiky_secondIntakeReturn");
   private static final Map<Translation2d, HolonomicTrajectory> spiky_farIntakeReturn =
       loadTrajectorySet("spiky_farIntakeReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> CA_secondIntakeReturnToSpikes =
+      loadTrajectorySet("spiky_secondIntakeReturnToSpikes");
+  private static final Map<Translation2d, HolonomicTrajectory> CA_farIntakeReturnToSpikes =
+      loadTrajectorySet("spiky_farIntakeReturnToSpikes");
 
   private static Map<Translation2d, HolonomicTrajectory> loadTrajectorySet(String name) {
     Map<Translation2d, HolonomicTrajectory> result = new HashMap<>();
@@ -387,6 +391,172 @@ public class AutoBuilder {
         // Score centerline notes
         Commands.select(centerlineChoices, () -> responses.get().get(0)),
         Commands.runOnce(() -> System.out.println("Centerlines finished at: " + autoTimer.get())));
+  }
+
+  public Command davisCAAuto() {
+    final HolonomicTrajectory preloadWithSpike2 = new HolonomicTrajectory("CA_startToFirstIntake");
+    final HolonomicTrajectory firstIntake = new HolonomicTrajectory("spiky_firstIntake");
+    final HolonomicTrajectory secondIntake = new HolonomicTrajectory("spiky_secondIntake");
+    final HolonomicTrajectory farIntake = new HolonomicTrajectory("spiky_farIntake");
+    final double spike1IntakeTime = 2.5;
+
+    Timer autoTimer = new Timer();
+    Timer returnTimer = new Timer();
+    Timer remainingSpikesTimer = new Timer();
+    Container<HolonomicTrajectory> firstReturnTrajectory = new Container<>();
+    Container<HolonomicTrajectory> secondIntakeTrajectory = new Container<>();
+    Container<Map<Translation2d, HolonomicTrajectory>> secondReturnTrajectorySet =
+        new Container<>();
+    Container<HolonomicTrajectory> secondReturnAndSpikesTrajectory = new Container<>();
+    Container<Boolean> farTrajectory = new Container<>();
+    return Commands.runOnce(
+            () -> {
+              // Reset timers
+              autoTimer.restart();
+              remainingSpikesTimer.stop();
+              remainingSpikesTimer.reset();
+              returnTimer.stop();
+              returnTimer.reset();
+              // Reset selected
+              firstReturnTrajectory.value = null;
+              secondIntakeTrajectory.value = null;
+              secondReturnTrajectorySet.value = null;
+              secondReturnAndSpikesTrajectory.value = null;
+              farTrajectory.value = false;
+            })
+        .andThen(
+            // Trajectory sequencing
+            Commands.sequence(
+                    resetPose(DriveTrajectories.startingAmp),
+                    followTrajectory(drive, preloadWithSpike2), // Do preload + spike 2
+                    followTrajectory(drive, firstIntake)
+                        .until(rollers::isTouchingNote), // Intake from centerline
+                    // Return to stageLeftShot
+                    Commands.runOnce(
+                        () -> {
+                          firstReturnTrajectory.value =
+                              spiky_firstIntakeReturn.get(
+                                  RobotState.getInstance()
+                                      .getTrajectorySetpoint()
+                                      .getTranslation()
+                                      .nearest(new ArrayList<>(spiky_firstIntakeReturn.keySet())));
+                          returnTimer.restart();
+                        }),
+                    followTrajectory(drive, () -> firstReturnTrajectory.value),
+                    // Second intake and return
+                    Commands.runOnce(
+                        () -> {
+                          final boolean isFarIntake =
+                              RobotState.getInstance().getTrajectorySetpoint().getY()
+                                  <= FieldConstants.Stage.ampLeg.getY();
+                          farTrajectory.value = true;
+                          secondIntakeTrajectory.value = isFarIntake ? farIntake : secondIntake;
+                          secondReturnTrajectorySet.value =
+                              isFarIntake
+                                  ? CA_farIntakeReturnToSpikes
+                                  : CA_secondIntakeReturnToSpikes;
+                        }),
+                    followTrajectory(drive, () -> secondIntakeTrajectory.value)
+                        .until(rollers::isTouchingNote),
+                    followTrajectory(
+                        drive,
+                        () -> {
+                          secondReturnAndSpikesTrajectory.value =
+                              secondReturnTrajectorySet.value.get(
+                                  RobotState.getInstance()
+                                      .getEstimatedPose()
+                                      .getTranslation()
+                                      .nearest(
+                                          secondReturnTrajectorySet.value.keySet().stream()
+                                              .toList()));
+                          return secondReturnAndSpikesTrajectory.value;
+                        }))
+                .alongWith(
+                    // Superstructure and rollers seqeuence
+                    Commands.sequence(
+                            // Score preload and spike 2
+                            Commands.waitUntil(() -> autoTimer.hasElapsed(1.0))
+                                .andThen(rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
+                                .deadlineWith(
+                                    Commands.parallel(
+                                        aim(drive),
+                                        superstructure.setGoalCommand(Superstructure.Goal.AIM)))
+                                .until(() -> autoTimer.hasElapsed(2.6)),
+                            // Intake and shoot first centerline
+                            waitUntilXCrossed(FieldConstants.wingX, true)
+                                .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+                                .until(
+                                    () ->
+                                        firstReturnTrajectory.value != null
+                                            && returnTimer.hasElapsed(
+                                                firstReturnTrajectory.value.getDuration()
+                                                    - shootTimeoutSecs.get() / 2.0))
+                                .andThen(feed(rollers))
+                                .deadlineWith(
+                                    Commands.waitUntil(
+                                            () ->
+                                                firstReturnTrajectory.value != null
+                                                    && returnTimer.hasElapsed(
+                                                        firstReturnTrajectory.value.getDuration()
+                                                            - 1.5))
+                                        .andThen(
+                                            Commands.parallel(
+                                                aim(drive),
+                                                superstructure.aimWithCompensation(0.0)))),
+
+                            // Intake and shoot second centerline then score spikes
+                            // Rollers sequence
+                            Commands.sequence(
+                                // Shoot second centerline
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                    .raceWith(
+                                        waitUntilXCrossed(
+                                            DriveTrajectories.CA_lastCenterlineShot.getX(), false)),
+                                feed(rollers),
+                                // Intake and shoot spike 1
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                                    .until(
+                                        () ->
+                                            remainingSpikesTimer.hasElapsed(
+                                                spike1IntakeTime + spikeIntakeDelay)),
+                                // Run intake and feeder for spike 0
+                                rollers
+                                    .setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED)
+                                    .until(
+                                        () ->
+                                            autoTimer.hasElapsed(
+                                                preloadWithSpike2.getDuration()
+                                                    + firstIntake.getDuration()
+                                                    + firstReturnTrajectory.value.getDuration()
+                                                    + secondIntakeTrajectory.value.getDuration()
+                                                    + secondReturnAndSpikesTrajectory.value
+                                                        .getDuration()
+                                                    + spikeFeedThroughDelay * 0.5))))
+                        .deadlineWith(
+                            // Reset timer
+                            waitUntilXCrossed(DriveTrajectories.CA_lastCenterlineShot.getX(), false)
+                                .andThen(remainingSpikesTimer::restart),
+                            // Aim arm
+                            waitUntilXCrossed(stageAimX, false)
+                                .andThen(superstructure.setGoalCommand(Superstructure.Goal.AIM)),
+                            Commands.sequence(
+                                // Aim last centerline shot
+                                waitUntilXCrossed(
+                                        DriveTrajectories.CA_lastCenterlineShot.getX(), false)
+                                    .andThen(aim(drive))
+                                    .until(
+                                        () ->
+                                            remainingSpikesTimer.hasElapsed(
+                                                shootTimeoutSecs.get() * 1.5)),
+
+                                // Aim spike 1 and 0
+                                Commands.waitUntil(
+                                        () -> remainingSpikesTimer.hasElapsed(spike1IntakeTime))
+                                    .andThen(aim(drive)))))
+                // Run flywheels
+                .deadlineWith(flywheels.shootCommand()));
   }
 
   public Command davisSpeedyAuto() {

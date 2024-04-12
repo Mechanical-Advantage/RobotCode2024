@@ -59,7 +59,7 @@ public class RobotState {
   private static final LoggedTunableNumber superPoopLookahead =
       new LoggedTunableNumber("RobotState/SuperPoopLookahead", 1.0);
   private static final LoggedTunableNumber closeShootingZoneFeet =
-      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 11.0);
+      new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 10.0);
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;

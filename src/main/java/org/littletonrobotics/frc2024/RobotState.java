@@ -73,16 +73,18 @@ public class RobotState {
       new InterpolatingDoubleTreeMap();
 
   static {
-    superPoopArmAngleMap.put(Units.feetToMeters(17.0), 48.0);
-    superPoopArmAngleMap.put(Units.feetToMeters(24.0), 36.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(30.0), 35.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(25.0), 37.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(22.0), 45.0);
   }
 
   private static final InterpolatingTreeMap<Double, FlywheelSpeeds> superPoopFlywheelSpeedsMap =
       new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), FlywheelSpeeds::interpolate);
 
   static {
-    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(24.0), new FlywheelSpeeds(1500, 2500));
-    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(17.0), new FlywheelSpeeds(2000, 3000));
+    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(30.0), new FlywheelSpeeds(3500, 4500));
+    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(25.0), new FlywheelSpeeds(4100, 4100));
+    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(22.0), new FlywheelSpeeds(2700, 3700));
   }
 
   private static final double autoFarShotCompensationDegrees = 0.0; // 0.6 at NECMP

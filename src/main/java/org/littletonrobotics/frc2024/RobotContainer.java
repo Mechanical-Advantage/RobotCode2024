@@ -366,7 +366,13 @@ public class RobotContainer {
             new AutoQuestion(
                 "Second center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET))),
         autoBuilder.davisSpikyAuto());
-    autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
+    autoSelector.addRoutine(
+        "Davis CA Auto",
+        List.of(
+            new AutoQuestion(
+                "Return to spikes?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO))),
+        autoBuilder.davisCAAuto());
+    autoSelector.addRoutine("Davis Speedy Auto", autoBuilder.davisSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(
         "Davis Unethical Auto",

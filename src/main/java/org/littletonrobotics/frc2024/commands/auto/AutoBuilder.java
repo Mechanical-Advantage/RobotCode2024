@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
@@ -46,12 +47,16 @@ public class AutoBuilder {
   private static final double spikeFeedThroughDelay = 0.5;
   private static final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
 
-  private static final Map<Translation2d, HolonomicTrajectory> spiky_firstIntakeReturn =
-      loadTrajectorySet("spiky_firstIntakeReturn");
-  private static final Map<Translation2d, HolonomicTrajectory> spiky_secondIntakeReturn =
-      loadTrajectorySet("spiky_secondIntakeReturn");
-  private static final Map<Translation2d, HolonomicTrajectory> spiky_farIntakeReturn =
-      loadTrajectorySet("spiky_farIntakeReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> thinking_firstIntakeReturn =
+      loadTrajectorySet("thinking_firstIntakeReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> thinking_secondIntakeReturn =
+      loadTrajectorySet("thinking_secondIntakeReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> thinking_farIntakeReturn =
+      loadTrajectorySet("thinking_farIntakeReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> thinking_secondIntakeCAReturn =
+      loadTrajectorySet("thinking_secondIntakeCAReturn");
+  private static final Map<Translation2d, HolonomicTrajectory> thinking_farIntakeCAReturn =
+      loadTrajectorySet("thinking_farIntakeCAReturn");
 
   private static Map<Translation2d, HolonomicTrajectory> loadTrajectorySet(String name) {
     Map<Translation2d, HolonomicTrajectory> result = new HashMap<>();
@@ -188,11 +193,15 @@ public class AutoBuilder {
         .deadlineWith(superstructure.aimWithCompensation(0.0), flywheels.shootCommand());
   }
 
-  /** Scores two centerline notes with the given trajectories. */
-  private Command spiky_scoreCenterlines(HolonomicTrajectory toCenterlineTrajectory) {
-    var firstIntakeTrajectory = new HolonomicTrajectory("spiky_firstIntake");
-    var secondIntakeTrajectory = new HolonomicTrajectory("spiky_secondIntake");
-    var farIntakeTrajectory = new HolonomicTrajectory("spiky_farIntake");
+  /** Scores two centerline notes while thinking-on-your-feet. * */
+  private Command thinkingOnYourFeet(
+      boolean isInfinite,
+      boolean isCAReturn,
+      BooleanSupplier cancelFirstIntake,
+      BooleanSupplier cancelSecondIntake) {
+    var firstIntakeTrajectory = new HolonomicTrajectory("thinking_firstIntake");
+    var secondIntakeTrajectory = new HolonomicTrajectory("thinking_secondIntake");
+    var farIntakeTrajectory = new HolonomicTrajectory("thinking_farIntake");
 
     Timer returnTimer = new Timer();
     Container<HolonomicTrajectory> firstReturnTrajectory = new Container<>();
@@ -200,6 +209,63 @@ public class AutoBuilder {
     Container<Map<Translation2d, HolonomicTrajectory>> secondReturnTrajectorySet =
         new Container<>();
     Container<HolonomicTrajectory> secondReturnTrajectory = new Container<>();
+
+    // Subroutines for second intake (repeated infinitely if desired)
+    Command secondIntakeDrive =
+        Commands.sequence(
+            Commands.runOnce(
+                () -> {
+                  // Select second intake trajectory
+                  boolean isFarIntake =
+                      RobotState.getInstance().getTrajectorySetpoint().getY()
+                          < FieldConstants.Stage.ampLeg.getY();
+                  selectedSecondIntakeTrajectory.value =
+                      isFarIntake ? farIntakeTrajectory : secondIntakeTrajectory;
+                  if (isCAReturn) {
+                    secondReturnTrajectorySet.value =
+                        isFarIntake ? thinking_farIntakeCAReturn : thinking_secondIntakeCAReturn;
+                  } else {
+                    secondReturnTrajectorySet.value =
+                        isFarIntake ? thinking_farIntakeReturn : thinking_secondIntakeReturn;
+                  }
+                  secondReturnTrajectory.value = null;
+                }),
+            followTrajectory(drive, () -> selectedSecondIntakeTrajectory.value)
+                .until(() -> rollers.isTouchingNote() || cancelSecondIntake.getAsBoolean()),
+            Commands.runOnce(
+                () -> {
+                  // Select return trajectory
+                  secondReturnTrajectory.value =
+                      secondReturnTrajectorySet.value.get(
+                          AllianceFlipUtil.apply(
+                                  RobotState.getInstance().getTrajectorySetpoint().getTranslation())
+                              .nearest(new ArrayList<>(secondReturnTrajectorySet.value.keySet())));
+                  returnTimer.restart();
+                }),
+            followTrajectory(drive, () -> secondReturnTrajectory.value));
+    Command secondIntakeFeed =
+        waitUntilXCrossed(FieldConstants.wingX, true)
+            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
+            .until(
+                () ->
+                    secondReturnTrajectory.value != null
+                        && returnTimer.hasElapsed(
+                            secondReturnTrajectory.value.getDuration()
+                                - shootTimeoutSecs.get() / 2.0))
+            .andThen(feed(rollers))
+            .deadlineWith(
+                Commands.waitUntil(
+                        () ->
+                            secondReturnTrajectory.value != null
+                                && returnTimer.hasElapsed(
+                                    secondReturnTrajectory.value.getDuration() - 1.5)
+                                && (RobotState.getInstance().getTrajectorySetpoint().getY()
+                                        > FieldConstants.Stage.ampLeg.getY()
+                                    || xCrossed(stageAimX, false)))
+                    .andThen(
+                        Commands.parallel(aim(drive), superstructure.aimWithCompensation(0.0))));
+
+    // Full command
     return Commands.runOnce(
             () -> {
               firstReturnTrajectory.value = null;
@@ -210,49 +276,23 @@ public class AutoBuilder {
         .andThen(
             // Drive sequence
             Commands.sequence(
-                    followTrajectory(drive, toCenterlineTrajectory),
-                    followTrajectory(drive, firstIntakeTrajectory).until(rollers::isTouchingNote),
+                    followTrajectory(drive, firstIntakeTrajectory)
+                        .until(() -> rollers.isTouchingNote() || cancelFirstIntake.getAsBoolean()),
                     Commands.runOnce(
                         () -> {
                           // Select return trajectory
                           firstReturnTrajectory.value =
-                              spiky_firstIntakeReturn.get(
-                                  AllianceFlipUtil.apply(
-                                          RobotState.getInstance()
-                                              .getTrajectorySetpoint()
-                                              .getTranslation())
-                                      .nearest(new ArrayList<>(spiky_firstIntakeReturn.keySet())));
-                          returnTimer.restart();
-                        }),
-                    followTrajectory(drive, () -> firstReturnTrajectory.value),
-                    Commands.runOnce(
-                        () -> {
-                          // Select second intake trajectory
-                          boolean isFarIntake =
-                              RobotState.getInstance().getTrajectorySetpoint().getY()
-                                  < FieldConstants.Stage.ampLeg.getY();
-                          selectedSecondIntakeTrajectory.value =
-                              isFarIntake ? farIntakeTrajectory : secondIntakeTrajectory;
-                          secondReturnTrajectorySet.value =
-                              isFarIntake ? spiky_farIntakeReturn : spiky_secondIntakeReturn;
-                        }),
-                    followTrajectory(drive, () -> selectedSecondIntakeTrajectory.value)
-                        .until(rollers::isTouchingNote),
-                    Commands.runOnce(
-                        () -> {
-                          // Select return trajectory
-                          secondReturnTrajectory.value =
-                              secondReturnTrajectorySet.value.get(
+                              thinking_firstIntakeReturn.get(
                                   AllianceFlipUtil.apply(
                                           RobotState.getInstance()
                                               .getTrajectorySetpoint()
                                               .getTranslation())
                                       .nearest(
-                                          new ArrayList<>(
-                                              secondReturnTrajectorySet.value.keySet())));
+                                          new ArrayList<>(thinking_firstIntakeReturn.keySet())));
                           returnTimer.restart();
                         }),
-                    followTrajectory(drive, () -> secondReturnTrajectory.value))
+                    followTrajectory(drive, () -> firstReturnTrajectory.value),
+                    isInfinite ? secondIntakeDrive.repeatedly() : secondIntakeDrive)
                 .alongWith(
                     // Superstructure and rollers sequence
                     Commands.sequence(
@@ -282,30 +322,7 @@ public class AutoBuilder {
                                             aim(drive), superstructure.aimWithCompensation(0.0)))),
 
                         // Intake and shoot second centerline
-                        waitUntilXCrossed(FieldConstants.wingX, true)
-                            .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE))
-                            .until(
-                                () ->
-                                    secondReturnTrajectory.value != null
-                                        && returnTimer.hasElapsed(
-                                            secondReturnTrajectory.value.getDuration()
-                                                - shootTimeoutSecs.get() / 2.0))
-                            .andThen(feed(rollers))
-                            .deadlineWith(
-                                Commands.waitUntil(
-                                        () ->
-                                            secondReturnTrajectory.value != null
-                                                && returnTimer.hasElapsed(
-                                                    secondReturnTrajectory.value.getDuration()
-                                                        - 1.5)
-                                                && (RobotState.getInstance()
-                                                            .getTrajectorySetpoint()
-                                                            .getY()
-                                                        > FieldConstants.Stage.ampLeg.getY()
-                                                    || xCrossed(stageAimX, false)))
-                                    .andThen(
-                                        Commands.parallel(
-                                            aim(drive), superstructure.aimWithCompensation(0.0))))))
+                        isInfinite ? secondIntakeFeed.repeatedly() : secondIntakeFeed))
                 // Run flywheels
                 .deadlineWith(flywheels.shootCommand()));
   }
@@ -360,10 +377,15 @@ public class AutoBuilder {
       centerlineChoices.put(
           startingLocation,
           Commands.either(
-              spiky_scoreCenterlines(spike3ToFirstIntake),
-              spiky_scoreCenterlines(spike2ToFirstIntake),
-              () -> responses.get().get(1).equals(AutoQuestionResponse.THREE) // Scores three spikes
-              ));
+                  followTrajectory(drive, spike3ToFirstIntake),
+                  followTrajectory(drive, spike2ToFirstIntake),
+                  () ->
+                      responses
+                          .get()
+                          .get(1)
+                          .equals(AutoQuestionResponse.THREE) // Scores three spikes
+                  )
+              .andThen(thinkingOnYourFeet(false, false, () -> false, () -> false)));
     }
 
     Timer autoTimer = new Timer();
@@ -389,6 +411,45 @@ public class AutoBuilder {
         // Score centerline notes
         Commands.select(centerlineChoices, () -> responses.get().get(0)),
         Commands.runOnce(() -> System.out.println("Centerlines finished at: " + autoTimer.get())));
+  }
+
+  public Command davisCAAuto() {
+    var startToCenterline = new HolonomicTrajectory("CA_startToCenterline");
+    var centerlineToSpikes = new HolonomicTrajectory("CA_centerlineToSpikes");
+
+    Timer autoTimer = new Timer();
+    Timer remainingSpikesTimer = new Timer();
+    return Commands.sequence(
+        Commands.runOnce(autoTimer::restart),
+        resetPose(DriveTrajectories.startingAmp),
+
+        // Preload and spike 2
+        followTrajectory(drive, startToCenterline)
+            .deadlineWith(
+                Commands.waitSeconds(1.0)
+                    .andThen(rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
+                    .deadlineWith(
+                        Commands.parallel(
+                            aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)))
+                    .withTimeout(2.6),
+                flywheels.shootCommand()),
+
+        // Thinking-on-your-feet
+        Commands.either(
+            thinkingOnYourFeet(
+                false, true, () -> autoTimer.hasElapsed(4.4), () -> autoTimer.hasElapsed(8.7)),
+            thinkingOnYourFeet(true, false, () -> false, () -> false),
+            () -> responses.get().get(0).equals(AutoQuestionResponse.YES)),
+
+        // Shoot remaining spikes
+        Commands.runOnce(() -> remainingSpikesTimer.restart()),
+        followTrajectory(drive, centerlineToSpikes)
+            .andThen(Commands.waitSeconds(0.3))
+            .deadlineWith(
+                rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED),
+                aim(drive),
+                superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                flywheels.shootCommand()));
   }
 
   public Command davisSpeedyAuto() {

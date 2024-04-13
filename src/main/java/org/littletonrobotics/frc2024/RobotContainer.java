@@ -396,7 +396,7 @@ public class RobotContainer {
                 List.of(
                     AutoQuestionResponse.IMMEDIATELY,
                     AutoQuestionResponse.SIX_SECONDS,
-                    AutoQuestionResponse.FOURTEEN_SECONDS))),
+                    AutoQuestionResponse.LAST_SECOND))),
         autoBuilder.davisInspirationalAuto());
 
     // Set up feedforward characterization

@@ -697,45 +697,73 @@ public class AutoBuilder {
   }
 
   public Command davisInspirationalAuto() {
-    return Commands.select(
-            Map.of(
-                AutoQuestionResponse.SOURCE,
-                resetPose(DriveTrajectories.startingSourceSubwoofer),
-                AutoQuestionResponse.CENTER,
-                resetPose(DriveTrajectories.startingCenter),
-                AutoQuestionResponse.AMP,
-                resetPose(DriveTrajectories.startingAmpSubwoofer)),
-            () -> responses.get().get(0) // Starting location
-            )
+    HolonomicTrajectory leaveFromSource = new HolonomicTrajectory("inspirational_leaveFromSource");
+    HolonomicTrajectory leaveFromCenter = new HolonomicTrajectory("inspirational_leaveFromCenter");
+    HolonomicTrajectory leaveFromAmp = new HolonomicTrajectory("inspirational_leaveFromAmp");
+    Timer autoTimer = new Timer();
+    return Commands.runOnce(autoTimer::restart)
         .andThen(
-            // Shoot preload in one second
-            Commands.waitSeconds(1.0 - shootTimeoutSecs.get())
-                .andThen(feed(rollers))
-                .deadlineWith(flywheels.shootCommand(), superstructure.aimWithCompensation(0)),
-
-            // Wait time
-            Commands.select(
-                    Map.of(
-                        AutoQuestionResponse.IMMEDIATELY,
-                        Commands.none(),
-                        AutoQuestionResponse.SIX_SECONDS,
-                        Commands.waitSeconds(5.0),
-                        AutoQuestionResponse.FOURTEEN_SECONDS,
-                        Commands.waitSeconds(13.0)),
-                    () -> responses.get().get(2))
-                .andThen(
-                    Commands.select(
+            Commands.parallel(
+                Commands.sequence(
+                    waitUntilXCrossed(FieldConstants.startingLineX, true),
+                    Commands.runOnce(
+                        () -> System.out.println("Crossed starting line at " + autoTimer.get()))),
+                Commands.select(
                         Map.of(
                             AutoQuestionResponse.SOURCE,
-                            followTrajectory(
-                                drive, new HolonomicTrajectory("inspirational_leaveFromSource")),
+                            resetPose(DriveTrajectories.startingSourceSubwoofer),
                             AutoQuestionResponse.CENTER,
-                            followTrajectory(
-                                drive, new HolonomicTrajectory("inspirational_leaveFromCenter")),
+                            resetPose(DriveTrajectories.startingCenter),
                             AutoQuestionResponse.AMP,
-                            followTrajectory(
-                                drive, new HolonomicTrajectory("inspirational_leaveFromAmp"))),
-                        () -> responses.get().get(0)))
-                .onlyIf(() -> responses.get().get(1) == AutoQuestionResponse.YES));
+                            resetPose(DriveTrajectories.startingAmpSubwoofer)),
+                        () -> responses.get().get(0) // Starting location
+                        )
+                    .andThen(
+                        // Shoot preload in one second
+                        Commands.waitSeconds(1.0 - shootTimeoutSecs.get())
+                            .andThen(feed(rollers))
+                            .deadlineWith(
+                                flywheels.shootCommand(), superstructure.aimWithCompensation(0)),
+
+                        // Wait time
+                        Commands.select(
+                                Map.of(
+                                    AutoQuestionResponse.IMMEDIATELY,
+                                    Commands.none(),
+                                    AutoQuestionResponse.SIX_SECONDS,
+                                    Commands.waitSeconds(5.0),
+                                    AutoQuestionResponse.LAST_SECOND,
+                                    Commands.select(
+                                        Map.of(
+                                            AutoQuestionResponse.SOURCE,
+                                            Commands.waitSeconds(
+                                                14.6 - leaveFromSource.getDuration()),
+                                            AutoQuestionResponse.CENTER,
+                                            Commands.waitSeconds(
+                                                14.6 - leaveFromCenter.getDuration()),
+                                            AutoQuestionResponse.AMP,
+                                            Commands.waitSeconds(
+                                                14.6 - leaveFromAmp.getDuration())),
+                                        () -> responses.get().get(0))),
+                                () -> responses.get().get(2))
+                            .andThen(
+                                Commands.select(
+                                    Map.of(
+                                        AutoQuestionResponse.SOURCE,
+                                        followTrajectory(
+                                            drive,
+                                            new HolonomicTrajectory(
+                                                "inspirational_leaveFromSource")),
+                                        AutoQuestionResponse.CENTER,
+                                        followTrajectory(
+                                            drive,
+                                            new HolonomicTrajectory(
+                                                "inspirational_leaveFromCenter")),
+                                        AutoQuestionResponse.AMP,
+                                        followTrajectory(
+                                            drive,
+                                            new HolonomicTrajectory("inspirational_leaveFromAmp"))),
+                                    () -> responses.get().get(0)))
+                            .onlyIf(() -> responses.get().get(1) == AutoQuestionResponse.YES))));
   }
 }

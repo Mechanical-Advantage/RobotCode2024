@@ -149,7 +149,7 @@ public class AutoSelector extends VirtualSubsystem {
     THINKING_ON_YOUR_FEET,
     IMMEDIATELY,
     SIX_SECONDS,
-    FOURTEEN_SECONDS,
+    LAST_SECOND,
     YES,
     NO
   }

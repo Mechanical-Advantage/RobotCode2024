@@ -63,7 +63,6 @@ public class Leds extends VirtualSubsystem {
   private static final boolean prideLeds = false;
   private static final int minLoopCycleCount = 10;
   private static final int length = 12;
-  private static final int staticSectionLength = 3;
   private static final double strobeDuration = 0.1;
   private static final double breathDuration = 1.0;
   private static final double rainbowCycleLength = 25.0;
@@ -159,7 +158,6 @@ public class Leds extends VirtualSubsystem {
                 new Color(0.15, 0.3, 1.0)),
             3,
             5.0);
-        buffer.setLED(staticSectionLength, allianceColor);
       } else {
         // Default pattern
         wave(allianceColor, secondaryDisabledColor, waveAllianceCycleLength, waveAllianceDuration);
@@ -263,11 +261,12 @@ public class Leds extends VirtualSubsystem {
     }
   }
 
-  private void stripes(List<Color> colors, int length, double duration) {
-    int offset = (int) (Timer.getFPGATimestamp() % duration / duration * length * colors.size());
+  private void stripes(List<Color> colors, int stripeLength, double duration) {
+    int offset =
+        (int) (Timer.getFPGATimestamp() % duration / duration * stripeLength * colors.size());
     for (int i = 0; i < length; i++) {
       int colorIndex =
-          (int) (Math.floor((double) (i - offset) / length) + colors.size()) % colors.size();
+          (int) (Math.floor((double) (i - offset) / stripeLength) + colors.size()) % colors.size();
       colorIndex = colors.size() - 1 - colorIndex;
       buffer.setLED(i, colors.get(colorIndex));
     }

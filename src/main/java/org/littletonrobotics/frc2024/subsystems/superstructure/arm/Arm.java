@@ -108,6 +108,8 @@ public class Arm {
   private TrapezoidProfile.Constraints currentConstraints = maxProfileConstraints.get();
   private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
+
+  private double goalAngle;
   private ArmFeedforward ff;
 
   private final ArmVisualizer measuredVisualizer;
@@ -202,7 +204,7 @@ public class Arm {
     // Don't run profile when characterizing, coast mode, or disabled
     if (!characterizing && brakeModeEnabled && !disableSupplier.getAsBoolean()) {
       // Run closed loop
-      double goalAngle =
+      goalAngle =
           goal.getRads() + (goal == Goal.AIM ? Units.degreesToRadians(currentCompensation) : 0.0);
       if (goal == Goal.STOW) {
         goalAngle = getStowAngle();
@@ -217,15 +219,22 @@ public class Arm {
                       Units.degreesToRadians(lowerLimitDegrees.get()),
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));
-      io.runSetpoint(
-          setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
+      if (goal == Goal.STOW
+          && EqualsUtil.epsilonEquals(goalAngle, minAngle.getRadians())
+          && atGoal()) {
+        io.stop();
+      } else {
+        io.runSetpoint(
+            setpointState.position, ff.calculate(setpointState.position, setpointState.velocity));
+      }
+
+      goalVisualizer.update(goalAngle);
+      Logger.recordOutput("Arm/GoalAngle", goalAngle);
     }
 
     // Logs
     measuredVisualizer.update(inputs.positionRads);
     setpointVisualizer.update(setpointState.position);
-    goalVisualizer.update(goal.getRads());
-    Logger.recordOutput("Arm/GoalAngle", goal.getRads());
     Logger.recordOutput("Arm/SetpointAngle", setpointState.position);
     Logger.recordOutput("Arm/SetpointVelocity", setpointState.velocity);
     Logger.recordOutput("Superstructure/Arm/Goal", goal);
@@ -237,7 +246,7 @@ public class Arm {
 
   @AutoLogOutput(key = "Superstructure/Arm/AtGoal")
   public boolean atGoal() {
-    return EqualsUtil.epsilonEquals(setpointState.position, goal.getRads(), 1e-3);
+    return EqualsUtil.epsilonEquals(setpointState.position, goalAngle, 1e-3);
   }
 
   public void setBrakeMode(boolean enabled) {

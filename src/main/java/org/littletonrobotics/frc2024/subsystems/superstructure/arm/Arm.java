@@ -219,7 +219,9 @@ public class Arm {
                       Units.degreesToRadians(lowerLimitDegrees.get()),
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));
-      if (goal == Goal.STOW && goalAngle == minAngle.getRadians() && atGoal()) {
+      if (goal == Goal.STOW
+          && EqualsUtil.epsilonEquals(goalAngle, minAngle.getRadians())
+          && atGoal()) {
         io.stop();
       } else {
         io.runSetpoint(

@@ -400,11 +400,11 @@ public class AutoBuilder {
     // Set up all choices
     Map<AutoQuestionResponse, Command> choices = new HashMap<>();
     for (var firstCenterline : centerlineChoices) {
-      final int firstCenterlineIndex = spiky_calculateCenterlineIndex(firstCenterline);
+      final int firstCenterlineIndex = 0;
       Map<AutoQuestionResponse, Command> secondCenterlineChoices = new HashMap<>();
 
       for (var secondCenterline : centerlineChoices) {
-        final int secondCenterlineIndex = spiky_calculateCenterlineIndex(secondCenterline);
+        final int secondCenterlineIndex = 0;
         // Get trajectories
         HolonomicTrajectory preloadToFirstCenterline =
             new HolonomicTrajectory("CA_startToCenterline" + firstCenterlineIndex);
@@ -470,8 +470,7 @@ public class AutoBuilder {
                                             aim(drive), superstructure.aimWithCompensation(0)))),
 
                         // Intake second centerline
-                        intake(superstructure, rollers)
-                            .raceWith(waitUntilXCrossed(stageAimX, false)),
+                        intake(rollers).raceWith(waitUntilXCrossed(stageAimX, false)),
 
                         // Sequence aiming, intaking and shooting
                         Commands.sequence(

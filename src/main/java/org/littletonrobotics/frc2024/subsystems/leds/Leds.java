@@ -262,7 +262,8 @@ public class Leds extends VirtualSubsystem {
   }
 
   private void stripes(List<Color> colors, int stripeLength, double duration) {
-    int offset = (int) (Timer.getFPGATimestamp() % duration / duration * stripeLength * colors.size());
+    int offset =
+        (int) (Timer.getFPGATimestamp() % duration / duration * stripeLength * colors.size());
     for (int i = 0; i < length; i++) {
       int colorIndex =
           (int) (Math.floor((double) (i - offset) / stripeLength) + colors.size()) % colors.size();

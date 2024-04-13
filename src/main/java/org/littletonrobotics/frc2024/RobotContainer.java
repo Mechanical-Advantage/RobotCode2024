@@ -78,6 +78,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardBoolean;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
@@ -375,6 +376,11 @@ public class RobotContainer {
                 "First center note?",
                 List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
+    // Set up passive wheel radius characterization
+    new Trigger(new LoggedDashboardBoolean("Passive Wheel Radius Characterization Routine")::get)
+        .whileTrue(
+            new WheelRadiusCharacterization(
+                drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE));
 
     // Set up feedforward characterization
     autoSelector.addRoutine(

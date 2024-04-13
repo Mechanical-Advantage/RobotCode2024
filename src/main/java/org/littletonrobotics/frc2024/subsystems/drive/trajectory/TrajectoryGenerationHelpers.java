@@ -62,6 +62,22 @@ public class TrajectoryGenerationHelpers {
   }
 
   /**
+   * Adds a waypoint to an existing {@link PathSegment.Builder} which is a continuation of a
+   * previously generated vehicle state. The pose and velocity of the waypoint are set to match the
+   * given vehicle state
+   *
+   * @param builder The {@link PathSegment.Builder}.
+   * @param state The generated vehicle state.
+   * @return The {@link PathSegment.Builder} with the new waypoint added.
+   */
+  public static PathSegment.Builder addContinuationWaypoint(
+      PathSegment.Builder builder, VehicleState state) {
+    return builder.addWaypoints(
+        fromPose(Waypoint.newBuilder(), getPose(state))
+            .setVehicleVelocity(createVelocityConstraint(state)));
+  }
+
+  /**
    * Adds a translation waypoint to an existing {@link PathSegment.Builder} without setting any
    * other constraints.
    *

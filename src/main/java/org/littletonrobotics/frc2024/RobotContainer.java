@@ -113,11 +113,9 @@ public class RobotContainer {
   private final Trigger shootPresets = overrides.operatorSwitch(0);
   private final Trigger shootAlignDisable = overrides.operatorSwitch(1);
   private final Trigger lookaheadDisable = overrides.operatorSwitch(2);
-  private final Trigger autoDriveDisable = overrides.operatorSwitch(3);
+  private final Trigger autoDriveEnable = overrides.operatorSwitch(3);
   private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
-  private final Alert ridiculousAutoAlert =
-      new Alert("The selected auto is ridiculous! 😡", AlertType.WARNING);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
@@ -308,9 +306,10 @@ public class RobotContainer {
         () ->
             autoFlywheelSpinupDisable.negate().getAsBoolean()
                 && DriverStation.isTeleopEnabled()
-                && robotState.isNearSpeaker()
-                && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED
-                && !superstructure.getCurrentGoal().isClimbingGoal());
+                && !superstructure.getCurrentGoal().isClimbingGoal()
+                && (robotState.inCloseShootingZone()
+                    || (robotState.inShootingZone()
+                        && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED)));
 
     // Configure autos and buttons
     configureAutos();
@@ -374,17 +373,9 @@ public class RobotContainer {
                 "How many spike notes?",
                 List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE)),
             new AutoQuestion(
-                "First center note?",
-                List.of(
-                    AutoQuestionResponse.AMP_WALL,
-                    AutoQuestionResponse.AMP_MIDDLE,
-                    AutoQuestionResponse.MIDDLE)),
+                "First center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET)),
             new AutoQuestion(
-                "Second center note?",
-                List.of(
-                    AutoQuestionResponse.AMP_WALL,
-                    AutoQuestionResponse.AMP_MIDDLE,
-                    AutoQuestionResponse.MIDDLE))),
+                "Second center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET))),
         autoBuilder.davisSpikyAuto());
     autoSelector.addRoutine(
         "Davis CA Auto",
@@ -484,7 +475,7 @@ public class RobotContainer {
                         drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
                     drive::clearHeadingGoal),
                 shootAlignDisable);
-    Trigger nearSpeaker = new Trigger(robotState::isNearSpeaker);
+    Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
     driver
         .a()
         .and(nearSpeaker)
@@ -493,10 +484,6 @@ public class RobotContainer {
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
-    Translation2d superPoopTarget =
-        FieldConstants.Speaker.centerSpeakerOpening
-            .toTranslation2d()
-            .interpolate(FieldConstants.ampCenter, 0.5);
     driver
         .a()
         .and(nearSpeaker.negate())
@@ -504,23 +491,20 @@ public class RobotContainer {
             Commands.startEnd(
                     () ->
                         drive.setHeadingGoal(
-                            () ->
-                                AllianceFlipUtil.apply(superPoopTarget)
-                                    .minus(robotState.getEstimatedPose().getTranslation())
-                                    .getAngle()),
+                            () -> robotState.getSuperPoopAimingParameters().driveHeading()),
                     drive::clearHeadingGoal)
                 .alongWith(
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand())
                 .withName("Super Poop"));
     Trigger readyToShoot =
-        new Trigger(() -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal())
-            .debounce(0.2, DebounceType.kRising);
+        new Trigger(
+            () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
     driver
         .rightTrigger()
         .and(driver.a())
         .and(nearSpeaker)
-        .and(readyToShoot)
+        .and(readyToShoot.debounce(0.2, DebounceType.kRising))
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
@@ -532,7 +516,7 @@ public class RobotContainer {
         .rightTrigger()
         .and(driver.a())
         .and(nearSpeaker.negate())
-        .and(readyToShoot)
+        .and(readyToShoot.debounce(0.3, DebounceType.kFalling))
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
@@ -561,13 +545,7 @@ public class RobotContainer {
         .and(
             DriverStation
                 ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.INTAKE)
-                .alongWith(
-                    Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
-                .withName("Floor Intake"));
+        .whileTrue(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE).withName("Floor Intake"));
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
@@ -576,13 +554,7 @@ public class RobotContainer {
     // Eject Floor
     driver
         .leftBumper()
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.INTAKE)
-                .alongWith(
-                    Commands.waitUntil(superstructure::atArmGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR)))
-                .withName("Eject To Floor"));
+        .whileTrue(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR).withName("Eject To Floor"));
 
     // Intake source
     driver
@@ -663,6 +635,9 @@ public class RobotContainer {
         .b()
         .whileTrue(
             Commands.either(
+                    // Auto drive to amp
+                    ampAutoDrive,
+
                     // Drive while heading is being controlled
                     drive
                         .run(
@@ -676,14 +651,11 @@ public class RobotContainer {
                             Commands.startEnd(
                                 () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
                                 drive::clearHeadingGoal)),
-
-                    // Auto drive to amp
-                    ampAutoDrive,
-                    autoDriveDisable)
+                    autoDriveEnable)
                 .alongWith(
                     Commands.waitUntil(
                             () -> {
-                              if (autoDriveDisable.getAsBoolean()) {
+                              if (!autoDriveEnable.getAsBoolean()) {
                                 return true;
                               }
                               Pose2d poseError =
@@ -833,11 +805,6 @@ public class RobotContainer {
       aprilTagLayoutAlert.setText(
           "Non-official AprilTag layout in use (" + getAprilTagLayoutType().toString() + ").");
     }
-
-    // Ridiculous auto alert
-    ridiculousAutoAlert.set(
-        autoSelector.getSelectedName().equals("Davis Spiky Auto")
-            && autoSelector.getResponses().get(2) == autoSelector.getResponses().get(3));
   }
 
   /**

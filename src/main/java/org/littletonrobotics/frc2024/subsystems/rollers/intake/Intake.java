@@ -7,6 +7,8 @@
 
 package org.littletonrobotics.frc2024.subsystems.rollers.intake;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import java.util.function.DoubleSupplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +31,15 @@ public class Intake extends GenericRollerSystem<Intake.Goal> {
   }
 
   private Goal goal = Goal.IDLING;
+  private Debouncer currentDebouncer = new Debouncer(0.25, DebounceType.kFalling);
 
   public Intake(IntakeIO io) {
     super("Intake", io);
+  }
+
+  public boolean isTouchingNote() {
+    return goal == Goal.FLOOR_INTAKING
+        && stateTimer.hasElapsed(0.25)
+        && currentDebouncer.calculate(inputs.torqueCurrentAmps > 45.0);
   }
 }

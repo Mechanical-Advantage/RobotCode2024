@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.experimental.ExtensionMethod;
+import org.littletonrobotics.frc2024.Constants;
 import org.littletonrobotics.vehicletrajectoryservice.VehicleTrajectoryServiceOuterClass.VehicleState;
 
 @ExtensionMethod({TrajectoryGenerationHelpers.class})
@@ -28,15 +29,16 @@ public class HolonomicTrajectory {
   private final Trajectory trajectory;
 
   public HolonomicTrajectory(String name) {
-    File file =
-        Path.of(Filesystem.getDeployDirectory().getPath(), "trajectories", name + ".pathblob")
-            .toFile();
+    Path deployDirectory =
+        Constants.disableHAL
+            ? Path.of("src", "main", "deploy")
+            : Filesystem.getDeployDirectory().toPath();
+    File file = Path.of(deployDirectory.toString(), "trajectories", name + ".pathblob").toFile();
     try {
       InputStream fileStream = new FileInputStream(file);
       trajectory = Trajectory.parseFrom(fileStream);
     } catch (IOException e) {
-      System.err.println("Could not load trajectory \"" + name + "\"");
-      throw new RuntimeException();
+      throw new RuntimeException("Could not load trajectory \"" + name + "\"");
     }
   }
 
@@ -55,12 +57,19 @@ public class HolonomicTrajectory {
 
   public Pose2d[] getTrajectoryPoses() {
     Pose2d[] poses = new Pose2d[trajectory.getStatesCount()];
-
     for (int i = 0; i < trajectory.getStatesCount(); i++) {
       VehicleState state = trajectory.getStates(i).getState();
       poses[i] = new Pose2d(state.getX(), state.getY(), new Rotation2d(state.getTheta()));
     }
     return poses;
+  }
+
+  public VehicleState[] getStates() {
+    VehicleState[] states = new VehicleState[trajectory.getStatesCount()];
+    for (int i = 0; i < trajectory.getStatesCount(); i++) {
+      states[i] = trajectory.getStates(i).getState();
+    }
+    return states;
   }
 
   public VehicleState getStartState() {

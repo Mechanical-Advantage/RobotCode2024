@@ -151,12 +151,8 @@ public class Arm {
     coastSupplier = coastOverride;
   }
 
-  private boolean shouldPartialStow() {
-    return (DriverStation.isTeleopEnabled() && RobotState.getInstance().inCloseShootingZone());
-  }
-
   private double getStowAngle() {
-    if (shouldPartialStow()) {
+    if (DriverStation.isTeleopEnabled() && RobotState.getInstance().inCloseShootingZone()) {
       return MathUtil.clamp(
           setpointState.position,
           minAngle.getRadians(),
@@ -223,7 +219,7 @@ public class Arm {
                       Units.degreesToRadians(lowerLimitDegrees.get()),
                       Units.degreesToRadians(upperLimitDegrees.get())),
                   0.0));
-      if (goal == Goal.STOW && !shouldPartialStow() && atGoal()) {
+      if (goal == Goal.STOW && goalAngle == minAngle.getRadians() && atGoal()) {
         io.stop();
       } else {
         io.runSetpoint(

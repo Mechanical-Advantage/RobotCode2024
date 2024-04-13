@@ -342,11 +342,6 @@ public class RobotContainer {
                 .withTimeout(0.9) // Rumble three times
                 .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
                 .finallyDo(() -> Leds.getInstance().endgameAlert = false));
-
-    Logger.recordOutput(
-        "SubwooferStart",
-        FieldConstants.Subwoofer.sourceFaceCorner.transformBy(
-            GeomUtil.toTransform2d(Units.inchesToMeters(-17.0), Units.inchesToMeters(15.0))));
   }
 
   private void configureAutos() {

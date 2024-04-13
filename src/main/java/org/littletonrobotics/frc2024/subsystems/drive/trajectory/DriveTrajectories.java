@@ -734,7 +734,9 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceSubwoofer)
                 .addTranslationWaypoint(
-                    startingSourceSubwoofer.getTranslation().plus(new Translation2d(2.0, -1.5)))
+                    startingSourceSubwoofer.getTranslation().plus(new Translation2d(0.75, -3)))
+                .addTranslationWaypoint(
+                    startingSourceSubwoofer.getTranslation().plus(new Translation2d(2.0, -3.75)))
                 .build()));
     paths.put(
         "inspirational_leaveFromCenter",

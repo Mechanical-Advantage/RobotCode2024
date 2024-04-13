@@ -734,9 +734,9 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingSourceSubwoofer)
                 .addTranslationWaypoint(
-                    startingSourceSubwoofer.getTranslation().plus(new Translation2d(0.75, -3)))
-                .addTranslationWaypoint(
-                    startingSourceSubwoofer.getTranslation().plus(new Translation2d(2.0, -3.75)))
+                    FieldConstants.Stage.podiumLeg
+                        .getTranslation()
+                        .plus(new Translation2d(0.0, -2.0)))
                 .build()));
     paths.put(
         "inspirational_leaveFromCenter",
@@ -744,14 +744,17 @@ public class DriveTrajectories {
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingCenter)
                 .addTranslationWaypoint(
-                    startingCenter.getTranslation().plus(new Translation2d(1.0, 0.0)))
+                    FieldConstants.StagingLocations.spikeTranslations[1].plus(
+                        new Translation2d(1.0, 0.0)))
                 .build()));
     paths.put(
         "inspirational_leaveFromAmp",
         List.of(
             PathSegment.newBuilder()
                 .addPoseWaypoint(startingAmpSubwoofer)
-                .addPoseWaypoint(startingAmpWall.transformBy(GeomUtil.toTransform2d(-1.0, 0.0)))
+                .addTranslationWaypoint(
+                    FieldConstants.StagingLocations.spikeTranslations[2].plus(
+                        new Translation2d(1.0, 0.0)))
                 .build()));
   }
 

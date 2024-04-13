@@ -737,13 +737,13 @@ public class AutoBuilder {
                                         Map.of(
                                             AutoQuestionResponse.SOURCE,
                                             Commands.waitSeconds(
-                                                14.6 - leaveFromSource.getDuration()),
+                                                13.5 - leaveFromSource.getDuration()),
                                             AutoQuestionResponse.CENTER,
                                             Commands.waitSeconds(
-                                                14.6 - leaveFromCenter.getDuration()),
+                                                13.5 - leaveFromCenter.getDuration()),
                                             AutoQuestionResponse.AMP,
                                             Commands.waitSeconds(
-                                                14.6 - leaveFromAmp.getDuration())),
+                                                13.5 - leaveFromAmp.getDuration())),
                                         () -> responses.get().get(0))),
                                 () -> responses.get().get(2))
                             .andThen(

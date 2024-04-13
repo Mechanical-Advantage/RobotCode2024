@@ -344,6 +344,11 @@ public class RobotContainer {
                 .withTimeout(0.9) // Rumble three times
                 .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
                 .finallyDo(() -> Leds.getInstance().endgameAlert = false));
+
+    Logger.recordOutput(
+        "SubwooferStart",
+        FieldConstants.Subwoofer.sourceFaceCorner.transformBy(
+            GeomUtil.toTransform2d(Units.inchesToMeters(-17.0), Units.inchesToMeters(15.0))));
   }
 
   private void configureAutos() {
@@ -385,6 +390,24 @@ public class RobotContainer {
                 "First center note?",
                 List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
+    autoSelector.addRoutine(
+        "Davis Inspirational Auto",
+        List.of(
+            new AutoQuestion(
+                "Starting subwoofer location?",
+                List.of(
+                    AutoQuestionResponse.SOURCE,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.AMP)),
+            new AutoQuestion(
+                "Earn mobility bonus?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO)),
+            new AutoQuestion(
+                "Mobility delay time?",
+                List.of(
+                    AutoQuestionResponse.IMMEDIATELY,
+                    AutoQuestionResponse.SIX_SECONDS,
+                    AutoQuestionResponse.FOURTEEN_SECONDS))),
+        autoBuilder.davisInspirationalAuto());
 
     // Set up feedforward characterization
     autoSelector.addRoutine(

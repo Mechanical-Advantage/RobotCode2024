@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +59,13 @@ public class DriveTrajectories {
           Rotation2d.fromDegrees(180.0));
   public static final Pose2d startingFarSource =
       new Pose2d(FieldConstants.startingLineX - 0.5, 1.57, Rotation2d.fromDegrees(180));
+  // Subwoofer starting locations
+  public static final Pose2d startingSourceSubwoofer =
+      FieldConstants.Subwoofer.sourceFaceCorner.transformBy(
+          GeomUtil.toTransform2d(-Units.inchesToMeters(17.0), Units.inchesToMeters(17.0)));
+  public static final Pose2d startingAmpSubwoofer =
+      FieldConstants.Subwoofer.ampFaceCorner.transformBy(
+          GeomUtil.toTransform2d(-Units.inchesToMeters(17.0), -Units.inchesToMeters(17.0)));
 
   // Shooting poses
   public static final Pose2d stageLeftShootingPose =
@@ -715,6 +723,38 @@ public class DriveTrajectories {
                 .addTranslationWaypoint(new Translation2d((FieldConstants.fieldLength) - 2, 1.2))
                 .setStraightLine(true)
                 .setMaxOmega(0)
+                .build()));
+  }
+
+  // Davis Inspirational Auto (named "inspirational_XXX")
+  static {
+    paths.put(
+        "inspirational_leaveFromSource",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingSourceSubwoofer)
+                .addTranslationWaypoint(
+                    FieldConstants.Stage.podiumLeg
+                        .getTranslation()
+                        .plus(new Translation2d(0.0, -2.0)))
+                .build()));
+    paths.put(
+        "inspirational_leaveFromCenter",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingCenter)
+                .addTranslationWaypoint(
+                    FieldConstants.StagingLocations.spikeTranslations[1].plus(
+                        new Translation2d(1.0, 0.0)))
+                .build()));
+    paths.put(
+        "inspirational_leaveFromAmp",
+        List.of(
+            PathSegment.newBuilder()
+                .addPoseWaypoint(startingAmpSubwoofer)
+                .addTranslationWaypoint(
+                    FieldConstants.StagingLocations.spikeTranslations[2].plus(
+                        new Translation2d(1.0, 0.0)))
                 .build()));
   }
 

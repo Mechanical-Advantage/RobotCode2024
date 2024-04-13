@@ -375,6 +375,24 @@ public class RobotContainer {
                 "First center note?",
                 List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
+    autoSelector.addRoutine(
+        "Davis Inspirational Auto",
+        List.of(
+            new AutoQuestion(
+                "Starting subwoofer location?",
+                List.of(
+                    AutoQuestionResponse.SOURCE,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.AMP)),
+            new AutoQuestion(
+                "Earn mobility bonus?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO)),
+            new AutoQuestion(
+                "Mobility delay time?",
+                List.of(
+                    AutoQuestionResponse.IMMEDIATELY,
+                    AutoQuestionResponse.SIX_SECONDS,
+                    AutoQuestionResponse.LAST_SECOND))),
+        autoBuilder.davisInspirationalAuto());
 
     // Set up feedforward characterization
     autoSelector.addRoutine(

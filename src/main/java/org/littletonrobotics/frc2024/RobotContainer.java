@@ -360,7 +360,11 @@ public class RobotContainer {
                     AutoQuestionResponse.SOURCE)),
             new AutoQuestion(
                 "How many spike notes?",
-                List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE))),
+                List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE)),
+            new AutoQuestion(
+                "First center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET)),
+            new AutoQuestion(
+                "Second center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET))),
         autoBuilder.davisSpikyAuto());
     autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());

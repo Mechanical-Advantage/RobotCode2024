@@ -217,9 +217,10 @@ public class AutoBuilder {
                           // Select return trajectory
                           firstReturnTrajectory.value =
                               spiky_firstIntakeReturn.get(
-                                  RobotState.getInstance()
-                                      .getTrajectorySetpoint()
-                                      .getTranslation()
+                                  AllianceFlipUtil.apply(
+                                          RobotState.getInstance()
+                                              .getTrajectorySetpoint()
+                                              .getTranslation())
                                       .nearest(new ArrayList<>(spiky_firstIntakeReturn.keySet())));
                           returnTimer.restart();
                         }),
@@ -242,9 +243,10 @@ public class AutoBuilder {
                           // Select return trajectory
                           secondReturnTrajectory.value =
                               secondReturnTrajectorySet.value.get(
-                                  RobotState.getInstance()
-                                      .getTrajectorySetpoint()
-                                      .getTranslation()
+                                  AllianceFlipUtil.apply(
+                                          RobotState.getInstance()
+                                              .getTrajectorySetpoint()
+                                              .getTranslation())
                                       .nearest(
                                           new ArrayList<>(
                                               secondReturnTrajectorySet.value.keySet())));

@@ -108,6 +108,7 @@ public class DriveTrajectories {
     final double spikeIntakeOffset = 0.55;
     final double spikePrepareIntakeOffset = 0.3; // Added ontop of spikeIntakeOffset
     final double centerlineIntakeOffset = 0.4;
+    final double intakeVelocity = 2.2;
 
     final Rotation2d spike0To1IntakeRotation = Rotation2d.fromDegrees(-160.0);
     final Rotation2d spike2To1IntakeRotation =
@@ -181,7 +182,8 @@ public class DriveTrajectories {
                 getShootingPose(
                     StagingLocations.spikeTranslations[2]
                         .interpolate(StagingLocations.spikeTranslations[1], betweenSpikeShotS)
-                        .plus(betweenSpikeShotTranslation)))
+                        .plus(betweenSpikeShotTranslation)),
+                15)
             .setMaxVelocity(shootingVelocity)
             .build();
     var spike1ToSpike0Shot =
@@ -323,12 +325,19 @@ public class DriveTrajectories {
                             Rotation2d.fromDegrees(180.0))
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .build(),
+            PathSegment.newBuilder()
+                .setMaxVelocity(intakeVelocity)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[3],
                             Rotation2d.fromDegrees(100.0))
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .build(),
+            PathSegment.newBuilder()
+                .setMaxVelocity(intakeVelocity)
+                .setMaxOmega(0.0)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[2],
@@ -359,6 +368,9 @@ public class DriveTrajectories {
                             Rotation2d.fromDegrees(135.0))
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .build(),
+            PathSegment.newBuilder()
+                .setMaxVelocity(intakeVelocity)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[2],
@@ -390,6 +402,9 @@ public class DriveTrajectories {
                             Rotation2d.fromDegrees(135.0))
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                .build(),
+            PathSegment.newBuilder()
+                .setMaxVelocity(intakeVelocity)
                 .addPoseWaypoint(
                     new Pose2d(
                             FieldConstants.StagingLocations.centerlineTranslations[1],
@@ -409,7 +424,7 @@ public class DriveTrajectories {
           (completedPaths) -> {
             if (!completedPaths.contains(intakeName)) return null;
 
-            final double minDistance = 0.15;
+            final double minDistance = 0.1;
 
             Map<String, List<PathSegment>> returnPaths = new HashMap<>();
             var intakeTrajectory = new HolonomicTrajectory(intakeName);
@@ -420,7 +435,7 @@ public class DriveTrajectories {
               index++;
               Translation2d translation = state.getPose().getTranslation();
               if ((translation.getDistance(lastTranslation) > minDistance
-                      && translation.getX() > FieldConstants.wingX + 1.0)
+                      && translation.getX() > FieldConstants.wingX + 0.2)
                   || index == intakeTrajectory.getStates().length - 1) {
                 validIndex++;
                 lastTranslation = translation;
@@ -432,7 +447,7 @@ public class DriveTrajectories {
                         PathSegment.newBuilder()
                             .addContinuationWaypoint(state)
                             .addTranslationWaypoint(
-                                returnToStage ? stageCenterAvoidance : stageLeftAvoidance)
+                                returnToStage ? stageCenterAvoidance : stageLeftAvoidance, 15)
                             .addPoseWaypoint(
                                 returnToStage ? stageCenterShootingPose : stageLeftShootingPose)
                             .build()));

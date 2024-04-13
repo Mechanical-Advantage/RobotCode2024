@@ -114,8 +114,6 @@ public class RobotContainer {
   private final Trigger autoDriveEnable = overrides.operatorSwitch(3);
   private final Trigger autoFlywheelSpinupDisable = overrides.operatorSwitch(4);
   private final Alert aprilTagLayoutAlert = new Alert("", AlertType.INFO);
-  private final Alert ridiculousAutoAlert =
-      new Alert("The selected auto is ridiculous! 😡", AlertType.WARNING);
   private final Alert driverDisconnected =
       new Alert("Driver controller disconnected (port 0).", AlertType.WARNING);
   private final Alert operatorDisconnected =
@@ -364,17 +362,9 @@ public class RobotContainer {
                 "How many spike notes?",
                 List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE)),
             new AutoQuestion(
-                "First center note?",
-                List.of(
-                    AutoQuestionResponse.AMP_WALL,
-                    AutoQuestionResponse.AMP_MIDDLE,
-                    AutoQuestionResponse.MIDDLE)),
+                "First center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET)),
             new AutoQuestion(
-                "Second center note?",
-                List.of(
-                    AutoQuestionResponse.AMP_WALL,
-                    AutoQuestionResponse.AMP_MIDDLE,
-                    AutoQuestionResponse.MIDDLE))),
+                "Second center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET))),
         autoBuilder.davisSpikyAuto());
     autoSelector.addRoutine("Davis Speedy Auto", List.of(), autoBuilder.davisSpeedyAuto());
     autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
@@ -788,11 +778,6 @@ public class RobotContainer {
       aprilTagLayoutAlert.setText(
           "Non-official AprilTag layout in use (" + getAprilTagLayoutType().toString() + ").");
     }
-
-    // Ridiculous auto alert
-    ridiculousAutoAlert.set(
-        autoSelector.getSelectedName().equals("Davis Spiky Auto")
-            && autoSelector.getResponses().get(2) == autoSelector.getResponses().get(3));
   }
 
   /**

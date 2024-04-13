@@ -461,7 +461,7 @@ public class RobotContainer {
     Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
     driver
         .a()
-        .and(nearSpeaker)
+        .and(nearSpeaker.or(shootPresets))
         .whileTrue(
             driveAimCommand
                 .get()
@@ -469,7 +469,7 @@ public class RobotContainer {
                 .withName("Prepare Shot"));
     driver
         .a()
-        .and(nearSpeaker.negate())
+        .and(nearSpeaker.negate().and(shootPresets.negate()))
         .whileTrue(
             Commands.startEnd(
                     () ->
@@ -486,7 +486,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(nearSpeaker)
+        .and(nearSpeaker.or(shootPresets))
         .and(readyToShoot.debounce(0.2, DebounceType.kRising))
         .onTrue(
             Commands.parallel(
@@ -498,7 +498,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(nearSpeaker.negate())
+        .and(nearSpeaker.negate().and(shootPresets.negate()))
         .and(readyToShoot.debounce(0.3, DebounceType.kFalling))
         .onTrue(
             Commands.parallel(

@@ -60,7 +60,7 @@ public class Leds extends VirtualSubsystem {
   private final Notifier loadingNotifier;
 
   // Constants
-  private static final boolean prideLeds = true;
+  private static final boolean prideLeds = false;
   private static final int minLoopCycleCount = 10;
   private static final int length = 12;
   private static final double strobeDuration = 0.1;

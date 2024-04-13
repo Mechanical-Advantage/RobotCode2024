@@ -147,6 +147,9 @@ public class AutoSelector extends VirtualSubsystem {
     SCORE_POOPED,
     FOURTH_CENTER,
     THINKING_ON_YOUR_FEET,
+    IMMEDIATELY,
+    SIX_SECONDS,
+    LAST_SECOND,
     YES,
     NO
   }

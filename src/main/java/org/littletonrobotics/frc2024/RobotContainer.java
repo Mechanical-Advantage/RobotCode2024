@@ -381,6 +381,24 @@ public class RobotContainer {
                 "First center note?",
                 List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
+    autoSelector.addRoutine(
+        "Davis Inspirational Auto",
+        List.of(
+            new AutoQuestion(
+                "Starting subwoofer location?",
+                List.of(
+                    AutoQuestionResponse.SOURCE,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.AMP)),
+            new AutoQuestion(
+                "Earn mobility bonus?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO)),
+            new AutoQuestion(
+                "Mobility delay time?",
+                List.of(
+                    AutoQuestionResponse.IMMEDIATELY,
+                    AutoQuestionResponse.SIX_SECONDS,
+                    AutoQuestionResponse.LAST_SECOND))),
+        autoBuilder.davisInspirationalAuto());
 
     // Set up feedforward characterization
     autoSelector.addRoutine(
@@ -457,7 +475,7 @@ public class RobotContainer {
     Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
     driver
         .a()
-        .and(nearSpeaker)
+        .and(nearSpeaker.or(shootPresets))
         .whileTrue(
             driveAimCommand
                 .get()
@@ -465,7 +483,7 @@ public class RobotContainer {
                 .withName("Prepare Shot"));
     driver
         .a()
-        .and(nearSpeaker.negate())
+        .and(nearSpeaker.negate().and(shootPresets.negate()))
         .whileTrue(
             Commands.startEnd(
                     () ->
@@ -482,7 +500,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(nearSpeaker)
+        .and(nearSpeaker.or(shootPresets))
         .and(readyToShoot.debounce(0.2, DebounceType.kRising))
         .onTrue(
             Commands.parallel(
@@ -494,7 +512,7 @@ public class RobotContainer {
     driver
         .rightTrigger()
         .and(driver.a())
-        .and(nearSpeaker.negate())
+        .and(nearSpeaker.negate().and(shootPresets.negate()))
         .and(readyToShoot.debounce(0.3, DebounceType.kFalling))
         .onTrue(
             Commands.parallel(

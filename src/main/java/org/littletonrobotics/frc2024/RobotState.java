@@ -57,7 +57,7 @@ public class RobotState {
   private static final LoggedTunableNumber lookahead =
       new LoggedTunableNumber("RobotState/lookaheadS", 0.35);
   private static final LoggedTunableNumber superPoopLookahead =
-      new LoggedTunableNumber("RobotState/SuperPoopLookahead", 1.0);
+      new LoggedTunableNumber("RobotState/SuperPoopLookahead", 0.1);
   private static final LoggedTunableNumber closeShootingZoneFeet =
       new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 10.0);
   private static final double poseBufferSizeSeconds = 2.0;
@@ -73,18 +73,21 @@ public class RobotState {
       new InterpolatingDoubleTreeMap();
 
   static {
-    superPoopArmAngleMap.put(Units.feetToMeters(30.0), 35.0);
-    superPoopArmAngleMap.put(Units.feetToMeters(25.0), 37.0);
-    superPoopArmAngleMap.put(Units.feetToMeters(22.0), 45.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(33.52713263758169), 35.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(28.31299227120627), 39.0);
+    superPoopArmAngleMap.put(Units.feetToMeters(25.587026383435525), 48.0);
   }
 
   private static final InterpolatingTreeMap<Double, FlywheelSpeeds> superPoopFlywheelSpeedsMap =
       new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), FlywheelSpeeds::interpolate);
 
   static {
-    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(30.0), new FlywheelSpeeds(3500, 4500));
-    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(25.0), new FlywheelSpeeds(4100, 4100));
-    superPoopFlywheelSpeedsMap.put(Units.feetToMeters(22.0), new FlywheelSpeeds(2700, 3700));
+    superPoopFlywheelSpeedsMap.put(
+        Units.feetToMeters(33.52713263758169), new FlywheelSpeeds(3500, 4500));
+    superPoopFlywheelSpeedsMap.put(
+        Units.feetToMeters(28.31299227120627), new FlywheelSpeeds(2800, 3500));
+    superPoopFlywheelSpeedsMap.put(
+        Units.feetToMeters(25.587026383435525), new FlywheelSpeeds(2500, 3200));
   }
 
   private static final double autoFarShotCompensationDegrees = 0.0; // 0.6 at NECMP
@@ -282,7 +285,9 @@ public class RobotState {
   }
 
   private static final Translation2d superPoopTarget =
-      FieldConstants.Stage.podiumLeg.getTranslation().interpolate(FieldConstants.ampCenter, 0.5);
+      FieldConstants.Subwoofer.centerFace
+          .getTranslation()
+          .interpolate(FieldConstants.ampCenter, 0.5);
 
   public AimingParameters getSuperPoopAimingParameters() {
     if (latestSuperPoopParameters != null) {
@@ -293,13 +298,25 @@ public class RobotState {
     Translation2d predictedRobotToTarget =
         AllianceFlipUtil.apply(superPoopTarget).minus(predictedFieldToRobot.getTranslation());
     double effectiveDistance = predictedRobotToTarget.getNorm();
+    var flywheelSpeeds = superPoopFlywheelSpeedsMap.get(effectiveDistance);
+    var armAngle = Rotation2d.fromDegrees(superPoopArmAngleMap.get(effectiveDistance));
+
+    Translation2d vehicleVelocity =
+        new Translation2d(robotVelocity.dx, robotVelocity.dy)
+            .rotateBy(predictedRobotToTarget.getAngle().unaryMinus());
+    Logger.recordOutput("RobotState/SuperPoopParameters/RadialVelocity", vehicleVelocity.getX());
+    double radialVelocity =
+        Units.radiansPerSecondToRotationsPerMinute(
+                vehicleVelocity.getX() / Units.inchesToMeters(1.5))
+            * armAngle.getCos();
+    flywheelSpeeds =
+        new FlywheelSpeeds(
+            flywheelSpeeds.leftSpeed() - radialVelocity,
+            flywheelSpeeds.rightSpeed() - radialVelocity);
 
     latestSuperPoopParameters =
         new AimingParameters(
-            predictedRobotToTarget.getAngle(),
-            Rotation2d.fromDegrees(superPoopArmAngleMap.get(effectiveDistance)),
-            effectiveDistance,
-            superPoopFlywheelSpeedsMap.get(effectiveDistance));
+            predictedRobotToTarget.getAngle(), armAngle, effectiveDistance, flywheelSpeeds);
     return latestSuperPoopParameters;
   }
 

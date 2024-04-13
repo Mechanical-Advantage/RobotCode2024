@@ -304,8 +304,7 @@ public class RobotState {
     Translation2d vehicleVelocity =
         new Translation2d(robotVelocity.dx, robotVelocity.dy)
             .rotateBy(predictedRobotToTarget.getAngle().unaryMinus());
-    Logger.recordOutput(
-        "RobotState/SuperPoopParameters/RadialVelocity", vehicleVelocity.getX());
+    Logger.recordOutput("RobotState/SuperPoopParameters/RadialVelocity", vehicleVelocity.getX());
     double radialVelocity =
         Units.radiansPerSecondToRotationsPerMinute(
                 vehicleVelocity.getX() / Units.inchesToMeters(1.5))

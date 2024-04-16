@@ -147,6 +147,7 @@ public class FieldConstants {
   public static final class Amp {
     public static final Translation2d ampTapeTopCorner =
         new Translation2d(Units.inchesToMeters(130.0), Units.inchesToMeters(305.256));
+    public static final double ampBottomY = fieldWidth - Units.inchesToMeters(17.75);
   }
 
   public static final double aprilTagWidth = Units.inchesToMeters(6.50);

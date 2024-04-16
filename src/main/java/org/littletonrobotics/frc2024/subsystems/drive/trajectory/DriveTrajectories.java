@@ -51,12 +51,8 @@ public class DriveTrajectories {
           FieldConstants.startingLineX - 0.5,
           FieldConstants.StagingLocations.spikeTranslations[2].getY(),
           Rotation2d.fromDegrees(180.0));
-
-  public static final Pose2d startingAmpWall =
-      new Pose2d(
-          FieldConstants.startingLineX - 0.5,
-          FieldConstants.fieldWidth - 0.5,
-          Rotation2d.fromDegrees(180.0));
+  public static final Pose2d startingAmpEdge =
+      new Pose2d(startingLineX - 0.5, Amp.ampBottomY - 0.45, Rotation2d.fromDegrees(180.0));
   public static final Pose2d startingFarSource =
       new Pose2d(FieldConstants.startingLineX - 0.5, 1.57, Rotation2d.fromDegrees(180));
   // Subwoofer starting locations
@@ -564,9 +560,30 @@ public class DriveTrajectories {
         "speedy_ampToCenterline4",
         List.of(
             PathSegment.newBuilder()
-                .addPoseWaypoint(startingAmpWall)
-                .addTranslationWaypoint(
-                    new Translation2d(Stage.ampLeg.getX() - 0.75, startingAmpWall.getY()))
+                .addPoseWaypoint(startingAmpEdge)
+                .addPoseWaypoint(
+                    new Pose2d(
+                        new Translation2d(
+                            StagingLocations.spikeTranslations[2].getX() - 0.4,
+                            MathUtil.interpolate(
+                                StagingLocations.spikeTranslations[2].getY(), fieldWidth, 0.52)),
+                        Rotation2d.fromDegrees(180)))
+                .build(),
+            PathSegment.newBuilder()
+                .addPoseWaypoint(
+                    new Pose2d(
+                        new Translation2d(
+                            StagingLocations.spikeTranslations[2].getX() + 0.3,
+                            MathUtil.interpolate(
+                                StagingLocations.spikeTranslations[2].getY(), fieldWidth, 0.52)),
+                        Rotation2d.fromDegrees(180)))
+                .addPoseWaypoint(
+                    new Pose2d(
+                        new Translation2d(
+                            Stage.ampLeg.getX() - 0.75,
+                            MathUtil.interpolate(
+                                StagingLocations.spikeTranslations[2].getY(), fieldWidth, 0.52)),
+                        Rotation2d.fromDegrees(180)))
                 .setStraightLine(true)
                 .setMaxOmega(0)
                 .build(),

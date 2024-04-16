@@ -462,14 +462,14 @@ public class AutoBuilder {
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             Commands.sequence(
-                    resetPose(DriveTrajectories.startingAmpWall),
+                    resetPose(DriveTrajectories.startingAmpEdge),
                     followTrajectory(drive, grabCenterline4),
                     followTrajectory(drive, grabCenterline3),
                     followTrajectory(drive, grabCenterline2),
                     followTrajectory(drive, grabEjected))
                 .alongWith(
                     Commands.sequence(
-                            Commands.waitSeconds(1.4),
+                            Commands.waitSeconds(1.6),
                             feed(rollers),
 
                             // Grab and score centerline 4

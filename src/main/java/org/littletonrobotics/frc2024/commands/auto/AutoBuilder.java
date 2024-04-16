@@ -469,7 +469,7 @@ public class AutoBuilder {
                     followTrajectory(drive, grabEjected))
                 .alongWith(
                     Commands.sequence(
-                            Commands.waitSeconds(1.6),
+                            Commands.waitSeconds(1.65),
                             feed(rollers),
 
                             // Grab and score centerline 4

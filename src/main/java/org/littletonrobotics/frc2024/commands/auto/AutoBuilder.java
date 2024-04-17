@@ -540,7 +540,7 @@ public class AutoBuilder {
                                 .withTimeout(grabEjected.getDuration() - 0.5),
 
                             // Score ejected note
-                            Commands.waitSeconds(0.65)
+                            Commands.waitSeconds(0.55)
                                 .andThen(feed(rollers))
                                 .deadlineWith(
                                     aim(drive),

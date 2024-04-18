@@ -138,7 +138,8 @@ public class DriveTrajectories {
                             FieldConstants.StagingLocations.centerlineTranslations[4],
                             Rotation2d.fromDegrees(180.0))
                         .transformBy(
-                            new Translation2d(centerlineIntakeOffset, 0.0).toTransform2d()))
+                            new Translation2d(centerlineIntakeOffset, Units.inchesToMeters(8))
+                                .toTransform2d()))
                 .build(),
             PathSegment.newBuilder()
                 .setMaxVelocity(intakeVelocity)

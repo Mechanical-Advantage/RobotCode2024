@@ -511,7 +511,8 @@ public class RobotContainer {
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
-                    flywheels.shootCommand())
+                    flywheels.shootCommand(),
+                    driveAimCommand.get())
                 .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
     driver
         .rightTrigger()
@@ -524,7 +525,8 @@ public class RobotContainer {
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
-                    flywheels.superPoopCommand())
+                    flywheels.superPoopCommand(),
+                    driveAimCommand.get())
                 .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
     driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());

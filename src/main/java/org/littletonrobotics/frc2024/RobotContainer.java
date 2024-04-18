@@ -550,7 +550,11 @@ public class RobotContainer {
         .and(
             DriverStation
                 ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
-        .whileTrue(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE).withName("Floor Intake"));
+        .whileTrueContinuous(
+            rollers
+                .setGoalCommand(Rollers.Goal.FLOOR_INTAKE)
+                .alongWith(superstructure.setGoalCommand(Superstructure.Goal.STOW))
+                .withName("Floor Intake"));
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
@@ -638,7 +642,7 @@ public class RobotContainer {
 
     driver
         .b()
-        .whileTrue(
+        .whileTrueContinuous(
             Commands.either(
                     // Auto drive to amp
                     ampAutoDrive,
@@ -681,7 +685,8 @@ public class RobotContainer {
         .onTrue(
             Commands.parallel(
                     Commands.waitSeconds(0.75), Commands.waitUntil(driver.rightTrigger().negate()))
-                .deadlineWith(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE)));
+                .deadlineWith(rollers.setGoalCommand(Rollers.Goal.AMP_SCORE))
+                .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
     // Boost.
     driver

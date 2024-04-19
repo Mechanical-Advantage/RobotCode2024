@@ -17,7 +17,7 @@ namespace vts = org::littletonrobotics::vehicletrajectoryservice;
 
 // Scales the Choreo algorithm's estimate of initial guess points, since we've found it to sometimes underestimate.
 // We take the tradeoff of increased computation time since we cache paths anyway.
-static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.25;
+static const double CONTROL_INTERVAL_GUESS_SCALAR = 1.1;
 
 static const int MINIMUM_CONTROL_INTERVAL_COUNT = 0;
 

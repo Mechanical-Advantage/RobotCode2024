@@ -426,7 +426,7 @@ public class AutoBuilder {
         // Preload and spike 2
         followTrajectory(drive, startToCenterline)
             .deadlineWith(
-                Commands.waitSeconds(0.7)
+                Commands.waitSeconds(0.85)
                     .andThen(rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
                     .deadlineWith(
                         Commands.parallel(

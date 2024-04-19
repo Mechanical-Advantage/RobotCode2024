@@ -496,7 +496,7 @@ public class DriveTrajectories {
                 .addPoseWaypoint(
                     getShootingPose(StagingLocations.spikeTranslations[2])
                         .transformBy(GeomUtil.toTransform2d(0.4, 0.0)))
-                .setMaxVelocity(1.5)
+                .setMaxVelocity(1.3)
                 .build(),
             PathSegment.newBuilder()
                 .addPoseWaypoint(

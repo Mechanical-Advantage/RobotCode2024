@@ -99,7 +99,7 @@ public class ArmIOKrakenFOC implements ArmIO {
         tempCelsius.get(1));
 
     BaseStatusSignal.setUpdateFrequencyForAll(
-        500, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
+        1000, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
 
     // Optimize bus utilization
     leaderTalon.optimizeBusUtilization(1.0);

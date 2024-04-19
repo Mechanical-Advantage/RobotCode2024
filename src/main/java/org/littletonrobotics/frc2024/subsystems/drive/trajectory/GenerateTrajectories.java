@@ -8,6 +8,7 @@
 package org.littletonrobotics.frc2024.subsystems.drive.trajectory;
 
 import com.google.common.hash.Hashing;
+import edu.wpi.first.math.util.Units;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import java.io.*;
@@ -43,11 +44,11 @@ public class GenerateTrajectories {
             .setMoi(5.8)
             .setVehicleLength(DriveConstants.driveConfig.trackWidthX())
             .setVehicleWidth(DriveConstants.driveConfig.trackWidthY())
-            .setWheelRadius(DriveConstants.driveConfig.wheelRadius())
+            .setWheelRadius(Units.inchesToMeters(1.95225)) // TODO fix
             .setMaxWheelTorque(3.0)
             .setMaxWheelOmega(
                 DriveConstants.moduleLimitsFree.maxDriveVelocity()
-                    / DriveConstants.driveConfig.wheelRadius()
+                    / Units.inchesToMeters(1.95225)
                     * 0.75)
             .build();
 

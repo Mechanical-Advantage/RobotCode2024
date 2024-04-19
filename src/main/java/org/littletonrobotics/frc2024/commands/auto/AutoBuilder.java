@@ -429,7 +429,8 @@ public class AutoBuilder {
                 Commands.waitSeconds(0.85)
                     .andThen(rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
                     .deadlineWith(
-                        Commands.parallel(aim(drive), superstructure.aimWithCompensation(1.0)))
+                        Commands.parallel(
+                            aim(drive), superstructure.aimWithCompensation(1.0)))
                     .withTimeout(2.6),
                 flywheels.shootCommand()),
 

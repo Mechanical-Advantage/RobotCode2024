@@ -646,6 +646,7 @@ public class RobotContainer {
 
     driver
         .b()
+        .and(intakeTrigger.negate())
         .whileTrue(
             Commands.either(
                     // Auto drive to amp

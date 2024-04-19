@@ -99,6 +99,9 @@ public class DriveTrajectories {
           .getTranslation()
           .interpolate(FieldConstants.Stage.ampLeg.getTranslation(), 0.62);
 
+  // Fudge y position of first thinking intake
+  private static final double thinkingFirstIntakeYFudge = -Units.inchesToMeters(10.0);
+
   // Drive straight path
   // (Used for preload of trajectory classes in drive constructor)
   static {
@@ -117,7 +120,8 @@ public class DriveTrajectories {
           .fromPose(
               new Pose2d(
                   FieldConstants.wingX + 1.0,
-                  FieldConstants.StagingLocations.centerlineTranslations[4].getY(),
+                  FieldConstants.StagingLocations.centerlineTranslations[4].getY()
+                      + thinkingFirstIntakeYFudge,
                   Rotation2d.fromDegrees(180.0)))
           .setVehicleVelocity(
               VehicleVelocityConstraint.newBuilder().setVx(3.0).setVy(0.0).setOmega(0.0).build())
@@ -135,7 +139,8 @@ public class DriveTrajectories {
                 .addWaypoints(thinkingStartWaypoint)
                 .addPoseWaypoint(
                     new Pose2d(
-                            FieldConstants.StagingLocations.centerlineTranslations[4],
+                            FieldConstants.StagingLocations.centerlineTranslations[4].plus(
+                                new Translation2d(0.0, thinkingFirstIntakeYFudge)),
                             Rotation2d.fromDegrees(180.0))
                         .transformBy(
                             new Translation2d(centerlineIntakeOffset, Units.inchesToMeters(8))

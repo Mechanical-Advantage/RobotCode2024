@@ -476,8 +476,10 @@ public class RobotContainer {
                     drive::clearHeadingGoal),
                 shootAlignDisable);
     Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
+    Trigger intakeTrigger = new Trigger(driver.leftTrigger());
     driver
         .a()
+        .and(intakeTrigger.negate())
         .and(nearSpeaker.or(shootPresets))
         .whileTrueContinuous(
             driveAimCommand
@@ -486,6 +488,7 @@ public class RobotContainer {
                 .withName("Prepare Shot"));
     driver
         .a()
+        .and(intakeTrigger.negate())
         .and(nearSpeaker.negate().and(shootPresets.negate()))
         .whileTrueContinuous(
             Commands.startEnd(
@@ -545,12 +548,17 @@ public class RobotContainer {
 
     // ------------- Intake Controls -------------
     // Intake Floor
-    driver
-        .leftTrigger()
+    intakeTrigger
         .and(
             DriverStation
                 ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
-        .whileTrue(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE).withName("Floor Intake"));
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.STOW)
+                .alongWith(
+                    Commands.waitUntil(superstructure::atArmGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
+                .withName("Floor Intake"));
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)

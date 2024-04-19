@@ -547,8 +547,6 @@ public class RobotContainer {
     // Intake Floor
     driver
         .leftTrigger()
-        .and(() -> superstructure.getCurrentGoal() == Superstructure.Goal.STOW)
-        .and(superstructure::atArmGoal)
         .and(
             DriverStation
                 ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends

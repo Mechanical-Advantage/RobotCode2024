@@ -90,7 +90,7 @@ public class RobotState {
         Units.feetToMeters(25.587026383435525), new FlywheelSpeeds(2500, 3200));
   }
 
-  private static final double autoFarShotCompensationDegrees = 0.6; // 0.6 at NECMP
+  private static final double autoFarShotCompensationDegrees = 0.0; // 0.6 at NECMP
 
   public void adjustShotCompensationDegrees(double deltaDegrees) {
     shotCompensationDegrees += deltaDegrees;

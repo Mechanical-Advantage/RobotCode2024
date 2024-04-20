@@ -23,20 +23,21 @@ public class BackpackActuator extends GenericSlamElevator<BackpackActuator.Goal>
     RETRACT(
         new LoggedTunableNumber("BackpackActuator/RetractingCurrent", -25.0),
         true,
-        SlamElevatorState.RETRACTING),
+        SlamElevatorState.RETRACTING, true),
     EXTEND(
         new LoggedTunableNumber("BackpackActuator/ExtendingCurrent", 35.0),
         false,
-        SlamElevatorState.EXTENDING);
+        SlamElevatorState.EXTENDING, false);
 
     private final DoubleSupplier slammingCurrent;
     private final boolean stopAtGoal;
     private final SlamElevatorState state;
+    private final boolean isNonSensing;
   }
 
   private Goal goal = Goal.RETRACT;
 
   public BackpackActuator(BackpackActuatorIO io) {
-    super("BackpackActuator", io, 0.5, 2.0);
+    super("BackpackActuator", io, 1.0, 2.0);
   }
 }

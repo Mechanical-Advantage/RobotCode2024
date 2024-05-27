@@ -102,9 +102,9 @@ public class ArmIOKrakenFOC implements ArmIO {
         500, encoderAbsolutePositionRotations, encoderRelativePositionRotations);
 
     // Optimize bus utilization
-    leaderTalon.optimizeBusUtilization(1.0);
-    followerTalon.optimizeBusUtilization(1.0);
-    absoluteEncoder.optimizeBusUtilization(1.0);
+    leaderTalon.optimizeBusUtilization(0, 1.0);
+    followerTalon.optimizeBusUtilization(0, 1.0);
+    absoluteEncoder.optimizeBusUtilization(0, 1.0);
   }
 
   public void updateInputs(ArmIOInputs inputs) {

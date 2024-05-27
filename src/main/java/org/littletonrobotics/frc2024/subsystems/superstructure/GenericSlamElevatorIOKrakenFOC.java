@@ -65,7 +65,7 @@ public class GenericSlamElevatorIOKrakenFOC implements GenericSlamElevatorIO {
         torqueCurrent,
         tempCelsius);
 
-    talon.optimizeBusUtilization(1.0);
+    talon.optimizeBusUtilization(0, 1.0);
   }
 
   @Override

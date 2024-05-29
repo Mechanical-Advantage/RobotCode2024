@@ -476,7 +476,7 @@ public class RobotContainer {
                     drive::clearHeadingGoal),
                 shootAlignDisable);
     Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
-    Trigger intakeTrigger = new Trigger(driver.leftTrigger());
+    Trigger intakeTrigger = driver.leftTrigger();
     driver
         .a()
         .and(intakeTrigger.negate())

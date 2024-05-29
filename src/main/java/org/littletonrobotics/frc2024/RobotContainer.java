@@ -77,6 +77,7 @@ import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIO
 import org.littletonrobotics.frc2024.subsystems.superstructure.climber.ClimberIOSim;
 import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
@@ -86,7 +87,7 @@ import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
-@ExtensionMethod({DoublePressTracker.class})
+@ExtensionMethod({DoublePressTracker.class, TriggerUtil.class})
 public class RobotContainer {
   // Load static objects
   private final RobotState robotState = RobotState.getInstance();
@@ -98,6 +99,8 @@ public class RobotContainer {
   private Flywheels flywheels;
   private final Rollers rollers;
   private final Superstructure superstructure;
+
+  private Trigger readyToShoot;
 
   // Controller
   private final CommandXboxController driver = new CommandXboxController(0);
@@ -473,18 +476,21 @@ public class RobotContainer {
                     drive::clearHeadingGoal),
                 shootAlignDisable);
     Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
+    Trigger intakeTrigger = driver.leftTrigger();
     driver
         .a()
+        .and(intakeTrigger.negate())
         .and(nearSpeaker.or(shootPresets))
-        .whileTrue(
+        .whileTrueContinuous(
             driveAimCommand
                 .get()
                 .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
                 .withName("Prepare Shot"));
     driver
         .a()
+        .and(intakeTrigger.negate())
         .and(nearSpeaker.negate().and(shootPresets.negate()))
-        .whileTrue(
+        .whileTrueContinuous(
             Commands.startEnd(
                     () ->
                         drive.setHeadingGoal(
@@ -494,7 +500,7 @@ public class RobotContainer {
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
                     flywheels.superPoopCommand())
                 .withName("Super Poop"));
-    Trigger readyToShoot =
+    readyToShoot =
         new Trigger(
             () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
     driver
@@ -508,7 +514,9 @@ public class RobotContainer {
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructureAimCommand.get(),
-                    flywheels.shootCommand()));
+                    flywheels.shootCommand(),
+                    driveAimCommand.get())
+                .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
     driver
         .rightTrigger()
         .and(driver.a())
@@ -520,7 +528,10 @@ public class RobotContainer {
                 .deadlineWith(
                     rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
                     superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
-                    flywheels.superPoopCommand()));
+                    flywheels.superPoopCommand(),
+                    driveAimCommand.get())
+                .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
+
     driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
 
     // Poop.
@@ -537,12 +548,17 @@ public class RobotContainer {
 
     // ------------- Intake Controls -------------
     // Intake Floor
-    driver
-        .leftTrigger()
+    intakeTrigger
         .and(
             DriverStation
                 ::isEnabled) // Must be enabled, allowing driver to hold button as soon as auto ends
-        .whileTrue(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE).withName("Floor Intake"));
+        .whileTrue(
+            superstructure
+                .setGoalCommand(Superstructure.Goal.STOW)
+                .alongWith(
+                    Commands.waitUntil(superstructure::atArmGoal)
+                        .andThen(rollers.setGoalCommand(Rollers.Goal.FLOOR_INTAKE)))
+                .withName("Floor Intake"));
     driver
         .leftTrigger()
         .and(() -> rollers.getGamepieceState() != GamepieceState.NONE)
@@ -630,6 +646,7 @@ public class RobotContainer {
 
     driver
         .b()
+        .and(intakeTrigger.negate())
         .whileTrue(
             Commands.either(
                     // Auto drive to amp
@@ -802,6 +819,11 @@ public class RobotContainer {
       aprilTagLayoutAlert.setText(
           "Non-official AprilTag layout in use (" + getAprilTagLayoutType().toString() + ").");
     }
+  }
+
+  @AutoLogOutput
+  public boolean getReadyToShoot() {
+    return readyToShoot != null && readyToShoot.getAsBoolean();
   }
 
   /**

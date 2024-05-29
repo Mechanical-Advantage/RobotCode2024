@@ -22,6 +22,10 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
 
     boolean isStopAtGoal();
 
+    default boolean isNonSensing() {
+      return false;
+    }
+
     SlamElevatorState getState();
   }
 
@@ -106,7 +110,7 @@ public abstract class GenericSlamElevator<G extends GenericSlamElevator.SlamElev
     // Check if at goal.
     if (!atGoal) {
       // Start static timer if within min velocity threshold.
-      if (Math.abs(inputs.velocityRadsPerSec) <= minVelocityThresh) {
+      if (getGoal().isNonSensing() || Math.abs(inputs.velocityRadsPerSec) <= minVelocityThresh) {
         staticTimer.start();
       } else {
         staticTimer.stop();

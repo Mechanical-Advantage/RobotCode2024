@@ -426,11 +426,10 @@ public class AutoBuilder {
         // Preload and spike 2
         followTrajectory(drive, startToCenterline)
             .deadlineWith(
-                Commands.waitSeconds(1.0)
+                Commands.waitSeconds(0.85)
                     .andThen(rollers.setGoalCommand(Rollers.Goal.QUICK_INTAKE_TO_FEED))
                     .deadlineWith(
-                        Commands.parallel(
-                            aim(drive), superstructure.setGoalCommand(Superstructure.Goal.AIM)))
+                        Commands.parallel(aim(drive), superstructure.aimWithCompensation(1.5)))
                     .withTimeout(2.6),
                 flywheels.shootCommand()),
 
@@ -462,14 +461,14 @@ public class AutoBuilder {
     return Commands.runOnce(autoTimer::restart)
         .andThen(
             Commands.sequence(
-                    resetPose(DriveTrajectories.startingAmpWall),
+                    resetPose(DriveTrajectories.startingAmpEdge),
                     followTrajectory(drive, grabCenterline4),
                     followTrajectory(drive, grabCenterline3),
                     followTrajectory(drive, grabCenterline2),
                     followTrajectory(drive, grabEjected))
                 .alongWith(
                     Commands.sequence(
-                            Commands.waitSeconds(1.4),
+                            Commands.waitSeconds(1.65),
                             feed(rollers),
 
                             // Grab and score centerline 4
@@ -540,7 +539,7 @@ public class AutoBuilder {
                                 .withTimeout(grabEjected.getDuration() - 0.5),
 
                             // Score ejected note
-                            Commands.waitSeconds(0.65)
+                            Commands.waitSeconds(0.55)
                                 .andThen(feed(rollers))
                                 .deadlineWith(
                                     aim(drive),

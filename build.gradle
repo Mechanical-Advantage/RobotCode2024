@@ -232,7 +232,7 @@ gversion {
     classPackage = "org.littletonrobotics.frc2024"
     className    = "BuildConstants"
     dateFormat   = "yyyy-MM-dd HH:mm:ss z"
-    timeZone     = "America/Chicago"
+    timeZone     = "America/New_York"
     indent       = "  "
 }
 

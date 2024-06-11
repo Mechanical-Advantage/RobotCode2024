@@ -31,6 +31,7 @@ public class Superstructure extends SubsystemBase {
     BACKPACK_OUT_UNJAM,
     AIM,
     SUPER_POOP,
+    AIM_AT_DEMO_TAG,
     UNJAM_FEEDER,
     STATION_INTAKE,
     AMP,
@@ -113,6 +114,11 @@ public class Superstructure extends SubsystemBase {
       }
       case SUPER_POOP -> {
         arm.setGoal(Arm.Goal.SUPER_POOP);
+        climber.setGoal(Climber.Goal.IDLE);
+        backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
+      }
+      case AIM_AT_DEMO_TAG -> {
+        arm.setGoal(Arm.Goal.AIM_AT_DEMO_TAG);
         climber.setGoal(Climber.Goal.IDLE);
         backpackActuator.setGoal(BackpackActuator.Goal.RETRACT);
       }

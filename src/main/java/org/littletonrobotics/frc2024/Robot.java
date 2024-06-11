@@ -227,6 +227,14 @@ public class Robot extends LoggedRobot {
     Logger.recordOutput(
         "RobotState/SuperPoopParameters/FlywheelsRightSpeed",
         superPoopParameters.flywheelSpeeds().rightSpeed());
+    var demoParameters = RobotState.getInstance().getDemoTagParameters();
+    demoParameters.ifPresent(
+        parameters -> {
+          Logger.recordOutput("RobotState/DemoParameters/TargetPose", parameters.targetPose());
+          Logger.recordOutput(
+              "RobotState/DemoParameters/TargetHeading", parameters.targetHeading());
+          Logger.recordOutput("RobotState/DemoParameters/ArmAngle", parameters.armAngle());
+        });
 
     // Robot container periodic methods
     robotContainer.checkControllers();

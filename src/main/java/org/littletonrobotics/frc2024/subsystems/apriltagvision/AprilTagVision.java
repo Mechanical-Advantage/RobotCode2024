@@ -312,7 +312,6 @@ public class AprilTagVision extends VirtualSubsystem {
           .sorted(Comparator.comparingDouble(VisionObservation::timestamp))
           .forEach(RobotState.getInstance()::addVisionObservation);
     }
-    RobotState.getInstance()
-        .setDemoTagPose(demoTagPose);
+    RobotState.getInstance().setDemoTagPose(demoTagPose);
   }
 }

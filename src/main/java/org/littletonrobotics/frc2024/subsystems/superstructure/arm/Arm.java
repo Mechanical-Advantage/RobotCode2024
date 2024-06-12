@@ -81,6 +81,7 @@ public class Arm {
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     SUPER_POOP(
         () -> RobotState.getInstance().getSuperPoopAimingParameters().armAngle().getDegrees()),
+    DEMO_SHOT(() -> RobotState.getInstance().getDemoShotParameters().armAngle().getDegrees()),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),
     PODIUM(new LoggedTunableNumber("Arm/PodiumDegrees", 34.0)),
@@ -125,6 +126,7 @@ public class Arm {
 
   private BooleanSupplier disableSupplier = DriverStation::isDisabled;
   private BooleanSupplier coastSupplier = () -> false;
+  private BooleanSupplier halfStowSupplier = () -> true;
   private boolean brakeModeEnabled = true;
 
   private boolean wasNotAuto = false;
@@ -146,13 +148,19 @@ public class Arm {
     goalVisualizer = new ArmVisualizer("Goal", Color.kBlue);
   }
 
-  public void setOverrides(BooleanSupplier disableOverride, BooleanSupplier coastOverride) {
+  public void setOverrides(
+      BooleanSupplier disableOverride,
+      BooleanSupplier coastOverride,
+      BooleanSupplier halfStowOverride) {
     disableSupplier = () -> disableOverride.getAsBoolean() || DriverStation.isDisabled();
     coastSupplier = coastOverride;
+    halfStowSupplier = halfStowOverride;
   }
 
   private double getStowAngle() {
-    if (DriverStation.isTeleopEnabled() && RobotState.getInstance().inCloseShootingZone()) {
+    if (DriverStation.isTeleopEnabled()
+        && RobotState.getInstance().inCloseShootingZone()
+        && halfStowSupplier.getAsBoolean()) {
       return MathUtil.clamp(
           setpointState.position,
           minAngle.getRadians(),

@@ -229,6 +229,7 @@ public class Robot extends LoggedRobot {
         superPoopParameters.flywheelSpeeds().rightSpeed());
 
     // Robot container periodic methods
+    robotContainer.updateDemoControls();
     robotContainer.checkControllers();
     robotContainer.updateDashboardOutputs();
     robotContainer.updateAlerts();

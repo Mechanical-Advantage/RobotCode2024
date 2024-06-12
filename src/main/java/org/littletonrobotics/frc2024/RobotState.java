@@ -52,6 +52,8 @@ public class RobotState {
       double effectiveDistance,
       FlywheelSpeeds flywheelSpeeds) {}
 
+  public record DemoShotParameters(Rotation2d armAngle, FlywheelSpeeds flywheelSpeeds) {}
+
   private static final LoggedTunableNumber autoLookahead =
       new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
   private static final LoggedTunableNumber lookahead =
@@ -128,6 +130,10 @@ public class RobotState {
   private AimingParameters latestParameters = null;
 
   private AimingParameters latestSuperPoopParameters = null;
+
+  @Setter @Getter
+  private DemoShotParameters demoShotParameters =
+      new DemoShotParameters(Rotation2d.fromDegrees(0.0), new FlywheelSpeeds(0.0, 0.0));
 
   @Setter private BooleanSupplier lookaheadDisable = () -> false;
 

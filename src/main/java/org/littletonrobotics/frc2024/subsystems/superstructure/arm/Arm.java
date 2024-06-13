@@ -81,6 +81,12 @@ public class Arm {
     AIM(() -> RobotState.getInstance().getAimingParameters().armAngle().getDegrees()),
     SUPER_POOP(
         () -> RobotState.getInstance().getSuperPoopAimingParameters().armAngle().getDegrees()),
+    AIM_AT_DEMO_TAG(
+        () ->
+            RobotState.getInstance()
+                .getDemoTagParameters()
+                .map(parameters -> parameters.armAngle().getDegrees())
+                .orElse(minAngle.getDegrees())),
     DEMO_SHOT(() -> RobotState.getInstance().getDemoShotParameters().armAngle().getDegrees()),
     AMP(new LoggedTunableNumber("Arm/AmpDegrees", 110.0)),
     SUBWOOFER(new LoggedTunableNumber("Arm/SubwooferDegrees", 55.0)),

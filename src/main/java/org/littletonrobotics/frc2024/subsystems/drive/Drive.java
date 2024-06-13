@@ -384,7 +384,7 @@ public class Drive extends SubsystemBase {
       Supplier<Pose2d> poseSupplier,
       Supplier<Translation2d> feedforwardSupplier,
       boolean slowMode) {
-    if (DriverStation.isTeleopEnabled()) {
+    if (DriverStation.isEnabled()) {
       currentDriveMode = DriveMode.AUTO_ALIGN;
       autoAlignController = new AutoAlignController(poseSupplier, feedforwardSupplier, slowMode);
     }

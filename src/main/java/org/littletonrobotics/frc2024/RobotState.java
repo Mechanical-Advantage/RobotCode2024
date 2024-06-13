@@ -18,11 +18,13 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.subsystems.drive.DriveConstants;
+import org.littletonrobotics.frc2024.subsystems.superstructure.arm.ArmConstants;
 import org.littletonrobotics.frc2024.util.AllianceFlipUtil;
 import org.littletonrobotics.frc2024.util.GeomUtil;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
@@ -52,6 +54,9 @@ public class RobotState {
       double effectiveDistance,
       FlywheelSpeeds flywheelSpeeds) {}
 
+  public record DemoFollowParameters(
+      Pose2d targetPose, Rotation2d targetHeading, Rotation2d armAngle) {}
+
   public record DemoShotParameters(Rotation2d armAngle, FlywheelSpeeds flywheelSpeeds) {}
 
   private static final LoggedTunableNumber autoLookahead =
@@ -62,6 +67,7 @@ public class RobotState {
       new LoggedTunableNumber("RobotState/SuperPoopLookahead", 0.1);
   private static final LoggedTunableNumber closeShootingZoneFeet =
       new LoggedTunableNumber("RobotState/CloseShootingZoneFeet", 10.0);
+
   private static final double poseBufferSizeSeconds = 2.0;
 
   private static final double armAngleCoefficient = 57.254371165197;
@@ -130,6 +136,9 @@ public class RobotState {
   private AimingParameters latestParameters = null;
 
   private AimingParameters latestSuperPoopParameters = null;
+  // Demo parameters
+  private Pose3d demoTagPose = null;
+  private DemoFollowParameters latestDemoParamters = null;
 
   @Setter @Getter
   private DemoShotParameters demoShotParameters =
@@ -324,6 +333,46 @@ public class RobotState {
         new AimingParameters(
             predictedRobotToTarget.getAngle(), armAngle, effectiveDistance, flywheelSpeeds);
     return latestSuperPoopParameters;
+  }
+
+  public void setDemoTagPose(Pose3d demoTagPose) {
+    this.demoTagPose = demoTagPose;
+    latestDemoParamters = null;
+  }
+
+  private static final LoggedTunableNumber demoTargetDistance =
+      new LoggedTunableNumber("RobotState/DemoTargetDistance", 2.0);
+
+  public Optional<DemoFollowParameters> getDemoTagParameters() {
+    if (latestDemoParamters != null) {
+      // Use cached demo parameters.
+      return Optional.of(latestDemoParamters);
+    }
+    // Return empty optional if no demo tag pose.
+    if (demoTagPose == null) return Optional.empty();
+
+    // Calculate target pose.
+    Pose2d targetPose =
+        demoTagPose
+            .toPose2d()
+            .transformBy(
+                new Transform2d(
+                    new Translation2d(demoTargetDistance.get(), 0.0), new Rotation2d(Math.PI)));
+
+    // Calculate heading without movement.
+    Translation2d demoTagFixed = demoTagPose.getTranslation().toTranslation2d();
+    Translation2d robotToDemoTagFixed = demoTagFixed.minus(getEstimatedPose().getTranslation());
+    Rotation2d targetHeading = robotToDemoTagFixed.getAngle();
+
+    // Calculate arm angle.
+    double z = demoTagPose.getZ();
+    Rotation2d armAngle =
+        new Rotation2d(
+            robotToDemoTagFixed.getNorm() - ArmConstants.armOrigin.getX(),
+            z - ArmConstants.armOrigin.getY());
+
+    latestDemoParamters = new DemoFollowParameters(targetPose, targetHeading, armAngle);
+    return Optional.of(latestDemoParamters);
   }
 
   public ModuleLimits getModuleLimits() {

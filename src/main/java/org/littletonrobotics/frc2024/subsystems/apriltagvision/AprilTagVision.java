@@ -12,11 +12,7 @@ import static org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVi
 import static org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO.AprilTagVisionIOInputs;
 
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Quaternion;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj.Timer;
 import java.util.*;
 import java.util.function.Supplier;
@@ -34,6 +30,7 @@ import org.littletonrobotics.junction.Logger;
 public class AprilTagVision extends VirtualSubsystem {
   private static final LoggedTunableNumber timestampOffset =
       new LoggedTunableNumber("AprilTagVision/TimestampOffset", -(1.0 / 50.0));
+  private static final double demoTagPosePersistenceSecs = 0.5;
 
   private final Supplier<AprilTagLayoutType> aprilTagTypeSupplier;
   private final AprilTagVisionIO[] io;
@@ -41,6 +38,9 @@ public class AprilTagVision extends VirtualSubsystem {
 
   private final Map<Integer, Double> lastFrameTimes = new HashMap<>();
   private final Map<Integer, Double> lastTagDetectionTimes = new HashMap<>();
+
+  private Pose3d demoTagPose = null;
+  private double lastDemoTagPoseTimestamp = 0.0;
 
   public AprilTagVision(Supplier<AprilTagLayoutType> aprilTagTypeSupplier, AprilTagVisionIO... io) {
     this.aprilTagTypeSupplier = aprilTagTypeSupplier;
@@ -161,7 +161,7 @@ public class AprilTagVision extends VirtualSubsystem {
               aprilTagTypeSupplier.get().getLayout().getTagPose((int) values[i]);
           tagPose.ifPresent(tagPoses::add);
         }
-        if (tagPoses.size() == 0) continue;
+        if (tagPoses.isEmpty()) continue;
 
         // Calculate average distance to tag
         double totalDistance = 0.0;
@@ -199,39 +199,119 @@ public class AprilTagVision extends VirtualSubsystem {
             "AprilTagVision/Inst" + instanceIndex + "/TagPoses", tagPoses.toArray(Pose3d[]::new));
       }
 
-      // If no frames from instances, clear robot pose
-      if (inputs[instanceIndex].timestamps.length == 0) {
-        Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose", new Pose2d());
-        Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose3d", new Pose3d());
+      // Record demo tag pose
+      if (inputs[instanceIndex].demoFrame.length > 0) {
+        var values = inputs[instanceIndex].demoFrame;
+        double error0 = values[0];
+        double error1 = values[8];
+        Pose3d fieldToCameraPose =
+            new Pose3d(RobotState.getInstance().getEstimatedPose())
+                .transformBy(cameraPoses[instanceIndex].toTransform3d());
+        Pose3d fieldToTagPose0 =
+            fieldToCameraPose.transformBy(
+                new Transform3d(
+                    new Translation3d(values[1], values[2], values[3]),
+                    new Rotation3d(new Quaternion(values[4], values[5], values[6], values[7]))));
+        Pose3d fieldToTagPose1 =
+            fieldToCameraPose.transformBy(
+                new Transform3d(
+                    new Translation3d(values[9], values[10], values[11]),
+                    new Rotation3d(
+                        new Quaternion(values[12], values[13], values[14], values[15]))));
+        Pose3d fieldToTagPose;
+
+        // Find best pose
+        if (demoTagPose == null && error0 < error1) {
+          fieldToTagPose = fieldToTagPose0;
+        } else if (demoTagPose == null && error0 >= error1) {
+          fieldToTagPose = fieldToTagPose1;
+        } else if (error0 < error1 * ambiguityThreshold) {
+          fieldToTagPose = fieldToTagPose0;
+        } else if (error1 < error0 * ambiguityThreshold) {
+          fieldToTagPose = fieldToTagPose1;
+        } else {
+          var pose0Quaternion = fieldToTagPose0.getRotation().getQuaternion();
+          var pose1Quaternion = fieldToTagPose1.getRotation().getQuaternion();
+          var referenceQuaternion = demoTagPose.getRotation().getQuaternion();
+          double pose0Distance =
+              Math.acos(
+                  pose0Quaternion.getW() * referenceQuaternion.getW()
+                      + pose0Quaternion.getX() * referenceQuaternion.getX()
+                      + pose0Quaternion.getY() * referenceQuaternion.getY()
+                      + pose0Quaternion.getZ() * referenceQuaternion.getZ());
+          double pose1Distance =
+              Math.acos(
+                  pose1Quaternion.getW() * referenceQuaternion.getW()
+                      + pose1Quaternion.getX() * referenceQuaternion.getX()
+                      + pose1Quaternion.getY() * referenceQuaternion.getY()
+                      + pose1Quaternion.getZ() * referenceQuaternion.getZ());
+          if (pose0Distance > Math.PI / 2) {
+            pose0Distance = Math.PI - pose0Distance;
+          }
+          if (pose1Distance > Math.PI / 2) {
+            pose1Distance = Math.PI - pose1Distance;
+          }
+          if (pose0Distance < pose1Distance) {
+            fieldToTagPose = fieldToTagPose0;
+          } else {
+            fieldToTagPose = fieldToTagPose1;
+          }
+        }
+
+        // Save pose
+        if (fieldToTagPose != null) {
+          demoTagPose = fieldToTagPose;
+          lastDemoTagPoseTimestamp = Timer.getFPGATimestamp();
+        }
+
+        // If no frames from instances, clear robot pose
+        if (inputs[instanceIndex].timestamps.length == 0) {
+          Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose", new Pose2d());
+          Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/RobotPose3d", new Pose3d());
+        }
+
+        // If no recent frames from instance, clear tag poses
+        if (Timer.getFPGATimestamp() - lastFrameTimes.get(instanceIndex) > targetLogTimeSecs) {
+          //noinspection RedundantArrayCreation
+          Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/TagPoses", new Pose3d[] {});
+        }
       }
 
-      // If no recent frames from instance, clear tag poses
-      if (Timer.getFPGATimestamp() - lastFrameTimes.get(instanceIndex) > targetLogTimeSecs) {
-        //noinspection RedundantArrayCreation
-        Logger.recordOutput("AprilTagVision/Inst" + instanceIndex + "/TagPoses", new Pose3d[] {});
+      // Clear demo tag pose
+      if (Timer.getFPGATimestamp() - lastDemoTagPoseTimestamp > demoTagPosePersistenceSecs) {
+        demoTagPose = null;
       }
+
+      // Log robot poses
+      Logger.recordOutput("AprilTagVision/RobotPoses", allRobotPoses.toArray(Pose2d[]::new));
+      Logger.recordOutput("AprilTagVision/RobotPoses3d", allRobotPoses3d.toArray(Pose3d[]::new));
+
+      // Log tag poses
+      List<Pose3d> allTagPoses = new ArrayList<>();
+      for (Map.Entry<Integer, Double> detectionEntry : lastTagDetectionTimes.entrySet()) {
+        if (Timer.getFPGATimestamp() - detectionEntry.getValue() < targetLogTimeSecs) {
+          aprilTagTypeSupplier
+              .get()
+              .getLayout()
+              .getTagPose(detectionEntry.getKey())
+              .ifPresent(allTagPoses::add);
+        }
+      }
+      Logger.recordOutput("AprilTagVision/TagPoses", allTagPoses.toArray(Pose3d[]::new));
+
+      // Log demo tag pose
+      if (demoTagPose == null) {
+        Logger.recordOutput("AprilTagVision/DemoTagPose", new Pose3d[] {});
+      } else {
+        Logger.recordOutput("AprilTagVision/DemoTagPose", demoTagPose);
+      }
+      Logger.recordOutput("AprilTagVision/DemoTagPoseId", new long[] {29});
+
+      // Send results to robot state
+      allVisionObservations.stream()
+          .sorted(Comparator.comparingDouble(VisionObservation::timestamp))
+          .forEach(RobotState.getInstance()::addVisionObservation);
     }
-
-    // Log robot poses
-    Logger.recordOutput("AprilTagVision/RobotPoses", allRobotPoses.toArray(Pose2d[]::new));
-    Logger.recordOutput("AprilTagVision/RobotPoses3d", allRobotPoses3d.toArray(Pose3d[]::new));
-
-    // Log tag poses
-    List<Pose3d> allTagPoses = new ArrayList<>();
-    for (Map.Entry<Integer, Double> detectionEntry : lastTagDetectionTimes.entrySet()) {
-      if (Timer.getFPGATimestamp() - detectionEntry.getValue() < targetLogTimeSecs) {
-        aprilTagTypeSupplier
-            .get()
-            .getLayout()
-            .getTagPose(detectionEntry.getKey())
-            .ifPresent(allTagPoses::add);
-      }
-    }
-    Logger.recordOutput("AprilTagVision/TagPoses", allTagPoses.toArray(Pose3d[]::new));
-
-    // Send results to robot state
-    allVisionObservations.stream()
-        .sorted(Comparator.comparingDouble(VisionObservation::timestamp))
-        .forEach(RobotState.getInstance()::addVisionObservation);
+    RobotState.getInstance().setDemoTagPose(demoTagPose);
   }
 }

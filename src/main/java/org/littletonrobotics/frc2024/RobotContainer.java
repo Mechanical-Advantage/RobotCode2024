@@ -33,10 +33,7 @@ import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestion;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
-import org.littletonrobotics.frc2024.commands.ClimbingCommands;
-import org.littletonrobotics.frc2024.commands.FeedForwardCharacterization;
-import org.littletonrobotics.frc2024.commands.StaticCharacterization;
-import org.littletonrobotics.frc2024.commands.WheelRadiusCharacterization;
+import org.littletonrobotics.frc2024.commands.*;
 import org.littletonrobotics.frc2024.commands.auto.AutoBuilder;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVisionIO;
@@ -415,6 +412,13 @@ public class RobotContainer {
                     AutoQuestionResponse.SIX_SECONDS,
                     AutoQuestionResponse.LAST_SECOND))),
         autoBuilder.davisInspirationalAuto());
+    DemoAutos demoAutos = new DemoAutos(drive, superstructure, autoSelector::getResponses);
+    autoSelector.addRoutine(
+        "Davis Demo Auto",
+        List.of(
+            new AutoQuestion(
+                "Follow Tag?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO))),
+        demoAutos.davisDemoAuto());
 
     // Set up feedforward characterization
     autoSelector.addRoutine(

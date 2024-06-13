@@ -61,7 +61,7 @@ public class DemoAutos {
                             .map(RobotState.DemoAimingParameters::targetHeading)
                             .orElseGet(
                                 () -> RobotState.getInstance().getEstimatedPose().getRotation())),
-            drive::clearAutoAlignGoal)
+            drive::clearHeadingGoal)
         .alongWith(
             superstructure.setGoalWithConstraintsCommand(
                 Superstructure.Goal.AIM_AT_DEMO_TAG, Arm.smoothProfileConstraints.get()));

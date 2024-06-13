@@ -336,10 +336,6 @@ public class RobotState {
 
   private static final LoggedTunableNumber demoTargetDistance =
       new LoggedTunableNumber("RobotState/DemoTargetDistance", 2.0);
-  private static final Translation3d upDirection = new Translation3d(0.0, 0.0, 1.0);
-  private static final Translation3d leftDirection = new Translation3d(0.0, 1.0, 0.0);
-  private static final Translation3d downDirection = new Translation3d(0.0, 0.0, -1.0);
-  private static final Translation3d rightDirection = new Translation3d(0.0, -1.0, 0.0);
 
   public Optional<DemoAimingParameters> getDemoTagParameters() {
     if (latestDemoParamters != null) {
@@ -350,25 +346,12 @@ public class RobotState {
     if (demoTagPose == null) return Optional.empty();
 
     // Calculate target pose.
-    // Determine tag rotation
-    double maxZ = 0.0;
-    int maxIndex = 0;
-    int index = 0;
-    for (var tagDirection :
-        new Translation3d[] {upDirection, leftDirection, downDirection, rightDirection}) {
-      double z = demoTagPose.transformBy(new Transform3d(tagDirection, new Rotation3d())).getZ();
-      if (z > maxZ) {
-        maxZ = z;
-        maxIndex = index;
-      }
-      index++;
-    }
-    Rotation2d robotRotation = new Rotation2d(Math.PI + Math.PI / 2.0 * maxIndex);
     Pose2d targetPose =
         demoTagPose
             .toPose2d()
             .transformBy(
-                new Transform2d(new Translation2d(demoTargetDistance.get(), 0.0), robotRotation));
+                new Transform2d(
+                    new Translation2d(demoTargetDistance.get(), 0.0), new Rotation2d(Math.PI)));
 
     // Calculate heading without movement.
     Translation2d demoTagFixed = demoTagPose.getTranslation().toTranslation2d();

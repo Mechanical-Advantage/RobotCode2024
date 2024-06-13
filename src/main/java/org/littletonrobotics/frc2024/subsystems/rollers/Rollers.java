@@ -33,7 +33,7 @@ public class Rollers extends SubsystemBase {
   private static final LoggedTunableNumber stationIntakeTime =
       new LoggedTunableNumber("Rollers/StationIntakeTime", 0.06);
   private static final LoggedTunableNumber demoStationIntakeTime =
-      new LoggedTunableNumber("Rollers/StationIntakeTime", 0.06);
+      new LoggedTunableNumber("Rollers/DemoStationIntakeTime", 0.1);
 
   private final Feeder feeder;
   private final Indexer indexer;

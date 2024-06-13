@@ -180,6 +180,8 @@ public class Leds extends VirtualSubsystem {
         rainbow(rainbowCycleLength, rainbowDuration);
       } else if (hasNote) {
         solid(Color.kGreen);
+      } else if (demoMode) {
+        wave(allianceColor, secondaryDisabledColor, waveAllianceCycleLength, waveAllianceDuration);
       }
 
       if (endgameAlert) {

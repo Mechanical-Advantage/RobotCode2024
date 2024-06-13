@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -326,7 +327,7 @@ public class RobotContainer {
 
     // Configure autos and buttons
     configureAutos();
-    configureButtonBindings(demoControls.get());
+    configureButtonBindings(false);
 
     // Alerts for constants
     if (Constants.tuningMode) {
@@ -449,11 +450,11 @@ public class RobotContainer {
         "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
 
     // Add options to demo mode
-    demoControls.addDefaultOption("NO", false);
     demoControls.addOption("YES", true);
+    demoControls.addDefaultOption("NO", false);
 
     // Set speed scalar chooser for demo
-    demoSpeedChooser.addDefaultOption("Competition (100%)", 1.0);
+    demoSpeedChooser.addDefaultOption("Full (100%)", 1.0);
     demoSpeedChooser.addOption("Fast (70%)", 0.7);
     demoSpeedChooser.addOption("Medium (30%)", 0.3);
     demoSpeedChooser.addOption("Slow (15%)", 0.15);
@@ -462,19 +463,19 @@ public class RobotContainer {
     demoShotChooser.addDefaultOption(
         "Short",
         new RobotState.DemoShotParameters(
-            Rotation2d.fromDegrees(20.0), new RobotState.FlywheelSpeeds(900, 1500)));
+            Rotation2d.fromDegrees(35.0), new RobotState.FlywheelSpeeds(1200, 1200)));
     demoShotChooser.addOption(
         "Medium",
         new RobotState.DemoShotParameters(
-            Rotation2d.fromDegrees(35.0), new RobotState.FlywheelSpeeds(2600, 4000)));
+            Rotation2d.fromDegrees(35.0), new RobotState.FlywheelSpeeds(3500, 4000)));
     demoShotChooser.addOption(
         "Long",
         new RobotState.DemoShotParameters(
-            Rotation2d.fromDegrees(40.0), new RobotState.FlywheelSpeeds(2400, 4000)));
+            Rotation2d.fromDegrees(40.0), new RobotState.FlywheelSpeeds(5000, 8000)));
     demoShotChooser.addOption(
         "Tall",
         new RobotState.DemoShotParameters(
-            Rotation2d.fromDegrees(65.0), new RobotState.FlywheelSpeeds(2400, 4000)));
+            Rotation2d.fromDegrees(80.0), new RobotState.FlywheelSpeeds(5000, 8000)));
   }
 
   /**
@@ -484,21 +485,6 @@ public class RobotContainer {
    */
   private void configureButtonBindings(boolean demo) {
     CommandScheduler.getInstance().getActiveButtonLoop().clear();
-
-    // Drive with joysticks speed scalar
-    if (demo) {
-      Container<Double> previousDemoSpeed = new Container<>();
-      previousDemoSpeed.value = 1.0;
-      new Trigger(() -> demoSpeedChooser.get() != previousDemoSpeed.value)
-          .onTrue(
-              Commands.runOnce(
-                  () -> {
-                    TeleopDriveController.setVelocityScalar(demoSpeedChooser.get());
-                    previousDemoSpeed.value = demoSpeedChooser.get();
-                  }));
-    } else {
-      TeleopDriveController.setVelocityScalar(1.0);
-    }
 
     // ------------- Driver Controls -------------
     drive.setDefaultCommand(
@@ -592,6 +578,18 @@ public class RobotContainer {
                   .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
       driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
+
+      // Poop.
+      driver
+          .rightTrigger()
+          .and(driver.a().negate())
+          .and(driver.b().negate())
+          .whileTrue(
+              flywheels
+                  .poopCommand()
+                  .alongWith(
+                      Commands.waitUntil(flywheels::atGoal)
+                          .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
     } else {
       new Trigger(DriverStation::isEnabled)
           .whileTrueContinuous(
@@ -611,24 +609,13 @@ public class RobotContainer {
           .onTrue(
               rollers
                   .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                  .alongWith(
+                      superstructure.setGoalWithConstraintsCommand(
+                          Superstructure.Goal.DEMO_SHOT, Arm.smoothProfileConstraints.get()),
+                      flywheels.demoShootCommand())
                   .withTimeout(0.6)
-                  .deadlineWith(
-                      superstructure
-                          .setGoalWithConstraintsCommand(
-                              Superstructure.Goal.DEMO_SHOT, Arm.smoothProfileConstraints.get())
-                          .alongWith(flywheels.demoShootCommand())));
+                  .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
     }
-    // Poop.
-    driver
-        .rightTrigger()
-        .and(driver.a().negate())
-        .and(driver.b().negate())
-        .whileTrue(
-            flywheels
-                .poopCommand()
-                .alongWith(
-                    Commands.waitUntil(flywheels::atGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
 
     // ------------- Intake Controls -------------
     // Intake Floor
@@ -670,7 +657,7 @@ public class RobotContainer {
           .whileTrue(
               superstructure
                   .setGoalWithConstraintsCommand(
-                      Superstructure.Goal.STATION_INTAKE, Arm.smoothProfileConstraints.get())
+                      Superstructure.Goal.STOW, Arm.smoothProfileConstraints.get())
                   .alongWith(
                       rollers.setGoalCommand(Rollers.Goal.DEMO_STATION_INTAKE),
                       flywheels.demoIntakeCommand())
@@ -751,18 +738,20 @@ public class RobotContainer {
                     ampAutoDrive,
 
                     // Drive while heading is being controlled
-                    drive
-                        .run(
-                            () ->
-                                drive.acceptTeleopInput(
-                                    -driver.getLeftY(),
-                                    -driver.getLeftX(),
-                                    0.0,
-                                    robotRelative.getAsBoolean()))
-                        .alongWith(
-                            Commands.startEnd(
-                                () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
-                                drive::clearHeadingGoal)),
+                    demo
+                        ? Commands.none()
+                        : drive
+                            .run(
+                                () ->
+                                    drive.acceptTeleopInput(
+                                        -driver.getLeftY(),
+                                        -driver.getLeftX(),
+                                        0.0,
+                                        robotRelative.getAsBoolean()))
+                            .alongWith(
+                                Commands.startEnd(
+                                    () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
+                                    drive::clearHeadingGoal)),
                     autoDriveEnable)
                 .alongWith(
                     Commands.waitUntil(
@@ -895,6 +884,9 @@ public class RobotContainer {
       configureButtonBindings(demoControls.get());
       lastWasDemoControls = demoControls.get();
     }
+
+    // Update teleop speed
+    TeleopDriveController.setVelocityScalar(demoControls.get() ? demoSpeedChooser.get() : 1.0);
 
     // Update alerts
     Leds.getInstance().demoMode = demoControls.get();

@@ -160,7 +160,7 @@ public class Arm {
   private double getStowAngle() {
     if (DriverStation.isTeleopEnabled()
         && RobotState.getInstance().inCloseShootingZone()
-        && halfStowSupplier.getAsBoolean()) {
+        && !halfStowSupplier.getAsBoolean()) {
       return MathUtil.clamp(
           setpointState.position,
           minAngle.getRadians(),

@@ -496,6 +496,8 @@ public class RobotContainer {
                     TeleopDriveController.setVelocityScalar(demoSpeedChooser.get());
                     previousDemoSpeed.value = demoSpeedChooser.get();
                   }));
+    } else {
+      TeleopDriveController.setVelocityScalar(1.0);
     }
 
     // ------------- Driver Controls -------------

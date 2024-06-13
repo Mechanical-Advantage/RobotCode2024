@@ -40,7 +40,7 @@ public class DemoAutos {
                     () ->
                         RobotState.getInstance()
                             .getDemoTagParameters()
-                            .map(RobotState.DemoAimingParameters::targetPose)
+                            .map(RobotState.DemoFollowParameters::targetPose)
                             .orElseGet(() -> RobotState.getInstance().getEstimatedPose()),
                     Translation2d::new,
                     false),
@@ -58,7 +58,7 @@ public class DemoAutos {
                     () ->
                         RobotState.getInstance()
                             .getDemoTagParameters()
-                            .map(RobotState.DemoAimingParameters::targetHeading)
+                            .map(RobotState.DemoFollowParameters::targetHeading)
                             .orElseGet(
                                 () -> RobotState.getInstance().getEstimatedPose().getRotation())),
             drive::clearHeadingGoal)

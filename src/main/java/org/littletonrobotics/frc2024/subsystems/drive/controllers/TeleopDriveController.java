@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import lombok.Setter;
 import org.littletonrobotics.frc2024.RobotState;
 import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 
@@ -25,6 +26,8 @@ public class TeleopDriveController {
       new LoggedTunableNumber("TeleopDrive/Deadband", 0.1);
   private static final LoggedTunableNumber maxAngularVelocityScalar =
       new LoggedTunableNumber("TeleopDrive/MaxAngularVelocityScalar", 0.65);
+
+  @Setter private static double velocityScalar = 1.0;
 
   private double controllerX = 0;
   private double controllerY = 0;
@@ -56,12 +59,13 @@ public class TeleopDriveController {
     double omega = MathUtil.applyDeadband(controllerOmega, controllerDeadband.get());
     omega = Math.copySign(omega * omega, omega);
 
+    final double maxLinearVelocity = driveConfig.maxLinearVelocity() * velocityScalar;
     final double maxAngularVelocity =
-        driveConfig.maxAngularVelocity() * maxAngularVelocityScalar.get();
+        driveConfig.maxAngularVelocity() * (maxAngularVelocityScalar.get() * velocityScalar);
     if (robotRelative) {
       return new ChassisSpeeds(
-          linearVelocity.getX() * driveConfig.maxLinearVelocity(),
-          linearVelocity.getY() * driveConfig.maxLinearVelocity(),
+          linearVelocity.getX() * maxLinearVelocity,
+          linearVelocity.getY() * maxLinearVelocity,
           omega * maxAngularVelocity);
     } else {
       if (DriverStation.getAlliance().isPresent()
@@ -69,8 +73,8 @@ public class TeleopDriveController {
         linearVelocity = linearVelocity.rotateBy(Rotation2d.fromRadians(Math.PI));
       }
       return ChassisSpeeds.fromFieldRelativeSpeeds(
-          linearVelocity.getX() * driveConfig.maxLinearVelocity(),
-          linearVelocity.getY() * driveConfig.maxLinearVelocity(),
+          linearVelocity.getX() * maxLinearVelocity,
+          linearVelocity.getY() * maxLinearVelocity,
           omega * maxAngularVelocity,
           RobotState.getInstance().getEstimatedPose().getRotation());
     }

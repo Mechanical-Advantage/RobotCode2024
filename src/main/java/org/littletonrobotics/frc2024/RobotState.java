@@ -54,8 +54,10 @@ public class RobotState {
       double effectiveDistance,
       FlywheelSpeeds flywheelSpeeds) {}
 
-  public record DemoAimingParameters(
+  public record DemoFollowParameters(
       Pose2d targetPose, Rotation2d targetHeading, Rotation2d armAngle) {}
+
+  public record DemoShotParameters(Rotation2d armAngle, FlywheelSpeeds flywheelSpeeds) {}
 
   private static final LoggedTunableNumber autoLookahead =
       new LoggedTunableNumber("RobotState/AutoLookahead", 0.5);
@@ -136,7 +138,11 @@ public class RobotState {
   private AimingParameters latestSuperPoopParameters = null;
   // Demo parameters
   private Pose3d demoTagPose = null;
-  private DemoAimingParameters latestDemoParamters = null;
+  private DemoFollowParameters latestDemoParamters = null;
+
+  @Setter @Getter
+  private DemoShotParameters demoShotParameters =
+      new DemoShotParameters(Rotation2d.fromDegrees(0.0), new FlywheelSpeeds(0.0, 0.0));
 
   @Setter private BooleanSupplier lookaheadDisable = () -> false;
 
@@ -337,7 +343,7 @@ public class RobotState {
   private static final LoggedTunableNumber demoTargetDistance =
       new LoggedTunableNumber("RobotState/DemoTargetDistance", 2.0);
 
-  public Optional<DemoAimingParameters> getDemoTagParameters() {
+  public Optional<DemoFollowParameters> getDemoTagParameters() {
     if (latestDemoParamters != null) {
       // Use cached demo parameters.
       return Optional.of(latestDemoParamters);
@@ -365,7 +371,7 @@ public class RobotState {
             robotToDemoTagFixed.getNorm() - ArmConstants.armOrigin.getX(),
             z - ArmConstants.armOrigin.getY());
 
-    latestDemoParamters = new DemoAimingParameters(targetPose, targetHeading, armAngle);
+    latestDemoParamters = new DemoFollowParameters(targetPose, targetHeading, armAngle);
     return Optional.of(latestDemoParamters);
   }
 

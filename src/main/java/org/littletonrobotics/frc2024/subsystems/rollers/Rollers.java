@@ -30,6 +30,10 @@ import org.littletonrobotics.junction.Logger;
 public class Rollers extends SubsystemBase {
   private static final LoggedTunableNumber jackhammerTime =
       new LoggedTunableNumber("Rollers/JackhammerTime", 0.075);
+  private static final LoggedTunableNumber stationIntakeTime =
+      new LoggedTunableNumber("Rollers/StationIntakeTime", 0.06);
+  private static final LoggedTunableNumber demoStationIntakeTime =
+      new LoggedTunableNumber("Rollers/DemoStationIntakeTime", 0.1);
 
   private final Feeder feeder;
   private final Indexer indexer;
@@ -44,6 +48,7 @@ public class Rollers extends SubsystemBase {
     IDLE,
     FLOOR_INTAKE,
     STATION_INTAKE,
+    DEMO_STATION_INTAKE,
     EJECT_TO_FLOOR,
     UNJAM_UNTACO,
     UNJAM_FEEDER,
@@ -131,7 +136,16 @@ public class Rollers extends SubsystemBase {
         }
       }
       case STATION_INTAKE -> {
-        if (gamepieceState != GamepieceState.NONE && gamepieceStateTimer.hasElapsed(0.06)) {
+        if (gamepieceState != GamepieceState.NONE
+            && gamepieceStateTimer.hasElapsed(stationIntakeTime.get())) {
+          indexer.setGoal(Indexer.Goal.IDLING);
+        } else {
+          indexer.setGoal(Indexer.Goal.STATION_INTAKING);
+        }
+      }
+      case DEMO_STATION_INTAKE -> {
+        if (gamepieceState != GamepieceState.NONE
+            && gamepieceStateTimer.hasElapsed(demoStationIntakeTime.get())) {
           indexer.setGoal(Indexer.Goal.IDLING);
         } else {
           indexer.setGoal(Indexer.Goal.STATION_INTAKING);

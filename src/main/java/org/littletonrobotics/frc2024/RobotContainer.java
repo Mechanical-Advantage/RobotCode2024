@@ -20,6 +20,8 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -76,6 +78,7 @@ import org.littletonrobotics.frc2024.util.*;
 import org.littletonrobotics.frc2024.util.Alert.AlertType;
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.networktables.LoggedDashboardNumber;
 
 /**
@@ -120,6 +123,8 @@ public class RobotContainer {
       new Alert("Operator controller disconnected (port 1).", AlertType.WARNING);
   private final Alert overrideDisconnected =
       new Alert("Override controller disconnected (port 5).", AlertType.INFO);
+  private final Alert demoControlsActivated =
+      new Alert("Demo controls are active. Do not use in competition.", AlertType.INFO);
   private final LoggedDashboardNumber endgameAlert1 =
       new LoggedDashboardNumber("Endgame Alert #1", 30.0);
   private final LoggedDashboardNumber endgameAlert2 =
@@ -127,9 +132,16 @@ public class RobotContainer {
 
   private boolean podiumShotMode = false;
   private boolean armCoastOverride = false;
+  private boolean lastWasDemoControls = false;
 
   // Dashboard inputs
   private final AutoSelector autoSelector = new AutoSelector("Auto");
+  private final LoggedDashboardChooser<Boolean> demoControls =
+      new LoggedDashboardChooser<>("Demo Mode");
+  private final LoggedDashboardChooser<Double> demoSpeedChooser =
+      new LoggedDashboardChooser<>("Demo Speed");
+  private final LoggedDashboardChooser<RobotState.DemoShotParameters> demoShotChooser =
+      new LoggedDashboardChooser<>("Demo Shot");
 
   /** Returns the current AprilTag layout type. */
   public AprilTagLayoutType getAprilTagLayoutType() {
@@ -296,22 +308,23 @@ public class RobotContainer {
         .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
     RobotModeTriggers.disabled()
         .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
-    arm.setOverrides(armDisable, () -> armCoastOverride);
+    arm.setOverrides(armDisable, () -> armCoastOverride, demoControls::get);
     climber.setCoastOverride(() -> armCoastOverride);
     backpackActuator.setCoastOverride(() -> armCoastOverride);
     robotState.setLookaheadDisable(lookaheadDisable);
     flywheels.setPrepareShootSupplier(
         () ->
-            autoFlywheelSpinupDisable.negate().getAsBoolean()
+            !autoFlywheelSpinupDisable.getAsBoolean()
                 && DriverStation.isTeleopEnabled()
                 && !superstructure.getCurrentGoal().isClimbingGoal()
                 && (robotState.inCloseShootingZone()
                     || (robotState.inShootingZone()
-                        && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED)));
+                        && rollers.getGamepieceState() == GamepieceState.SHOOTER_STAGED))
+                && !demoControls.get());
 
     // Configure autos and buttons
     configureAutos();
-    configureButtonBindings();
+    configureButtonBindings(false);
 
     // Alerts for constants
     if (Constants.tuningMode) {
@@ -439,6 +452,34 @@ public class RobotContainer {
             .withName("Drive Wheel Radius Characterization"));
     autoSelector.addRoutine(
         "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
+
+    // Add options to demo mode
+    demoControls.addOption("YES", true);
+    demoControls.addDefaultOption("NO", false);
+
+    // Set speed scalar chooser for demo
+    demoSpeedChooser.addDefaultOption("Full (100%)", 1.0);
+    demoSpeedChooser.addOption("Fast (70%)", 0.7);
+    demoSpeedChooser.addOption("Medium (30%)", 0.3);
+    demoSpeedChooser.addOption("Slow (15%)", 0.15);
+
+    // Set shot modes for demo shot
+    demoShotChooser.addDefaultOption(
+        "Short",
+        new RobotState.DemoShotParameters(
+            Rotation2d.fromDegrees(35.0), new RobotState.FlywheelSpeeds(1200, 1200)));
+    demoShotChooser.addOption(
+        "Medium",
+        new RobotState.DemoShotParameters(
+            Rotation2d.fromDegrees(35.0), new RobotState.FlywheelSpeeds(3500, 4000)));
+    demoShotChooser.addOption(
+        "Long",
+        new RobotState.DemoShotParameters(
+            Rotation2d.fromDegrees(40.0), new RobotState.FlywheelSpeeds(5000, 8000)));
+    demoShotChooser.addOption(
+        "Tall",
+        new RobotState.DemoShotParameters(
+            Rotation2d.fromDegrees(80.0), new RobotState.FlywheelSpeeds(5000, 8000)));
   }
 
   /**
@@ -446,7 +487,9 @@ public class RobotContainer {
    * instantiating a {@link GenericHID} or one of its subclasses ({@link Joystick} or {@link
    * XboxController}), and then passing it to a {@link JoystickButton}.
    */
-  private void configureButtonBindings() {
+  private void configureButtonBindings(boolean demo) {
+    CommandScheduler.getInstance().getActiveButtonLoop().clear();
+
     // ------------- Driver Controls -------------
     drive.setDefaultCommand(
         drive
@@ -460,95 +503,123 @@ public class RobotContainer {
             .withName("Drive Teleop Input"));
 
     // ------------- Shooting Controls -------------
-    // Aim and rev flywheels
-    Supplier<Command> superstructureAimCommand =
-        () ->
-            Commands.either(
-                Commands.either(
-                    superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
-                    superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
-                    () -> podiumShotMode),
-                superstructure.setGoalCommand(Superstructure.Goal.AIM),
-                shootPresets);
-    Supplier<Command> driveAimCommand =
-        () ->
-            Commands.either(
-                Commands.none(),
-                Commands.startEnd(
-                    () ->
-                        drive.setHeadingGoal(() -> robotState.getAimingParameters().driveHeading()),
-                    drive::clearHeadingGoal),
-                shootAlignDisable);
-    Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
     Trigger intakeTrigger = driver.leftTrigger();
-    driver
-        .a()
-        .and(intakeTrigger.negate())
-        .and(nearSpeaker.or(shootPresets))
-        .whileTrueContinuous(
-            driveAimCommand
-                .get()
-                .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
-                .withName("Prepare Shot"));
-    driver
-        .a()
-        .and(intakeTrigger.negate())
-        .and(nearSpeaker.negate().and(shootPresets.negate()))
-        .whileTrueContinuous(
-            Commands.startEnd(
-                    () ->
-                        drive.setHeadingGoal(
-                            () -> robotState.getSuperPoopAimingParameters().driveHeading()),
-                    drive::clearHeadingGoal)
-                .alongWith(
-                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
-                    flywheels.superPoopCommand())
-                .withName("Super Poop"));
     readyToShoot =
         new Trigger(
             () -> drive.atHeadingGoal() && superstructure.atArmGoal() && flywheels.atGoal());
-    driver
-        .rightTrigger()
-        .and(driver.a())
-        .and(nearSpeaker.or(shootPresets))
-        .and(readyToShoot.debounce(0.2, DebounceType.kRising))
-        .onTrue(
-            Commands.parallel(
-                    Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
-                .deadlineWith(
-                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
-                    superstructureAimCommand.get(),
-                    flywheels.shootCommand(),
-                    driveAimCommand.get())
-                .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
-    driver
-        .rightTrigger()
-        .and(driver.a())
-        .and(nearSpeaker.negate().and(shootPresets.negate()))
-        .and(readyToShoot.debounce(0.3, DebounceType.kFalling))
-        .onTrue(
-            Commands.parallel(
-                    Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
-                .deadlineWith(
-                    rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
-                    superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
-                    flywheels.superPoopCommand(),
-                    driveAimCommand.get())
-                .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
+    if (!demo) {
+      // Aim and rev flywheels
+      Supplier<Command> superstructureAimCommand =
+          () ->
+              Commands.either(
+                  Commands.either(
+                      superstructure.setGoalCommand(Superstructure.Goal.PODIUM),
+                      superstructure.setGoalCommand(Superstructure.Goal.SUBWOOFER),
+                      () -> podiumShotMode),
+                  superstructure.setGoalCommand(Superstructure.Goal.AIM),
+                  shootPresets);
+      Supplier<Command> driveAimCommand =
+          () ->
+              Commands.either(
+                  Commands.none(),
+                  Commands.startEnd(
+                      () ->
+                          drive.setHeadingGoal(
+                              () -> robotState.getAimingParameters().driveHeading()),
+                      drive::clearHeadingGoal),
+                  shootAlignDisable);
+      Trigger nearSpeaker = new Trigger(robotState::inShootingZone);
+      driver
+          .a()
+          .and(intakeTrigger.negate())
+          .and(nearSpeaker.or(shootPresets))
+          .whileTrueContinuous(
+              driveAimCommand
+                  .get()
+                  .alongWith(superstructureAimCommand.get(), flywheels.shootCommand())
+                  .withName("Prepare Shot"));
+      driver
+          .a()
+          .and(intakeTrigger.negate())
+          .and(nearSpeaker.negate().and(shootPresets.negate()))
+          .whileTrueContinuous(
+              Commands.startEnd(
+                      () ->
+                          drive.setHeadingGoal(
+                              () -> robotState.getSuperPoopAimingParameters().driveHeading()),
+                      drive::clearHeadingGoal)
+                  .alongWith(
+                      superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                      flywheels.superPoopCommand())
+                  .withName("Super Poop"));
+      driver
+          .rightTrigger()
+          .and(driver.a())
+          .and(nearSpeaker.or(shootPresets))
+          .and(readyToShoot.debounce(0.2, DebounceType.kRising))
+          .onTrue(
+              Commands.parallel(
+                      Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
+                  .deadlineWith(
+                      rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
+                      superstructureAimCommand.get(),
+                      flywheels.shootCommand(),
+                      driveAimCommand.get())
+                  .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
+      driver
+          .rightTrigger()
+          .and(driver.a())
+          .and(nearSpeaker.negate().and(shootPresets.negate()))
+          .and(readyToShoot.debounce(0.3, DebounceType.kFalling))
+          .onTrue(
+              Commands.parallel(
+                      Commands.waitSeconds(0.5), Commands.waitUntil(driver.rightTrigger().negate()))
+                  .deadlineWith(
+                      rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER),
+                      superstructure.setGoalCommand(Superstructure.Goal.SUPER_POOP),
+                      flywheels.superPoopCommand(),
+                      driveAimCommand.get())
+                  .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming));
 
-    driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
+      driver.a().and(readyToShoot).whileTrue(controllerRumbleCommand());
 
-    // Poop.
-    driver
-        .rightTrigger()
-        .and(driver.a().negate())
-        .and(driver.b().negate())
-        .whileTrue(
-            flywheels
-                .poopCommand()
-                .alongWith(
-                    Commands.waitUntil(flywheels::atGoal)
-                        .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
+      // Poop.
+      driver
+          .rightTrigger()
+          .and(driver.a().negate())
+          .and(driver.b().negate())
+          .whileTrue(
+              flywheels
+                  .poopCommand()
+                  .alongWith(
+                      Commands.waitUntil(flywheels::atGoal)
+                          .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
+    } else {
+      new Trigger(DriverStation::isEnabled)
+          .whileTrueContinuous(
+              Commands.run(
+                  () -> RobotState.getInstance().setDemoShotParameters(demoShotChooser.get())));
+      driver
+          .a()
+          .and(intakeTrigger.negate())
+          .whileTrueContinuous(
+              superstructure
+                  .setGoalWithConstraintsCommand(
+                      Superstructure.Goal.DEMO_SHOT, Arm.smoothProfileConstraints.get())
+                  .alongWith(flywheels.demoShootCommand()));
+      driver
+          .a()
+          .and(readyToShoot.debounce(0.8, DebounceType.kRising))
+          .onTrue(
+              rollers
+                  .setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER)
+                  .alongWith(
+                      superstructure.setGoalWithConstraintsCommand(
+                          Superstructure.Goal.DEMO_SHOT, Arm.smoothProfileConstraints.get()),
+                      flywheels.demoShootCommand())
+                  .withTimeout(0.6)
+                  .withInterruptBehavior(InterruptionBehavior.kCancelIncoming));
+    }
 
     // ------------- Intake Controls -------------
     // Intake Floor
@@ -574,14 +645,28 @@ public class RobotContainer {
         .whileTrue(rollers.setGoalCommand(Rollers.Goal.EJECT_TO_FLOOR).withName("Eject To Floor"));
 
     // Intake source
-    driver
-        .rightBumper()
-        .whileTrue(
-            superstructure
-                .setGoalCommand(Superstructure.Goal.STATION_INTAKE)
-                .alongWith(
-                    rollers.setGoalCommand(Rollers.Goal.STATION_INTAKE), flywheels.intakeCommand())
-                .withName("Source Intake"));
+    if (!demo) {
+      driver
+          .rightBumper()
+          .whileTrue(
+              superstructure
+                  .setGoalCommand(Superstructure.Goal.STATION_INTAKE)
+                  .alongWith(
+                      rollers.setGoalCommand(Rollers.Goal.STATION_INTAKE),
+                      flywheels.intakeCommand())
+                  .withName("Source Intake"));
+    } else {
+      driver
+          .rightBumper()
+          .whileTrue(
+              superstructure
+                  .setGoalWithConstraintsCommand(
+                      Superstructure.Goal.STOW, Arm.smoothProfileConstraints.get())
+                  .alongWith(
+                      rollers.setGoalCommand(Rollers.Goal.DEMO_STATION_INTAKE),
+                      flywheels.demoIntakeCommand())
+                  .withName("Demo Source Intake"));
+    }
 
     // ------------- Amp Scoring Controls -------------
     Container<Translation2d> ampAlignedDriverTranslation = new Container<>();
@@ -657,18 +742,20 @@ public class RobotContainer {
                     ampAutoDrive,
 
                     // Drive while heading is being controlled
-                    drive
-                        .run(
-                            () ->
-                                drive.acceptTeleopInput(
-                                    -driver.getLeftY(),
-                                    -driver.getLeftX(),
-                                    0.0,
-                                    robotRelative.getAsBoolean()))
-                        .alongWith(
-                            Commands.startEnd(
-                                () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
-                                drive::clearHeadingGoal)),
+                    demo
+                        ? Commands.none()
+                        : drive
+                            .run(
+                                () ->
+                                    drive.acceptTeleopInput(
+                                        -driver.getLeftY(),
+                                        -driver.getLeftX(),
+                                        0.0,
+                                        robotRelative.getAsBoolean()))
+                            .alongWith(
+                                Commands.startEnd(
+                                    () -> drive.setHeadingGoal(() -> Rotation2d.fromDegrees(-90.0)),
+                                    drive::clearHeadingGoal)),
                     autoDriveEnable)
                 .alongWith(
                     Commands.waitUntil(
@@ -792,6 +879,22 @@ public class RobotContainer {
           driver.getHID().setRumble(RumbleType.kBothRumble, 0.0);
           operator.getHID().setRumble(RumbleType.kBothRumble, 0.0);
         });
+  }
+
+  /** Update demo controls. */
+  public void updateDemoControls() {
+    // Update control binding
+    if (demoControls.get() != lastWasDemoControls) {
+      configureButtonBindings(demoControls.get());
+      lastWasDemoControls = demoControls.get();
+    }
+
+    // Update teleop speed
+    TeleopDriveController.setVelocityScalar(demoControls.get() ? demoSpeedChooser.get() : 1.0);
+
+    // Update alerts
+    Leds.getInstance().demoMode = demoControls.get();
+    demoControlsActivated.set(demoControls.get());
   }
 
   /** Updates the alerts for disconnected controllers. */

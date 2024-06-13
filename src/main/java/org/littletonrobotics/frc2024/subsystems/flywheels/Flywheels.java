@@ -41,6 +41,8 @@ public class Flywheels extends SubsystemBase {
       new LoggedTunableNumber("Flywheels/PrepareShootMultiplier", 1.0);
   private static final LoggedTunableNumber intakingRpm =
       new LoggedTunableNumber("Flywheels/IntakingRpm", -3000.0);
+  private static final LoggedTunableNumber demoIntakingRpm =
+      new LoggedTunableNumber("Flywheels/DemoIntakingRpm", -250.0);
   private static final LoggedTunableNumber ejectingRpm =
       new LoggedTunableNumber("Flywheels/EjectingRpm", 1000.0);
   private static final LoggedTunableNumber poopingRpm =
@@ -70,12 +72,16 @@ public class Flywheels extends SubsystemBase {
     IDLE(() -> 0.0, () -> 0.0),
     SHOOT(shootingLeftRpm, shootingRightRpm),
     INTAKE(intakingRpm, intakingRpm),
+    DEMO_INTAKE(demoIntakingRpm, demoIntakingRpm),
     EJECT(ejectingRpm, ejectingRpm),
     POOP(poopingRpm, poopingRpm),
     SUPER_POOP(
         () -> RobotState.getInstance().getSuperPoopAimingParameters().flywheelSpeeds().leftSpeed(),
         () ->
             RobotState.getInstance().getSuperPoopAimingParameters().flywheelSpeeds().rightSpeed()),
+    DEMO_SHOT(
+        () -> RobotState.getInstance().getDemoShotParameters().flywheelSpeeds().leftSpeed(),
+        () -> RobotState.getInstance().getDemoShotParameters().flywheelSpeeds().rightSpeed()),
     CHARACTERIZING(() -> 0.0, () -> 0.0);
 
     private final DoubleSupplier leftGoal;
@@ -226,6 +232,11 @@ public class Flywheels extends SubsystemBase {
         .withName("Flywheels Intake");
   }
 
+  public Command demoIntakeCommand() {
+    return startEnd(() -> setGoal(Goal.DEMO_INTAKE), () -> setGoal(Goal.IDLE))
+        .withName("Flywheels Demo Intake");
+  }
+
   public Command ejectCommand() {
     return startEnd(() -> setGoal(Goal.EJECT), () -> setGoal(Goal.IDLE))
         .withName("Flywheels Eject");
@@ -238,5 +249,10 @@ public class Flywheels extends SubsystemBase {
   public Command superPoopCommand() {
     return startEnd(() -> setGoal(Goal.SUPER_POOP), () -> setGoal(Goal.IDLE))
         .withName("Flywheels Super Poop");
+  }
+
+  public Command demoShootCommand() {
+    return startEnd(() -> setGoal(Goal.DEMO_SHOT), () -> setGoal(Goal.IDLE))
+        .withName("Flywheels Demo Shoot");
   }
 }

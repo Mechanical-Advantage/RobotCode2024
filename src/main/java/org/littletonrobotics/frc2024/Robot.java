@@ -237,6 +237,7 @@ public class Robot extends LoggedRobot {
         });
 
     // Robot container periodic methods
+    robotContainer.updateDemoControls();
     robotContainer.checkControllers();
     robotContainer.updateDashboardOutputs();
     robotContainer.updateAlerts();

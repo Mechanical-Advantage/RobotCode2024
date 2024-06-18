@@ -33,6 +33,7 @@ import lombok.experimental.ExtensionMethod;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestion;
 import org.littletonrobotics.frc2024.AutoSelector.AutoQuestionResponse;
 import org.littletonrobotics.frc2024.FieldConstants.AprilTagLayoutType;
+import org.littletonrobotics.frc2024.RobotState.DemoShotParameters;
 import org.littletonrobotics.frc2024.commands.*;
 import org.littletonrobotics.frc2024.commands.auto.AutoBuilder;
 import org.littletonrobotics.frc2024.subsystems.apriltagvision.AprilTagVision;
@@ -480,6 +481,10 @@ public class RobotContainer {
         "Tall",
         new RobotState.DemoShotParameters(
             Rotation2d.fromDegrees(80.0), new RobotState.FlywheelSpeeds(5000, 8000)));
+    demoShotChooser.addOption(
+        "Random",
+        new RobotState.DemoShotParameters(
+            new Rotation2d(), new RobotState.FlywheelSpeeds(5000, 8000)));
   }
 
   /**
@@ -595,10 +600,27 @@ public class RobotContainer {
                       Commands.waitUntil(flywheels::atGoal)
                           .andThen(rollers.setGoalCommand(Rollers.Goal.FEED_TO_SHOOTER))));
     } else {
+      Container<Rotation2d> randomAngle = new Container<>();
+      randomAngle.value = new Rotation2d();
       new Trigger(DriverStation::isEnabled)
           .whileTrueContinuous(
               Commands.run(
-                  () -> RobotState.getInstance().setDemoShotParameters(demoShotChooser.get())));
+                  () -> {
+                    var shotParameters = demoShotChooser.get();
+                    RobotState.getInstance()
+                        .setDemoShotParameters(
+                            new DemoShotParameters(
+                                shotParameters.armAngle().equals(new Rotation2d())
+                                    ? randomAngle.value
+                                    : shotParameters.armAngle(),
+                                shotParameters.flywheelSpeeds()));
+                  }));
+      driver
+          .a()
+          .onTrue(
+              Commands.runOnce(
+                  () -> randomAngle.value = Rotation2d.fromDegrees(Math.random() * 55.0 + 15.0)));
+
       driver
           .a()
           .and(intakeTrigger.negate())

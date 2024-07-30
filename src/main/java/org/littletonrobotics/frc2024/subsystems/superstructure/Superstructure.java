@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -226,10 +227,10 @@ public class Superstructure extends SubsystemBase {
 
   /** Command to set goal of superstructure with additional profile constraints on arm */
   public Command setGoalWithConstraintsCommand(
-      Goal goal, TrapezoidProfile.Constraints armProfileConstraints) {
+      Goal goal, Supplier<TrapezoidProfile.Constraints> armProfileConstraints) {
     return setGoalCommand(goal)
-        .beforeStarting(() -> arm.setProfileConstraints(armProfileConstraints))
-        .finallyDo(() -> arm.setProfileConstraints(Arm.maxProfileConstraints.get()));
+        .beforeStarting(() -> arm.setProfileConstraints(armProfileConstraints.get()))
+        .finallyDo(() -> arm.setProfileConstraints(Arm.maxConstraints.get()));
   }
 
   /** Command to aim the superstructure with a compensation value in degrees */

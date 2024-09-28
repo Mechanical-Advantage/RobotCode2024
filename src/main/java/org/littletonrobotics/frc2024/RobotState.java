@@ -66,7 +66,7 @@ public class RobotState {
   private static final double armAngleExponent = -0.593140189605718;
 
   @AutoLogOutput @Getter @Setter private boolean flywheelAccelerating = false;
-  @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = 0.0;
+  @AutoLogOutput @Getter @Setter private double shotCompensationDegrees = -0.4;
 
   // Super poop
   private static final InterpolatingDoubleTreeMap superPoopArmAngleMap =

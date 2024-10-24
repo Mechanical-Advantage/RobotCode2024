@@ -50,6 +50,8 @@ public class Leds extends VirtualSubsystem {
   private Optional<Alliance> alliance = Optional.empty();
   private Color allianceColor = Color.kGold;
   private Color secondaryDisabledColor = Color.kDarkBlue;
+  private Color gbtgColor1 = Color.kHotPink;
+  private Color gbtgColor2 = Color.kLightPink;
   private boolean lastEnabledAuto = false;
   private double lastEnabledTime = 0.0;
   private boolean estopped = false;
@@ -160,7 +162,9 @@ public class Leds extends VirtualSubsystem {
             5.0);
       } else {
         // Default pattern
-        wave(allianceColor, secondaryDisabledColor, waveAllianceCycleLength, waveAllianceDuration);
+        // wave(allianceColor, secondaryDisabledColor, waveAllianceCycleLength,
+        // waveAllianceDuration);
+        wave(gbtgColor1, gbtgColor2, waveAllianceCycleLength, waveAllianceDuration);
       }
 
       // Same battery alert
@@ -168,7 +172,8 @@ public class Leds extends VirtualSubsystem {
         breath(Color.kRed, Color.kBlack);
       }
     } else if (DriverStation.isAutonomous()) {
-      wave(Color.kGold, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);
+      // wave(Color.kGold, Color.kDarkBlue, waveFastCycleLength, waveFastDuration);
+      wave(gbtgColor1, gbtgColor2, waveFastCycleLength, waveFastDuration);
       if (autoFinished) {
         double fullTime = (double) length / waveFastCycleLength * waveFastDuration;
         solid((Timer.getFPGATimestamp() - autoFinishedTime) / fullTime, Color.kGreen);

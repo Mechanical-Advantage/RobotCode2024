@@ -297,18 +297,6 @@ public class RobotContainer {
     superstructure = new Superstructure(arm, climber, backpackActuator);
 
     // Set up subsystems
-    armCoast
-        .onTrue(
-            Commands.runOnce(
-                    () -> {
-                      if (DriverStation.isDisabled()) {
-                        armCoastOverride = true;
-                      }
-                    })
-                .ignoringDisable(true))
-        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
-    RobotModeTriggers.disabled()
-        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
     arm.setOverrides(armDisable, () -> armCoastOverride, demoControls::get);
     climber.setCoastOverride(() -> armCoastOverride);
     backpackActuator.setCoastOverride(() -> armCoastOverride);
@@ -331,31 +319,6 @@ public class RobotContainer {
     if (Constants.tuningMode) {
       new Alert("Tuning mode enabled", AlertType.INFO).set(true);
     }
-
-    // Endgame alert triggers
-    new Trigger(
-            () ->
-                DriverStation.isTeleopEnabled()
-                    && DriverStation.getMatchTime() > 0
-                    && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
-        .onTrue(
-            controllerRumbleCommand()
-                .withTimeout(0.5)
-                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
-                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
-    new Trigger(
-            () ->
-                DriverStation.isTeleopEnabled()
-                    && DriverStation.getMatchTime() > 0
-                    && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
-        .onTrue(
-            controllerRumbleCommand()
-                .withTimeout(0.2)
-                .andThen(Commands.waitSeconds(0.1))
-                .repeatedly()
-                .withTimeout(0.9) // Rumble three times
-                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
-                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
   }
 
   private void configureAutos() {
@@ -494,6 +457,47 @@ public class RobotContainer {
    */
   private void configureButtonBindings(boolean demo) {
     CommandScheduler.getInstance().getActiveButtonLoop().clear();
+
+    // ------------- Miscellaneous Triggers -------------
+
+    // Arm coast
+    armCoast
+        .onTrue(
+            Commands.runOnce(
+                    () -> {
+                      if (DriverStation.isDisabled()) {
+                        armCoastOverride = true;
+                      }
+                    })
+                .ignoringDisable(true))
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+    RobotModeTriggers.disabled()
+        .onFalse(Commands.runOnce(() -> armCoastOverride = false).ignoringDisable(true));
+
+    // Endgame alert triggers
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert1.get()))
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.5)
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
+    new Trigger(
+            () ->
+                DriverStation.isTeleopEnabled()
+                    && DriverStation.getMatchTime() > 0
+                    && DriverStation.getMatchTime() <= Math.round(endgameAlert2.get()))
+        .onTrue(
+            controllerRumbleCommand()
+                .withTimeout(0.2)
+                .andThen(Commands.waitSeconds(0.1))
+                .repeatedly()
+                .withTimeout(0.9) // Rumble three times
+                .beforeStarting(() -> Leds.getInstance().endgameAlert = true)
+                .finallyDo(() -> Leds.getInstance().endgameAlert = false));
 
     // ------------- Driver Controls -------------
     drive.setDefaultCommand(

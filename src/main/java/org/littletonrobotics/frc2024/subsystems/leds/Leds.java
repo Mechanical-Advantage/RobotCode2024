@@ -51,7 +51,7 @@ public class Leds extends VirtualSubsystem {
   private Color allianceColor = Color.kGold;
   private Color secondaryDisabledColor = Color.kDarkBlue;
   private Color gbtgColor1 = Color.kDeepPink;
-  private Color gbtgColor2 = Color.kPurple;
+  private Color gbtgColor2 = Color.kBlack;
   private boolean lastEnabledAuto = false;
   private double lastEnabledTime = 0.0;
   private boolean estopped = false;

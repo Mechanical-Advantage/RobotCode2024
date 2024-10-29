@@ -120,7 +120,7 @@ public class Module {
 
   /** Get turn angle of module as {@link Rotation2d}. */
   public Rotation2d getAngle() {
-    return inputs.turnAbsolutePosition;
+    return inputs.turnPosition;
   }
 
   /** Get position of wheel rotations in radians */

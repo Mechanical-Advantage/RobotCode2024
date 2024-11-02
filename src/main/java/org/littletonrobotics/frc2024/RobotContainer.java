@@ -332,98 +332,90 @@ public class RobotContainer {
             new AutoQuestion(
                 "Starting location?",
                 List.of(
-                    // AutoQuestionResponse.AMP,
-                    AutoQuestionResponse.CENTER
-                    // AutoQuestionResponse.SOURCE
-                    )),
+                    AutoQuestionResponse.AMP,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.SOURCE)),
             new AutoQuestion(
                 "How many spike notes?",
-                List.of(
-                    // AutoQuestionResponse.TWO,
-                    AutoQuestionResponse.THREE)),
+                List.of(AutoQuestionResponse.TWO, AutoQuestionResponse.THREE)),
             new AutoQuestion(
                 "First center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET)),
             new AutoQuestion(
                 "Second center note?", List.of(AutoQuestionResponse.THINKING_ON_YOUR_FEET))),
         autoBuilder.davisSpikyAuto());
-    // autoSelector.addRoutine(
-    //     "Davis CA Auto",
-    //     List.of(
-    //         new AutoQuestion(
-    //             "Return to spikes?", List.of(AutoQuestionResponse.YES,
-    // AutoQuestionResponse.NO))),
-    //     autoBuilder.davisCAAuto());
-    // autoSelector.addRoutine("Davis Speedy Auto", autoBuilder.davisSpeedyAuto());
-    // autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
+    autoSelector.addRoutine(
+        "Davis CA Auto",
+        List.of(
+            new AutoQuestion(
+                "Return to spikes?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO))),
+        autoBuilder.davisCAAuto());
+    autoSelector.addRoutine("Davis Speedy Auto", autoBuilder.davisSpeedyAuto());
+    autoSelector.addRoutine("Davis Ethical Auto", autoBuilder.davisEthicalAuto());
     autoSelector.addRoutine(
         "Davis Unethical Auto",
         List.of(
             new AutoQuestion(
                 "First center note?",
-                List.of(
-                    AutoQuestionResponse.SOURCE_WALL
-                    //  AutoQuestionResponse.SOURCE_MIDDLE
-                    ))),
+                List.of(AutoQuestionResponse.SOURCE_WALL, AutoQuestionResponse.SOURCE_MIDDLE))),
         autoBuilder.davisUnethicalAuto());
-    // autoSelector.addRoutine(
-    //     "Davis Inspirational Auto",
-    //     List.of(
-    //         new AutoQuestion(
-    //             "Starting subwoofer location?",
-    //             List.of(
-    //                 AutoQuestionResponse.SOURCE,
-    //                 AutoQuestionResponse.CENTER,
-    //                 AutoQuestionResponse.AMP)),
-    //         new AutoQuestion(
-    //             "Earn mobility bonus?", List.of(AutoQuestionResponse.YES,
-    // AutoQuestionResponse.NO)),
-    //         new AutoQuestion(
-    //             "Mobility delay time?",
-    //             List.of(
-    //                 AutoQuestionResponse.IMMEDIATELY,
-    //                 AutoQuestionResponse.SIX_SECONDS,
-    //                 AutoQuestionResponse.LAST_SECOND))),
-    //     autoBuilder.davisInspirationalAuto());
-    // DemoAutos demoAutos = new DemoAutos(drive, superstructure, autoSelector::getResponses);
-    // autoSelector.addRoutine(
-    //     "Davis Demo Auto",
-    //     List.of(
-    //         new AutoQuestion(
-    //             "Follow Tag?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO))),
-    //     demoAutos.davisDemoAuto());
+    autoSelector.addRoutine(
+        "Davis Inspirational Auto",
+        List.of(
+            new AutoQuestion(
+                "Starting subwoofer location?",
+                List.of(
+                    AutoQuestionResponse.SOURCE,
+                    AutoQuestionResponse.CENTER,
+                    AutoQuestionResponse.AMP)),
+            new AutoQuestion(
+                "Earn mobility bonus?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO)),
+            new AutoQuestion(
+                "Mobility delay time?",
+                List.of(
+                    AutoQuestionResponse.IMMEDIATELY,
+                    AutoQuestionResponse.SIX_SECONDS,
+                    AutoQuestionResponse.LAST_SECOND))),
+        autoBuilder.davisInspirationalAuto());
+    DemoAutos demoAutos = new DemoAutos(drive, superstructure, autoSelector::getResponses);
+    autoSelector.addRoutine(
+        "Davis Demo Auto",
+        List.of(
+            new AutoQuestion(
+                "Follow Tag?", List.of(AutoQuestionResponse.YES, AutoQuestionResponse.NO))),
+        demoAutos.davisDemoAuto());
 
     // Set up feedforward characterization
-    // autoSelector.addRoutine(
-    //     "Drive Static Characterization",
-    //     new StaticCharacterization(
-    //             drive, drive::runCharacterization, drive::getCharacterizationVelocity)
-    //         .finallyDo(drive::endCharacterization));
-    // autoSelector.addRoutine(
-    //     "Drive FF Characterization",
-    //     new FeedForwardCharacterization(
-    //             drive, drive::runCharacterization, drive::getCharacterizationVelocity)
-    //         .finallyDo(drive::endCharacterization));
-    // autoSelector.addRoutine(
-    //     "Flywheels FF Characterization",
-    //     new FeedForwardCharacterization(
-    //         flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
-    // autoSelector.addRoutine(
-    //     "Arm Static Characterization",
-    //     new StaticCharacterization(
-    //             superstructure,
-    //             superstructure::runArmCharacterization,
-    //             superstructure::getArmCharacterizationVelocity)
-    //         .finallyDo(superstructure::endArmCharacterization));
-    // autoSelector.addRoutine(
-    //     "Drive Wheel Radius Characterization",
-    //     drive
-    //         .orientModules(Drive.getCircleOrientations())
-    //         .andThen(
-    //             new WheelRadiusCharacterization(
-    //                 drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
-    //         .withName("Drive Wheel Radius Characterization"));
-    // autoSelector.addRoutine(
-    //     "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
+    autoSelector.addRoutine(
+        "Drive Static Characterization",
+        new StaticCharacterization(
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
+            .finallyDo(drive::endCharacterization));
+    autoSelector.addRoutine(
+        "Drive FF Characterization",
+        new FeedForwardCharacterization(
+                drive, drive::runCharacterization, drive::getCharacterizationVelocity)
+            .finallyDo(drive::endCharacterization));
+    autoSelector.addRoutine(
+        "Flywheels FF Characterization",
+        new FeedForwardCharacterization(
+            flywheels, flywheels::runCharacterization, flywheels::getCharacterizationVelocity));
+    autoSelector.addRoutine(
+        "Arm Static Characterization",
+        new StaticCharacterization(
+                superstructure,
+                superstructure::runArmCharacterization,
+                superstructure::getArmCharacterizationVelocity)
+            .finallyDo(superstructure::endArmCharacterization));
+    autoSelector.addRoutine(
+        "Drive Wheel Radius Characterization",
+        drive
+            .orientModules(Drive.getCircleOrientations())
+            .andThen(
+                new WheelRadiusCharacterization(
+                    drive, WheelRadiusCharacterization.Direction.COUNTER_CLOCKWISE))
+            .withName("Drive Wheel Radius Characterization"));
+    autoSelector.addRoutine(
+        "Diagnose Arm", superstructure.setGoalCommand(Superstructure.Goal.DIAGNOSTIC_ARM));
 
     // Add options to demo mode
     demoControls.addOption("YES", true);

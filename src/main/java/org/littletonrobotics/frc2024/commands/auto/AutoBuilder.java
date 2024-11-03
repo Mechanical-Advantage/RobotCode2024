@@ -44,7 +44,7 @@ public class AutoBuilder {
 
   private static final double preloadDelay = 1.0;
   private static final double spikeIntakeDelay = 0.35;
-  private static final double spikeFeedThroughDelay = 0.75;
+  private static final double spikeFeedThroughDelay = 2.2;
   private static final double stageAimX = FieldConstants.Stage.center.getX() - 0.3;
 
   private static final Map<Translation2d, HolonomicTrajectory> thinking_firstIntakeReturn =

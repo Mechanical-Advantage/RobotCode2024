@@ -52,6 +52,11 @@ public interface ModuleIO {
   /** Run to turn position setpoint */
   default void runTurnPositionSetpoint(double angleRads) {}
 
+  default void executeTurnSetup(double turnSetpointRads, double input) {
+    runTurnPositionSetpoint(turnSetpointRads);
+    runCharacterization(input);
+  }
+
   /** Configure drive PID */
   default void setDrivePID(double kP, double kI, double kD) {}
 

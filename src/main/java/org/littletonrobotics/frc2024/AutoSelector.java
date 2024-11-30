@@ -36,15 +36,20 @@ public class AutoSelector extends VirtualSubsystem {
     lastRoutine = defaultRoutine;
     lastResponses = List.of();
 
-    // Publish questions and choosers
     questionPublishers = new ArrayList<>();
     questionChoosers = new ArrayList<>();
+    initializeQuestions(key); // Refactored logic for question initialization
+  }
+
+  /** Initializes the questions and their associated choosers. */
+  private void initializeQuestions(String key) {
     for (int i = 0; i < maxQuestions; i++) {
-      var publisher =
-          NetworkTableInstance.getDefault()
-              .getStringTopic("/SmartDashboard/" + key + "/Question #" + Integer.toString(i + 1))
-              .publish();
+      var basePath = "/SmartDashboard/" + key;
+      var questionPath = basePath + "/Question #" + (i + 1);
+      var topic = NetworkTableInstance.getDefault().getStringTopic(questionPath);
+      var publisher = topic.publish();
       publisher.set("NA");
+
       questionPublishers.add(publisher);
       questionChoosers.add(
           new SwitchableChooser(key + "/Question #" + Integer.toString(i + 1) + " Chooser"));
@@ -83,6 +88,38 @@ public class AutoSelector extends VirtualSubsystem {
     return lastResponses;
   }
 
+  /** Updates the list of questions for the selected routine. */
+  private void updateQuestions(AutoRoutine selectedRoutine) {
+    var questions = selectedRoutine.questions();
+    for (int i = 0; i < maxQuestions; i++) {
+      if (i < questions.size()) {
+        questionPublishers.get(i).set(questions.get(i).question());
+        questionChoosers
+            .get(i)
+            .setOptions(
+                questions.get(i).responses().stream()
+                    .map(AutoQuestionResponse::toString)
+                    .toArray(String[]::new));
+      } else {
+        questionPublishers.get(i).set("");
+        questionChoosers.get(i).setOptions(new String[] {});
+      }
+    }
+  }
+
+  /** Updates the routine and its responses. */
+  private void updateRoutineAndResponses(AutoRoutine selectedRoutine) {
+    lastRoutine = selectedRoutine;
+    lastResponses = new ArrayList<>();
+    for (int i = 0; i < lastRoutine.questions().size(); i++) {
+      String responseString = questionChoosers.get(i).get();
+      lastResponses.add(
+          responseString == null
+              ? lastRoutine.questions().get(i).responses().get(0)
+              : AutoQuestionResponse.valueOf(responseString));
+    }
+  }
+
   public void periodic() {
     // Skip updates when actively running in auto
     if (DriverStation.isAutonomousEnabled() && lastRoutine != null && lastResponses == null) {
@@ -95,33 +132,11 @@ public class AutoSelector extends VirtualSubsystem {
       return;
     }
     if (!selectedRoutine.equals(lastRoutine)) {
-      var questions = selectedRoutine.questions();
-      for (int i = 0; i < maxQuestions; i++) {
-        if (i < questions.size()) {
-          questionPublishers.get(i).set(questions.get(i).question());
-          questionChoosers
-              .get(i)
-              .setOptions(
-                  questions.get(i).responses().stream()
-                      .map((AutoQuestionResponse response) -> response.toString())
-                      .toArray(String[]::new));
-        } else {
-          questionPublishers.get(i).set("");
-          questionChoosers.get(i).setOptions(new String[] {});
-        }
-      }
+      updateQuestions(selectedRoutine); // Refactored question update logic
     }
 
     // Update the routine and responses
-    lastRoutine = selectedRoutine;
-    lastResponses = new ArrayList<>();
-    for (int i = 0; i < lastRoutine.questions().size(); i++) {
-      String responseString = questionChoosers.get(i).get();
-      lastResponses.add(
-          responseString == null
-              ? lastRoutine.questions().get(i).responses().get(0)
-              : AutoQuestionResponse.valueOf(responseString));
-    }
+    updateRoutineAndResponses(selectedRoutine); // Refactored routine and response update logic
   }
 
   /** A customizable auto routine associated with a single command. */

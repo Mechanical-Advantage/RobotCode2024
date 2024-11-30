@@ -17,15 +17,16 @@ import org.littletonrobotics.frc2024.util.LoggedTunableNumber;
 @Setter
 @Getter
 public class Backpack extends GenericRollerSystem<Backpack.Goal> {
+
   @RequiredArgsConstructor
   @Getter
   public enum Goal implements GenericRollerSystem.VoltageGoal {
-    IDLING(() -> 0),
-    AMP_SCORING(new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0)),
-    TRAP_SCORING(new LoggedTunableNumber("Backpack/TrapScoringVoltage", 8.0)),
-    TRAP_JACKHAMMER_OUT(new LoggedTunableNumber("Backpack/JackhammerOutVoltage", 8.0)),
-    TRAP_JACKHAMMER_IN(new LoggedTunableNumber("Backpack/JackhammerInVoltage", -2.0)),
-    EJECTING(new LoggedTunableNumber("Backpack/EjectingVoltage", -12.0));
+    IDLING(VoltageSupplierFactory.getIdleVoltage()),
+    AMP_SCORING(VoltageSupplierFactory.getAmpScoringVoltage()),
+    TRAP_SCORING(VoltageSupplierFactory.getTrapScoringVoltage()),
+    TRAP_JACKHAMMER_OUT(VoltageSupplierFactory.getJackhammerOutVoltage()),
+    TRAP_JACKHAMMER_IN(VoltageSupplierFactory.getJackhammerInVoltage()),
+    EJECTING(VoltageSupplierFactory.getEjectingVoltage());
 
     private final DoubleSupplier voltageSupplier;
   }
@@ -34,5 +35,32 @@ public class Backpack extends GenericRollerSystem<Backpack.Goal> {
 
   public Backpack(BackpackIO io) {
     super("Backpack", io);
+  }
+
+  // Utility class for managing voltage suppliers
+  private static class VoltageSupplierFactory {
+    static DoubleSupplier getIdleVoltage() {
+      return () -> 0;
+    }
+
+    static DoubleSupplier getAmpScoringVoltage() {
+      return new LoggedTunableNumber("Backpack/AmpScoringVoltage", 12.0);
+    }
+
+    static DoubleSupplier getTrapScoringVoltage() {
+      return new LoggedTunableNumber("Backpack/TrapScoringVoltage", 8.0);
+    }
+
+    static DoubleSupplier getJackhammerOutVoltage() {
+      return new LoggedTunableNumber("Backpack/JackhammerOutVoltage", 8.0);
+    }
+
+    static DoubleSupplier getJackhammerInVoltage() {
+      return new LoggedTunableNumber("Backpack/JackhammerInVoltage", -2.0);
+    }
+
+    static DoubleSupplier getEjectingVoltage() {
+      return new LoggedTunableNumber("Backpack/EjectingVoltage", -12.0);
+    }
   }
 }

@@ -21,9 +21,19 @@ public class OverrideSwitches {
 
   /** Returns whether the controller is connected. */
   public boolean isConnected() {
-    return joystick.isConnected()
-        && !DriverStation.getJoystickIsXbox(joystick.getPort())
-        && joystick.getName().equals("Generic   USB  Joystick");
+    return isJoystickConnected() && isNotXboxController() && isGenericUsbJoystick();
+  }
+
+  private boolean isJoystickConnected() {
+    return joystick.isConnected();
+  }
+
+  private boolean isNotXboxController() {
+    return !DriverStation.getJoystickIsXbox(joystick.getPort());
+  }
+
+  private boolean isGenericUsbJoystick() {
+    return joystick.getName().equals("Generic   USB  Joystick");
   }
 
   /** Gets the state of a driver-side switch (0-2 from left to right). */

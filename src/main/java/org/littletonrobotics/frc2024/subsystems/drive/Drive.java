@@ -100,8 +100,8 @@ public class Drive extends SubsystemBase {
   private boolean modulesOrienting = false;
   private final Timer lastMovementTimer = new Timer();
 
-  @AutoLogOutput(key = "Drive/BrakeModeEnabled")
-  private boolean brakeModeEnabled = true;
+  // brake mode controller
+  BrakeModeController brakeModeController = new BrakeModeController();
 
   @Setter
   @AutoLogOutput(key = "Drive/CoastRequest")
@@ -134,7 +134,7 @@ public class Drive extends SubsystemBase {
     modules[2] = new Module(bl, 2);
     modules[3] = new Module(br, 3);
     lastMovementTimer.start();
-    setBrakeMode(true);
+    brakeModeController.setBrakeModeEnabled();
 
     setpointGenerator =
         SwerveSetpointGenerator.builder()
@@ -227,7 +227,7 @@ public class Drive extends SubsystemBase {
         lastTime = odometryTimestampInputs.timestamps[i];
       }
     }
-
+    //
     // Update current velocities use gyro when possible
     ChassisSpeeds robotRelativeVelocity = getSpeeds();
     robotRelativeVelocity.omegaRadiansPerSecond =
@@ -236,34 +236,7 @@ public class Drive extends SubsystemBase {
             : robotRelativeVelocity.omegaRadiansPerSecond;
     RobotState.getInstance().addVelocityData(robotRelativeVelocity.toTwist2d());
 
-    // Update brake mode
-    // Reset movement timer if moved
-    if (Arrays.stream(modules)
-        .anyMatch(
-            module ->
-                Math.abs(module.getVelocityMetersPerSec()) > coastMetersPerSecThreshold.get())) {
-      lastMovementTimer.reset();
-    }
-    if (DriverStation.isEnabled() && !lastEnabled) {
-      coastRequest = CoastRequest.AUTOMATIC;
-    }
-
-    lastEnabled = DriverStation.isEnabled();
-    switch (coastRequest) {
-      case AUTOMATIC -> {
-        if (DriverStation.isEnabled()) {
-          setBrakeMode(true);
-        } else if (lastMovementTimer.hasElapsed(coastWaitTime.get())) {
-          setBrakeMode(false);
-        }
-      }
-      case ALWAYS_BRAKE -> {
-        setBrakeMode(true);
-      }
-      case ALWAYS_COAST -> {
-        setBrakeMode(false);
-      }
-    }
+    brakeModeController.updateBrakeMode(modules);
 
     // Run drive based on current mode
     ChassisSpeeds teleopSpeeds = teleopDriveController.update();
@@ -447,14 +420,6 @@ public class Drive extends SubsystemBase {
   /** Get the position of all drive wheels in radians. */
   public double[] getWheelRadiusCharacterizationPosition() {
     return Arrays.stream(modules).mapToDouble(Module::getPositionRads).toArray();
-  }
-
-  /** Set brake mode to {@code enabled} doesn't change brake mode if already set. */
-  private void setBrakeMode(boolean enabled) {
-    if (brakeModeEnabled != enabled) {
-      Arrays.stream(modules).forEach(module -> module.setBrakeMode(enabled));
-    }
-    brakeModeEnabled = enabled;
   }
 
   /**

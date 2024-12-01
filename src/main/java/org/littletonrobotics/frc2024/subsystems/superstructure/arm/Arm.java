@@ -64,11 +64,11 @@ public class Arm {
       new LoggedTunableNumber("Arm/PartialStowUpperLimitDegrees", 30.0);
 
   // Profile constraints
-  public static final Supplier<TrapezoidProfile.Constraints> maxProfileConstraints =
+  public static final Supplier<TrapezoidProfile.Constraints> maxConstraints =
       () -> new TrapezoidProfile.Constraints(maxVelocity.get(), maxAcceleration.get());
-  public static final Supplier<TrapezoidProfile.Constraints> smoothProfileConstraints =
+  public static final Supplier<TrapezoidProfile.Constraints> smoothConstraints =
       () -> new TrapezoidProfile.Constraints(smoothVelocity.get(), smoothAcceleration.get());
-  public static final Supplier<TrapezoidProfile.Constraints> prepareClimbProfileConstraints =
+  public static final Supplier<TrapezoidProfile.Constraints> prepareClimbConstraints =
       () ->
           new TrapezoidProfile.Constraints(
               prepareClimbVelocity.get(), prepareClimbAcceleration.get());
@@ -112,7 +112,7 @@ public class Arm {
   private final ArmIOInputsAutoLogged inputs = new ArmIOInputsAutoLogged();
 
   @AutoLogOutput @Setter private double currentCompensation = 0.0;
-  private TrapezoidProfile.Constraints currentConstraints = maxProfileConstraints.get();
+  private TrapezoidProfile.Constraints currentConstraints = maxConstraints.get();
   private TrapezoidProfile profile;
   private TrapezoidProfile.State setpointState = new TrapezoidProfile.State();
 

@@ -9,7 +9,9 @@ package org.littletonrobotics.frc2024.commands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WrapperCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import lombok.experimental.ExtensionMethod;
@@ -30,6 +32,8 @@ public class ClimbingCommands {
       new LoggedTunableNumber("ClimbingCommands/ChainToBackOffset", 0.3);
   private static final LoggedTunableNumber autoUntrapTime =
       new LoggedTunableNumber("ClimbingCommands/AutoUntrapTime", 134.5);
+  private static final LoggedTunableNumber prepareClimbDriveTimeout =
+      new LoggedTunableNumber("ClimbingCommands/PrepareClimbDriveTimeout", 0.7);
 
   // Which mode to use for trap scoring. Can be changed between jackhammering and regular trap
   // scoring.
@@ -42,6 +46,8 @@ public class ClimbingCommands {
       Trigger forwardTrigger,
       Trigger reverseTrigger) {
     Trigger endOfMatch = Robot.createTeleopTimeTrigger(autoUntrapTime);
+    Timer prepareClimbTimer = new Timer();
+
     SteppableCommandGroup sequence =
         new SteppableCommandGroup(
             forwardTrigger
@@ -57,23 +63,35 @@ public class ClimbingCommands {
             superstructure.setGoalCommand(Superstructure.Goal.PREPARE_PREPARE_TRAP_CLIMB),
 
             // Drive forward while raising arm and climber
-            drive
-                .startEnd(
-                    () -> {
-                      Pose2d robot = RobotState.getInstance().getEstimatedPose();
-                      Pose2d target =
-                          robot.transformBy(GeomUtil.toTransform2d(chainToBack.get(), 0.0));
-                      drive.setAutoAlignGoal(() -> target, () -> new Translation2d(), true);
-                    },
-                    drive::clearAutoAlignGoal)
-                .asProxy()
-                .until(() -> drive.isAutoAlignGoalCompleted() && superstructure.atGoal())
-                .withTimeout(5.0)
-                .alongWith(
-                    superstructure.setGoalWithConstraintsCommand(
-                        Superstructure.Goal.PREPARE_CLIMB,
-                        Arm.prepareClimbProfileConstraints.get()),
-                    rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK)),
+            Commands.runOnce(prepareClimbTimer::restart)
+                .andThen(
+                    superstructure
+                        .setGoalWithConstraintsCommand(
+                            Superstructure.Goal.PREPARE_CLIMB,
+                            Arm.prepareClimbProfileConstraints.get())
+                        .alongWith(rollers.setGoalCommand(Rollers.Goal.SHUFFLE_BACKPACK))
+                        .deadlineWith(
+                            drive
+                                .startEnd(
+                                    () -> {
+                                      Pose2d robot = RobotState.getInstance().getEstimatedPose();
+                                      Pose2d target =
+                                          robot.transformBy(
+                                              GeomUtil.toTransform2d(chainToBack.get(), 0.0));
+                                      drive.setAutoAlignGoal(
+                                          () -> target, Translation2d::new, true);
+                                    },
+                                    drive::clearAutoAlignGoal)
+                                .until(
+                                    () ->
+                                        prepareClimbTimer.hasElapsed(
+                                            prepareClimbDriveTimeout.get()))
+                                .andThen(
+                                    Commands.runOnce(
+                                        () ->
+                                            drive.setCoastRequest(Drive.CoastRequest.ALWAYS_COAST)))
+                                .asProxy()))
+                .finallyDo(() -> drive.setCoastRequest(Drive.CoastRequest.AUTOMATIC)),
 
             // Pre-move arm to climb position to help with alignment and prevent wedging
             superstructure.setGoalCommand(Superstructure.Goal.POST_PREPARE_TRAP_CLIMB),
